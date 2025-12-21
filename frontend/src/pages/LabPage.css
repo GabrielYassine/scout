@@ -1,0 +1,11 @@
+.lab-page {
+  min-height: calc(100vh - var(--navbar-height));
+  width: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: row;
+}
+
+.lab-page-content {
+  flex: 5;
+}

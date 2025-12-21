@@ -1,0 +1,33 @@
+:root {
+  /* Color Palette */
+  --color-bg: #303030;
+  --color-panel: #242424;
+  --color-panel-drop: #1a1a1a;
+  --color-hover: #999999;
+  --color-border: #777777;
+  --color-border-highlight: #FFD700;
+
+  /* Text */
+  --color-text: #ffffff;
+  --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+
+  /* padding sizes */
+  --padding-sm: 0.5rem;
+  --padding-md: 1rem;
+  --padding-lg: 2rem;
+
+  /* rounding of elements */
+  --radius-sm: 0.2rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 1rem;
+
+  /* Layout Dimensions */
+  --navbar-height: clamp(3rem, 6vh, 4rem);
+  --sidebar-width: clamp(5rem, 13vw, 15rem);
+
+  /* Buttons */
+    --green-500: #22c55e;
+    --green-700: #15803d;
+    --red-500: #ef4444;
+    --red-700: #b91c1c;
+}

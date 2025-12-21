@@ -1,20 +1,22 @@
-import { useEffect, useState } from 'react'
-import './App.css'
+import { Routes, Route, Navigate } from "react-router-dom";
+import TopNavbar from "./components/TopNavbar.jsx";
+
+import HomePage from "./pages/HomePage.jsx";
+import LabPage from "./pages/LabPage.jsx";
+import HistoryPage from "./pages/HistoryPage.jsx";
 
 export default function App() {
-  const [status, setStatus] = useState('loading...')
-
-  useEffect(() => {
-    fetch('/api/health')
-      .then(r => r.text())
-      .then(setStatus)
-      .catch(() => setStatus('error'))
-  }, [])
-
   return (
-    <div style={{ padding: 24, fontFamily: 'system-ui, sans-serif' }}>
-      <h1>Scout</h1>
-      <p>Backend health: <b>{status}</b></p>
+    <div className="app-root">
+      <TopNavbar />
+
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/lab" element={<LabPage />} />
+        <Route path="/history" element={<HistoryPage />} />
+
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </div>
-  )
+  );
 }

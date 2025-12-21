@@ -1,0 +1,71 @@
+.lab-leftbar {
+  height: calc(100vh - var(--navbar-height));
+  width: var(--sidebar-width);
+  background: var(--color-panel);
+
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+
+.ll-title {
+  font-weight: 700;
+  padding: var(--padding-md);;
+}
+
+.ll-section {
+  overflow: hidden;
+}
+
+.ll-section-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--color-panel-drop);
+  border: none;
+  cursor: pointer;
+}
+
+.ll-section-title {
+  font-weight: 700;
+}
+
+.ll-triangle {
+  font-size: 1.5rem;
+  transition: transform 0.15s ease;
+}
+
+.ll-triangle.open {
+  transform: rotate(90deg);
+}
+
+.ll-section-body {
+  padding: var(--padding-md);
+  display: flex;
+  flex-direction: column;
+}
+
+.ll-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--padding-sm);
+}
+
+.ll-field select,
+.ll-field input {
+  padding: var(--padding-sm);
+  border-radius: var(--radius-sm);
+}
+
+.ll-actions {
+  margin-top: auto;
+  display: flex;
+  gap: var(--padding-md);
+  padding: var(--padding-md);
+}
+
+.ll-actions .btn {
+  flex: 1;
+  width: auto;
+}
