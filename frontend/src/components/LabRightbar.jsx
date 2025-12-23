@@ -1,6 +1,6 @@
 import "./LabRightbar.css";
 
-export default function LabRightbar({ form }) {
+export default function LabRightbar() {
   return (
     <div className="lab-rightbar">
     </div>
