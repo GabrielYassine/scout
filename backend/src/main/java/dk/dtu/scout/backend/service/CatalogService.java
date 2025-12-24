@@ -20,8 +20,17 @@ public class CatalogService {
                         "int",
                         100,
                         1.0,
-                        null))));
+                        null),
+                        new ParamDef(
+                                "seed",
+                                "Seed",
+                                "long",
+                                32L,
+                                null,
+                                null))));
     }
+
+
 
     public List<AlgoDef> algorithms() {
         return List.of(new AlgoDef(

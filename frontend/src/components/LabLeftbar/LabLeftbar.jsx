@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import "./LabLeftbar.css";
 import Section from "./Section.jsx";
-import ParamField, { coerceForSchema } from "./ParamField.jsx";
+import ParamField, { parseValue } from "./ParamField.jsx";
 
 // Left sidebar for the lab page, containing problem and algorithm selection and configuration
 
