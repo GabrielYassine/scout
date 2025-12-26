@@ -18,6 +18,22 @@ export default function LabPage({catalog, catalogLoading, catalogError}) {
     "scout:labForm",
     DEFAULT_FORM
   );
+  async function onRun() {
+    const res = await fetch("/api/run", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        problemId: form.problem,
+        problemParams: form.problemParams,
+        algorithmId: form.algorithm,
+        algorithmParams: form.algorithmParams,
+      }),
+    });
+
+    const result = await res.json();
+    console.log(result);
+  }
+
 
   return (
     <div className="lab-page">
@@ -25,6 +41,7 @@ export default function LabPage({catalog, catalogLoading, catalogError}) {
         form={form}
         onChange={setForm}
         onReset={resetForm}
+        onRun={onRun}
         catalog={catalog}
         catalogLoading={catalogLoading}
         catalogError={catalogError}

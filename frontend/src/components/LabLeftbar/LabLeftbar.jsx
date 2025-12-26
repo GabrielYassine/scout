@@ -9,6 +9,7 @@ export default function LabLeftbar({
   form,
   onChange,
   onReset,
+  onRun,
   catalog,
   catalogLoading,
   catalogError,
@@ -159,7 +160,7 @@ export default function LabLeftbar({
       </Section>
 
       <div className="ll-actions">
-        <button className="btn btn--green" type="button">
+        <button className="btn btn--green" type="button" onClick={onRun}>
           Run
         </button>
 
