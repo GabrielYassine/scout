@@ -1,5 +1,7 @@
 package dk.dtu.scout.problems;
 
+import java.util.Random;
+
 /**
  * Implementation of the OneMax problem, where the goal is to maximize the number of 1s in a binary string.
  * @author s235257
@@ -7,9 +9,12 @@ package dk.dtu.scout.problems;
 public class OneMaxProblem implements Problem<boolean[]> {
 
     private final int n;
+    private final Random rng;
 
-    public OneMaxProblem(int n) {
+
+    public OneMaxProblem(int n, long seed) {
         this.n = n;
+        this.rng = new Random(seed);
     }
 
     /**
@@ -20,7 +25,7 @@ public class OneMaxProblem implements Problem<boolean[]> {
     public boolean[] randomSolution() {
         boolean[] randomBits = new boolean[n];
         for (int i = 0; i < n; i++) {
-            randomBits[i] = Math.random() < 0.5;
+            randomBits[i] = rng.nextBoolean();
         }
         return randomBits;
     }

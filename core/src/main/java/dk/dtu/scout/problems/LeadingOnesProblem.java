@@ -1,5 +1,7 @@
 package dk.dtu.scout.problems;
 
+import java.util.Random;
+
 /**
  * Implementation of the LeadingOnes problem, where the goal is to maximize the consecutive number of 1s from first bit.
  * @author s235257
@@ -8,8 +10,11 @@ public class LeadingOnesProblem implements Problem<boolean[]>{
 
     private final int n;
 
-    public LeadingOnesProblem(int n) {
+    private final Random rng;
+
+    public LeadingOnesProblem(int n, long seed) {
         this.n = n;
+        this.rng = new Random(seed);
     }
 
     /**
@@ -20,7 +25,7 @@ public class LeadingOnesProblem implements Problem<boolean[]>{
     public boolean[] randomSolution() {
         boolean[] randomBits = new boolean[n];
         for (int i = 0; i < n; i++) {
-            randomBits[i] = Math.random() < 0.5;
+            randomBits[i] = rng.nextBoolean();
         }
         return randomBits;
     }
