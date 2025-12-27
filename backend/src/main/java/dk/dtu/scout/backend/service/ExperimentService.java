@@ -5,6 +5,7 @@ import dk.dtu.scout.algorithms.OnePlusOneEA;
 import dk.dtu.scout.backend.dto.RunRequest;
 import dk.dtu.scout.backend.dto.RunResponse;
 import dk.dtu.scout.datatypes.RunLog;
+import dk.dtu.scout.problems.LeadingOnesProblem;
 import dk.dtu.scout.problems.OneMaxProblem;
 import dk.dtu.scout.problems.Problem;
 import org.springframework.stereotype.Service;
@@ -50,7 +51,7 @@ public class ExperimentService {
             case "leadingones" -> {
                 int n = ((Number) params.getOrDefault("n", 100)).intValue();
                 long seed = ((Number) params.getOrDefault("seed", 42L)).longValue();
-                yield new dk.dtu.scout.problems.LeadingOnesProblem(n, seed);
+                yield new LeadingOnesProblem(n, seed);
             }
             default -> throw new IllegalArgumentException("Unknown problem: " + id);
         };
