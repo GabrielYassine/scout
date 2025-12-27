@@ -44,7 +44,13 @@ public class ExperimentService {
         return switch (id) {
             case "onemax" -> {
                 int n = ((Number) params.getOrDefault("n", 100)).intValue();
-                yield new OneMaxProblem(n);
+                long seed = ((Number) params.getOrDefault("seed", 42L)).longValue();
+                yield new OneMaxProblem(n, seed);
+            }
+            case "leadingones" -> {
+                int n = ((Number) params.getOrDefault("n", 100)).intValue();
+                long seed = ((Number) params.getOrDefault("seed", 42L)).longValue();
+                yield new dk.dtu.scout.problems.LeadingOnesProblem(n, seed);
             }
             default -> throw new IllegalArgumentException("Unknown problem: " + id);
         };
