@@ -1,7 +1,11 @@
 import { NavLink } from "react-router-dom";
 import "./TopNavbar.css";
+import logo from "../assets/icons/ScoutLogo.png";
+import homeIcon from "../assets/icons/Home.png";
+import labIcon from "../assets/icons/Lab.png";
+import historyIcon from "../assets/icons/History.png";
 
-function NavItem({ to, label }) {
+function NavItem({ to, label, icon }) {
   return (
     <NavLink
       to={to}
@@ -10,6 +14,7 @@ function NavItem({ to, label }) {
         isActive ? "nav-item active" : "nav-item"
       }
     >
+      {icon && <img src={icon} alt="" className="nav-icon" />}
       {label}
     </NavLink>
   );
@@ -18,12 +23,15 @@ function NavItem({ to, label }) {
 export default function TopNavbar() {
   return (
     <header className="top-navbar">
-      <div className="nav-left">Scout</div>
+      <div className="nav-left">
+        <img src={logo} alt="Scout" className="nav-logo" />
+        Scout
+      </div>
 
       <nav className="nav-center">
-        <NavItem to="/" label="Home" />
-        <NavItem to="/lab" label="Lab" />
-        <NavItem to="/history" label="History" />
+        <NavItem to="/" label="Home" icon={homeIcon} />
+        <NavItem to="/lab" label="Lab" icon={labIcon} />
+        <NavItem to="/history" label="History" icon={historyIcon} />
       </nav>
     </header>
   );

@@ -29,6 +29,9 @@
   padding: var(--padding-sm) var(--padding-md);
   transition: background-color 0.2s ease, color 0.2s ease;
   border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .nav-item:hover {
@@ -38,5 +41,25 @@
 .nav-item.active {
   background-color: var(--color-panel);
   border-bottom: 2px solid var(--color-border-highlight);
+}
+
+.nav-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  filter: invert(1);
+}
+
+.nav-logo {
+  width: 3rem;
+  height: 3rem;
+  object-fit: contain;
+  filter: none;
+}
+
+.nav-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
