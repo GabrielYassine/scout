@@ -22,11 +22,20 @@ public class ExperimentService {
 
     public RunResponse run(RunRequest request) {
         Problem<?> problem = createProblem(request.problemId(), request.problemParams());
+
+        // Extract algorithm parameters with defaults (missing a few params)
         int maxIterations = ((Number) request.algorithmParams().getOrDefault("maxIterations", 1000)).intValue();
         long seed = ((Number) request.algorithmParams().getOrDefault("seed", 42L)).longValue();
+
+        // Initialize random number generator
         Random rng = new Random(seed);
+
+        // Create the algorithm based on the request
         Algorithm<?> algorithm = createAlgorithm(request.algorithmId());
+
+        // The following log is resulting from running the algorithm on the problem
         RunLog<?> log = runAlgorithm(algorithm, problem, rng, maxIterations);
+
         return new RunResponse(request.problemId(), request.algorithmId(), log.getSnapshots());
     }
 
