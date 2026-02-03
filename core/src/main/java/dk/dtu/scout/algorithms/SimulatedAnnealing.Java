@@ -35,7 +35,7 @@ public class SimulatedAnnealing<S> implements Algorithm<S> {
         runLog.log(0, bestFitness);
 
         int iteration = 1;
-        while (iteration <= maxIterations && !problem.isOptimal(bestFitness)) {
+        while (iteration <= maxIterations && problem.isOptimal(bestFitness)) {
 
             S candidate = mutation.mutate(current, rng);
             double candidateFitness = problem.fitness(candidate);

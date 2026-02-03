@@ -33,7 +33,7 @@ public class OnePlusOneEA<S> implements Algorithm<S> {
         runLog.log(0, currentFitness);
 
         int iteration = 1;
-        while (iteration <= maxIterations && !problem.isOptimal(currentFitness)) {
+        while (iteration <= maxIterations && problem.isOptimal(currentFitness)) {
             S offspring = mutation.mutate(current, rng);
             double offspringFitness = problem.fitness(offspring);
 
