@@ -1,5 +1,7 @@
 package dk.dtu.scout.backend.service;
 
+import dk.dtu.scout.acceptance.AcceptanceRule;
+import dk.dtu.scout.acceptance.ElitistAcceptance;
 import dk.dtu.scout.algorithms.Algorithm;
 import dk.dtu.scout.algorithms.OnePlusOneEA;
 import dk.dtu.scout.backend.dto.RunRequest;
@@ -25,7 +27,6 @@ public class ExperimentService {
         Random rng = new Random(seed);
         Algorithm<?> algorithm = createAlgorithm(request.algorithmId());
         RunLog<?> log = runAlgorithm(algorithm, problem, rng, maxIterations);
-        System.out.println("Completed run: Problem=" + request.problemId() + ", Algorithm=" + request.algorithmId());
         return new RunResponse(request.problemId(), request.algorithmId(), log.getSnapshots());
     }
 
@@ -33,12 +34,10 @@ public class ExperimentService {
         return switch (id) {
             case "onemax" -> {
                 int n = ((Number) params.getOrDefault("n", 100)).intValue();
-                long seed = ((Number) params.getOrDefault("seed", 42L)).longValue();
                 yield new OneMaxProblem(n);
             }
             case "leadingones" -> {
                 int n = ((Number) params.getOrDefault("n", 100)).intValue();
-                long seed = ((Number) params.getOrDefault("seed", 42L)).longValue();
                 yield new LeadingOnesProblem(n);
             }
             default -> throw new IllegalArgumentException("Unknown problem: " + id);
@@ -49,7 +48,8 @@ public class ExperimentService {
         return switch (id) {
             case "1p1-ea" -> {
                 Mutation<boolean[]> mutation = createMutation();
-                yield new OnePlusOneEA<>(mutation);
+                AcceptanceRule acceptance = createAcceptanceRule();
+                yield new OnePlusOneEA<>(mutation, acceptance);
             }
             default -> throw new IllegalArgumentException("Unknown algorithm: " + id);
         };
@@ -57,6 +57,10 @@ public class ExperimentService {
 
     private Mutation<boolean[]> createMutation() {
         return new BitFlipMutation();
+    }
+
+    private AcceptanceRule createAcceptanceRule() {
+        return new ElitistAcceptance();
     }
 
     @SuppressWarnings("unchecked")

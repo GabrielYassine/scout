@@ -1,5 +1,6 @@
 package dk.dtu.scout.algorithms;
 
+import dk.dtu.scout.acceptance.AcceptanceRule;
 import dk.dtu.scout.datatypes.RunLog;
 import dk.dtu.scout.mutation.Mutation;
 import dk.dtu.scout.problems.Problem;
@@ -15,9 +16,11 @@ import java.util.Random;
 public class OnePlusOneEA<S> implements Algorithm<S> {
 
     private final Mutation<S> mutation;
+    private final AcceptanceRule acceptance;
 
-    public OnePlusOneEA(Mutation<S> mutation) {
+    public OnePlusOneEA(Mutation<S> mutation, AcceptanceRule acceptance) {
         this.mutation = mutation;
+        this.acceptance = acceptance;
     }
 
     @Override
@@ -34,7 +37,7 @@ public class OnePlusOneEA<S> implements Algorithm<S> {
             S offspring = mutation.mutate(current, rng);
             double offspringFitness = problem.fitness(offspring);
 
-            if (offspringFitness >= currentFitness) {
+            if (acceptance.accept(currentFitness, offspringFitness, iteration, rng)) {
                 current = offspring;
                 currentFitness = offspringFitness;
             }
