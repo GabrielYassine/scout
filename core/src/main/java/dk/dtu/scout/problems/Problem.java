@@ -1,7 +1,9 @@
 package dk.dtu.scout.problems;
 
+import java.util.Random;
+
 public interface Problem<S> {
-    S randomSolution();
+    S randomSolution(Random rng);
     double fitness(S solution);
-    boolean isOptimal(double fitness);
+    default boolean isOptimal(double fitness) { return false; }
 }

@@ -10,11 +10,8 @@ public class LeadingOnesProblem implements Problem<boolean[]>{
 
     private final int n;
 
-    private final Random rng;
-
-    public LeadingOnesProblem(int n, long seed) {
+    public LeadingOnesProblem(int n) {
         this.n = n;
-        this.rng = new Random(seed);
     }
 
     /**
@@ -22,7 +19,7 @@ public class LeadingOnesProblem implements Problem<boolean[]>{
      * @return A random boolean array representing the solution.
      */
     @Override
-    public boolean[] randomSolution() {
+    public boolean[] randomSolution(Random rng) {
         boolean[] randomBits = new boolean[n];
         for (int i = 0; i < n; i++) {
             randomBits[i] = rng.nextBoolean();

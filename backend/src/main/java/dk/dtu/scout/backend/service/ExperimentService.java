@@ -5,67 +5,62 @@ import dk.dtu.scout.algorithms.OnePlusOneEA;
 import dk.dtu.scout.backend.dto.RunRequest;
 import dk.dtu.scout.backend.dto.RunResponse;
 import dk.dtu.scout.datatypes.RunLog;
+import dk.dtu.scout.mutation.Mutation;
 import dk.dtu.scout.problems.LeadingOnesProblem;
 import dk.dtu.scout.problems.OneMaxProblem;
 import dk.dtu.scout.problems.Problem;
+import dk.dtu.scout.mutation.BitFlipMutation;
 import org.springframework.stereotype.Service;
 import java.util.Map;
+import java.util.Random;
 
 
 @Service
 public class ExperimentService {
 
     public RunResponse run(RunRequest request) {
-
-        Problem<?> problem = createProblem(
-                request.problemId(),
-                request.problemParams()
-        );
-
-        RunLog log = new RunLog();
-
-        Algorithm algorithm = createAlgorithm(
-                request.algorithmId(),
-                request.algorithmParams(),
-                problem,
-                log
-        );
-
-        algorithm.run();
-
-        return new RunResponse(
-                request.problemId(),
-                request.algorithmId(),
-                log.getIterationSnapshots()
-        );
+        Problem<?> problem = createProblem(request.problemId(), request.problemParams());
+        int maxIterations = ((Number) request.algorithmParams().getOrDefault("maxIterations", 1000)).intValue();
+        long seed = ((Number) request.algorithmParams().getOrDefault("seed", 42L)).longValue();
+        Random rng = new Random(seed);
+        Algorithm<?> algorithm = createAlgorithm(request.algorithmId());
+        RunLog<?> log = runAlgorithm(algorithm, problem, rng, maxIterations);
+        System.out.println("Completed run: Problem=" + request.problemId() + ", Algorithm=" + request.algorithmId());
+        return new RunResponse(request.problemId(), request.algorithmId(), log.getSnapshots());
     }
 
-    //look at this again.
     private Problem<?> createProblem(String id, Map<String, Object> params) {
         return switch (id) {
             case "onemax" -> {
                 int n = ((Number) params.getOrDefault("n", 100)).intValue();
                 long seed = ((Number) params.getOrDefault("seed", 42L)).longValue();
-                yield new OneMaxProblem(n, seed);
+                yield new OneMaxProblem(n);
             }
             case "leadingones" -> {
                 int n = ((Number) params.getOrDefault("n", 100)).intValue();
                 long seed = ((Number) params.getOrDefault("seed", 42L)).longValue();
-                yield new LeadingOnesProblem(n, seed);
+                yield new LeadingOnesProblem(n);
             }
             default -> throw new IllegalArgumentException("Unknown problem: " + id);
         };
     }
-    @SuppressWarnings("unchecked")
-    private Algorithm createAlgorithm(String id, Map<String, Object> params, Problem<?> problem, RunLog log) {
+
+    private Algorithm<?> createAlgorithm(String id) {
         return switch (id) {
             case "1p1-ea" -> {
-                int maxIterations = ((Number) params.getOrDefault("maxIterations", 1000)).intValue();
-                long seed = ((Number) params.getOrDefault("seed", 42L)).longValue();
-                yield new OnePlusOneEA<>((Problem<boolean[]>) problem, maxIterations, seed, log);
+                Mutation<boolean[]> mutation = createMutation();
+                yield new OnePlusOneEA<>(mutation);
             }
             default -> throw new IllegalArgumentException("Unknown algorithm: " + id);
         };
     }
 
+    private Mutation<boolean[]> createMutation() {
+        return new BitFlipMutation();
+    }
+
+    @SuppressWarnings("unchecked")
+    private RunLog<?> runAlgorithm(Algorithm<?> algorithm, Problem<?> problem, Random rng, int maxIterations) {
+        return ((Algorithm<Object>) algorithm).run((Problem<Object>) problem, rng, maxIterations);
+    }
 }

@@ -3,27 +3,18 @@ package dk.dtu.scout.datatypes;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Logs the progress of an optimization run by storing snapshots of the best fitness found at each iteration.
- */
+public class RunLog<S> {
+    private final List<IterationSnapshot> snapshots = new ArrayList<>();
+    private S bestSolution;
+    private double bestFitness;
 
-public class RunLog {
-    private final List<IterationSnapshot> iterationSnapshots = new ArrayList<>();
-
-    public RunLog() {
-    }
-
-    /**
-     * Logs the best fitness at a given iteration.
-     * @param iteration is the current iteration number
-     * @param bestFitness is the best fitness found so far
-     */
     public void log(int iteration, double bestFitness) {
-        iterationSnapshots.add(new IterationSnapshot(iteration, bestFitness));
+        snapshots.add(new IterationSnapshot(iteration, bestFitness));
+        this.bestFitness = bestFitness;
     }
 
-    public List<IterationSnapshot> getIterationSnapshots() {
-        return List.copyOf(iterationSnapshots);
-    }
-
+    public List<IterationSnapshot> getSnapshots() { return snapshots; }
+    public S getBestSolution() { return bestSolution; }
+    public double getBestFitness() { return bestFitness; }
+    public void setBestSolution(S bestSolution) { this.bestSolution = bestSolution; }
 }
