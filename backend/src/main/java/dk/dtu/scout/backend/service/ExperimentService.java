@@ -59,8 +59,8 @@ public class ExperimentService {
     private Algorithm<?> createAlgorithm(String id,Map<String, Object> params) {
         return switch (id) {
             case "1p1-ea" -> {
-                Mutation<boolean[]> mutation = createMutation();
-                AcceptanceRule acceptance = createAcceptanceRule();
+                Mutation<boolean[]> mutation =  new BitFlipMutation();
+                AcceptanceRule acceptance = new ElitistAcceptance();
                 yield new OnePlusOneEA<>(mutation, acceptance);
             }
             case "sa" -> {
@@ -79,13 +79,6 @@ public class ExperimentService {
         };
     }
 
-    private Mutation<boolean[]> createMutation() {
-        return new BitFlipMutation();
-    }
-
-    private AcceptanceRule createAcceptanceRule() {
-        return new ElitistAcceptance();
-    }
 
     @SuppressWarnings("unchecked")
     private RunLog<?> runAlgorithm(Algorithm<?> algorithm, Problem<?> problem, Random rng, int maxIterations) {

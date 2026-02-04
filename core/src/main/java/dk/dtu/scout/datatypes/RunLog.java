@@ -17,4 +17,5 @@ public class RunLog<S> {
     public S getBestSolution() { return bestSolution; }
     public double getBestFitness() { return bestFitness; }
     public void setBestSolution(S bestSolution) { this.bestSolution = bestSolution; }
+    public void setBestFitness(double bestFitness) { this.bestFitness = bestFitness;}
 }

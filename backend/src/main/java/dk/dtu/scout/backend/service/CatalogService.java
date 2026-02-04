@@ -103,7 +103,7 @@ public class CatalogService {
                                 // SA params
                                 new ParamDef(
                                         "initialTemperature",
-                                        "Initial temperature (T0)",
+                                        "Initial temperature ",
                                         "double",
                                         5.0,
                                         null,
@@ -119,7 +119,7 @@ public class CatalogService {
                                 ),
                                 new ParamDef(
                                         "minTemperature",
-                                        "Min temperature (Tmin)",
+                                        "Min temperature",
                                         "double",
                                         1e-6,
                                         null,
