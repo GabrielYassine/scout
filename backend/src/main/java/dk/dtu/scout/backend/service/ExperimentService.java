@@ -64,15 +64,13 @@ public class ExperimentService {
                 yield new OnePlusOneEA<>(mutation, acceptance);
             }
             case "sa" -> {
-                // read SA params
                 double T0 = ((Number) params.getOrDefault("initialTemperature", 5.0)).doubleValue();
                 double coolingRate = ((Number) params.getOrDefault("coolingRate", 0.995)).doubleValue();
-                double Tmin = ((Number) params.getOrDefault("minTemperature", 1e-6)).doubleValue();
+                double TMin = ((Number) params.getOrDefault("minTemperature", 1e-6)).doubleValue();
 
-                String neighborhood = String.valueOf(params.getOrDefault("neighborhood", "single-bit"));
 
                 Mutation<boolean[]> mutation = new SingleBitFlipMutation();
-                AcceptanceRule acceptance = new SimulatedAnnealingAcceptance(T0, coolingRate, Tmin);
+                AcceptanceRule acceptance = new SimulatedAnnealingAcceptance(T0, coolingRate, TMin);
                 yield new SimulatedAnnealing<>(mutation, acceptance);
             }
             default -> throw new IllegalArgumentException("Unknown algorithm: " + id);
