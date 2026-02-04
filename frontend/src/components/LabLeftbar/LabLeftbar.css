@@ -10,7 +10,7 @@
 
 .ll-title {
   font-weight: 700;
-  padding: var(--padding-md);;
+  padding: var(--spacing-md);;
 }
 
 .ll-section {
@@ -41,7 +41,7 @@
 }
 
 .ll-section-body {
-  padding: var(--padding-md);
+  padding: var(--spacing-md);
   display: flex;
   flex-direction: column;
 }
@@ -49,20 +49,21 @@
 .ll-field {
   display: flex;
   flex-direction: column;
-  gap: var(--padding-sm);
+  gap: var(--spacing-sm);
 }
 
 .ll-field select,
 .ll-field input {
-  padding: var(--padding-sm);
+  padding: var(--spacing-sm);
   border-radius: var(--radius-sm);
 }
 
 .ll-actions {
   margin-top: auto;
   display: flex;
-  gap: var(--padding-md);
-  padding: var(--padding-md);
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: red;
 }
 
 .ll-actions .btn {

@@ -3,7 +3,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import TopNavbar from "./components/TopNavbar.jsx";
 
 import HomePage from "./pages/HomePage.jsx";
-import LabPage from "./pages/LabPage.jsx";
+import LabPage from "./pages/labPage/LabPage.jsx";
 import HistoryPage from "./pages/HistoryPage.jsx";
 
 export default function App() {

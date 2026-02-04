@@ -69,4 +69,10 @@ button {
   filter: brightness(1.2);
 }
 
+hr.rounded {
+  border-top: 3px solid white;
+  border-radius: var(--radius-lg);
+  width: 100%;
+}
+
 

@@ -7,7 +7,7 @@
   align-items: center;
 
   background: var(--color-panel);
-  padding: 0 var(--padding-md);
+  padding: 0 var(--spacing-md);
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -18,15 +18,16 @@
 }
 
 .nav-center {
-  flex: 1;
-  min-width: 0;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   justify-content: center;
-  gap: var(--padding-lg);
+  gap: var(--spacing-lg);
 }
 
 .nav-item {
-  padding: var(--padding-sm) var(--padding-md);
+  padding: var(--spacing-sm) var(--spacing-md);
   transition: background-color 0.2s ease, color 0.2s ease;
   border-radius: var(--radius-sm);
   display: inline-flex;

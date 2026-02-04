@@ -11,10 +11,15 @@
   --color-text: #ffffff;
   --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 
-  /* padding sizes */
-  --padding-sm: 0.5rem;
-  --padding-md: 1rem;
-  --padding-lg: 2rem;
+  /* Font Sizes */
+  --font-sm: 1rem;
+  --font-md: 1.5rem;
+  --font-lg: 2rem;
+
+  /* spacing */
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 2rem;
 
   /* rounding of elements */
   --radius-sm: 0.2rem;
