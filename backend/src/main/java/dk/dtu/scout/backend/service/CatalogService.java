@@ -78,6 +78,54 @@ public class CatalogService {
                     "long",
                     32L,
                     null,
-                    null))));
+                    null))),
+                new AlgoDef(
+                        "sa",
+                        "Simulated Annealing",
+                        List.of(
+                                new ParamDef(
+                                        "maxIterations",
+                                        "Max iterations",
+                                        "int",
+                                        10_000,
+                                        1.0,
+                                        null
+                                ),
+                                new ParamDef(
+                                        "seed",
+                                        "Seed",
+                                        "long",
+                                        32L,
+                                        null,
+                                        null
+                                ),
+
+                                // SA params
+                                new ParamDef(
+                                        "initialTemperature",
+                                        "Initial temperature (T0)",
+                                        "double",
+                                        5.0,
+                                        null,
+                                        null
+                                ),
+                                new ParamDef(
+                                        "coolingRate",
+                                        "Cooling rate",
+                                        "double",
+                                        0.995,
+                                        null,
+                                        null
+                                ),
+                                new ParamDef(
+                                        "minTemperature",
+                                        "Min temperature (Tmin)",
+                                        "double",
+                                        1e-6,
+                                        null,
+                                        null
+                                )
+                        )
+                ));
     }
 }
