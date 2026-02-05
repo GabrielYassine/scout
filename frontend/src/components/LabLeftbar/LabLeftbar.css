@@ -2,19 +2,37 @@
   height: calc(100vh - var(--navbar-height));
   width: var(--sidebar-width);
   background: var(--color-panel);
-
   display: flex;
   flex-direction: column;
-  overflow: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.lab-leftbar::-webkit-scrollbar {
+  display: none;
+}
+
+.ll-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.ll-content::-webkit-scrollbar {
+  display: none;
 }
 
 .ll-title {
   font-weight: 700;
-  padding: var(--spacing-md);;
+  padding: var(--spacing-md);
+  flex-shrink: 0;
 }
 
 .ll-section {
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .ll-section-header {
@@ -44,6 +62,7 @@
   padding: var(--spacing-md);
   display: flex;
   flex-direction: column;
+  gap: var(--spacing-md);
 }
 
 .ll-field {
@@ -59,13 +78,31 @@
 }
 
 .ll-actions {
-  margin-top: auto;
   display: flex;
   gap: var(--spacing-md);
   padding: var(--spacing-md);
+  flex-shrink: 0;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-panel);
 }
 
 .ll-actions .btn {
   flex: 1;
   width: auto;
+}
+
+.ll-selected-piece {
+  font-size: var(--font-sm);
+  font-weight: 600;
+  color: var(--color-border-highlight);
+  padding: var(--spacing-sm);
+  background: var(--color-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ll-subsection {
+  display: flex;
+  flex-direction: column;
 }

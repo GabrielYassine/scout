@@ -3,11 +3,12 @@ import "./LabLeftbar.css";
 import Section from "./Section.jsx";
 import ParamField, { parseValue } from "./ParamField.jsx";
 
-// Left sidebar for the lab page, containing problem and algorithm selection and configuration
+// Left sidebar for the lab page, containing configuration for each puzzle piece
 
 export default function LabLeftbar({
-  form,
-  onChange,
+  puzzleConfig,
+  params,
+  onParamChange,
   onReset,
   onRun,
   catalog,
@@ -15,152 +16,115 @@ export default function LabLeftbar({
   catalogError,
 }) {
   const [open, setOpen] = useState({
+    searchSpace: true,
     problem: true,
     algorithm: true,
+    mutation: true,
+    acceptance: true,
+    stopCondition: true,
   });
 
-  const problems = catalog?.problems ?? [];
-  const algorithms = catalog?.algorithms ?? [];
   const disabled = catalogLoading || !!catalogError;
 
-  const selectedProblem = useMemo(
-    () => problems.find((p) => p.id === form.problem) ?? null,
-    [problems, form.problem]
-  );
+  // Helper to find the definition for a piece by its type and id
+  const findPieceDef = (type, id) => {
+    if (!catalog || !id) return null;
 
-  const selectedAlgorithm = useMemo(
-    () => algorithms.find((a) => a.id === form.algorithm) ?? null,
-    [algorithms, form.algorithm]
-  );
+    const catalogMap = {
+      searchSpace: catalog.searchSpaces,
+      problem: catalog.problems,
+      algorithm: catalog.algorithms,
+      mutation: catalog.mutations,
+      acceptance: catalog.acceptanceRules,
+      stopCondition: catalog.stopConditions,
+    };
 
-  const hasProblem = !!selectedProblem;
-  const hasAlgo = !!selectedAlgorithm;
+    const list = catalogMap[type] ?? [];
+    return list.find((item) => item.id === id) ?? null;
+  };
 
-  const problemParams = form.problemParams ?? {};
-  const algorithmParams = form.algorithmParams ?? {};
+  // Check if all required pieces are placed
+  const allPiecesPlaced = useMemo(() => {
+    return (
+      puzzleConfig.searchSpace &&
+      puzzleConfig.problem &&
+      puzzleConfig.algorithm &&
+      puzzleConfig.mutation &&
+      puzzleConfig.acceptance &&
+      puzzleConfig.stopCondition
+    );
+  }, [puzzleConfig]);
 
-
-  // Setter for problem parameter values
-  // @author s235257
-  function setProblemParam(def, rawValue) {
-    onChange({
-      ...form,
-      problemParams: {
-        ...problemParams,
-        [def.key]: parseValue(def.type, rawValue),
-      },
+  // Setter for parameter values for any piece type
+  function setParam(type, def, rawValue) {
+    const currentParams = params[type] ?? {};
+    onParamChange(type, {
+      ...currentParams,
+      [def.key]: parseValue(def.type, rawValue),
     });
   }
 
-  // Setter for algorithm parameter values
-  // @author s235257
-  function setAlgorithmParam(def, rawValue) {
-    onChange({
-      ...form,
-      algorithmParams: {
-        ...algorithmParams,
-        [def.key]: parseValue(def.type, rawValue),
-      },
-    });
-  }
+  // Render a section for a specific puzzle piece type
+  const renderPieceSection = (type, title) => {
+    const piece = puzzleConfig[type];
+    if (!piece) return null;
+
+    const pieceDef = findPieceDef(type, piece.id);
+    const pieceParams = params[type] ?? {};
+
+    return (
+      <Section
+        key={type}
+        title={title}
+        isOpen={open[type]}
+        onToggle={() => setOpen((o) => ({ ...o, [type]: !o[type] }))}
+      >
+        <div className="ll-selected-piece">
+          {piece.label}
+        </div>
+
+        {!catalogLoading && pieceDef?.params?.length > 0 && (
+          <div className="ll-subsection">
+            {pieceDef.params.map((def) => (
+              <ParamField
+                key={def.key}
+                def={def}
+                disabled={disabled}
+                value={
+                  pieceParams[def.key] !== undefined
+                    ? pieceParams[def.key]
+                    : def.defaultValue
+                }
+                onValueChange={(v) => setParam(type, def, v)}
+              />
+            ))}
+          </div>
+        )}
+      </Section>
+    );
+  };
+
 
   return (
     <section className="lab-leftbar">
-      <div className="ll-title">Configuration</div>
-      <Section
-        title="Problem"
-        isOpen={open.problem}
-        onToggle={() => setOpen((o) => ({ ...o, problem: !o.problem }))}
-      >
-        <label className="ll-field">
-          <span className="ll-label">Problem</span>
-          <select
-            value={form.problem}
-            disabled={disabled}
-            onChange={(e) => onChange({ ...form, problem: e.target.value })}
-          >
-            {catalogLoading && <option value={form.problem}>Loading…</option>}
+      <div className="ll-content">
+        <div className="ll-title">Configuration</div>
 
-            {!catalogLoading && !hasProblem && (
-              <option value={form.problem}>Unknown ({form.problem})</option>
-            )}
-
-            {!catalogLoading &&
-              problems.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-          </select>
-        </label>
-
-        {!catalogLoading && selectedProblem?.params?.length > 0 && (
-          <div className="ll-subsection">
-            {selectedProblem.params.map((def) => (
-              <ParamField
-                key={def.key}
-                def={def}
-                disabled={disabled}
-                value={
-                  problemParams[def.key] !== undefined
-                    ? problemParams[def.key]
-                    : def.defaultValue
-                }
-                onValueChange={(v) => setProblemParam(def, v)}
-              />
-            ))}
-          </div>
-        )}
-      </Section>
-
-      <Section
-        title="Algorithm"
-        isOpen={open.algorithm}
-        onToggle={() => setOpen((o) => ({ ...o, algorithm: !o.algorithm }))}
-      >
-        <label className="ll-field">
-          <span className="ll-label">Algorithm</span>
-          <select
-            value={form.algorithm}
-            disabled={disabled}
-            onChange={(e) => onChange({ ...form, algorithm: e.target.value })}
-          >
-            {catalogLoading && <option value={form.algorithm}>Loading…</option>}
-
-            {!catalogLoading && !hasAlgo && (
-              <option value={form.algorithm}>Unknown ({form.algorithm})</option>
-            )}
-
-            {!catalogLoading &&
-              algorithms.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name}
-                </option>
-              ))}
-          </select>
-        </label>
-
-        {!catalogLoading && selectedAlgorithm?.params?.length > 0 && (
-          <div className="ll-subsection">
-            {selectedAlgorithm.params.map((def) => (
-              <ParamField
-                key={def.key}
-                def={def}
-                disabled={disabled}
-                value={
-                  algorithmParams[def.key] !== undefined
-                    ? algorithmParams[def.key]
-                    : def.defaultValue
-                }
-                onValueChange={(v) => setAlgorithmParam(def, v)}
-              />
-            ))}
-          </div>
-        )}
-      </Section>
+        {renderPieceSection("searchSpace", "Search Space")}
+        {renderPieceSection("problem", "Problem")}
+        {renderPieceSection("algorithm", "Algorithm")}
+        {renderPieceSection("mutation", "Mutation")}
+        {renderPieceSection("acceptance", "Acceptance Rule")}
+        {renderPieceSection("stopCondition", "Stop Condition")}
+      </div>
 
       <div className="ll-actions">
-        <button className="btn btn--green" type="button" onClick={onRun}>
+        <button
+          className="btn btn--green"
+          type="button"
+          onClick={onRun}
+          disabled={!allPiecesPlaced || disabled}
+        >
           Run
         </button>
 

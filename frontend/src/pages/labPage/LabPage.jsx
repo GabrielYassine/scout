@@ -6,47 +6,51 @@ import RepresentationSelector from "../../components/selector/representationSele
 import ProblemSelector from "../../components/selector/problemSelector/ProblemSelector.jsx";
 import AlgorithmSelector from "../../components/selector/algorithmSelector/AlgorithmSelector.jsx";
 import MutationSelector from "../../components/selector/mutationSelector/MutationSelector.jsx";
+import AcceptanceSelector from "../../components/selector/acceptanceSelector/AcceptanceSelector.jsx";
 import StopConditionSelector from "../../components/selector/stopConditionSelector/StopConditionSelector.jsx";
-import PopulationSelector from "../../components/selector/populationSelector/PopulationSelector.jsx";
 
 import { useState } from "react";
 import { DndContext, DragOverlay, rectIntersection } from "@dnd-kit/core";
 import { useSessionStorageState } from "../../hooks/useSessionStorageState.js";
 
-const DEFAULT_FORM = {
-  problem: "onemax",
-  algorithm: "1p1-ea",
-  problemParams: {},
-  algorithmParams: {},
-};
-
 const SELECTORS = [
-  { id: "representation", Component: RepresentationSelector },
+  { id: "searchSpace", Component: RepresentationSelector },
   { id: "problem", Component: ProblemSelector },
   { id: "algorithm", Component: AlgorithmSelector },
   { id: "mutation", Component: MutationSelector },
+  { id: "acceptance", Component: AcceptanceSelector },
   { id: "stopCondition", Component: StopConditionSelector },
-  { id: "population", Component: PopulationSelector },
 ];
 
 export default function LabPage({catalog, catalogLoading, catalogError}) {
-  const [form, setForm, resetForm] = useSessionStorageState(
-    "scout:labForm",
-    DEFAULT_FORM
-  );
   const [currentSelectorIndex, setCurrentSelectorIndex] = useSessionStorageState(
     "scout:currentSelector",
     0
   );
 
-  const [puzzleConfig, setPuzzleConfig] = useState({
-    searchSpace: null,
-    problem: null,
-    algorithm: null,
-    mutation: null,
-    acceptance: null,
-    stopCondition: null,
-  });
+  const [puzzleConfig, setPuzzleConfig] = useSessionStorageState(
+    "scout:puzzleConfig",
+    {
+      searchSpace: null,
+      problem: null,
+      algorithm: null,
+      mutation: null,
+      acceptance: null,
+      stopCondition: null,
+    }
+  );
+
+  const [params, setParams] = useSessionStorageState(
+    "scout:puzzleParams",
+    {
+      searchSpace: {},
+      problem: {},
+      algorithm: {},
+      mutation: {},
+      acceptance: {},
+      stopCondition: {},
+    }
+  );
 
   const [activeId, setActiveId] = useState(null);
   const [activeLabel, setActiveLabel] = useState(null);
@@ -57,6 +61,32 @@ export default function LabPage({catalog, catalogLoading, catalogError}) {
     const { active } = event;
     setActiveId(active.id);
     setActiveLabel(active.data?.current?.label || active.id);
+  }
+
+  function handleParamChange(type, newParams) {
+    setParams(prev => ({
+      ...prev,
+      [type]: newParams,
+    }));
+  }
+
+  function handleReset() {
+    setPuzzleConfig({
+      searchSpace: null,
+      problem: null,
+      algorithm: null,
+      mutation: null,
+      acceptance: null,
+      stopCondition: null,
+    });
+    setParams({
+      searchSpace: {},
+      problem: {},
+      algorithm: {},
+      mutation: {},
+      acceptance: {},
+      stopCondition: {},
+    });
   }
 
   function handleDragEnd(event) {
@@ -119,10 +149,18 @@ export default function LabPage({catalog, catalogLoading, catalogError}) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        problemId: form.problem,
-        problemParams: form.problemParams,
-        algorithmId: form.algorithm,
-        algorithmParams: form.algorithmParams,
+        searchSpaceId: puzzleConfig.searchSpace?.id,
+        searchSpaceParams: params.searchSpace,
+        problemId: puzzleConfig.problem?.id,
+        problemParams: params.problem,
+        algorithmId: puzzleConfig.algorithm?.id,
+        algorithmParams: params.algorithm,
+        mutationId: puzzleConfig.mutation?.id,
+        mutationParams: params.mutation,
+        acceptanceId: puzzleConfig.acceptance?.id,
+        acceptanceParams: params.acceptance,
+        stopConditionId: puzzleConfig.stopCondition?.id,
+        stopConditionParams: params.stopCondition,
       }),
     });
 
@@ -138,9 +176,10 @@ export default function LabPage({catalog, catalogLoading, catalogError}) {
     >
       <div className="lab-page">
         <LabLeftbar
-            form={form}
-            onChange={setForm}
-            onReset={resetForm}
+            puzzleConfig={puzzleConfig}
+            params={params}
+            onParamChange={handleParamChange}
+            onReset={handleReset}
             onRun={onRun}
             catalog={catalog}
             catalogLoading={catalogLoading}
