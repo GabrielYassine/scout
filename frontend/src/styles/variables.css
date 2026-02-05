@@ -2,6 +2,7 @@
   /* Color Palette */
   --color-bg: #303030;
   --color-panel: #242424;
+  --color-panel-hover: #2e2e2e;
   --color-panel-drop: #1a1a1a;
   --color-hover: #999999;
   --color-border: #777777;
@@ -29,6 +30,9 @@
   /* Layout Dimensions */
   --navbar-height: clamp(3rem, 6vh, 4rem);
   --sidebar-width: clamp(5rem, 13vw, 15rem);
+
+  /** Puzzle Dimensions */
+  --puzzle-piece-size: 7rem;
 
   /* Buttons */
     --green-500: #22c55e;

@@ -16,11 +16,28 @@
     flex: 1;
     display: flex;
     flex-direction: column;
+    gap: var(--spacing-sm);
 }
 
 .option-list {
-    flex: 1;
+    flex: 4;
     overflow-y: auto;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-panel);
+    padding: var(--spacing-md);
+    gap: var(--spacing-md);
+    display: flex;
+}
+
+.option-list.empty::before {
+    content: "Drag pieces from here";
+    font-style: italic;
+}
+
+.option-description {
+    flex: 1;
+    padding: var(--spacing-sm);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
     background: var(--color-panel);

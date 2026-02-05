@@ -20,7 +20,14 @@ public class CatalogController {
 
     @GetMapping("/catalog")
     public CatalogResponse catalog() {
-        return new CatalogResponse(catalog.problems(), catalog.algorithms());
+        return new CatalogResponse(
+            catalog.searchSpaces(),
+            catalog.problems(),
+            catalog.algorithms(),
+            catalog.mutations(),
+            catalog.acceptanceRules(),
+            catalog.stopConditions()
+        );
     }
 }
 

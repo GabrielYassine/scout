@@ -1,0 +1,90 @@
+.run-config-puzzle {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    justify-content: center;
+    align-items: center;
+    overflow: visible;
+}
+
+.puzzle-row {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: var(--spacing-sm);
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    max-width: 60rem;
+    padding: 0 var(--spacing-md);
+}
+
+.drop-zone {
+    border: 2px solid white;
+    border-radius: var(--radius-md);
+    background: var(--color-panel);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: var(--puzzle-piece-size);
+    padding: var(--spacing-md);
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.drop-zone-over {
+    border-color: var(--color-border-highlight);
+    background: var(--color-panel-drop);
+    box-shadow: 0 0 12px rgba(255, 215, 0, 0.3);
+}
+
+.drop-zone-filled {
+    border-style: solid;
+    border-color: var(--color-border-highlight);
+    background: var(--color-panel-hover);
+}
+
+.drop-zone-label {
+    font-size: var(--font-sm);
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: var(--spacing-sm);
+    text-align: center;
+    pointer-events: none;
+}
+
+.drop-zone-placeholder {
+    color: var(--color-border);
+    font-style: italic;
+    pointer-events: none;
+}
+
+.dropped-piece {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+}
+
+.dropped-piece:active {
+    cursor: grabbing;
+}
+
+.dropped-piece.dragging {
+    opacity: 0.3;
+    cursor: grabbing;
+}
+
+.dropped-piece-content {
+    background: var(--color-border-highlight);
+    color: var(--color-bg);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    font-size: var(--font-sm);
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}

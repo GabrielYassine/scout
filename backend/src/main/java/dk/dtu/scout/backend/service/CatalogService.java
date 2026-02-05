@@ -8,6 +8,32 @@ import org.springframework.stereotype.Service;
 @Service
 public class CatalogService {
 
+    /** Returns the list of available search spaces.
+     * @return List of SearchSpaceDef
+     */
+    public List<SearchSpaceDef> searchSpaces() {
+        return List.of(
+            new SearchSpaceDef(
+                "bitstring",
+                "BitString",
+                "Binary string representation for boolean optimization problems",
+                List.of(
+                    new ParamDef(
+                        "n",
+                        "Length (n)",
+                        "int",
+                        100,
+                        1.0,
+                        null
+                    )
+                )
+            )
+        );
+    }
+
+    /** Returns the list of available problems.
+     * @return List of ProblemDef
+     */
     public List<ProblemDef> problems() {
         return List.of(
 
@@ -45,6 +71,9 @@ public class CatalogService {
         );
     }
 
+    /** Returns the list of available algorithms.
+     * @return List of AlgoDef
+     */
     public List<AlgoDef> algorithms() {
         return List.of(
 
@@ -89,6 +118,10 @@ public class CatalogService {
         );
     }
 
+    /**
+     * Returns the list of available mutations.
+     * @return List of MutationDef
+     */
     public List<MutationDef> mutations() {
         return List.of(
             new MutationDef(
@@ -115,6 +148,10 @@ public class CatalogService {
         );
     }
 
+    /**
+     * Returns the list of available acceptance rules.
+     * @return List of AcceptanceRuleDef
+     */
     public List<AcceptanceRuleDef> acceptanceRules() {
         return List.of(
             new AcceptanceRuleDef(
@@ -133,6 +170,10 @@ public class CatalogService {
         );
     }
 
+    /**
+     * Returns the list of available stop conditions.
+     * @return List of StopConditionDef
+     */
     public List<StopConditionDef> stopConditions() {
         return List.of(
             new StopConditionDef(

@@ -1,6 +1,7 @@
 import "./LabPage.css";
 import LabLeftbar from "../../components/LabLeftbar/LabLeftbar.jsx";
 import LabRightbar from "../../components/LabRightbar.jsx";
+import RunConfigPuzzle from "../../components/runConfigPuzzle/RunConfigPuzzle.jsx";
 import RepresentationSelector from "../../components/selector/representationSelector/RepresentationSelector.jsx";
 import ProblemSelector from "../../components/selector/problemSelector/ProblemSelector.jsx";
 import AlgorithmSelector from "../../components/selector/algorithmSelector/AlgorithmSelector.jsx";
@@ -8,6 +9,8 @@ import MutationSelector from "../../components/selector/mutationSelector/Mutatio
 import StopConditionSelector from "../../components/selector/stopConditionSelector/StopConditionSelector.jsx";
 import PopulationSelector from "../../components/selector/populationSelector/PopulationSelector.jsx";
 
+import { useState } from "react";
+import { DndContext, DragOverlay, rectIntersection } from "@dnd-kit/core";
 import { useSessionStorageState } from "../../hooks/useSessionStorageState.js";
 
 const DEFAULT_FORM = {
@@ -36,7 +39,72 @@ export default function LabPage({catalog, catalogLoading, catalogError}) {
     0
   );
 
+  // State for the puzzle configuration
+  const [puzzleConfig, setPuzzleConfig] = useState({
+    searchSpace: null,
+    problem: null,
+    algorithm: null,
+    mutation: null,
+    acceptance: null,
+    stopCondition: null,
+  });
+
+  const [activeId, setActiveId] = useState(null);
+  const [activeLabel, setActiveLabel] = useState(null);
+
   const CurrentSelector = SELECTORS[currentSelectorIndex].Component;
+
+  function handleDragStart(event) {
+    const { active } = event;
+    setActiveId(active.id);
+    setActiveLabel(active.data?.current?.label || active.id);
+  }
+
+  function handleDragEnd(event) {
+    const { active, over } = event;
+    setActiveId(null);
+    setActiveLabel(null);
+
+    // If dragging a piece from a drop zone
+    if (active.id.toString().startsWith('dropped-')) {
+      const fromZone = active.data?.current?.fromZone;
+      const originalId = active.data?.current?.originalId;
+
+      if (!over) {
+        // Dragged outside - remove from zone
+        setPuzzleConfig(prev => ({
+          ...prev,
+          [fromZone]: null,
+        }));
+        return;
+      }
+
+      // Dropped into another zone
+      if (over.id !== fromZone) {
+        setPuzzleConfig(prev => ({
+          ...prev,
+          [fromZone]: null,
+          [over.id]: {
+            id: originalId,
+            label: active.data?.current?.label || originalId,
+          }
+        }));
+      }
+      return;
+    }
+
+    // Dragging a new piece from selector
+    if (!over) return;
+
+    // Update the puzzle configuration based on drop zone
+    setPuzzleConfig(prev => ({
+      ...prev,
+      [over.id]: {
+        id: active.id,
+        label: active.data?.current?.label || active.id,
+      }
+    }));
+  }
 
   function handlePrevious() {
     setCurrentSelectorIndex((prev) => Math.max(0, prev - 1));
@@ -63,6 +131,11 @@ export default function LabPage({catalog, catalogLoading, catalogError}) {
   }
 
   return (
+    <DndContext
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      collisionDetection={rectIntersection}
+    >
       <div className="lab-page">
         <LabLeftbar
             form={form}
@@ -75,9 +148,11 @@ export default function LabPage({catalog, catalogLoading, catalogError}) {
         />
 
         <div className="lab-page-content">
-          <div className="selector-timeline">ADD SELECTOR TIMELINE</div>
+          <div className="selector-timeline">
+            <RunConfigPuzzle config={puzzleConfig} />
+          </div>
           <hr className="rounded"/>
-          <CurrentSelector/>
+          <CurrentSelector catalog={catalog} catalogLoading={catalogLoading} catalogError={catalogError} />
           <div className="navigation-buttons">
             <button className="btn btn--red" type="button"
                 onClick={handlePrevious}
@@ -95,5 +170,16 @@ export default function LabPage({catalog, catalogLoading, catalogError}) {
         </div>
         <LabRightbar/>
       </div>
+      <DragOverlay>
+        {activeId ? (
+          <div className="puzzle-piece" style={{
+            cursor: 'grabbing',
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)',
+          }}>
+            <div className="puzzle-piece-title">{activeLabel}</div>
+          </div>
+        ) : null}
+      </DragOverlay>
+    </DndContext>
   );
 }
