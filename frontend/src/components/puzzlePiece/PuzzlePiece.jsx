@@ -1,12 +1,13 @@
 import { useDraggable } from "@dnd-kit/core";
 import "./PuzzlePiece.css";
 
-export default function PuzzlePiece({ id, label }) {
+export default function PuzzlePiece({ id, label, type }) {
     const { setNodeRef, listeners, attributes, isDragging } =
         useDraggable({
             id,
             data: {
                 label,
+                type,
             }
         });
 

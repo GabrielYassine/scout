@@ -1,11 +1,12 @@
 import { useDroppable, useDraggable } from "@dnd-kit/core";
 import "./RunConfigPuzzle.css";
 
-function DroppedPiece({ id, label, zoneId }) {
+function DroppedPiece({ id, label, type, zoneId }) {
     const { setNodeRef, listeners, attributes, isDragging } = useDraggable({
         id: `dropped-${zoneId}-${id}`,
         data: {
             label,
+            type,
             originalId: id,
             fromZone: zoneId,
         }
@@ -23,8 +24,13 @@ function DroppedPiece({ id, label, zoneId }) {
     );
 }
 
-function DropZone({ id, label, piece }) {
-    const { setNodeRef, isOver } = useDroppable({ id });
+function DropZone({ id, label, acceptsType, piece }) {
+    const { setNodeRef, isOver } = useDroppable({
+        id,
+        data: {
+            acceptsType,
+        }
+    });
 
     return (
         <div
@@ -33,7 +39,7 @@ function DropZone({ id, label, piece }) {
         >
             <div className="drop-zone-label">{label}</div>
             {piece ? (
-                <DroppedPiece id={piece.id} label={piece.label} zoneId={id} />
+                <DroppedPiece id={piece.id} label={piece.label} type={piece.type} zoneId={id} />
             ) : (
                 <div className="drop-zone-placeholder">Drop here</div>
             )}
@@ -45,12 +51,12 @@ export default function RunConfigPuzzle({ config }) {
     return (
         <div className="run-config-puzzle">
             <div className="puzzle-row">
-                <DropZone id="searchSpace"  label="Search Space"  piece={config?.searchSpace} />
-                <DropZone id="problem" label="Problem" piece={config?.problem}/>
-                <DropZone id="algorithm" label="Algorithm" piece={config?.algorithm}/>
-                <DropZone id="mutation" label="Mutation" piece={config?.mutation}/>
-                <DropZone id="acceptance" label="Acceptance Rule" piece={config?.acceptance}/>
-                <DropZone id="stopCondition" label="Stop Condition" piece={config?.stopCondition} />
+                <DropZone id="searchSpace" label="Search Space" acceptsType="searchSpace" piece={config?.searchSpace} />
+                <DropZone id="problem" label="Problem" acceptsType="problem" piece={config?.problem}/>
+                <DropZone id="algorithm" label="Algorithm" acceptsType="algorithm" piece={config?.algorithm}/>
+                <DropZone id="mutation" label="Mutation" acceptsType="mutation" piece={config?.mutation}/>
+                <DropZone id="acceptance" label="Acceptance Rule" acceptsType="acceptance" piece={config?.acceptance}/>
+                <DropZone id="stopCondition" label="Stop Condition" acceptsType="stopCondition" piece={config?.stopCondition} />
             </div>
         </div>
     );

@@ -39,7 +39,6 @@ export default function LabPage({catalog, catalogLoading, catalogError}) {
     0
   );
 
-  // State for the puzzle configuration
   const [puzzleConfig, setPuzzleConfig] = useState({
     searchSpace: null,
     problem: null,
@@ -65,21 +64,25 @@ export default function LabPage({catalog, catalogLoading, catalogError}) {
     setActiveId(null);
     setActiveLabel(null);
 
-    // If dragging a piece from a drop zone
-    if (active.id.toString().startsWith('dropped-')) {
-      const fromZone = active.data?.current?.fromZone;
-      const originalId = active.data?.current?.originalId;
-
-      if (!over) {
-        // Dragged outside - remove from zone
+    if (!over) {
+      if (active.id.toString().startsWith('dropped-')) {
+        const fromZone = active.data?.current?.fromZone;
         setPuzzleConfig(prev => ({
           ...prev,
           [fromZone]: null,
         }));
-        return;
       }
+      return;
+    }
 
-      // Dropped into another zone
+    const pieceType = active.data?.current?.type;
+    const acceptsType = over.data?.current?.acceptsType;
+    if (pieceType !== acceptsType) {
+      return;
+    }
+    if (active.id.toString().startsWith('dropped-')) {
+      const fromZone = active.data?.current?.fromZone;
+      const originalId = active.data?.current?.originalId;
       if (over.id !== fromZone) {
         setPuzzleConfig(prev => ({
           ...prev,
@@ -87,21 +90,18 @@ export default function LabPage({catalog, catalogLoading, catalogError}) {
           [over.id]: {
             id: originalId,
             label: active.data?.current?.label || originalId,
+            type: pieceType,
           }
         }));
       }
       return;
     }
-
-    // Dragging a new piece from selector
-    if (!over) return;
-
-    // Update the puzzle configuration based on drop zone
     setPuzzleConfig(prev => ({
       ...prev,
       [over.id]: {
         id: active.id,
         label: active.data?.current?.label || active.id,
+        type: pieceType,
       }
     }));
   }
