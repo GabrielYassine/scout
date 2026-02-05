@@ -2,9 +2,7 @@ package dk.dtu.scout.backend.service;
 
 import java.util.List;
 
-import dk.dtu.scout.backend.dto.AlgoDef;
-import dk.dtu.scout.backend.dto.ParamDef;
-import dk.dtu.scout.backend.dto.ProblemDef;
+import dk.dtu.scout.backend.dto.catalog.*;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -12,9 +10,11 @@ public class CatalogService {
 
     public List<ProblemDef> problems() {
         return List.of(
+
             new ProblemDef(
                 "onemax",
                 "OneMax",
+                "Maximize the number of ones in a bitstring",
                 List.of(
                     new ParamDef(
                         "n",
@@ -22,21 +22,15 @@ public class CatalogService {
                         "int",
                         100,
                         1.0,
-                        null
-                    ),
-                    new ParamDef(
-                        "seed",
-                        "Seed",
-                        "long",
-                        32L,
-                        null,
                         null
                     )
                 )
             ),
+
             new ProblemDef(
                 "leadingones",
                 "LeadingOnes",
+                "Maximize the number of leading ones in a bitstring",
                 List.of(
                     new ParamDef(
                         "n",
@@ -45,12 +39,48 @@ public class CatalogService {
                         100,
                         1.0,
                         null
+                    )
+                )
+            )
+        );
+    }
+
+    public List<AlgoDef> algorithms() {
+        return List.of(
+
+            new AlgoDef(
+                "1p1-ea",
+                "(1+1) EA",
+                "A simple evolutionary algorithm",
+                List.of()
+            ),
+
+            new AlgoDef(
+                "sa",
+                "Simulated Annealing",
+                "An optimization algorithm inspired by the annealing process in metallurgy",
+                List.of(
+                    new ParamDef(
+                        "initialTemperature",
+                        "Initial temperature ",
+                        "double",
+                        5.0,
+                        null,
+                        null
                     ),
                     new ParamDef(
-                        "seed",
-                        "Seed",
-                        "long",
-                        32L,
+                        "coolingRate",
+                        "Cooling rate",
+                        "double",
+                        0.995,
+                        null,
+                        null
+                    ),
+                    new ParamDef(
+                        "minTemperature",
+                        "Min temperature",
+                        "double",
+                        1e-6,
                         null,
                         null
                     )
@@ -59,73 +89,67 @@ public class CatalogService {
         );
     }
 
+    public List<MutationDef> mutations() {
+        return List.of(
+            new MutationDef(
+                "bit-flip",
+                "Bit Flip Mutation",
+                "Flips each bit in a bitstring with a certain probability",
+                List.of(
+                    new ParamDef(
+                        "flipProbability",
+                        "Flip Probability",
+                        "double",
+                        0.01,
+                        null,
+                        null
+                    )
+                )
+            ),
+            new MutationDef(
+                "single-bit-flip",
+                "Single Bit Flip Mutation",
+                "Flips a single randomly chosen bit in a bitstring",
+                List.of()
+            )
+        );
+    }
 
+    public List<AcceptanceRuleDef> acceptanceRules() {
+        return List.of(
+            new AcceptanceRuleDef(
+                "elitist",
+                "Elitist Acceptance",
+                "Accepts only solutions that are better than or equal to the current solution",
+                List.of()
+            ),
+            new AcceptanceRuleDef(
+                "simulated-annealing",
+                "Simulated Annealing Acceptance",
+                "Accepts worse solutions with a probability that decreases over time",
+                List.of(
+                )
+            )
+        );
+    }
 
-
-    public List<AlgoDef> algorithms() {
-        return List.of(new AlgoDef(
-            "1p1-ea",
-            "(1+1) EA",
-            List.of(new ParamDef(
-                "maxIterations",
-                "Max iterations",
-                "int",
-                10.000,
-                1.0, null),
-                new ParamDef(
-                    "seed",
-                    "Seed",
-                    "long",
-                    32L,
-                    null,
-                    null))),
-                new AlgoDef(
-                        "sa",
-                        "Simulated Annealing",
-                        List.of(
-                                new ParamDef(
-                                        "maxIterations",
-                                        "Max iterations",
-                                        "int",
-                                        10_000,
-                                        1.0,
-                                        null
-                                ),
-                                new ParamDef(
-                                        "seed",
-                                        "Seed",
-                                        "long",
-                                        32L,
-                                        null,
-                                        null
-                                ),
-
-                                // SA params
-                                new ParamDef(
-                                        "initialTemperature",
-                                        "Initial temperature ",
-                                        "double",
-                                        5.0,
-                                        null,
-                                        null
-                                ),
-                                new ParamDef(
-                                        "coolingRate",
-                                        "Cooling rate",
-                                        "double",
-                                        0.995,
-                                        null,
-                                        null
-                                ),
-                                new ParamDef(
-                                        "minTemperature",
-                                        "Min temperature",
-                                        "double",
-                                        1e-6,
-                                        null,
-                                        null
-                                )
-                        )
-                ));
+    public List<StopConditionDef> stopConditions() {
+        return List.of(
+            new StopConditionDef(
+                "max-iterations",
+                "Max Iterations",
+                "Stops the algorithm after a maximum number of iterations",
+                List.of(
+                    new ParamDef(
+                        "maxIterations",
+                        "Max iterations",
+                        "int",
+                        10_000,
+                        1.0,
+                        null
+                    )
+                )
+            )
+        );
     }
 }

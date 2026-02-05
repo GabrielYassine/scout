@@ -1,6 +1,6 @@
 package dk.dtu.scout.backend.controller;
 
-import dk.dtu.scout.backend.dto.CatalogResponse;
+import dk.dtu.scout.backend.dto.catalog.CatalogResponse;
 import dk.dtu.scout.backend.service.CatalogService;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;

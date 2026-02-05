@@ -28,7 +28,7 @@ public class ExperimentService {
 
         // Extract algorithm parameters with defaults (missing a few params)
         int maxIterations = ((Number) request.algorithmParams().getOrDefault("maxIterations", 1000)).intValue();
-        long seed = ((Number) request.algorithmParams().getOrDefault("seed", 42L)).longValue();
+        long seed = request.seed();
 
         // Initialize random number generator
         Random rng = new Random(seed);

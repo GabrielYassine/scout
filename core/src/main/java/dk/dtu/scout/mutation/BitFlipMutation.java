@@ -4,7 +4,7 @@ import java.util.Random;
 
 public class BitFlipMutation implements Mutation<boolean[]> {
     @Override
-    public boolean[] mutate(boolean[] bits, Random rng) {
+    public boolean[] mutate(boolean[] bits, Random rng) { // Take probability and bit flip amount as parameters
         int n = bits.length; // so we dont compute length multiple times
         if (n == 0) return bits;
 

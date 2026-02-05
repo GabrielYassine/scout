@@ -1,6 +1,5 @@
 package dk.dtu.scout.acceptance;
 
-import java.util.Objects;
 import java.util.Random;
 
 /**
