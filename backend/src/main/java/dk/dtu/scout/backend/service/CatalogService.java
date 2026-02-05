@@ -88,32 +88,7 @@ public class CatalogService {
                 "sa",
                 "Simulated Annealing",
                 "An optimization algorithm inspired by the annealing process in metallurgy",
-                List.of(
-                    new ParamDef(
-                        "initialTemperature",
-                        "Initial temperature ",
-                        "double",
-                        5.0,
-                        null,
-                        null
-                    ),
-                    new ParamDef(
-                        "coolingRate",
-                        "Cooling rate",
-                        "double",
-                        0.995,
-                        null,
-                        null
-                    ),
-                    new ParamDef(
-                        "minTemperature",
-                        "Min temperature",
-                        "double",
-                        1e-6,
-                        null,
-                        null
-                    )
-                )
+                List.of()
             )
         );
     }
@@ -132,8 +107,8 @@ public class CatalogService {
                     new ParamDef(
                         "flipProbability",
                         "Flip Probability",
-                        "double",
-                        0.01,
+                            "string",
+                            "1/n",
                         null,
                         null
                     )
@@ -165,6 +140,9 @@ public class CatalogService {
                 "Simulated Annealing Acceptance",
                 "Accepts worse solutions with a probability that decreases over time",
                 List.of(
+                        new ParamDef("initialTemperature", "Initial temperature (T0)", "double", 5.0, null, null),
+                        new ParamDef("coolingRate", "Cooling rate", "double", 0.995, null, null),
+                        new ParamDef("minTemperature", "Min temperature", "double", 1e-6, null, null)
                 )
             )
         );
