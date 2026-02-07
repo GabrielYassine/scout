@@ -57,6 +57,7 @@ export default function RunConfigPuzzle({ config }) {
                 <DropZone id="mutation" label="Mutation" acceptsType="mutation" piece={config?.mutation}/>
                 <DropZone id="acceptance" label="Acceptance Rule" acceptsType="acceptance" piece={config?.acceptance}/>
                 <DropZone id="stopCondition" label="Stop Condition" acceptsType="stopCondition" piece={config?.stopCondition} />
+                <DropZone id="observer" label="Observer" acceptsType="observer" piece={config?.observer}/>
             </div>
         </div>
     );

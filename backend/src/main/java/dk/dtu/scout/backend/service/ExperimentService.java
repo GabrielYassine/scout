@@ -9,13 +9,16 @@ import dk.dtu.scout.algorithms.SimulatedAnnealing;
 import dk.dtu.scout.backend.dto.RunRequest;
 import dk.dtu.scout.backend.dto.RunResponse;
 import dk.dtu.scout.backend.util.FormulaEvaluator;
-import dk.dtu.scout.datatypes.RunLog;
+import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.mutation.Mutation;
+import dk.dtu.scout.observer.*;
 import dk.dtu.scout.problems.LeadingOnesProblem;
 import dk.dtu.scout.problems.OneMaxProblem;
 import dk.dtu.scout.problems.Problem;
 import dk.dtu.scout.mutation.BitMutation;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
@@ -39,14 +42,20 @@ public class ExperimentService {
         Problem<?> problem = createProblem(request.problemId(), request.problemParams(), n);
         Mutation<boolean[]> mutation = createMutation(request.mutationId(), request.mutationParams(), n);
         AcceptanceRule acceptance = createAcceptanceRule(request.acceptanceRuleId(), request.acceptanceRuleParams());
+        Observer<boolean[]> observer = createObserver(request.observerIds());
 
         // Create the algorithm based on the request
         Algorithm<?> algorithm = createAlgorithm(request.algorithmId(), mutation, acceptance);
 
         // The following log is resulting from running the algorithm on the problem
-        RunLog<?> log = runAlgorithm(algorithm, problem, rng, maxIterations);
+        RunLog log = runAlgorithm(algorithm, problem, rng, maxIterations, observer);
 
-        return new RunResponse(request.problemId(), request.algorithmId(), log.getSnapshots());
+        return new RunResponse(
+            request.problemId(),
+            request.algorithmId(),
+            log.getIterations(),
+            log.getSeries()
+        );
     }
 
     private Problem<?> createProblem(String id, Map<String, Object> params, int n) {
@@ -102,8 +111,22 @@ public class ExperimentService {
         };
     }
 
+    private Observer<boolean[]> createObserver(List<String> observerIds) {
+        // Default observer if none specified
+        String observerId = (observerIds == null || observerIds.isEmpty())
+            ? "fitness"
+            : observerIds.get(0);
+
+        return switch (observerId) {
+            case "fitness" -> new FitnessObserver<>();
+            case "acceptance-rate" -> new AcceptanceRateObserver<>();
+            case "improvements" -> new ImprovementObserver<>();
+            default -> throw new IllegalArgumentException("Unknown observer: " + observerId);
+        };
+    }
+
     @SuppressWarnings("unchecked")
-    private RunLog<?> runAlgorithm(Algorithm<?> algorithm, Problem<?> problem, Random rng, int maxIterations) {
-        return ((Algorithm<Object>) algorithm).run((Problem<Object>) problem, rng, maxIterations);
+    private RunLog runAlgorithm(Algorithm<?> algorithm, Problem<?> problem, Random rng, int maxIterations, Observer<?> observer) {
+        return ((Algorithm<Object>) algorithm).run((Problem<Object>) problem, rng, maxIterations, (Observer<Object>) observer);
     }
 }

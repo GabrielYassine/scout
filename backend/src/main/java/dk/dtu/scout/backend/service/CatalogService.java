@@ -171,4 +171,31 @@ public class CatalogService {
             )
         );
     }
+
+    /**
+     * Returns the list of available observers.
+     * @return List of ObserverDef
+     */
+    public List<ObserverDef> observers() {
+        return List.of(
+            new ObserverDef(
+                "fitness",
+                "Fitness Tracker",
+                "Tracks fitness values over time",
+                List.of()
+            ),
+            new ObserverDef(
+                "acceptance-rate",
+                "Acceptance Rate",
+                "Tracks the acceptance rate of solutions",
+                List.of()
+            ),
+            new ObserverDef(
+                "improvements",
+                "Improvement Tracker",
+                "Tracks improvements in the best solution",
+                List.of()
+            )
+        );
+    }
 }

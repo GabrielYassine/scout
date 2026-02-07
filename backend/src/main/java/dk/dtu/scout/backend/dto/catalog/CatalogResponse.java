@@ -8,5 +8,6 @@ public record CatalogResponse(
     List<AlgoDef> algorithms,
     List<MutationDef> mutations,
     List<AcceptanceRuleDef> acceptanceRules,
-    List<StopConditionDef> stopConditions
+    List<StopConditionDef> stopConditions,
+    List<ObserverDef> observers
 ) {}

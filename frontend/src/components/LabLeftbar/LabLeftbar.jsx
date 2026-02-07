@@ -26,7 +26,6 @@ export default function LabLeftbar({
 
   const disabled = catalogLoading || !!catalogError;
 
-  // Helper to find the definition for a piece by its type and id
   const findPieceDef = (type, id) => {
     if (!catalog || !id) return null;
 
@@ -55,7 +54,6 @@ export default function LabLeftbar({
     );
   }, [puzzleConfig]);
 
-  // Setter for parameter values for any piece type
   function setParam(type, def, rawValue) {
     const currentParams = params[type] ?? {};
     onParamChange(type, {
@@ -64,7 +62,6 @@ export default function LabLeftbar({
     });
   }
 
-  // Render a section for a specific puzzle piece type
   const renderPieceSection = (type, title) => {
     const piece = puzzleConfig[type];
     if (!piece) return null;
@@ -109,7 +106,6 @@ export default function LabLeftbar({
     <section className="lab-leftbar">
       <div className="ll-content">
         <div className="ll-title">Configuration</div>
-
         {renderPieceSection("searchSpace", "Search Space")}
         {renderPieceSection("problem", "Problem")}
         {renderPieceSection("algorithm", "Algorithm")}

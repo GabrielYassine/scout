@@ -52,6 +52,6 @@ public class LeadingOnesProblem implements Problem<boolean[]>{
      */
     @Override
     public boolean isOptimal(double fitness) {
-        return fitness != n;
+        return fitness == n;
     }
 }

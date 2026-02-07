@@ -8,6 +8,7 @@ import AlgorithmSelector from "../../components/selector/algorithmSelector/Algor
 import MutationSelector from "../../components/selector/mutationSelector/MutationSelector.jsx";
 import AcceptanceSelector from "../../components/selector/acceptanceSelector/AcceptanceSelector.jsx";
 import StopConditionSelector from "../../components/selector/stopConditionSelector/StopConditionSelector.jsx";
+import ObserverSelector from "../../components/selector/observerSelector/ObserverSelector.jsx";
 
 import { useState } from "react";
 import { DndContext, DragOverlay, rectIntersection } from "@dnd-kit/core";
@@ -20,6 +21,7 @@ const SELECTORS = [
   { id: "mutation", Component: MutationSelector },
   { id: "acceptance", Component: AcceptanceSelector },
   { id: "stopCondition", Component: StopConditionSelector },
+  { id: "observer", Component: ObserverSelector },
 ];
 
 export default function LabPage({catalog, catalogLoading, catalogError}) {
@@ -37,6 +39,7 @@ export default function LabPage({catalog, catalogLoading, catalogError}) {
       mutation: null,
       acceptance: null,
       stopCondition: null,
+      observer: null,
     }
   );
 
@@ -49,6 +52,7 @@ export default function LabPage({catalog, catalogLoading, catalogError}) {
       mutation: {},
       acceptance: {},
       stopCondition: {},
+      observer: {},
     }
   );
 
@@ -78,6 +82,7 @@ export default function LabPage({catalog, catalogLoading, catalogError}) {
       mutation: null,
       acceptance: null,
       stopCondition: null,
+      observer: null,
     });
     setParams({
       searchSpace: {},
@@ -86,6 +91,7 @@ export default function LabPage({catalog, catalogLoading, catalogError}) {
       mutation: {},
       acceptance: {},
       stopCondition: {},
+      observer: {},
     });
   }
 
@@ -145,6 +151,7 @@ export default function LabPage({catalog, catalogLoading, catalogError}) {
   }
 
   async function onRun() {
+    console.log("Requesting run");
     const res = await fetch("/api/run", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -157,10 +164,12 @@ export default function LabPage({catalog, catalogLoading, catalogError}) {
         algorithmParams: params.algorithm,
         mutationId: puzzleConfig.mutation?.id,
         mutationParams: params.mutation,
-        acceptanceId: puzzleConfig.acceptance?.id,
-        acceptanceParams: params.acceptance,
+        acceptanceRuleId: puzzleConfig.acceptance?.id,
+        acceptanceRuleParams: params.acceptance,
+        observerIds: puzzleConfig.observer?.id ? [puzzleConfig.observer.id] : [],
         stopConditionId: puzzleConfig.stopCondition?.id,
         stopConditionParams: params.stopCondition,
+        seed: Date.now(), // We need to provide a field for seed later!
       }),
     });
 

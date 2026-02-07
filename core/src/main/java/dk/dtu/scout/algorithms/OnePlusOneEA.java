@@ -1,8 +1,10 @@
 package dk.dtu.scout.algorithms;
 
 import dk.dtu.scout.acceptance.AcceptanceRule;
-import dk.dtu.scout.datatypes.RunLog;
+import dk.dtu.scout.logging.RunLog;
+import dk.dtu.scout.logging.RunState;
 import dk.dtu.scout.mutation.Mutation;
+import dk.dtu.scout.observer.Observer;
 import dk.dtu.scout.problems.Problem;
 
 import java.util.Random;
@@ -24,30 +26,55 @@ public class OnePlusOneEA<S> implements Algorithm<S> {
     }
 
     @Override
-    public RunLog<S> run(Problem<S> problem, Random rng, int maxIterations) {
-        RunLog<S> runLog = new RunLog<>();
+    public RunLog run(Problem<S> problem, Random rng, int maxIterations, Observer<S> observer) {
+        RunLog log = new RunLog();
 
         S current = problem.randomSolution(rng);
         double currentFitness = problem.fitness(current);
 
-        runLog.log(0, currentFitness);
+        S best = current;
+        double bestFitness = currentFitness;
+
+        int evaluations = 1;
+
+        // Initial state
+        RunState<S> initialState = new RunState<>(
+            0, evaluations, current, currentFitness, best, bestFitness, false
+        );
+        observer.onStart(initialState, log);
+        observer.onStep(initialState, log);
 
         int iteration = 1;
-        while (iteration <= maxIterations && problem.isOptimal(currentFitness)) {
+        while (iteration <= maxIterations && !problem.isOptimal(currentFitness)) {
             S offspring = mutation.mutate(current, rng);
             double offspringFitness = problem.fitness(offspring);
+            evaluations++;
 
-            if (acceptance.accept(currentFitness, offspringFitness, iteration, rng)) {
+            boolean accepted = acceptance.accept(currentFitness, offspringFitness, iteration, rng);
+
+            if (accepted) {
                 current = offspring;
                 currentFitness = offspringFitness;
+
+                if (currentFitness > bestFitness) {
+                    best = current;
+                    bestFitness = currentFitness;
+                }
             }
 
-            runLog.log(iteration, currentFitness);
+            RunState<S> state = new RunState<>(
+                iteration, evaluations, current, currentFitness, best, bestFitness, accepted
+            );
+            observer.onStep(state, log);
+
             iteration++;
         }
 
-        runLog.setBestSolution(current);
+        RunState<S> finalState = new RunState<>(
+            iteration - 1, evaluations, current, currentFitness, best, bestFitness, false
+        );
+        observer.onEnd(finalState, log);
 
-        return runLog;
+        return log;
     }
 }

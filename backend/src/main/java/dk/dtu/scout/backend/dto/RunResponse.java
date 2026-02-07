@@ -1,6 +1,11 @@
 package dk.dtu.scout.backend.dto;
 
-import dk.dtu.scout.datatypes.IterationSnapshot;
 import java.util.List;
+import java.util.Map;
 
-public record RunResponse(String problemId, String algorithmId, List<IterationSnapshot> log) {}
+public record RunResponse(
+    String problemId,
+    String algorithmId,
+    List<Integer> iterations,
+    Map<String, List<Double>> series
+) {}
