@@ -21,7 +21,9 @@ export default function LabLeftbar({
     algorithm: true,
     mutation: true,
     acceptance: true,
+    populationModel: true,
     stopCondition: true,
+    observer: true,
   });
 
   const disabled = catalogLoading || !!catalogError;
@@ -49,8 +51,10 @@ export default function LabLeftbar({
       puzzleConfig.problem &&
       puzzleConfig.algorithm &&
       puzzleConfig.mutation &&
+      puzzleConfig.populationModel &&
       puzzleConfig.acceptance &&
-      puzzleConfig.stopCondition
+      puzzleConfig.stopCondition &&
+      puzzleConfig.observer
     );
   }, [puzzleConfig]);
 
@@ -118,7 +122,9 @@ export default function LabLeftbar({
         {renderPieceSection("algorithm", "Algorithm")}
         {renderPieceSection("mutation", "Mutation")}
         {renderPieceSection("acceptance", "Acceptance Rule")}
+        {renderPieceSection("populationModel", "Population Model")}
         {renderPieceSection("stopCondition", "Stop Condition")}
+        {renderPieceSection("observer", "Observer")}
       </div>
 
       <div className="ll-actions">
