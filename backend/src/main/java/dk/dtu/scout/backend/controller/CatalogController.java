@@ -26,6 +26,7 @@ public class CatalogController {
             catalog.algorithms(),
             catalog.mutations(),
             catalog.acceptanceRules(),
+            catalog.populationModels(),
             catalog.stopConditions(),
             catalog.observers()
         );

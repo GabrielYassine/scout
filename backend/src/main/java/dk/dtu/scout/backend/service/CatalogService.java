@@ -147,6 +147,21 @@ public class CatalogService {
             )
         );
     }
+    /**
+     * Returns the list of available population models.
+     * @return List of PopulationModelDef
+     */
+    public List<PopulationModelDef> populationModels() {
+        return List.of(
+                new PopulationModelDef(
+                        "default",
+                        "Default Population Model",
+                        "Single run with a single algorithm instance",
+                        List.of()
+                )
+        );
+    }
+
 
     /**
      * Returns the list of available stop conditions.

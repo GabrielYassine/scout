@@ -12,6 +12,8 @@ import dk.dtu.scout.backend.util.FormulaEvaluator;
 import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.mutation.Mutation;
 import dk.dtu.scout.observer.*;
+import dk.dtu.scout.population.DefaultPopulationModel;
+import dk.dtu.scout.population.PopulationModel;
 import dk.dtu.scout.problems.LeadingOnesProblem;
 import dk.dtu.scout.problems.OneMaxProblem;
 import dk.dtu.scout.problems.Problem;
@@ -21,7 +23,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-
+import java.util.function.Supplier;
 
 
 @Service
@@ -44,11 +46,12 @@ public class ExperimentService {
         AcceptanceRule acceptance = createAcceptanceRule(request.acceptanceRuleId(), request.acceptanceRuleParams());
         Observer<boolean[]> observer = createObserver(request.observerIds());
 
-        // Create the algorithm based on the request
-        Algorithm<?> algorithm = createAlgorithm(request.algorithmId(), mutation, acceptance);
+        // factory: Should create a new instance of the algorithm for each run in multistart
+        Supplier<Algorithm<boolean[]>> algFactory = () -> (Algorithm<boolean[]>) createAlgorithm(request.algorithmId(), mutation, acceptance);
 
-        // The following log is resulting from running the algorithm on the problem
-        RunLog log = runAlgorithm(algorithm, problem, rng, maxIterations, observer);
+        PopulationModel<boolean[]> popModel = (PopulationModel<boolean[]>) createPopulationModel(request.populationModelId(), request.populationModelParams());
+
+        RunLog log = popModel.run(algFactory, (Problem<boolean[]>) problem, rng, maxIterations, observer);
 
         return new RunResponse(
             request.problemId(),
@@ -110,6 +113,14 @@ public class ExperimentService {
             default -> throw new IllegalArgumentException("Unknown acceptance rule: " + id);
         };
     }
+    private PopulationModel<boolean[]> createPopulationModel(String id, Map<String, Object> params) {
+        if (id == null) id = "default";
+        if (params == null) params = Map.of();
+        return switch (id) {
+            case "default" -> new DefaultPopulationModel<>();
+            default -> throw new IllegalArgumentException("Unknown population model: " + id);
+        };
+    }
 
     private Observer<boolean[]> createObserver(List<String> observerIds) {
         // Default observer if none specified
@@ -125,8 +136,4 @@ public class ExperimentService {
         };
     }
 
-    @SuppressWarnings("unchecked")
-    private RunLog runAlgorithm(Algorithm<?> algorithm, Problem<?> problem, Random rng, int maxIterations, Observer<?> observer) {
-        return ((Algorithm<Object>) algorithm).run((Problem<Object>) problem, rng, maxIterations, (Observer<Object>) observer);
-    }
 }

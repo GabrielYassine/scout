@@ -7,6 +7,7 @@ import ProblemSelector from "../../components/selector/problemSelector/ProblemSe
 import AlgorithmSelector from "../../components/selector/algorithmSelector/AlgorithmSelector.jsx";
 import MutationSelector from "../../components/selector/mutationSelector/MutationSelector.jsx";
 import AcceptanceSelector from "../../components/selector/acceptanceSelector/AcceptanceSelector.jsx";
+import PopulationModelSelector from "../../components/selector/PopulationSelector/PopulationSelector.jsx";
 import StopConditionSelector from "../../components/selector/stopConditionSelector/StopConditionSelector.jsx";
 import ObserverSelector from "../../components/selector/observerSelector/ObserverSelector.jsx";
 
@@ -20,6 +21,7 @@ const SELECTORS = [
   { id: "algorithm", Component: AlgorithmSelector },
   { id: "mutation", Component: MutationSelector },
   { id: "acceptance", Component: AcceptanceSelector },
+  { id: "populationModel", Component: PopulationModelSelector },
   { id: "stopCondition", Component: StopConditionSelector },
   { id: "observer", Component: ObserverSelector },
 ];
@@ -38,6 +40,7 @@ export default function LabPage({catalog, catalogLoading, catalogError}) {
       algorithm: null,
       mutation: null,
       acceptance: null,
+      populationModel: null,
       stopCondition: null,
       observer: null,
     }
@@ -51,6 +54,7 @@ export default function LabPage({catalog, catalogLoading, catalogError}) {
       algorithm: {},
       mutation: {},
       acceptance: {},
+      populationModel: {},
       stopCondition: {},
       observer: {},
     }
@@ -81,6 +85,7 @@ export default function LabPage({catalog, catalogLoading, catalogError}) {
       algorithm: null,
       mutation: null,
       acceptance: null,
+      populationModel: null,
       stopCondition: null,
       observer: null,
     });
@@ -90,6 +95,7 @@ export default function LabPage({catalog, catalogLoading, catalogError}) {
       algorithm: {},
       mutation: {},
       acceptance: {},
+      populationModel: {},
       stopCondition: {},
       observer: {},
     });
@@ -166,6 +172,8 @@ export default function LabPage({catalog, catalogLoading, catalogError}) {
         mutationParams: params.mutation,
         acceptanceRuleId: puzzleConfig.acceptance?.id,
         acceptanceRuleParams: params.acceptance,
+        populationModelId: puzzleConfig.populationModel?.id,
+        populationModelParams: params.populationModel,
         observerIds: puzzleConfig.observer?.id ? [puzzleConfig.observer.id] : [],
         stopConditionId: puzzleConfig.stopCondition?.id,
         stopConditionParams: params.stopCondition,

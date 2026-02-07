@@ -10,6 +10,8 @@ public record RunRequest(
     Map<String, Object> algorithmParams,
     String mutationId,
     Map<String, Object> mutationParams,
+    String populationModelId,
+    Map<String, Object> populationModelParams,
     String acceptanceRuleId,
     Map<String, Object> acceptanceRuleParams,
     List<String> observerIds,
