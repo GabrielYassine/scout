@@ -1,109 +1,20 @@
-.run-config-puzzle {
+.shared-drop-area {
+    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
     width: 100%;
     height: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-md);
-    justify-content: center;
-    align-items: center;
-    overflow: visible;
-}
-
-.puzzle-row {
-    flex: 1;
-    display: grid;
-    grid-template-columns: repeat(8, 1fr);
-    gap: var(--spacing-sm);
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    max-width: 60rem;
-    padding: 0 var(--spacing-md);
-}
-
-.drop-zone {
-    border: 2px solid white;
-    border-radius: var(--radius-md);
+    border: 3px solid var(--color-border);
     background: var(--color-panel);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    width: var(--puzzle-piece-size);
-    height: var(--puzzle-piece-size);
-    padding: var(--spacing-sm);
-    transition: all 0.2s ease;
-    position: relative;
+    padding: var(--spacing-md);
+    gap: var(--spacing-md);
+    transition: all 0.3s ease;
     box-sizing: border-box;
+    overflow-y: auto;
 }
 
-.drop-zone-filled {
-    border-style: solid;
-    border-color: var(--color-border-highlight);
-    background: var(--color-panel-hover);
-    padding: 0;
-}
-
-.drop-zone-over {
+.shared-drop-area.drop-area-over {
     border-color: var(--color-border-highlight);
     background: var(--color-panel-drop);
-    box-shadow: 0 0 12px rgba(255, 215, 0, 0.3);
-}
-
-.drop-zone-label {
-    font-size: var(--font-sm);
-    font-weight: 600;
-    color: var(--color-text);
-    margin-bottom: var(--spacing-sm);
-    text-align: center;
-    pointer-events: none;
-}
-
-.drop-zone-filled .drop-zone-label {
-    display: none;
-}
-
-.drop-zone-placeholder {
-    color: var(--color-border);
-    font-style: italic;
-    pointer-events: none;
-}
-
-.drop-zone-filled .drop-zone-placeholder {
-    display: none;
-}
-
-.dropped-piece {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: grab;
-    width: 100%;
-    height: 100%;
-}
-
-.dropped-piece:active {
-    cursor: grabbing;
-}
-
-.dropped-piece.dragging {
-    opacity: 0.3;
-    cursor: grabbing;
-}
-
-.dropped-piece-content {
-    background: var(--color-border-highlight);
-    color: var(--color-bg);
-    padding: var(--spacing-md);
-    border-radius: var(--radius-md);
-    font-weight: 600;
-    font-size: var(--font-sm);
-    text-align: center;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-sizing: border-box;
-    border: 3px solid white;
+    box-shadow: 0 0 24px rgba(255, 215, 0, 0.4);
 }

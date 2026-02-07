@@ -63,11 +63,8 @@ export default function LabLeftbar({
   }
 
   const renderPieceSection = (type, title) => {
-    const piece = puzzleConfig[type];
-    if (!piece) return null;
-
-    const pieceDef = findPieceDef(type, piece.id);
-    const pieceParams = params[type] ?? {};
+    const pieces = puzzleConfig[type] || [];
+    if (pieces.length === 0) return null;
 
     return (
       <Section
@@ -76,27 +73,37 @@ export default function LabLeftbar({
         isOpen={open[type]}
         onToggle={() => setOpen((o) => ({ ...o, [type]: !o[type] }))}
       >
-        <div className="ll-selected-piece">
-          {piece.label}
-        </div>
+        {pieces.map((piece, index) => {
+          const pieceDef = findPieceDef(type, piece.id);
+          const pieceParams = params[type] ?? {};
 
-        {!catalogLoading && pieceDef?.params?.length > 0 && (
-          <div className="ll-subsection">
-            {pieceDef.params.map((def) => (
-              <ParamField
-                key={def.key}
-                def={def}
-                disabled={disabled}
-                value={
-                  pieceParams[def.key] !== undefined
-                    ? pieceParams[def.key]
-                    : def.defaultValue
-                }
-                onValueChange={(v) => setParam(type, def, v)}
-              />
-            ))}
-          </div>
-        )}
+          return (
+            <div key={`${piece.id}-${index}`} className="ll-piece-container">
+              <div className="ll-selected-piece">
+                {pieces.length > 1 && <span className="ll-piece-number">{index + 1}.</span>}
+                {piece.label}
+              </div>
+
+              {!catalogLoading && pieceDef?.params?.length > 0 && (
+                <div className="ll-subsection">
+                  {pieceDef.params.map((def) => (
+                    <ParamField
+                      key={def.key}
+                      def={def}
+                      disabled={disabled}
+                      value={
+                        pieceParams[def.key] !== undefined
+                          ? pieceParams[def.key]
+                          : def.defaultValue
+                      }
+                      onValueChange={(v) => setParam(type, def, v)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </Section>
     );
   };

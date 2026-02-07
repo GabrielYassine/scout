@@ -1,44 +1,59 @@
 .selector-container {
     width: 100%;
-    height: 100%;
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-sm);
 }
 
-.selector-title {
-    font-size: var(--font-lg);
-    font-weight: bold;
-    color: var(--color-text);
+.tab-buttons-row {
+    display: flex;
+    flex-direction: row;
+    gap: 0;
+    flex-shrink: 0;
 }
 
-.option-container {
+.tab-button {
     flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--color-panel);
+    border: 3px solid var(--color-border);
+    cursor: pointer;
+    font-size: var(--font-sm);
+    font-weight: 500;
+    color: var(--color-text);
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tab-button:not(:last-child) {
+    border-right: none;
+}
+
+.tab-button:hover {
+    background: var(--color-hover, rgba(255, 255, 255, 0.05));
+}
+
+.tab-button.active {
+    color: white;
+    font-weight: 600;
+    border-bottom: none;
 }
 
 .option-list {
-    flex: 4;
-    overflow-y: auto;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    align-items: stretch;
+    border: 3px solid var(--color-border);
+    border-top: none;
     background: var(--color-panel);
     padding: var(--spacing-md);
     gap: var(--spacing-md);
-    display: flex;
 }
 
-.option-list.empty::before {
-    content: "Drag pieces from here";
-    font-style: italic;
-}
-
-.option-description {
-    flex: 1;
-    padding: var(--spacing-sm);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
-    background: var(--color-panel);
+.option-list > * {
+    flex: 0 0 auto;
 }

@@ -1,9 +1,10 @@
 .lab-page {
-  min-height: calc(100vh - var(--navbar-height));
+  height: calc(100vh - var(--navbar-height)); /* ✅ use height, not min-height */
   width: 100%;
   overflow: hidden;
   display: flex;
   flex-direction: row;
+  min-height: 0;
 }
 
 .lab-page-content {
@@ -12,19 +13,20 @@
   flex-direction: column;
   padding: var(--spacing-md) var(--spacing-lg);
   gap: var(--spacing-md);
-}
 
+  min-height: 0;
+}
 .selector-timeline {
-  height: 12%;
+  flex: 1;
   display: flex;
-  justify-content: center;
-  align-items: center;
+
+  min-height: 0;
+  overflow: hidden;
 }
 
-.navigation-buttons {
-  height: 7%;
+.chosen-selector-container {
+  flex: 1;
   display: flex;
-  justify-content: space-between;
-  margin-top: var(--spacing-sm);
-  gap: var(--spacing-sm);
+  min-height: 0;
+  overflow: hidden;
 }

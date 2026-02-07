@@ -20,6 +20,16 @@ body {
   padding: 0;
 }
 
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+*::-webkit-scrollbar {
+  display: none;
+}
+
+
 a {
   text-decoration: none;
   color: inherit;

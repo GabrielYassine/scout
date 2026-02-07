@@ -1,65 +1,37 @@
-import { useDroppable, useDraggable } from "@dnd-kit/core";
+import { useDroppable } from "@dnd-kit/core";
 import "./RunConfigPuzzle.css";
+import TypeColumn from "./TypeColumn.jsx";
 
-function DroppedPiece({ id, label, type, zoneId }) {
-    const { setNodeRef, listeners, attributes, isDragging } = useDraggable({
-        id: `dropped-${zoneId}-${id}`,
-        data: {
-            label,
-            type,
-            originalId: id,
-            fromZone: zoneId,
-        }
-    });
-
-    return (
-        <div
-            ref={setNodeRef}
-            className={`dropped-piece ${isDragging ? "dragging" : ""}`}
-            {...listeners}
-            {...attributes}
-        >
-            <div className="dropped-piece-content">{label}</div>
-        </div>
-    );
-}
-
-function DropZone({ id, label, acceptsType, piece }) {
+export default function RunConfigPuzzle({ config, onRemovePiece }) {
     const { setNodeRef, isOver } = useDroppable({
-        id,
+        id: "shared-drop-area",
         data: {
-            acceptsType,
+            acceptsAll: true,
         }
     });
 
-    return (
-        <div
-            ref={setNodeRef}
-            className={`drop-zone ${isOver ? "drop-zone-over" : ""} ${piece ? "drop-zone-filled" : ""}`}
-        >
-            <div className="drop-zone-label">{label}</div>
-            {piece ? (
-                <DroppedPiece id={piece.id} label={piece.label} type={piece.type} zoneId={id} />
-            ) : (
-                <div className="drop-zone-placeholder">Drop here</div>
-            )}
-        </div>
-    );
-}
+    const componentTypes = [
+        { key: "searchSpace", label: "Search Space" },
+        { key: "problem", label: "Problem" },
+        { key: "algorithm", label: "Algorithm" },
+        { key: "mutation", label: "Mutation" },
+        { key: "acceptance", label: "Acceptance Rule" },
+        { key: "populationModel", label: "Population Model" },
+        { key: "stopCondition", label: "Stop Condition" },
+        { key: "observer", label: "Observer" },
+    ];
 
-export default function RunConfigPuzzle({ config }) {
     return (
-        <div className="run-config-puzzle">
-            <div className="puzzle-row">
-                <DropZone id="searchSpace" label="Search Space" acceptsType="searchSpace" piece={config?.searchSpace} />
-                <DropZone id="problem" label="Problem" acceptsType="problem" piece={config?.problem}/>
-                <DropZone id="algorithm" label="Algorithm" acceptsType="algorithm" piece={config?.algorithm}/>
-                <DropZone id="mutation" label="Mutation" acceptsType="mutation" piece={config?.mutation}/>
-                <DropZone id="acceptance" label="Acceptance Rule" acceptsType="acceptance" piece={config?.acceptance}/>
-                <DropZone id="populationModel" label="Population Model" acceptsType="populationModel" piece={config?.populationModel}/>
-                <DropZone id="stopCondition" label="Stop Condition" acceptsType="stopCondition" piece={config?.stopCondition} />
-                <DropZone id="observer" label="Observer" acceptsType="observer" piece={config?.observer}/>
-            </div>
+        <div ref={setNodeRef} className={`shared-drop-area ${isOver ? "drop-area-over" : ""}`}>
+            {componentTypes.map(({ key, label }) => (
+                <TypeColumn
+                    key={key}
+                    type={key}
+                    label={label}
+                    pieces={config?.[key] || []}
+                    onRemovePiece={onRemovePiece}
+                />
+            ))}
         </div>
     );
 }
