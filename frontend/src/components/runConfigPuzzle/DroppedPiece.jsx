@@ -1,7 +1,7 @@
 import { useDraggable } from "@dnd-kit/core";
 import "../puzzlePiece/PuzzlePiece.css";
 
-export default function DroppedPiece({ id, label, type, index, onRemove }) {
+export default function DroppedPiece({ id, label, type, index, onRemove,onHover, onLeave  }) {
     const { setNodeRef, listeners, attributes, isDragging } = useDraggable({
         id: `dropped-${type}-${index}-${id}`,
         data: {
@@ -17,6 +17,8 @@ export default function DroppedPiece({ id, label, type, index, onRemove }) {
         <div ref={setNodeRef} className={`puzzle-piece ${isDragging ? "dragging" : ""}`}
             {...listeners}
             {...attributes}
+            onMouseEnter={() => onHover?.(type, id)}
+            onMouseLeave={() => onLeave?.()}
         >
             <div className="puzzle-piece-title">{label}</div>
         </div>

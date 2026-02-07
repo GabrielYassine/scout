@@ -14,7 +14,7 @@ const componentTypes = [
     { key: "observer", label: "Observer", catalogKey: "observers" },
 ];
 
-export default function Selector({ catalog, catalogLoading, catalogError }) {
+export default function Selector({ catalog, catalogLoading, catalogError ,onPieceHover, onPieceLeave}) {
     const [activeTab, setActiveTab] = useSessionStorageState("scout:activeSelector", "searchSpace");
     const activeType = componentTypes.find(type => type.key === activeTab);
     const items = catalog?.[activeType.catalogKey] ?? [];
@@ -35,6 +35,8 @@ export default function Selector({ catalog, catalogLoading, catalogError }) {
                         id={item.id}
                         label={item.name}
                         type={activeTab}
+                        onHover={onPieceHover}
+                        onLeave={onPieceLeave}
                     />
                 ))}
             </div>

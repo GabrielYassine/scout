@@ -2,7 +2,7 @@ import { useDroppable } from "@dnd-kit/core";
 import "./RunConfigPuzzle.css";
 import TypeColumn from "./TypeColumn.jsx";
 
-export default function RunConfigPuzzle({ config, onRemovePiece }) {
+export default function RunConfigPuzzle({ config, onRemovePiece, onPieceHover, onPieceLeave}) {
     const { setNodeRef, isOver } = useDroppable({
         id: "shared-drop-area",
         data: {
@@ -30,6 +30,8 @@ export default function RunConfigPuzzle({ config, onRemovePiece }) {
                     label={label}
                     pieces={Array.isArray(config?.[key]) ? config[key] : []}
                     onRemovePiece={onRemovePiece}
+                    onPieceHover={onPieceHover}
+                    onPieceLeave={onPieceLeave}
                 />
             ))}
         </div>

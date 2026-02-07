@@ -1,7 +1,7 @@
 import DroppedPiece from "./DroppedPiece.jsx";
 import "./TypeColumn.css";
 
-export default function TypeColumn({ type, pieces, onRemovePiece }) {
+export default function TypeColumn({ type, pieces, onRemovePiece,onPieceHover, onPieceLeave }) {
     const pieceArray = Array.isArray(pieces) ? pieces : [];
 
     return (
@@ -15,6 +15,8 @@ export default function TypeColumn({ type, pieces, onRemovePiece }) {
                         type={type}
                         index={index}
                         onRemove={() => onRemovePiece(type, index)}
+                        onHover={onPieceHover}
+                        onLeave={onPieceLeave}
                     />
                 ))}
             </div>

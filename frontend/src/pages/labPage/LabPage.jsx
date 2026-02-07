@@ -42,6 +42,34 @@ export default function LabPage({catalog, catalogLoading, catalogError}) {
   const [activeLabel, setActiveLabel] = useState(null);
 
 
+  const [hoverInfo, setHoverInfo] = useState(null);
+
+  function getCatalogItem(type, id) {
+      if (!catalog || !id) return null;
+
+      const map = {
+        searchSpace: catalog.searchSpaces,
+        problem: catalog.problems,
+        algorithm: catalog.algorithms,
+        mutation: catalog.mutations,
+        acceptance: catalog.acceptanceRules,
+        populationModel: catalog.populationModels,
+        stopCondition: catalog.stopConditions,
+        observer: catalog.observers,
+      };
+
+      return (map[type] ?? []).find((x) => x.id === id) ?? null;
+    }
+
+   function handlePieceHover(type, id) {
+      const item = getCatalogItem(type, id);
+      if (!item) return;
+      setHoverInfo({ title: item.name, description: item.description });
+   }
+
+   function clearHover() {
+      setHoverInfo(null);
+   }
   function handleDragStart(event) {
     const { active } = event;
     setActiveId(active.id);
@@ -221,14 +249,14 @@ export default function LabPage({catalog, catalogLoading, catalogError}) {
         />
         <div className="lab-page-content">
           <div className="selector-timeline">
-            <RunConfigPuzzle config={puzzleConfig} onRemovePiece={handleRemovePiece} />
+            <RunConfigPuzzle config={puzzleConfig} onRemovePiece={handleRemovePiece}   onPieceHover={handlePieceHover}   onPieceLeave={clearHover} />
           </div>
           <hr className="rounded"/>
           <div className="chosen-selector-container">
-            <Selector catalog={catalog} catalogLoading={catalogLoading} catalogError={catalogError} />
+            <Selector catalog={catalog} catalogLoading={catalogLoading} catalogError={catalogError}  onPieceHover={handlePieceHover} onPieceLeave={clearHover}/>
           </div>
         </div>
-        <LabRightbar/>
+        <LabRightbar hoverInfo={hoverInfo} />
       </div>
       <DragOverlay>
         {activeId ? (
