@@ -28,7 +28,7 @@ export default function RunConfigPuzzle({ config, onRemovePiece }) {
                     key={key}
                     type={key}
                     label={label}
-                    pieces={config?.[key] || []}
+                    pieces={Array.isArray(config?.[key]) ? config[key] : []}
                     onRemovePiece={onRemovePiece}
                 />
             ))}

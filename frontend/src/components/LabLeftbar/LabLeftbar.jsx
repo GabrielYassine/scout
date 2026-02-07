@@ -63,7 +63,7 @@ export default function LabLeftbar({
   }
 
   const renderPieceSection = (type, title) => {
-    const pieces = puzzleConfig[type] || [];
+    const pieces = Array.isArray(puzzleConfig[type]) ? puzzleConfig[type] : [];
     if (pieces.length === 0) return null;
 
     return (
