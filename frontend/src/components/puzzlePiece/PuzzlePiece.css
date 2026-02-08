@@ -1,7 +1,6 @@
 .puzzle-piece {
     border-radius: var(--radius-md);
     background: var(--color-border-highlight);
-    border: 3px solid white;
     padding: var(--spacing-md);
     display: flex;
     justify-content: center;
