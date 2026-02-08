@@ -1,0 +1,9 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <mask id="2000" maskContentUnits="objectBoundingBox">
+            <rect x="0.125" y="0.125" width="0.75" height="0.75" fill="white"/>
+            <circle cx="0.5" cy="0.125" r="0.125" fill="white"/>
+        </mask>
+    </defs>
+    <rect width="100" height="100" fill="white" mask="url(#2000)"/>
+</svg>
