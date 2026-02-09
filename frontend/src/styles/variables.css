@@ -32,7 +32,17 @@
   --sidebar-width: clamp(5rem, 13vw, 15rem);
 
   /** Puzzle Dimensions */
-  --puzzle-piece-size: 7rem;
+  --puzzle-piece-size: 10rem;
+
+  /* Puzzle Type Colors */
+  --color-searchSpace: #4fbf73;
+  --color-problem: #4fbfb6;
+  --color-algorithm: #bf924f;
+  --color-mutation: #b44fbf;
+  --color-acceptance: #bf4f4f;
+  --color-populationModel: #4f5ebf;
+  --color-stopCondition: #bfb64f;
+  --color-observer: #bf4f81;
 
   /* Buttons */
     --green-500: #22c55e;

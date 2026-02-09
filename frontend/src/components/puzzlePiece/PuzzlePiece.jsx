@@ -12,7 +12,7 @@ export default function PuzzlePiece({ id, label, type, onHover, onLeave }) {
         <div
             ref={setNodeRef}
             className={`selector-item ${isDragging ? "dragging" : ""}`}
-            style={maskStyle("0000")}
+            style={{...maskStyle("0000"), background: `var(--color-${type}, var(--color-border-highlight))`}}
             {...listeners}
             {...attributes}
             onMouseEnter={() => onHover?.(type, id)}

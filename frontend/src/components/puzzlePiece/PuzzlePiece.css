@@ -1,9 +1,9 @@
 .selector-item {
-    background: var(--color-border-highlight);
     padding: var(--spacing-md);
     display: flex;
     justify-content: center;
     align-items: center;
+    text-align: center;
     width: var(--puzzle-piece-size);
     height: var(--puzzle-piece-size);
     cursor: grab;

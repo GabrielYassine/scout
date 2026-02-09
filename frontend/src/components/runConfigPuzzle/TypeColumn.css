@@ -1,12 +1,26 @@
 .type-column {
+    position: relative;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    flex-shrink: 0;
+    width: var(--puzzle-piece-size);
+}
+
+.type-column:not(:first-child) {
+    margin-left: calc(var(--puzzle-piece-size) * -0.2);
+}
+
+.type-column {
+    --i: 0;
+    z-index: calc(100 + var(--i, 0));
 }
 
 .type-column-pieces {
     display: flex;
     flex-direction: column;
-    box-sizing: border-box;
+    position: relative;
 }
 
+.type-column-pieces > *:not(:first-child) {
+    margin-top: calc(var(--puzzle-piece-size) * -0.2);
+}

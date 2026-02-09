@@ -1,5 +1,5 @@
 .lab-page {
-  height: calc(100vh - var(--navbar-height)); /* ✅ use height, not min-height */
+  height: calc(100vh - var(--navbar-height));
   width: 100%;
   overflow: hidden;
   display: flex;
@@ -13,13 +13,11 @@
   flex-direction: column;
   padding: var(--spacing-md) var(--spacing-lg);
   gap: var(--spacing-md);
-
   min-height: 0;
 }
 .selector-timeline {
   flex: 1;
   display: flex;
-
   min-height: 0;
   overflow: hidden;
 }

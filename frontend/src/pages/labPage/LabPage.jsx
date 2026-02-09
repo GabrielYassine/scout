@@ -3,7 +3,7 @@ import LabLeftbar from "../../components/LabLeftbar/LabLeftbar.jsx";
 import LabRightbar from "../../components/LabRightbar.jsx";
 import RunConfigPuzzle from "../../components/runConfigPuzzle/RunConfigPuzzle.jsx";
 import Selector from "../../components/selector/Selector.jsx";
-
+import { generatePuzzleKey } from "../../util/puzzleGenerator.js";
 import { useState } from "react";
 import { DndContext, DragOverlay, rectIntersection } from "@dnd-kit/core";
 import { useSessionStorageState } from "../../hooks/useSessionStorageState.js";
@@ -40,8 +40,6 @@ export default function LabPage({catalog, catalogLoading, catalogError}) {
 
   const [activeId, setActiveId] = useState(null);
   const [activeLabel, setActiveLabel] = useState(null);
-
-
   const [hoverInfo, setHoverInfo] = useState(null);
 
   function getCatalogItem(type, id) {
@@ -105,77 +103,191 @@ export default function LabPage({catalog, catalogLoading, catalogError}) {
       observer: {},
     });
   }
+  const componentTypes = [
+    "searchSpace",
+    "problem",
+    "algorithm",
+    "mutation",
+    "acceptance",
+    "populationModel",
+    "stopCondition",
+    "observer",
+  ];
+
+  function getColIndex(type) {
+    return componentTypes.indexOf(type);
+  }
+
+  function buildNeighbors(config, type, rowIndex) {
+    const colIndex = getColIndex(type);
+    const totalCols = componentTypes.length;
+
+    const leftType = colIndex > 0 ? componentTypes[colIndex - 1] : null;
+    const rightType = colIndex < totalCols - 1 ? componentTypes[colIndex + 1] : null;
+
+    const leftArr = leftType ? (config[leftType] ?? []) : null;
+    const rightArr = rightType ? (config[rightType] ?? []) : null;
+    const curArr = config[type] ?? [];
+
+    // Helper to extract edge from a piece's puzzleData logicalKey
+    // logicalKey format: "NESW" (North, East, South, West)
+    const getEdge = (piece, direction) => {
+      if (!piece?.puzzleData?.logicalKey) return null;
+      const key = piece.puzzleData.logicalKey;
+      switch (direction) {
+        case 'N': return parseInt(key[0], 10);
+        case 'E': return parseInt(key[1], 10);
+        case 'S': return parseInt(key[2], 10);
+        case 'W': return parseInt(key[3], 10);
+        default: return null;
+      }
+    };
+
+    return {
+      left: colIndex === 0
+          ? { kind: "wall" }
+          : leftArr?.[rowIndex]
+            ? { kind: "piece", edge: getEdge(leftArr[rowIndex], 'E') }
+            : { kind: "empty" },
+
+      right: colIndex === totalCols - 1
+          ? { kind: "wall" }
+          : rightArr?.[rowIndex]
+            ? { kind: "piece", edge: getEdge(rightArr[rowIndex], 'W') }
+            : { kind: "empty" },
+
+      top: rowIndex === 0
+          ? { kind: "wall" }
+          : curArr?.[rowIndex - 1]
+            ? { kind: "piece", edge: getEdge(curArr[rowIndex - 1], 'S') }
+            : { kind: "empty" },
+
+      bottom: curArr?.[rowIndex + 1]
+          ? { kind: "piece", edge: getEdge(curArr[rowIndex + 1], 'N') }
+          : { kind: "empty" },
+    };
+  }
+
+  function rekeyColumn(config, type, startIndex = 0) {
+    const colIndex = getColIndex(type);
+    const totalCols = componentTypes.length;
+
+    const arr = Array.isArray(config[type]) ? [...config[type]] : [];
+    for (let i = startIndex; i < arr.length; i++) {
+      const neighbors = buildNeighbors({ ...config, [type]: arr }, type, i);
+
+      arr[i] = {
+        ...arr[i],
+        puzzleData: generatePuzzleKey({
+          col: colIndex,
+          row: i,
+          totalCols,
+          neighbors,
+        }),
+      };
+    }
+    return { ...config, [type]: arr };
+  }
+
 
   function handleRemovePiece(type, index) {
     setPuzzleConfig(prev => {
       const currentArray = Array.isArray(prev[type]) ? prev[type] : [];
-      return {
-        ...prev,
-        [type]: currentArray.filter((_, i) => i !== index),
-      };
+      const nextArray = currentArray.filter((_, i) => i !== index);
+      const nextConfig = { ...prev, [type]: nextArray };
+      return rekeyColumn(nextConfig, type, index);
     });
   }
 
+
   function handleDragEnd(event) {
     const { active, over } = event;
+
     setActiveId(null);
     setActiveLabel(null);
-
     if (!over) {
-      if (active.id.toString().startsWith('dropped-')) {
+      if (active.id.toString().startsWith("dropped-")) {
         const fromType = active.data?.current?.fromType;
         const fromIndex = active.data?.current?.fromIndex;
+
         if (fromType !== undefined && fromIndex !== undefined) {
-          handleRemovePiece(fromType, fromIndex);
+          setPuzzleConfig(prev => {
+            const currentArray = Array.isArray(prev[fromType]) ? prev[fromType] : [];
+            const nextArray = currentArray.filter((_, i) => i !== fromIndex);
+
+            let nextConfig = { ...prev, [fromType]: nextArray };
+            return rekeyColumn(nextConfig, fromType, fromIndex);
+          });
         }
       }
       return;
     }
 
-    if (over.id === 'shared-drop-area') {
-      const pieceType = active.data?.current?.type;
+    // Only care about dropping into puzzle area
+    if (over.id !== "shared-drop-area") return;
 
-      if (!pieceType) {
-        return;
-      }
+    const pieceType = active.data?.current?.type;
+    if (!pieceType) return;
 
-      if (active.id.toString().startsWith('dropped-')) {
-        const fromType = active.data?.current?.fromType;
-        const fromIndex = active.data?.current?.fromIndex;
-        const originalId = active.data?.current?.originalId;
-        const label = active.data?.current?.label;
+    // --------------------
+    // MOVE existing piece
+    // --------------------
+    if (active.id.toString().startsWith("dropped-")) {
+      const fromType = active.data?.current?.fromType;
+      const fromIndex = active.data?.current?.fromIndex;
+      const originalId = active.data?.current?.originalId;
+      const label = active.data?.current?.label;
 
-        if (fromType === pieceType) {
-          return;
-        }
-        setPuzzleConfig(prev => {
-          const newConfig = { ...prev };
-          const fromArray = Array.isArray(prev[fromType]) ? prev[fromType] : [];
-          const toArray = Array.isArray(prev[pieceType]) ? prev[pieceType] : [];
+      if (fromType === pieceType) return;
 
-          newConfig[fromType] = fromArray.filter((_, i) => i !== fromIndex);
-          newConfig[pieceType] = [...toArray, {
-            id: originalId,
-            label: label,
-            type: pieceType,
-          }];
-          return newConfig;
-        });
-      } else {
-        setPuzzleConfig(prev => {
-          const currentArray = Array.isArray(prev[pieceType]) ? prev[pieceType] : [];
-          return {
-            ...prev,
-            [pieceType]: [...currentArray, {
-              id: active.id,
-              label: active.data?.current?.label || active.id,
-              type: pieceType,
-            }]
-          };
-        });
-      }
+      setPuzzleConfig(prev => {
+        const fromArray = Array.isArray(prev[fromType]) ? prev[fromType] : [];
+        const toArray = Array.isArray(prev[pieceType]) ? prev[pieceType] : [];
+
+        const newFrom = fromArray.filter((_, i) => i !== fromIndex);
+        const newTo = [
+          ...toArray,
+          { id: originalId, label, type: pieceType },
+        ];
+
+        let nextConfig = {
+          ...prev,
+          [fromType]: newFrom,
+          [pieceType]: newTo,
+        };
+
+        // re-key only affected pieces
+        nextConfig = rekeyColumn(nextConfig, fromType, fromIndex);
+        nextConfig = rekeyColumn(nextConfig, pieceType, newTo.length - 1);
+
+        return nextConfig;
+      });
+
+      return;
     }
+
+    // --------------------
+    // ADD new piece
+    // --------------------
+    setPuzzleConfig(prev => {
+      const currentArray = Array.isArray(prev[pieceType]) ? prev[pieceType] : [];
+
+      const nextArray = [
+        ...currentArray,
+        {
+          id: active.id,
+          label: active.data?.current?.label || active.id,
+          type: pieceType,
+        },
+      ];
+
+      let nextConfig = { ...prev, [pieceType]: nextArray };
+      nextConfig = rekeyColumn(nextConfig, pieceType, nextArray.length - 1);
+
+      return nextConfig;
+    });
   }
+
 
 
   async function onRun() {

@@ -1,16 +1,15 @@
 .shared-drop-area {
-    flex-direction: column;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+    display: flex;
+    flex-direction: row;
     width: 100%;
     height: 100%;
     border: 3px solid var(--color-border);
     background: var(--color-panel);
-    padding: var(--spacing-md);
-    gap: var(--spacing-md);
     transition: all 0.3s ease;
     box-sizing: border-box;
+    overflow-x: auto;
     overflow-y: auto;
+    padding: var(--spacing-md);
 }
 
 .shared-drop-area.drop-area-over {
