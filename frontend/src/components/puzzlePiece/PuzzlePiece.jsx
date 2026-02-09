@@ -8,19 +8,17 @@ export default function PuzzlePiece({ id, label, type, onHover, onLeave }) {
         data: { label, type },
     });
 
-    const maskKey = "hole_tab";
-
     return (
         <div
             ref={setNodeRef}
-            className={`puzzle-piece ${isDragging ? "dragging" : ""}`}
-            style={maskStyle(maskKey)}
+            className={`selector-item ${isDragging ? "dragging" : ""}`}
+            style={maskStyle("0000")}
             {...listeners}
             {...attributes}
             onMouseEnter={() => onHover?.(type, id)}
             onMouseLeave={() => onLeave?.()}
         >
-            <div className="puzzle-piece-title">{label}</div>
+            <div className="selector-item-title">{label}</div>
         </div>
     );
 }

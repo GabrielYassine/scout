@@ -1,0 +1,38 @@
+.dropped-puzzle-piece {
+    position: relative;
+    width: var(--puzzle-piece-size);
+    height: var(--puzzle-piece-size);
+    cursor: grab;
+    user-select: none;
+    background: blue;
+}
+
+.dropped-puzzle-shape {
+    position: absolute;
+    inset: 0;
+    background: var(--color-border-highlight);
+
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-size: 100% 100%;
+    mask-size: 100% 100%;
+    -webkit-mask-position: center;
+    mask-position: center;
+}
+
+.dropped-puzzle-content {
+    position: absolute;
+    inset: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    pointer-events: none; /* drag still works */
+}
+
+.dropped-puzzle-piece-title {
+    font-weight: 600;
+    font-size: var(--font-sm);
+    text-align: center;
+}

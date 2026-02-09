@@ -122,7 +122,6 @@ export default function LabPage({catalog, catalogLoading, catalogError}) {
     setActiveLabel(null);
 
     if (!over) {
-      // Dropped outside - if it was a dropped piece, remove it
       if (active.id.toString().startsWith('dropped-')) {
         const fromType = active.data?.current?.fromType;
         const fromIndex = active.data?.current?.fromIndex;
@@ -133,7 +132,6 @@ export default function LabPage({catalog, catalogLoading, catalogError}) {
       return;
     }
 
-    // Check if dropped on the shared drop area
     if (over.id === 'shared-drop-area') {
       const pieceType = active.data?.current?.type;
 
@@ -141,28 +139,21 @@ export default function LabPage({catalog, catalogLoading, catalogError}) {
         return;
       }
 
-      // Check if it's a dropped piece being moved
       if (active.id.toString().startsWith('dropped-')) {
         const fromType = active.data?.current?.fromType;
         const fromIndex = active.data?.current?.fromIndex;
         const originalId = active.data?.current?.originalId;
         const label = active.data?.current?.label;
 
-        // If moving within same type, just reorder
         if (fromType === pieceType) {
-          return; // Keep it in place
+          return;
         }
-
-        // Moving to different type - remove from old and add to new
         setPuzzleConfig(prev => {
           const newConfig = { ...prev };
-          // Ensure arrays exist
           const fromArray = Array.isArray(prev[fromType]) ? prev[fromType] : [];
           const toArray = Array.isArray(prev[pieceType]) ? prev[pieceType] : [];
 
-          // Remove from old type
           newConfig[fromType] = fromArray.filter((_, i) => i !== fromIndex);
-          // Add to new type
           newConfig[pieceType] = [...toArray, {
             id: originalId,
             label: label,
@@ -171,7 +162,6 @@ export default function LabPage({catalog, catalogLoading, catalogError}) {
           return newConfig;
         });
       } else {
-        // Adding a new piece from the selector
         setPuzzleConfig(prev => {
           const currentArray = Array.isArray(prev[pieceType]) ? prev[pieceType] : [];
           return {
@@ -189,9 +179,7 @@ export default function LabPage({catalog, catalogLoading, catalogError}) {
 
 
   async function onRun() {
-    console.log("Requesting run");
 
-    // Use the first item from each array for now (backward compatibility)
     const searchSpace = puzzleConfig.searchSpace?.[0];
     const problem = puzzleConfig.problem?.[0];
     const algorithm = puzzleConfig.algorithm?.[0];
@@ -200,7 +188,6 @@ export default function LabPage({catalog, catalogLoading, catalogError}) {
     const populationModel = puzzleConfig.populationModel?.[0];
     const stopCondition = puzzleConfig.stopCondition?.[0];
 
-    // For observers, collect all IDs
     const observerIds = puzzleConfig.observer?.map(obs => obs.id) || [];
 
     const res = await fetch("/api/run", {

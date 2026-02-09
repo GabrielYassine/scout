@@ -1,5 +1,4 @@
-.puzzle-piece {
-    border-radius: var(--radius-md);
+.selector-item {
     background: var(--color-border-highlight);
     padding: var(--spacing-md);
     display: flex;
@@ -12,21 +11,21 @@
     transition: box-shadow 0.15s ease, background 0.15s ease;
 }
 
-.puzzle-piece:hover {
+.selector-item:hover {
     transform: scale(1.05);
     transition: transform 0.15s ease;
 }
 
-.puzzle-piece:active {
+.selector-item:active {
     cursor: grabbing;
 }
 
-.puzzle-piece.dragging {
+.selector-item.dragging {
     opacity: 0.3;
     cursor: grabbing;
 }
 
-.puzzle-piece-title {
+.selector-item-title {
     font-weight: 600;
     font-size: var(--font-sm);
 }
