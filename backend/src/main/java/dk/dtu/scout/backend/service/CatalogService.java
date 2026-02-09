@@ -41,32 +41,14 @@ public class CatalogService {
                 "onemax",
                 "OneMax",
                 "Maximize the number of ones in a bitstring",
-                List.of(
-                    new ParamDef(
-                        "n",
-                        "Bitstring length (n)",
-                        "int",
-                        100,
-                        1.0,
-                        null
-                    )
-                )
+                List.of()
             ),
 
             new ProblemDef(
                 "leadingones",
                 "LeadingOnes",
                 "Maximize the number of leading ones in a bitstring",
-                List.of(
-                    new ParamDef(
-                        "n",
-                        "Bitstring length (n)",
-                        "int",
-                        100,
-                        1.0,
-                        null
-                    )
-                )
+                List.of()
             )
         );
     }

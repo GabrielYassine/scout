@@ -32,10 +32,10 @@ public class ExperimentService {
     public RunResponse run(RunRequest request) {
 
         // Extract algorithm parameters with defaults (missing a few params)
-        int maxIterations = ((Number) request.algorithmParams().getOrDefault("maxIterations", 1000)).intValue();
+        int maxIterations = ((Number) request.stopConditionParams().getOrDefault("maxIterations", 1000)).intValue();
         long seed = request.seed();
 
-        int n = ((Number) request.problemParams().getOrDefault("n", 100)).intValue();
+        int n = ((Number) request.searchSpaceParams().getOrDefault("n", 100)).intValue();
 
 
         // Initialize random number generator
@@ -52,7 +52,6 @@ public class ExperimentService {
         PopulationModel<boolean[]> popModel = (PopulationModel<boolean[]>) createPopulationModel(request.populationModelId(), request.populationModelParams());
 
         RunLog log = popModel.run(algFactory, (Problem<boolean[]>) problem, rng, maxIterations, observer);
-
         return new RunResponse(
             request.problemId(),
             request.algorithmId(),

@@ -9,6 +9,7 @@ powershell -Command "while(-not (Test-NetConnection -ComputerName 'localhost' -P
 
 cd frontend
 call npm install
+call npm i recharts
 start "frontend" cmd /k "npm run dev"
 
 endlocal

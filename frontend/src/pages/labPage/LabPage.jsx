@@ -7,6 +7,7 @@ import { generatePuzzleKey } from "../../util/puzzleGenerator.js";
 import { useState } from "react";
 import { DndContext, DragOverlay, rectIntersection } from "@dnd-kit/core";
 import { useSessionStorageState } from "../../hooks/useSessionStorageState.js";
+import { useNavigate } from "react-router-dom";
 
 export default function LabPage({catalog, catalogLoading, catalogError}) {
 
@@ -41,6 +42,8 @@ export default function LabPage({catalog, catalogLoading, catalogError}) {
   const [activeId, setActiveId] = useState(null);
   const [activeLabel, setActiveLabel] = useState(null);
   const [hoverInfo, setHoverInfo] = useState(null);
+  const navigate = useNavigate();
+
 
   function getCatalogItem(type, id) {
       if (!catalog || !id) return null;
@@ -324,9 +327,33 @@ export default function LabPage({catalog, catalogLoading, catalogError}) {
         seed: Date.now(), // We need to provide a field for seed later!
       }),
     });
+console.log("RUN REQUEST BODY:", {
+  searchSpaceId: searchSpace?.id,
+  searchSpaceParams: params.searchSpace,
+  problemId: problem?.id,
+  problemParams: params.problem,
+  algorithmId: algorithm?.id,
+  algorithmParams: params.algorithm,
+  mutationId: mutation?.id,
+  mutationParams: params.mutation,
+  acceptanceRuleId: acceptance?.id,
+  acceptanceRuleParams: params.acceptance,
+  populationModelId: populationModel?.id,
+  populationModelParams: params.populationModel,
+  stopConditionId: stopCondition?.id,
+  stopConditionParams: params.stopCondition,
+  observerIds,
+});
 
     const result = await res.json();
     console.log(result);
+    navigate("/run", {
+      state: {
+        run: result,
+        puzzleConfig,
+        params,
+      },
+    });
   }
 
   return (

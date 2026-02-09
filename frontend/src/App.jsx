@@ -5,6 +5,7 @@ import TopNavbar from "./components/TopNavbar.jsx";
 import HomePage from "./pages/HomePage.jsx";
 import LabPage from "./pages/labPage/LabPage.jsx";
 import HistoryPage from "./pages/HistoryPage.jsx";
+import RunPage from "./pages/RunPage.jsx";
 
 export default function App() {
   const [catalog, setCatalog] = useState(null);
@@ -63,6 +64,17 @@ export default function App() {
             />
           }
         />
+        <Route
+          path="/run"
+          element={
+            <RunPage
+              catalog={catalog}
+              catalogLoading={catalogLoading}
+              catalogError={catalogError}
+            />
+          }
+        />
+
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>
