@@ -6,6 +6,11 @@
     user-select: none;
 }
 
+.dropped-puzzle-piece.dragging {
+    opacity: 0.3;
+    cursor: grabbing;
+}
+
 .dropped-puzzle-shape {
     position: absolute;
     inset: 0;

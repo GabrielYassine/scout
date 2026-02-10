@@ -257,46 +257,16 @@ export function PuzzleConfigProvider({ children }) {
         const pieceType = active.data?.current?.type;
         if (!pieceType) return;
 
-        // MOVE existing piece
+        // Prevent moving already placed pieces
         if (active.id.toString().startsWith("dropped-")) {
-            const fromType = active.data?.current?.fromType;
-            const fromIndex = active.data?.current?.fromIndex;
-            const originalId = active.data?.current?.originalId;
-            const label = active.data?.current?.label;
-
-            if (fromType === pieceType) return;
-
-            setPuzzleConfig(prev => {
-                const fromArray = Array.isArray(prev[fromType]) ? prev[fromType] : [];
-                const toArray = Array.isArray(prev[pieceType]) ? prev[pieceType] : [];
-
-                const newFrom = fromArray.filter((_, i) => i !== fromIndex);
-                const newTo = [
-                    ...toArray,
-                    { id: originalId, label, type: pieceType },
-                ];
-
-                let nextConfig = {
-                    ...prev,
-                    [fromType]: newFrom,
-                    [pieceType]: newTo,
-                };
-
-                nextConfig = rekeyColumn(nextConfig, fromType, fromIndex);
-                nextConfig = rekeyColumn(nextConfig, pieceType, newTo.length - 1);
-
-                return nextConfig;
-            });
-
             return;
         }
 
-        // ADD new piece
+        // ADD new piece from catalog
         setPuzzleConfig(prev => {
             const currentArray = Array.isArray(prev[pieceType]) ? prev[pieceType] : [];
 
-            const nextArray = [
-                ...currentArray,
+            const nextArray = [...currentArray,
                 {
                     id: active.id,
                     label: active.data?.current?.label || active.id,
@@ -306,7 +276,6 @@ export function PuzzleConfigProvider({ children }) {
 
             let nextConfig = { ...prev, [pieceType]: nextArray };
             nextConfig = rekeyColumn(nextConfig, pieceType, nextArray.length - 1);
-
             return nextConfig;
         });
     }
@@ -342,7 +311,6 @@ export function PuzzleConfigProvider({ children }) {
     }
 
     const value = {
-        // Config management
         configs,
         activeConfigId,
         activeConfig,
@@ -352,24 +320,16 @@ export function PuzzleConfigProvider({ children }) {
         addNewConfig,
         deleteConfig,
         renameConfig,
-
-        // Puzzle manipulation
         handleRemovePiece,
         handleParamChange,
         handleReset,
-
-        // DnD state
         activeId,
         activeLabel,
     };
 
     return (
         <PuzzleConfigContext.Provider value={value}>
-            <DndContext
-                onDragStart={handleDragStart}
-                onDragEnd={handleDragEnd}
-                collisionDetection={rectIntersection}
-            >
+            <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd} collisionDetection={rectIntersection}>
                 {children}
                 <DragOverlay>
                     {activeId ? (
