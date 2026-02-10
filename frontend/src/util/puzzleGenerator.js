@@ -150,7 +150,7 @@ export function generatePuzzleKey({col, row, totalCols, neighbors = {} }) {
     if (W === null) W = randomEdge();
 
     const logicalKey = `${N}${E}${S}${W}`;
-    console.log("Final logical key:", logicalKey);
+    console.log("Final logical key:", logicalKey); // e.g. "1202"
 
     const mapping = PNG_MAP[logicalKey] ?? PNG_MAP["0000"];
     console.log("Mapped to:", mapping);
@@ -162,5 +162,3 @@ export function generatePuzzleKey({col, row, totalCols, neighbors = {} }) {
         mirrorX: mapping.mirrorX,
     };
 }
-
-

@@ -352,7 +352,7 @@ export default function LabPage({catalog, catalogLoading, catalogError}) {
           </div>
           <hr className="rounded"/>
           <div className="chosen-selector-container">
-            <Selector catalog={catalog} catalogLoading={catalogLoading} catalogError={catalogError}  onPieceHover={handlePieceHover} onPieceLeave={clearHover}/>
+            <Selector catalog={catalog} catalogLoading={catalogLoading} catalogError={catalogError}  onPieceHover={handlePieceHover} onPieceLeave={clearHover} puzzleConfig={puzzleConfig}/>
           </div>
         </div>
         <LabRightbar hoverInfo={hoverInfo} />

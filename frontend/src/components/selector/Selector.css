@@ -13,7 +13,7 @@
 
 .tab-button {
     flex: 1;
-    padding: var(--spacing-sm) var(--spacing-md);
+    padding: var(--spacing-sm);
     background: var(--color-panel);
     border: 3px solid var(--color-border);
     cursor: pointer;
@@ -24,6 +24,11 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.5rem;
 }
 
 .tab-button:not(:last-child) {
@@ -57,3 +62,50 @@
 .option-list > * {
     flex: 0 0 auto;
 }
+
+.count-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: white;
+    padding: 0 0.25rem;
+}
+
+.count-badge-searchSpace {
+    background-color: var(--color-searchSpace);
+}
+
+.count-badge-problem {
+    background-color: var(--color-problem);
+}
+
+.count-badge-algorithm {
+    background-color: var(--color-algorithm);
+}
+
+.count-badge-mutation {
+    background-color: var(--color-mutation);
+}
+
+.count-badge-acceptance {
+    background-color: var(--color-acceptance);
+}
+
+.count-badge-populationModel {
+    background-color: var(--color-populationModel);
+}
+
+.count-badge-stopCondition {
+    background-color: var(--color-stopCondition);
+}
+
+.count-badge-observer {
+    background-color: var(--color-observer);
+}
+
+
