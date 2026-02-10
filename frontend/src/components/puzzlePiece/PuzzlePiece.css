@@ -26,6 +26,12 @@
 }
 
 .selector-item-title {
-    font-weight: 600;
-    font-size: var(--font-sm);
+    display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        font-weight: 600;
+        font-size: var(--font-sm);
+        height: 60%;
+        width: 50%;
 }

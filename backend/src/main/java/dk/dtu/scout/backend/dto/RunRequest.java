@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Map;
 
 public record RunRequest(
+   String searchSpaceId,
+    Map<String, Object> searchSpaceParams,
     String problemId,
     Map<String, Object> problemParams,
     String algorithmId,
@@ -15,5 +17,7 @@ public record RunRequest(
     String acceptanceRuleId,
     Map<String, Object> acceptanceRuleParams,
     List<String> observerIds,
+    String stopConditionId,
+    Map<String, Object> stopConditionParams,
     long seed
 ) {}

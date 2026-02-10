@@ -20,7 +20,12 @@
 }
 
 .dropped-puzzle-piece-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
     font-weight: 600;
     font-size: var(--font-sm);
-    text-align: center;
+    height: 60%;
+    width: 50%;
 }

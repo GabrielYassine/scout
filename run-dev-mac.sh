@@ -28,7 +28,7 @@ echo "Starting frontend..."
 osascript <<APPLESCRIPT
 tell application "Terminal"
   activate
-  do script "cd \"$ROOT/frontend\" && npm install && npm run dev"
+  do script "cd \"$ROOT/frontend\" && npm install && npm i recharts && npm run dev"
 end tell
 APPLESCRIPT
 

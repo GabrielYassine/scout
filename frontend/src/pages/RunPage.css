@@ -1,0 +1,22 @@
+.run-page {
+  display: flex;
+  height: calc(100vh - var(--navbar-height));
+}
+
+.run-page-content {
+  flex: 1;
+  padding: 16px;
+  overflow: auto;
+}
+
+.run-chart-panel {
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.run-chart-title {
+  font-weight: 700;
+  margin-bottom: 12px;
+}

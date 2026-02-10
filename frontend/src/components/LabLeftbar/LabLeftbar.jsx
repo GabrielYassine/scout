@@ -37,7 +37,9 @@ export default function LabLeftbar({
       algorithm: catalog.algorithms,
       mutation: catalog.mutations,
       acceptance: catalog.acceptanceRules,
+      populationModel: catalog.populationModels,
       stopCondition: catalog.stopConditions,
+      observer: catalog.observers,
     };
 
     const list = catalogMap[type] ?? [];
