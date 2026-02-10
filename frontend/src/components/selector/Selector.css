@@ -7,7 +7,6 @@
 .tab-buttons-row {
     display: flex;
     flex-direction: row;
-    gap: 0;
     flex-shrink: 0;
 }
 
@@ -47,16 +46,13 @@
 
 .option-list {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     flex: 1;
     min-height: 0;
     overflow: auto;
-    align-items: stretch;
     border: 3px solid var(--color-border);
     border-top: none;
     background: var(--color-panel);
-    padding: var(--spacing-md);
-    gap: var(--spacing-md);
 }
 
 .option-list > * {

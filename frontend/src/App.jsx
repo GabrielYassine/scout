@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import TopNavbar from "./components/TopNavbar.jsx";
+import { PuzzleConfigProvider } from "./contexts/PuzzleConfigContext.jsx";
 
 import HomePage from "./pages/HomePage.jsx";
 import LabPage from "./pages/labPage/LabPage.jsx";
@@ -39,44 +40,46 @@ export default function App() {
   }, []);
 
   return (
-    <div className="app-root">
-      <TopNavbar />
+    <PuzzleConfigProvider>
+      <div className="app-root">
+        <TopNavbar />
 
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route
-          path="/lab"
-          element={
-            <LabPage
-              catalog={catalog}
-              catalogLoading={catalogLoading}
-              catalogError={catalogError}
-            />
-          }
-        />
-        <Route
-          path="/history"
-          element={
-            <HistoryPage
-              catalog={catalog}
-              catalogLoading={catalogLoading}
-              catalogError={catalogError}
-            />
-          }
-        />
-        <Route
-          path="/run"
-          element={
-            <RunPage
-              catalog={catalog}
-              catalogLoading={catalogLoading}
-              catalogError={catalogError}
-            />
-          }
-        />
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route
+            path="/lab"
+            element={
+              <LabPage
+                catalog={catalog}
+                catalogLoading={catalogLoading}
+                catalogError={catalogError}
+              />
+            }
+          />
+          <Route
+            path="/history"
+            element={
+              <HistoryPage
+                catalog={catalog}
+                catalogLoading={catalogLoading}
+                catalogError={catalogError}
+              />
+            }
+          />
+          <Route
+            path="/run"
+            element={
+              <RunPage
+                catalog={catalog}
+                catalogLoading={catalogLoading}
+                catalogError={catalogError}
+              />
+            }
+          />
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </div>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </div>
+    </PuzzleConfigProvider>
   );
 }

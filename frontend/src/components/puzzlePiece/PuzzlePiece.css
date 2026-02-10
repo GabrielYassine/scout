@@ -1,5 +1,4 @@
 .selector-item {
-    padding: var(--spacing-md);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -27,11 +26,11 @@
 
 .selector-item-title {
     display: flex;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        font-weight: 600;
-        font-size: var(--font-sm);
-        height: 60%;
-        width: 50%;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-weight: 600;
+    font-size: var(--font-sm);
+    height: 60%;
+    width: 50%;
 }
