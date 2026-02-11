@@ -31,6 +31,7 @@ export default function TopNavbar() {
       <nav className="nav-center">
         <NavItem to="/" label="Home" icon={homeIcon} />
         <NavItem to="/lab" label="Lab" icon={labIcon} />
+        <NavItem to="/run" label="Run" icon={labIcon} />
         <NavItem to="/history" label="History" icon={historyIcon} />
       </nav>
     </header>

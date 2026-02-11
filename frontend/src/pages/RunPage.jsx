@@ -10,6 +10,32 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
   const run = location.state?.run;
   const puzzleConfig = location.state?.puzzleConfig;
   const params = location.state?.params;
+  if (!run) {
+      return (
+        <div className="run-page">
+          <LabLeftbar
+            puzzleConfig={puzzleConfig ?? {}}
+            params={params ?? {}}
+            onParamChange={() => {}}
+            onReset={() => navigate("/lab")}
+            onRun={() => navigate("/lab")}
+            catalog={catalog}
+            catalogLoading={catalogLoading}
+            catalogError={catalogError}
+            readOnly
+          />
+
+          <div className="run-page-content">
+            <div className="run-chart-panel">
+              <div className="run-chart-title">•</div>
+              <div>
+                    <div>No data to plot.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
 
   return (
     <div className="run-page">
