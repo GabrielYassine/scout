@@ -1,5 +1,6 @@
 package dk.dtu.scout.algorithms;
 
+import dk.dtu.scout.Parameter;
 import dk.dtu.scout.acceptance.AcceptanceRule;
 import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.logging.RunState;
@@ -7,6 +8,7 @@ import dk.dtu.scout.mutation.Mutation;
 import dk.dtu.scout.observer.Observer;
 import dk.dtu.scout.problems.Problem;
 
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -22,6 +24,26 @@ public class SimulatedAnnealing<S> implements Algorithm<S> {
     public SimulatedAnnealing(Mutation<S> mutation, AcceptanceRule acceptance) {
         this.mutation = mutation;
         this.acceptance = acceptance;
+    }
+
+    @Override
+    public String id() {
+        return "sa";
+    }
+
+    @Override
+    public String displayName() {
+        return "Simulated Annealing";
+    }
+
+    @Override
+    public String description() {
+        return "An optimization algorithm inspired by the annealing process in metallurgy";
+    }
+
+    @Override
+    public List<Parameter> params() {
+        return List.of();
     }
 
     @Override

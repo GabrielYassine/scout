@@ -1,5 +1,8 @@
 package dk.dtu.scout.problems;
 
+import dk.dtu.scout.Parameter;
+
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -13,6 +16,26 @@ public class OneMaxProblem implements Problem<boolean[]> {
 
     public OneMaxProblem(int n) {
         this.n = n;
+    }
+
+    @Override
+    public String id() {
+        return "onemax";
+    }
+
+    @Override
+    public String displayName() {
+        return "OneMax";
+    }
+
+    @Override
+    public String description() {
+        return "Maximize the number of ones in a bitstring";
+    }
+
+    @Override
+    public List<Parameter> params() {
+        return List.of();
     }
 
     /**

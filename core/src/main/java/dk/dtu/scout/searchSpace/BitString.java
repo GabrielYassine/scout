@@ -1,5 +1,8 @@
 package dk.dtu.scout.searchSpace;
 
+import dk.dtu.scout.Parameter;
+
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -15,6 +18,28 @@ public class BitString implements SearchSpace<boolean[]> {
             throw new IllegalArgumentException("Bitstring length must be positive");
         }
         this.n = n;
+    }
+
+    @Override
+    public String id() {
+        return "bitstring";
+    }
+
+    @Override
+    public String displayName() {
+        return "BitString";
+    }
+
+    @Override
+    public String description() {
+        return "Binary string representation for boolean optimization problems";
+    }
+
+    @Override
+    public List<Parameter> params() {
+        return List.of(
+            new Parameter("n", "Length (n)", "int", 100, 1.0, null)
+        );
     }
 
     @Override

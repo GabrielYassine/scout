@@ -1,5 +1,7 @@
 package dk.dtu.scout.stopcondition;
 
-public interface StopCondition<S> {
+import dk.dtu.scout.Component;
+
+public interface StopCondition<S> extends Component {
     boolean shouldStop(int iteration, int evaluations, double bestFitness, S bestSolution);
 }

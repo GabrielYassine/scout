@@ -1,9 +1,10 @@
 package dk.dtu.scout.observer;
 
+import dk.dtu.scout.Component;
 import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.logging.RunState;
 
-public interface Observer<S> {
+public interface Observer<S> extends Component  {
     String id();
     String displayName();
 

@@ -2,32 +2,73 @@ package dk.dtu.scout.backend.service;
 
 import java.util.List;
 
+import dk.dtu.scout.Component;
+import dk.dtu.scout.Parameter;
+import dk.dtu.scout.acceptance.ElitistAcceptance;
+import dk.dtu.scout.acceptance.SimulatedAnnealingAcceptance;
+import dk.dtu.scout.algorithms.OnePlusOneEA;
+import dk.dtu.scout.algorithms.SimulatedAnnealing;
 import dk.dtu.scout.backend.dto.catalog.*;
+import dk.dtu.scout.mutation.BitMutation;
+import dk.dtu.scout.observer.AcceptanceRateObserver;
+import dk.dtu.scout.observer.FitnessObserver;
+import dk.dtu.scout.observer.ImprovementObserver;
+import dk.dtu.scout.population.DefaultPopulationModel;
+import dk.dtu.scout.problems.LeadingOnesProblem;
+import dk.dtu.scout.problems.OneMaxProblem;
+import dk.dtu.scout.searchSpace.BitString;
+import dk.dtu.scout.stopcondition.MaxIterations;
 import org.springframework.stereotype.Service;
 
 @Service
 public class CatalogService {
+
+    private static ParamDef toParamDef(Parameter param) {
+        return new ParamDef(param.key(), param.label(), param.type(), param.defaultValue(), param.min(), param.max());
+    }
+
+    private static List<ParamDef> toParamDefs(List<Parameter> params) {
+        return params.stream().map(CatalogService::toParamDef).toList();
+    }
+
+    private static SearchSpaceDef toSearchSpaceDef(Component component) {
+        return new SearchSpaceDef(component.id(), component.displayName(), component.description(), toParamDefs(component.params()));
+    }
+
+    private static ProblemDef toProblemDef(Component component) {
+        return new ProblemDef(component.id(), component.displayName(), component.description(), toParamDefs(component.params()));
+    }
+
+    private static AlgoDef toAlgoDef(Component component) {
+        return new AlgoDef(component.id(), component.displayName(), component.description(), toParamDefs(component.params()));
+    }
+
+    private static MutationDef toMutationDef(Component component) {
+        return new MutationDef(component.id(), component.displayName(), component.description(), toParamDefs(component.params()));
+    }
+
+    private static AcceptanceRuleDef toAcceptanceRuleDef(Component component) {
+        return new AcceptanceRuleDef(component.id(), component.displayName(), component.description(), toParamDefs(component.params()));
+    }
+
+    private static PopulationModelDef toPopulationModelDef(Component component) {
+        return new PopulationModelDef(component.id(), component.displayName(), component.description(), toParamDefs(component.params()));
+    }
+
+    private static StopConditionDef toStopConditionDef(Component component) {
+        return new StopConditionDef(component.id(), component.displayName(), component.description(), toParamDefs(component.params()));
+    }
+
+    private static ObserverDef toObserverDef(Component component) {
+        return new ObserverDef(component.id(), component.displayName(), component.description(), toParamDefs(component.params()));
+    }
 
     /** Returns the list of available search spaces.
      * @return List of SearchSpaceDef
      */
     public List<SearchSpaceDef> searchSpaces() {
         return List.of(
-            new SearchSpaceDef(
-                "bitstring",
-                "BitString",
-                "Binary string representation for boolean optimization problems",
-                List.of(
-                    new ParamDef(
-                        "n",
-                        "Length (n)",
-                        "int",
-                        100,
-                        1.0,
-                        null
-                    )
-                )
-            )
+            toSearchSpaceDef(new BitString(100))
         );
     }
 
@@ -36,20 +77,8 @@ public class CatalogService {
      */
     public List<ProblemDef> problems() {
         return List.of(
-
-            new ProblemDef(
-                "onemax",
-                "OneMax",
-                "Maximize the number of ones in a bitstring",
-                List.of()
-            ),
-
-            new ProblemDef(
-                "leadingones",
-                "LeadingOnes",
-                "Maximize the number of leading ones in a bitstring",
-                List.of()
-            )
+            toProblemDef(new OneMaxProblem(100)),
+            toProblemDef(new LeadingOnesProblem(100))
         );
     }
 
@@ -58,20 +87,8 @@ public class CatalogService {
      */
     public List<AlgoDef> algorithms() {
         return List.of(
-
-            new AlgoDef(
-                "1p1-ea",
-                "(1+1) EA",
-                "A simple evolutionary algorithm",
-                List.of()
-            ),
-
-            new AlgoDef(
-                "sa",
-                "Simulated Annealing",
-                "An optimization algorithm inspired by the annealing process in metallurgy",
-                List.of()
-            )
+            toAlgoDef(new OnePlusOneEA<>(null, null)),
+            toAlgoDef(new SimulatedAnnealing<>(null, null))
         );
     }
 
@@ -81,27 +98,8 @@ public class CatalogService {
      */
     public List<MutationDef> mutations() {
         return List.of(
-            new MutationDef(
-                "bit-flip",
-                "Bit Flip Mutation",
-                "Flips each bit in a bitstring with a certain probability",
-                List.of(
-                    new ParamDef(
-                        "flipProbability",
-                        "Flip Probability",
-                            "string",
-                            "1/n",
-                        null,
-                        null
-                    )
-                )
-            ),
-            new MutationDef(
-                "single-bit-flip",
-                "Single Bit Flip Mutation",
-                "Flips a single randomly chosen bit in a bitstring",
-                List.of()
-            )
+            toMutationDef(BitMutation.withProbability(0.01)),
+            toMutationDef(BitMutation.singleBit())
         );
     }
 
@@ -111,39 +109,20 @@ public class CatalogService {
      */
     public List<AcceptanceRuleDef> acceptanceRules() {
         return List.of(
-            new AcceptanceRuleDef(
-                "elitist",
-                "Elitist Acceptance",
-                "Accepts only solutions that are better than or equal to the current solution",
-                List.of()
-            ),
-            new AcceptanceRuleDef(
-                "simulated-annealing",
-                "Simulated Annealing Acceptance",
-                "Accepts worse solutions with a probability that decreases over time",
-                List.of(
-                        new ParamDef("initialTemperature", "Initial temperature (T0)", "double", 5.0, null, null),
-                        new ParamDef("coolingRate", "Cooling rate", "double", 0.995, null, null),
-                        new ParamDef("minTemperature", "Min temperature", "double", 1e-6, null, null)
-                )
-            )
+            toAcceptanceRuleDef(new ElitistAcceptance()),
+            toAcceptanceRuleDef(new SimulatedAnnealingAcceptance(5.0, 0.995, 1e-6))
         );
     }
+
     /**
      * Returns the list of available population models.
      * @return List of PopulationModelDef
      */
     public List<PopulationModelDef> populationModels() {
         return List.of(
-                new PopulationModelDef(
-                        "default",
-                        "Default Population Model",
-                        "Single run with a single algorithm instance",
-                        List.of()
-                )
+            toPopulationModelDef(new DefaultPopulationModel<>())
         );
     }
-
 
     /**
      * Returns the list of available stop conditions.
@@ -151,21 +130,7 @@ public class CatalogService {
      */
     public List<StopConditionDef> stopConditions() {
         return List.of(
-            new StopConditionDef(
-                "max-iterations",
-                "Max Iterations",
-                "Stops the algorithm after a maximum number of iterations",
-                List.of(
-                    new ParamDef(
-                        "maxIterations",
-                        "Max iterations",
-                        "int",
-                        10_000,
-                        1.0,
-                        null
-                    )
-                )
-            )
+            toStopConditionDef(new MaxIterations<>(10_000))
         );
     }
 
@@ -175,24 +140,9 @@ public class CatalogService {
      */
     public List<ObserverDef> observers() {
         return List.of(
-            new ObserverDef(
-                "fitness",
-                "Fitness Tracker",
-                "Tracks fitness values over time",
-                List.of()
-            ),
-            new ObserverDef(
-                "acceptance-rate",
-                "Acceptance Rate",
-                "Tracks the acceptance rate of solutions",
-                List.of()
-            ),
-            new ObserverDef(
-                "improvements",
-                "Improvement Tracker",
-                "Tracks improvements in the best solution",
-                List.of()
-            )
+            toObserverDef(new FitnessObserver<>()),
+            toObserverDef(new AcceptanceRateObserver<>()),
+            toObserverDef(new ImprovementObserver<>())
         );
     }
 }

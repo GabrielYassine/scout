@@ -1,7 +1,10 @@
 package dk.dtu.scout.observer;
 
+import dk.dtu.scout.Parameter;
 import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.logging.RunState;
+
+import java.util.List;
 
 /**
  * Tracks improvements over time.
@@ -17,6 +20,16 @@ public class ImprovementObserver<S> implements Observer<S> {
     @Override
     public String displayName() {
         return "Improvement Tracker";
+    }
+
+    @Override
+    public String description() {
+        return "Tracks improvements in the best solution";
+    }
+
+    @Override
+    public List<Parameter> params() {
+        return List.of();
     }
 
     @Override

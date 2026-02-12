@@ -1,5 +1,6 @@
 package dk.dtu.scout.algorithms;
 
+import dk.dtu.scout.Parameter;
 import dk.dtu.scout.acceptance.AcceptanceRule;
 import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.logging.RunState;
@@ -7,6 +8,7 @@ import dk.dtu.scout.mutation.Mutation;
 import dk.dtu.scout.observer.Observer;
 import dk.dtu.scout.problems.Problem;
 
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -23,6 +25,26 @@ public class OnePlusOneEA<S> implements Algorithm<S> {
     public OnePlusOneEA(Mutation<S> mutation, AcceptanceRule acceptance) {
         this.mutation = mutation;
         this.acceptance = acceptance;
+    }
+
+    @Override
+    public String id() {
+        return "1p1-ea";
+    }
+
+    @Override
+    public String displayName() {
+        return "(1+1) EA";
+    }
+
+    @Override
+    public String description() {
+        return "A simple evolutionary algorithm";
+    }
+
+    @Override
+    public List<Parameter> params() {
+        return List.of();
     }
 
     @Override

@@ -1,5 +1,8 @@
 package dk.dtu.scout.mutation;
 
+import dk.dtu.scout.Parameter;
+
+import java.util.List;
 import java.util.Random;
 
 public class BitMutation implements Mutation<boolean[]> {
@@ -28,6 +31,33 @@ public class BitMutation implements Mutation<boolean[]> {
             throw new IllegalArgumentException("flipProbability must be in [0,1]");
         }
         return new BitMutation(Mode.INDEPENDENT_PROB, p);
+    }
+
+    @Override
+    public String id() {
+        return mode == Mode.SINGLE_BIT ? "single-bit-flip" : "bit-flip";
+    }
+
+    @Override
+    public String displayName() {
+        return mode == Mode.SINGLE_BIT ? "Single Bit Flip Mutation" : "Bit Flip Mutation";
+    }
+
+    @Override
+    public String description() {
+        return mode == Mode.SINGLE_BIT
+            ? "Flips a single randomly chosen bit in a bitstring"
+            : "Flips each bit in a bitstring with a certain probability";
+    }
+
+    @Override
+    public List<Parameter> params() {
+        if (mode == Mode.SINGLE_BIT) {
+            return List.of();
+        }
+        return List.of(
+            new Parameter("flipProbability", "Flip Probability", "string", "1/n", null, null)
+        );
     }
 
     @Override

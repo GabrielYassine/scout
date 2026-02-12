@@ -1,7 +1,10 @@
 package dk.dtu.scout.observer;
 
+import dk.dtu.scout.Parameter;
 import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.logging.RunState;
+
+import java.util.List;
 
 /**
  * Tracks fitness values over time.
@@ -16,6 +19,16 @@ public class FitnessObserver<S> implements Observer<S> {
     @Override
     public String displayName() {
         return "Fitness Tracker";
+    }
+
+    @Override
+    public String description() {
+        return "Tracks fitness values over time";
+    }
+
+    @Override
+    public List<Parameter> params() {
+        return List.of();
     }
 
     @Override

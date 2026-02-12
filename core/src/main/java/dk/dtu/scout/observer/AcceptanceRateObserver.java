@@ -1,7 +1,10 @@
 package dk.dtu.scout.observer;
 
+import dk.dtu.scout.Parameter;
 import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.logging.RunState;
+
+import java.util.List;
 
 /**
  * Tracks acceptance rate over a sliding window.
@@ -18,6 +21,16 @@ public class AcceptanceRateObserver<S> implements Observer<S> {
     @Override
     public String displayName() {
         return "Acceptance Rate";
+    }
+
+    @Override
+    public String description() {
+        return "Tracks the acceptance rate of solutions";
+    }
+
+    @Override
+    public List<Parameter> params() {
+        return List.of();
     }
 
     @Override
