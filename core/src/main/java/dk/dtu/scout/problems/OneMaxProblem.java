@@ -47,18 +47,7 @@ public class OneMaxProblem implements Problem<boolean[]> {
         return List.of();
     }
 
-    /**
-     * Generates a random binary string of length n.
-     * @return A random boolean array representing the solution.
-     */
-    @Override
-    public boolean[] randomSolution(Random rng) {
-        boolean[] randomBits = new boolean[n];
-        for (int i = 0; i < n; i++) {
-            randomBits[i] = rng.nextBoolean();
-        }
-        return randomBits;
-    }
+
 
     /**
      * Calculates the fitness of a given solution, defined as the number of 1s in the binary string.
