@@ -1,21 +1,30 @@
 package dk.dtu.scout.problems;
 
 import dk.dtu.scout.Parameter;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 /**
  * Implementation of the OneMax problem, where the goal is to maximize the number of 1s in a binary string.
  * @author s235257
  */
+
+@Component
 public class OneMaxProblem implements Problem<boolean[]> {
 
-    private final int n;
+    private int n = 100;
 
+    public OneMaxProblem() {}
 
-    public OneMaxProblem(int n) {
-        this.n = n;
+    @Override
+    public void configure(Map<String, Object> params) {
+        if (params == null) return;
+        if (params.containsKey("n")) {
+            this.n = ((Number) params.get("n")).intValue();
+        }
     }
 
     @Override

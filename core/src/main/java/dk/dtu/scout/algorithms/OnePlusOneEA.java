@@ -7,6 +7,7 @@ import dk.dtu.scout.logging.RunState;
 import dk.dtu.scout.mutation.Mutation;
 import dk.dtu.scout.observer.Observer;
 import dk.dtu.scout.problems.Problem;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Random;
@@ -17,13 +18,19 @@ import java.util.Random;
  * @author s235257
  */
 
+@Component
 public class OnePlusOneEA<S> implements Algorithm<S> {
 
-    private final Mutation<S> mutation;
-    private final AcceptanceRule acceptance;
+    private Mutation<S> mutation;
+    private AcceptanceRule acceptance;
 
-    public OnePlusOneEA(Mutation<S> mutation, AcceptanceRule acceptance) {
+    public OnePlusOneEA() {}
+
+    public void setMutation(Mutation<S> mutation) {
         this.mutation = mutation;
+    }
+
+    public void setAcceptance(AcceptanceRule acceptance) {
         this.acceptance = acceptance;
     }
 
@@ -60,9 +67,7 @@ public class OnePlusOneEA<S> implements Algorithm<S> {
         int evaluations = 1;
 
         // Initial state
-        RunState<S> initialState = new RunState<>(
-            0, evaluations, current, currentFitness, best, bestFitness, false
-        );
+        RunState<S> initialState = new RunState<>(0, evaluations, current, currentFitness, best, bestFitness, false);
         observer.onStart(initialState, log);
         observer.onStep(initialState, log);
 

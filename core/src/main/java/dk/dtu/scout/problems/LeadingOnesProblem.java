@@ -1,20 +1,30 @@
 package dk.dtu.scout.problems;
 
 import dk.dtu.scout.Parameter;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 /**
  * Implementation of the LeadingOnes problem, where the goal is to maximize the consecutive number of 1s from first bit.
  * @author s235257
  */
+
+@Component
 public class LeadingOnesProblem implements Problem<boolean[]>{
 
-    private final int n;
+    private int n = 100;
 
-    public LeadingOnesProblem(int n) {
-        this.n = n;
+    public LeadingOnesProblem() {}
+
+    @Override
+    public void configure(Map<String, Object> params) {
+        if (params == null) return;
+        if (params.containsKey("n")) {
+            this.n = ((Number) params.get("n")).intValue();
+        }
     }
 
     @Override

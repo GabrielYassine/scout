@@ -2,147 +2,97 @@ package dk.dtu.scout.backend.service;
 
 import java.util.List;
 
+import dk.dtu.scout.backend.dto.catalog.*;
+
 import dk.dtu.scout.Component;
 import dk.dtu.scout.Parameter;
-import dk.dtu.scout.acceptance.ElitistAcceptance;
-import dk.dtu.scout.acceptance.SimulatedAnnealingAcceptance;
-import dk.dtu.scout.algorithms.OnePlusOneEA;
-import dk.dtu.scout.algorithms.SimulatedAnnealing;
-import dk.dtu.scout.backend.dto.catalog.*;
-import dk.dtu.scout.mutation.BitMutation;
-import dk.dtu.scout.observer.AcceptanceRateObserver;
-import dk.dtu.scout.observer.FitnessObserver;
-import dk.dtu.scout.observer.ImprovementObserver;
-import dk.dtu.scout.population.DefaultPopulationModel;
-import dk.dtu.scout.problems.LeadingOnesProblem;
-import dk.dtu.scout.problems.OneMaxProblem;
-import dk.dtu.scout.searchSpace.BitString;
-import dk.dtu.scout.stopcondition.MaxIterations;
+
+import dk.dtu.scout.acceptance.AcceptanceRule;
+import dk.dtu.scout.algorithms.Algorithm;
+import dk.dtu.scout.mutation.Mutation;
+import dk.dtu.scout.observer.Observer;
+import dk.dtu.scout.population.PopulationModel;
+import dk.dtu.scout.problems.Problem;
+import dk.dtu.scout.searchSpace.SearchSpace;
+import dk.dtu.scout.stopcondition.StopCondition;
+
 import org.springframework.stereotype.Service;
 
 @Service
 public class CatalogService {
 
-    private static ParamDef toParamDef(Parameter param) {
-        return new ParamDef(param.key(), param.label(), param.type(), param.defaultValue(), param.min(), param.max());
+    private final List<SearchSpace<?>> searchSpaces;
+    private final List<Problem<?>> problems;
+    private final List<Algorithm<?>> algorithms;
+    private final List<Mutation<?>> mutations;
+    private final List<AcceptanceRule> acceptanceRules;
+    private final List<PopulationModel<?>> populationModels;
+    private final List<StopCondition<?>> stopConditions;
+    private final List<Observer<?>> observers;
+
+    public CatalogService(
+        List<SearchSpace<?>> searchSpaces,
+        List<Problem<?>> problems,
+        List<Algorithm<?>> algorithms,
+        List<Mutation<?>> mutations,
+        List<AcceptanceRule> acceptanceRules,
+        List<PopulationModel<?>> populationModels,
+        List<StopCondition<?>> stopConditions,
+        List<Observer<?>> observers
+        ) {
+        this.searchSpaces = searchSpaces;
+        this.problems = problems;
+        this.algorithms = algorithms;
+        this.mutations = mutations;
+        this.acceptanceRules = acceptanceRules;
+        this.populationModels = populationModels;
+        this.stopConditions = stopConditions;
+        this.observers = observers;
     }
 
-    private static List<ParamDef> toParamDefs(List<Parameter> params) {
-        return params.stream().map(CatalogService::toParamDef).toList();
-    }
-
-    private static SearchSpaceDef toSearchSpaceDef(Component component) {
-        return new SearchSpaceDef(component.id(), component.displayName(), component.description(), toParamDefs(component.params()));
-    }
-
-    private static ProblemDef toProblemDef(Component component) {
-        return new ProblemDef(component.id(), component.displayName(), component.description(), toParamDefs(component.params()));
-    }
-
-    private static AlgoDef toAlgoDef(Component component) {
-        return new AlgoDef(component.id(), component.displayName(), component.description(), toParamDefs(component.params()));
-    }
-
-    private static MutationDef toMutationDef(Component component) {
-        return new MutationDef(component.id(), component.displayName(), component.description(), toParamDefs(component.params()));
-    }
-
-    private static AcceptanceRuleDef toAcceptanceRuleDef(Component component) {
-        return new AcceptanceRuleDef(component.id(), component.displayName(), component.description(), toParamDefs(component.params()));
-    }
-
-    private static PopulationModelDef toPopulationModelDef(Component component) {
-        return new PopulationModelDef(component.id(), component.displayName(), component.description(), toParamDefs(component.params()));
-    }
-
-    private static StopConditionDef toStopConditionDef(Component component) {
-        return new StopConditionDef(component.id(), component.displayName(), component.description(), toParamDefs(component.params()));
-    }
-
-    private static ObserverDef toObserverDef(Component component) {
-        return new ObserverDef(component.id(), component.displayName(), component.description(), toParamDefs(component.params()));
-    }
-
-    /** Returns the list of available search spaces.
-     * @return List of SearchSpaceDef
-     */
-    public List<SearchSpaceDef> searchSpaces() {
-        return List.of(
-            toSearchSpaceDef(new BitString(100))
+    private static ComponentDef toComponentDef(String kind, Component c) {
+        return new ComponentDef(
+            kind,
+            c.id(),
+            c.displayName(),
+            c.description(),
+            c.params().stream().map(CatalogService::toParamDef).toList()
         );
     }
 
-    /** Returns the list of available problems.
-     * @return List of ProblemDef
-     */
-    public List<ProblemDef> problems() {
-        return List.of(
-            toProblemDef(new OneMaxProblem(100)),
-            toProblemDef(new LeadingOnesProblem(100))
-        );
+    private static ParamDef toParamDef(Parameter p) {
+        return new ParamDef(p.key(), p.label(), p.type(), p.defaultValue(), p.min(), p.max());
     }
 
-    /** Returns the list of available algorithms.
-     * @return List of AlgoDef
-     */
-    public List<AlgoDef> algorithms() {
-        return List.of(
-            toAlgoDef(new OnePlusOneEA<>(null, null)),
-            toAlgoDef(new SimulatedAnnealing<>(null, null))
-        );
+    public List<ComponentDef> searchSpaces() {
+        return searchSpaces.stream().map(c -> toComponentDef("searchSpace", c)).toList();
     }
 
-    /**
-     * Returns the list of available mutations.
-     * @return List of MutationDef
-     */
-    public List<MutationDef> mutations() {
-        return List.of(
-            toMutationDef(BitMutation.withProbability(0.01)),
-            toMutationDef(BitMutation.singleBit())
-        );
+    public List<ComponentDef> problems() {
+        return problems.stream().map(c -> toComponentDef("problem", c)).toList();
     }
 
-    /**
-     * Returns the list of available acceptance rules.
-     * @return List of AcceptanceRuleDef
-     */
-    public List<AcceptanceRuleDef> acceptanceRules() {
-        return List.of(
-            toAcceptanceRuleDef(new ElitistAcceptance()),
-            toAcceptanceRuleDef(new SimulatedAnnealingAcceptance(5.0, 0.995, 1e-6))
-        );
+    public List<ComponentDef> algorithms() {
+        return algorithms.stream().map(c -> toComponentDef("algorithm", c)).toList();
     }
 
-    /**
-     * Returns the list of available population models.
-     * @return List of PopulationModelDef
-     */
-    public List<PopulationModelDef> populationModels() {
-        return List.of(
-            toPopulationModelDef(new DefaultPopulationModel<>())
-        );
+    public List<ComponentDef> mutations() {
+        return mutations.stream().map(c -> toComponentDef("mutation", c)).toList();
     }
 
-    /**
-     * Returns the list of available stop conditions.
-     * @return List of StopConditionDef
-     */
-    public List<StopConditionDef> stopConditions() {
-        return List.of(
-            toStopConditionDef(new MaxIterations<>(10_000))
-        );
+    public List<ComponentDef> acceptanceRules() {
+        return acceptanceRules.stream().map(c -> toComponentDef("acceptanceRule", c)).toList();
     }
 
-    /**
-     * Returns the list of available observers.
-     * @return List of ObserverDef
-     */
-    public List<ObserverDef> observers() {
-        return List.of(
-            toObserverDef(new FitnessObserver<>()),
-            toObserverDef(new AcceptanceRateObserver<>()),
-            toObserverDef(new ImprovementObserver<>())
-        );
+    public List<ComponentDef> populationModels() {
+        return populationModels.stream().map(c -> toComponentDef("populationModel", c)).toList();
+    }
+
+    public List<ComponentDef> stopConditions() {
+        return stopConditions.stream().map(c -> toComponentDef("stopCondition", c)).toList();
+    }
+
+    public List<ComponentDef> observers() {
+        return observers.stream().map(c -> toComponentDef("observer", c)).toList();
     }
 }

@@ -2,13 +2,17 @@ package dk.dtu.scout.stopcondition;
 
 import dk.dtu.scout.Parameter;
 import dk.dtu.scout.problems.Problem;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 
+@Component
 public class OptimumReached<S> implements StopCondition<S> {
-    private final Problem<S> problem;
+    private Problem<S> problem;
 
-    public OptimumReached(Problem<S> problem) {
+    public OptimumReached() {}
+
+    public void setProblem(Problem<S> problem) {
         this.problem = problem;
     }
 

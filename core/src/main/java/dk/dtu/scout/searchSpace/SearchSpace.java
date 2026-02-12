@@ -2,6 +2,7 @@ package dk.dtu.scout.searchSpace;
 
 import dk.dtu.scout.Component;
 
+import java.util.Map;
 import java.util.Random;
 
 /**
@@ -12,4 +13,5 @@ import java.util.Random;
 
 public interface SearchSpace<S> extends Component {
     S randomSolution(Random rng);
+    default void configure(Map<String, Object> params) {}
 }

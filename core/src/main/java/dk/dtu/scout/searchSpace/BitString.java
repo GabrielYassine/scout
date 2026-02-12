@@ -1,23 +1,34 @@
 package dk.dtu.scout.searchSpace;
 
 import dk.dtu.scout.Parameter;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 /**
  * Represents a binary string (bitstring) search space.
  * Solutions are represented as boolean arrays.
  */
+
+@Component
 public class BitString implements SearchSpace<boolean[]> {
 
-    private final int n;
+    private int n = 100;
 
-    public BitString(int n) {
-        if (n <= 0) {
-            throw new IllegalArgumentException("Bitstring length must be positive");
+    public BitString() {}
+
+    @Override
+    public void configure(Map<String, Object> params) {
+        if (params == null) return;
+        if (params.containsKey("n")) {
+            int value = ((Number) params.get("n")).intValue();
+            if (value <= 0) {
+                throw new IllegalArgumentException("Bitstring length must be positive");
+            }
+            this.n = value;
         }
-        this.n = n;
     }
 
     @Override
@@ -38,7 +49,7 @@ public class BitString implements SearchSpace<boolean[]> {
     @Override
     public List<Parameter> params() {
         return List.of(
-            new Parameter("n", "Length (n)", "int", 100, 1.0, null)
+            new Parameter("n", "Length (n)", "int", n, 1.0, null)
         );
     }
 

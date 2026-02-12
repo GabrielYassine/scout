@@ -37,7 +37,6 @@ public class ExperimentService {
 
         int n = ((Number) request.searchSpaceParams().getOrDefault("n", 100)).intValue();
 
-
         // Initialize random number generator
         Random rng = new Random(seed);
 
@@ -61,23 +60,35 @@ public class ExperimentService {
     }
 
     private Problem<?> createProblem(String id, Map<String, Object> params, int n) {
-        return switch (id) {
-            case "onemax" -> {
-                yield new OneMaxProblem(n);
-            }
-            case "leadingones" -> {
-                yield new LeadingOnesProblem(n);
-            }
+        Problem<?> problem = switch (id) {
+            case "onemax" -> new OneMaxProblem();
+            case "leadingones" -> new LeadingOnesProblem();
             default -> throw new IllegalArgumentException("Unknown problem: " + id);
         };
+
+        // Configure with parameters
+        Map<String, Object> problemParams = Map.of("n", n);
+        problem.configure(problemParams);
+        return problem;
     }
 
     private Algorithm<?> createAlgorithm(String id, Mutation<boolean[]> mutation, AcceptanceRule acceptance) {
-        return switch (id) {
-            case "1p1-ea" -> new OnePlusOneEA<>(mutation, acceptance);
-            case "sa" -> new SimulatedAnnealing<>(mutation, acceptance);
+        Algorithm<boolean[]> algorithm = switch (id) {
+            case "1p1-ea" -> {
+                OnePlusOneEA<boolean[]> alg = new OnePlusOneEA<>();
+                alg.setMutation(mutation);
+                alg.setAcceptance(acceptance);
+                yield alg;
+            }
+            case "sa" -> {
+                SimulatedAnnealing<boolean[]> alg = new SimulatedAnnealing<>();
+                alg.setMutation(mutation);
+                alg.setAcceptance(acceptance);
+                yield alg;
+            }
             default -> throw new IllegalArgumentException("Unknown algorithm: " + id);
         };
+        return algorithm;
     }
 
     private Mutation<boolean[]> createMutation(String id, Map<String, Object> params, int n) {
@@ -95,23 +106,22 @@ public class ExperimentService {
             default -> throw new IllegalArgumentException("Unknown mutation: " + id);
         };
     }
+
     private AcceptanceRule createAcceptanceRule(String id, Map<String, Object> params) {
         if (id == null) id = "elitist";
         if (params == null) params = Map.of();
 
-        return switch (id) {
+        AcceptanceRule acceptance = switch (id) {
             case "elitist" -> new ElitistAcceptance();
-
-            case "simulated-annealing" -> {
-                double T0 = ((Number) params.getOrDefault("initialTemperature", 5.0)).doubleValue();
-                double coolingRate = ((Number) params.getOrDefault("coolingRate", 0.995)).doubleValue();
-                double TMin = ((Number) params.getOrDefault("minTemperature", 1e-6)).doubleValue();
-                yield new SimulatedAnnealingAcceptance(T0, coolingRate, TMin);
-            }
-
+            case "simulated-annealing" -> new SimulatedAnnealingAcceptance();
             default -> throw new IllegalArgumentException("Unknown acceptance rule: " + id);
         };
+
+        // Configure with parameters
+        acceptance.configure(params);
+        return acceptance;
     }
+
     private PopulationModel<boolean[]> createPopulationModel(String id, Map<String, Object> params) {
         if (id == null) id = "default";
         if (params == null) params = Map.of();
@@ -134,5 +144,4 @@ public class ExperimentService {
             default -> throw new IllegalArgumentException("Unknown observer: " + observerId);
         };
     }
-
 }

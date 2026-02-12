@@ -1,14 +1,23 @@
 package dk.dtu.scout.stopcondition;
 
 import dk.dtu.scout.Parameter;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 
+@Component
 public class MaxIterations<S> implements StopCondition<S> {
-    private final int maxIterations;
+    private int maxIterations = 10_000;
 
-    public MaxIterations(int maxIterations) {
-        this.maxIterations = maxIterations;
+    public MaxIterations() {}
+
+    @Override
+    public void configure(Map<String, Object> params) {
+        if (params == null) return;
+        if (params.containsKey("maxIterations")) {
+            this.maxIterations = ((Number) params.get("maxIterations")).intValue();
+        }
     }
 
     @Override
@@ -29,7 +38,7 @@ public class MaxIterations<S> implements StopCondition<S> {
     @Override
     public List<Parameter> params() {
         return List.of(
-            new Parameter("maxIterations", "Max iterations", "int", 10_000, 1.0, null)
+            new Parameter("maxIterations", "Max iterations", "int", maxIterations, 1.0, null)
         );
     }
 

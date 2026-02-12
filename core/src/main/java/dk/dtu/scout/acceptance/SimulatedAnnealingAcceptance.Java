@@ -1,48 +1,42 @@
 package dk.dtu.scout.acceptance;
 
 import dk.dtu.scout.Parameter;
+import org.springframework.stereotype.Component;
+
 
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 /**
  * Simulated Annealing acceptance rule for optimization algorithms.
  * Accepts improvements always, and accepts worse moves with probability based on temperature.
  */
+
+@Component
 public class SimulatedAnnealingAcceptance implements AcceptanceRule {
 
-    private final double initialTemperature;
-    private final double coolingRate;
-    private final double minTemperature;
+    private double initialTemperature = 5.0;
+    private double coolingRate = 0.995;
+    private double minTemperature = 1e-6;
 
-    public SimulatedAnnealingAcceptance(double initialTemperature, double coolingRate, double minTemperature) {
-        this.initialTemperature = initialTemperature;
-        this.coolingRate = coolingRate;
-        this.minTemperature = minTemperature;
-    }
-
-    @Override
-    public String id() {
-        return "simulated-annealing";
-    }
-
-    @Override
-    public String displayName() {
-        return "Simulated Annealing Acceptance";
-    }
-
-    @Override
-    public String description() {
-        return "Accepts worse solutions with a probability that decreases over time";
-    }
+    public SimulatedAnnealingAcceptance() {}
 
     @Override
     public List<Parameter> params() {
         return List.of(
-            new Parameter("initialTemperature", "Initial temperature (T0)", "double", 5.0, null, null),
-            new Parameter("coolingRate", "Cooling rate", "double", 0.995, null, null),
-            new Parameter("minTemperature", "Min temperature", "double", 1e-6, null, null)
+            new Parameter("initialTemperature", "Initial temperature (T0)", "double", initialTemperature, null, null),
+            new Parameter("coolingRate", "Cooling rate", "double", coolingRate, null, null),
+            new Parameter("minTemperature", "Min temperature", "double", minTemperature, null, null)
         );
+    }
+
+    @Override
+    public void configure(Map<String, Object> params) {
+        if (params == null) return;
+        this.initialTemperature = ((Number) params.getOrDefault("initialTemperature", initialTemperature)).doubleValue();
+        this.coolingRate = ((Number) params.getOrDefault("coolingRate", coolingRate)).doubleValue();
+        this.minTemperature = ((Number) params.getOrDefault("minTemperature", minTemperature)).doubleValue();
     }
 
     /**  cooling: T = max(Tmin, T0 * coolingRate^iteration) */
@@ -62,5 +56,20 @@ public class SimulatedAnnealingAcceptance implements AcceptanceRule {
         double p = Math.exp(delta / T);
 
         return rng.nextDouble() < p;
+    }
+
+    @Override
+    public String id() {
+        return "simulated-annealing";
+    }
+
+    @Override
+    public String displayName() {
+        return "Simulated Annealing Acceptance";
+    }
+
+    @Override
+    public String description() {
+        return "Accepts worse solutions with a probability that decreases over time";
     }
 }

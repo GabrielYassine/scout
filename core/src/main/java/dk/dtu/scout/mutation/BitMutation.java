@@ -1,10 +1,13 @@
 package dk.dtu.scout.mutation;
 
 import dk.dtu.scout.Parameter;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
+@Component
 public class BitMutation implements Mutation<boolean[]> {
 
     public enum Mode {
@@ -12,17 +15,28 @@ public class BitMutation implements Mutation<boolean[]> {
         INDEPENDENT_PROB     // flip each bit with probability p
     }
 
-    private final Mode mode;
-    private final double flipProbability;
+    private Mode mode = Mode.SINGLE_BIT;
+    private double flipProbability = 0.0;
 
-    private BitMutation(Mode mode, double flipProbability) {
-        this.mode = mode;
-        this.flipProbability = flipProbability;
+    public BitMutation() {}
+
+    @Override
+    public void configure(Map<String, Object> params) {
+        if (params == null) return;
+        if (params.containsKey("mode")) {
+            this.mode = (Mode) params.get("mode");
+        }
+        if (params.containsKey("flipProbability")) {
+            this.flipProbability = ((Number) params.get("flipProbability")).doubleValue();
+        }
     }
 
     /** Factory: flip exactly one random bit */
     public static BitMutation singleBit() {
-        return new BitMutation(Mode.SINGLE_BIT, 0.0);
+        BitMutation mutation = new BitMutation();
+        mutation.mode = Mode.SINGLE_BIT;
+        mutation.flipProbability = 0.0;
+        return mutation;
     }
 
     /** Factory: flip each bit independently with probability p */
@@ -30,7 +44,10 @@ public class BitMutation implements Mutation<boolean[]> {
         if (p < 0.0 || p > 1.0) {
             throw new IllegalArgumentException("flipProbability must be in [0,1]");
         }
-        return new BitMutation(Mode.INDEPENDENT_PROB, p);
+        BitMutation mutation = new BitMutation();
+        mutation.mode = Mode.INDEPENDENT_PROB;
+        mutation.flipProbability = p;
+        return mutation;
     }
 
     @Override

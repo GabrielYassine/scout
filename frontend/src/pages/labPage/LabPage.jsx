@@ -38,7 +38,7 @@ export default function LabPage({catalog, catalogLoading, catalogError}) {
   function handlePieceHover(type, id) {
       const item = getCatalogItem(type, id);
       if (!item) return;
-      setHoverInfo({ title: item.name, description: item.description });
+      setHoverInfo({ title: item.displayName, description: item.description });
   }
 
   function clearHover() {

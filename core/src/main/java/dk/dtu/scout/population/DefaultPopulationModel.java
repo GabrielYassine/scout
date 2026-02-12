@@ -5,11 +5,13 @@ import dk.dtu.scout.algorithms.Algorithm;
 import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.observer.Observer;
 import dk.dtu.scout.problems.Problem;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Random;
 import java.util.function.Supplier;
 
+@Component
 public class DefaultPopulationModel<S> implements PopulationModel<S> {
 
     @Override

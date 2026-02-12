@@ -3,12 +3,15 @@ package dk.dtu.scout.observer;
 import dk.dtu.scout.Parameter;
 import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.logging.RunState;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 
 /**
  * Tracks fitness values over time.
  */
+
+@Component
 public class FitnessObserver<S> implements Observer<S> {
 
     @Override

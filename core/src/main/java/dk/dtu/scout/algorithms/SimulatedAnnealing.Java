@@ -7,6 +7,7 @@ import dk.dtu.scout.logging.RunState;
 import dk.dtu.scout.mutation.Mutation;
 import dk.dtu.scout.observer.Observer;
 import dk.dtu.scout.problems.Problem;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Random;
@@ -16,13 +17,20 @@ import java.util.Random;
  * @param <S> The type of solutions being optimized.
  *   * @author s230632
  */
+
+@Component
 public class SimulatedAnnealing<S> implements Algorithm<S> {
 
-    private final Mutation<S> mutation;
-    private final AcceptanceRule acceptance;
+    private Mutation<S> mutation;
+    private AcceptanceRule acceptance;
 
-    public SimulatedAnnealing(Mutation<S> mutation, AcceptanceRule acceptance) {
+    public SimulatedAnnealing() {}
+
+    public void setMutation(Mutation<S> mutation) {
         this.mutation = mutation;
+    }
+
+    public void setAcceptance(AcceptanceRule acceptance) {
         this.acceptance = acceptance;
     }
 

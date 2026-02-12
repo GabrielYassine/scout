@@ -4,6 +4,8 @@ import dk.dtu.scout.Component;
 import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.logging.RunState;
 
+import java.util.Map;
+
 public interface Observer<S> extends Component  {
     String id();
     String displayName();
@@ -11,4 +13,5 @@ public interface Observer<S> extends Component  {
     default void onStart(RunState<S> state, RunLog log) {}
     void onStep(RunState<S> state, RunLog log);
     default void onEnd(RunState<S> state, RunLog log) {}
+    default void configure(Map<String, Object> params) {}
 }

@@ -18,7 +18,13 @@ export default function Selector({ catalog, catalogLoading, catalogError ,onPiec
     const activeType = componentTypes.find(type => type.key === activeTab);
     const items = catalog?.[activeType.catalogKey] ?? [];
 
-    // Function to get count of pieces for a given type
+    // Debug logging
+    if (catalog) {
+        console.log('Catalog loaded:', catalog);
+        console.log(`Active tab: ${activeTab}, catalogKey: ${activeType.catalogKey}`);
+        console.log(`Items for ${activeTab}:`, items);
+    }
+
     const getCount = (key) => {
         if (!puzzleConfig || !puzzleConfig[key]) return 0;
         return Array.isArray(puzzleConfig[key]) ? puzzleConfig[key].length : 0;
@@ -38,11 +44,16 @@ export default function Selector({ catalog, catalogLoading, catalogError ,onPiec
                 })}
             </div>
             <div className="option-list">
-                {items.map((item) => (
+                {catalogLoading && <div style={{ padding: '20px', textAlign: 'center' }}>Loading catalog...</div>}
+                {catalogError && <div style={{ padding: '20px', color: 'red', textAlign: 'center' }}>Error: {catalogError}</div>}
+                {!catalogLoading && !catalogError && items.length === 0 && (
+                    <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>No items available</div>
+                )}
+                {!catalogLoading && !catalogError && items.map((item) => (
                     <PuzzlePiece
                         key={item.id}
                         id={item.id}
-                        label={item.name}
+                        label={item.displayName}
                         type={activeTab}
                         onHover={onPieceHover}
                         onLeave={onPieceLeave}

@@ -1,10 +1,12 @@
 package dk.dtu.scout.acceptance;
 
 import dk.dtu.scout.Parameter;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Random;
 
+@Component
 public class ElitistAcceptance implements AcceptanceRule {
 
     @Override
