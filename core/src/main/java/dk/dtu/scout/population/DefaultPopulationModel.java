@@ -5,6 +5,8 @@ import dk.dtu.scout.algorithms.Algorithm;
 import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.observer.Observer;
 import dk.dtu.scout.problems.Problem;
+import dk.dtu.scout.searchSpace.SearchSpace;
+import dk.dtu.scout.stopcondition.StopCondition;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -35,7 +37,7 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
     }
 
     @Override
-    public RunLog run(Supplier<Algorithm<S>> algorithmFactory, Problem<S> problem, Random rng, int maxIterations, Observer<S> observer) {
-        return algorithmFactory.get().run(problem, rng, maxIterations, observer);
+    public RunLog run(Supplier<Algorithm<S>> algorithmFactory, SearchSpace<S> space, Problem<S> problem, Random rng, StopCondition<S> stop, Observer<S> observer) {
+        return algorithmFactory.get().run(space,problem, rng, stop, observer);
     }
 }

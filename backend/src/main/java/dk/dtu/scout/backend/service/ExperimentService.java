@@ -18,6 +18,11 @@ import dk.dtu.scout.problems.LeadingOnesProblem;
 import dk.dtu.scout.problems.OneMaxProblem;
 import dk.dtu.scout.problems.Problem;
 import dk.dtu.scout.mutation.BitMutation;
+import dk.dtu.scout.searchSpace.BitString;
+import dk.dtu.scout.searchSpace.SearchSpace;
+import dk.dtu.scout.stopcondition.MaxIterations;
+import dk.dtu.scout.stopcondition.OptimumReached;
+import dk.dtu.scout.stopcondition.StopCondition;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -32,16 +37,16 @@ public class ExperimentService {
     public RunResponse run(RunRequest request) {
 
         // Extract algorithm parameters with defaults (missing a few params)
-        int maxIterations = ((Number) request.stopConditionParams().getOrDefault("maxIterations", 1000)).intValue();
         long seed = request.seed();
 
-        int n = ((Number) request.searchSpaceParams().getOrDefault("n", 100)).intValue();
 
         // Initialize random number generator
         Random rng = new Random(seed);
 
-        Problem<?> problem = createProblem(request.problemId(), request.problemParams(), n);
-        Mutation<boolean[]> mutation = createMutation(request.mutationId(), request.mutationParams(), n);
+        SearchSpace<boolean[]> ss = createSearchSpace(request.searchSpaceId(), request.searchSpaceParams());
+        StopCondition<boolean[]> stop = (StopCondition<boolean[]>) createStopCondition(request.stopConditionId(), request.stopConditionParams());
+        Problem<?> problem = createProblem(request.problemId(),  ss.dimension());
+        Mutation<boolean[]> mutation = createMutation(request.mutationId(), request.mutationParams(), ss.dimension());
         AcceptanceRule acceptance = createAcceptanceRule(request.acceptanceRuleId(), request.acceptanceRuleParams());
         Observer<boolean[]> observer = createObserver(request.observerIds());
 
@@ -50,7 +55,7 @@ public class ExperimentService {
 
         PopulationModel<boolean[]> popModel = (PopulationModel<boolean[]>) createPopulationModel(request.populationModelId(), request.populationModelParams());
 
-        RunLog log = popModel.run(algFactory, (Problem<boolean[]>) problem, rng, maxIterations, observer);
+        RunLog log = popModel.run(algFactory,ss, (Problem<boolean[]>) problem, rng, stop, observer);
         return new RunResponse(
             request.problemId(),
             request.algorithmId(),
@@ -59,7 +64,20 @@ public class ExperimentService {
         );
     }
 
-    private Problem<?> createProblem(String id, Map<String, Object> params, int n) {
+    private SearchSpace<boolean[]> createSearchSpace(String id, Map<String,Object> params) {
+        if (id == null) id = "bitstring";
+        if (params == null) params = Map.of();
+
+        SearchSpace<boolean[]> ss = switch (id) {
+            case "bitstring" -> new BitString();
+            default -> throw new IllegalArgumentException("Unknown search space: " + id);
+        };
+
+        ss.configure(params);
+        return ss;
+    }
+
+    private Problem<?> createProblem(String id,  int n) {
         Problem<?> problem = switch (id) {
             case "onemax" -> new OneMaxProblem();
             case "leadingones" -> new LeadingOnesProblem();
@@ -129,6 +147,18 @@ public class ExperimentService {
             case "default" -> new DefaultPopulationModel<>();
             default -> throw new IllegalArgumentException("Unknown population model: " + id);
         };
+    }
+    private StopCondition<?> createStopCondition(String id, Map<String, Object> params) {
+        if (id == null) id = "max-iterations";
+        if (params == null) params = Map.of();
+
+        StopCondition<?> stop = switch (id) {
+            case "max-iterations" -> new MaxIterations<>();
+            case "optimum-reached" -> new OptimumReached<>();
+            default -> throw new IllegalArgumentException("Unknown stop condition: " + id);
+        };
+        stop.configure(params);
+        return stop;
     }
 
     private Observer<boolean[]> createObserver(List<String> observerIds) {

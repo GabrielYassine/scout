@@ -7,6 +7,8 @@ import dk.dtu.scout.logging.RunState;
 import dk.dtu.scout.mutation.Mutation;
 import dk.dtu.scout.observer.Observer;
 import dk.dtu.scout.problems.Problem;
+import dk.dtu.scout.searchSpace.SearchSpace;
+import dk.dtu.scout.stopcondition.StopCondition;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -55,10 +57,10 @@ public class OnePlusOneEA<S> implements Algorithm<S> {
     }
 
     @Override
-    public RunLog run(Problem<S> problem, Random rng, int maxIterations, Observer<S> observer) {
+    public RunLog run(SearchSpace<S> space, Problem<S> problem, Random rng, StopCondition<S> stop, Observer<S> observer) {
         RunLog log = new RunLog();
 
-        S current = problem.randomSolution(rng);
+        S current = space.randomSolution(rng);
         double currentFitness = problem.fitness(current);
 
         S best = current;
@@ -72,7 +74,7 @@ public class OnePlusOneEA<S> implements Algorithm<S> {
         observer.onStep(initialState, log);
 
         int iteration = 1;
-        while (iteration <= maxIterations && !problem.isOptimal(currentFitness)) {
+        while (!stop.shouldStop(iteration, evaluations, bestFitness, best)) {
             S offspring = mutation.mutate(current, rng);
             double offspringFitness = problem.fitness(offspring);
             evaluations++;

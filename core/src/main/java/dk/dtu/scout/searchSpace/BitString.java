@@ -30,6 +30,8 @@ public class BitString implements SearchSpace<boolean[]> {
             this.n = value;
         }
     }
+    @Override
+    public int dimension() {return n;}
 
     @Override
     public String id() {

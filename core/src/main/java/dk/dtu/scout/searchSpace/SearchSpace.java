@@ -13,5 +13,6 @@ import java.util.Random;
 
 public interface SearchSpace<S> extends Component {
     S randomSolution(Random rng);
+    int dimension();
     default void configure(Map<String, Object> params) {}
 }

@@ -7,6 +7,8 @@ import dk.dtu.scout.logging.RunState;
 import dk.dtu.scout.mutation.Mutation;
 import dk.dtu.scout.observer.Observer;
 import dk.dtu.scout.problems.Problem;
+import dk.dtu.scout.searchSpace.SearchSpace;
+import dk.dtu.scout.stopcondition.StopCondition;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -55,10 +57,10 @@ public class SimulatedAnnealing<S> implements Algorithm<S> {
     }
 
     @Override
-    public RunLog run(Problem<S> problem, Random rng, int maxIterations, Observer<S> observer) {
+    public RunLog run(SearchSpace<S> space, Problem<S> problem, Random rng, StopCondition<S> stop, Observer<S> observer) {
         RunLog log = new RunLog();
 
-        S current = problem.randomSolution(rng);
+        S current = space.randomSolution(rng);
         double currentFitness = problem.fitness(current);
 
         S best = current;
@@ -68,13 +70,13 @@ public class SimulatedAnnealing<S> implements Algorithm<S> {
 
         // Initial state
         RunState<S> initialState = new RunState<>(
-            0, evaluations, current, currentFitness, best, bestFitness, false
+                0, evaluations, current, currentFitness, best, bestFitness, false
         );
         observer.onStart(initialState, log);
         observer.onStep(initialState, log);
 
         int iteration = 1;
-        while (iteration <= maxIterations && !problem.isOptimal(bestFitness)) {
+        while(!stop.shouldStop(iteration, evaluations, bestFitness, best)){
 
             S candidate = mutation.mutate(current, rng);
             double candidateFitness = problem.fitness(candidate);
@@ -93,7 +95,7 @@ public class SimulatedAnnealing<S> implements Algorithm<S> {
             }
 
             RunState<S> state = new RunState<>(
-                iteration, evaluations, current, currentFitness, best, bestFitness, accepted
+                    iteration, evaluations, current, currentFitness, best, bestFitness, accepted
             );
             observer.onStep(state, log);
 
@@ -101,7 +103,7 @@ public class SimulatedAnnealing<S> implements Algorithm<S> {
         }
 
         RunState<S> finalState = new RunState<>(
-            iteration - 1, evaluations, current, currentFitness, best, bestFitness, false
+                iteration - 1, evaluations, current, currentFitness, best, bestFitness, false
         );
         observer.onEnd(finalState, log);
 
