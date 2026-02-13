@@ -8,11 +8,11 @@ import java.util.List;
 
 @Component
 public class OptimumReached<S> implements StopCondition<S> {
-    private Problem<S> problem;
+    private Problem<?> problem;
 
     public OptimumReached() {}
 
-    public void setProblem(Problem<S> problem) {
+    public void setProblem(Problem<?> problem) {
         this.problem = problem;
     }
 

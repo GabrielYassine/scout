@@ -20,6 +20,7 @@ import dk.dtu.scout.problems.Problem;
 import dk.dtu.scout.mutation.BitMutation;
 import dk.dtu.scout.searchSpace.BitString;
 import dk.dtu.scout.searchSpace.SearchSpace;
+import dk.dtu.scout.stopcondition.BroadcastStopCondition;
 import dk.dtu.scout.stopcondition.MaxIterations;
 import dk.dtu.scout.stopcondition.OptimumReached;
 import dk.dtu.scout.stopcondition.StopCondition;
@@ -43,14 +44,12 @@ public class ExperimentService {
         Random rng = new Random(seed);
 
         SearchSpace<boolean[]> ss = createSearchSpace(request.searchSpaceId(), request.searchSpaceParams());
-        StopCondition<boolean[]> stop = (StopCondition<boolean[]>) createStopCondition(request.stopConditionId(), request.stopConditionParams());
         Problem<?> problem = createProblem(request.problemId(),  ss.dimension());
         Mutation<boolean[]> mutation = createMutation(request.mutationId(), request.mutationParams(), ss.dimension());
         AcceptanceRule acceptance = createAcceptanceRule(request.acceptanceRuleId(), request.acceptanceRuleParams());
+        StopCondition<boolean[]> stop = (StopCondition<boolean[]>) createStopConditionChain(request.stopConditionId(), request.stopConditionParams(),problem);
         Observer<boolean[]> observer = createObserverChain(request.observerIds());
-        if (stop instanceof OptimumReached<boolean[]> opt) {
-            opt.setProblem((Problem<boolean[]>) problem);
-        }
+
         // factory: Should create a new instance of the algorithm for each run in multistart
         Supplier<Algorithm<boolean[]>> algFactory = () -> (Algorithm<boolean[]>) createAlgorithm(request.algorithmId(), mutation, acceptance);
 
@@ -67,7 +66,7 @@ public class ExperimentService {
 
     private SearchSpace<boolean[]> createSearchSpace(List<String>  ids, Map<String,Object> params) {
         String id = (ids == null || ids.isEmpty())
-                ? "default"
+                ? "bitstring"
                 : ids.get(0);
 
         if (params == null) params = Map.of();
@@ -164,19 +163,25 @@ public class ExperimentService {
             default -> throw new IllegalArgumentException("Unknown population model: " + id);
         };
     }
-    private StopCondition<?> createStopCondition(List<String>  ids, Map<String, Object> params) {
-        String id = (ids == null || ids.isEmpty())
-                ? "max-iterations"
-                : ids.get(0);
-        if (params == null) params = Map.of();
+    private StopCondition<?> createStopConditionChain(List<String>  ids, Map<String, Object> params, Problem<?> problem) {
+        if (ids == null || ids.isEmpty()) return new MaxIterations<>();
+        final Map<String, Object> p = (params == null) ? Map.of() : params;
 
-        StopCondition<?> stop = switch (id) {
+        List<StopCondition<boolean[]>> stops = ids.stream().map(id -> createSingleStopCondition(id, p,problem)).toList();
+
+        return new BroadcastStopCondition<>(stops);
+    }
+    private StopCondition<boolean[]> createSingleStopCondition(String id, Map<String, Object> params, Problem<?> problem) {
+        StopCondition<boolean[]> stop = switch (id) {
             case "max-iterations" -> new MaxIterations<>();
-            case "optimum-reached" -> new OptimumReached<>();
+            case "optimum-reached" ->{
+                OptimumReached<boolean[]> s = new OptimumReached<>();
+                s.setProblem(problem);
+                yield s;
+            }
             default -> throw new IllegalArgumentException("Unknown stop condition: " + id);
         };
         stop.configure(params);
-
         return stop;
     }
 
