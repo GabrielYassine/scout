@@ -39,7 +39,6 @@ public class ExperimentService {
         // Extract algorithm parameters with defaults (missing a few params)
         long seed = request.seed();
 
-
         // Initialize random number generator
         Random rng = new Random(seed);
 
@@ -48,8 +47,10 @@ public class ExperimentService {
         Problem<?> problem = createProblem(request.problemId(),  ss.dimension());
         Mutation<boolean[]> mutation = createMutation(request.mutationId(), request.mutationParams(), ss.dimension());
         AcceptanceRule acceptance = createAcceptanceRule(request.acceptanceRuleId(), request.acceptanceRuleParams());
-        Observer<boolean[]> observer = createObserver(request.observerIds());
-
+        Observer<boolean[]> observer = createObserverChain(request.observerIds());
+        if (stop instanceof OptimumReached<boolean[]> opt) {
+            opt.setProblem((Problem<boolean[]>) problem);
+        }
         // factory: Should create a new instance of the algorithm for each run in multistart
         Supplier<Algorithm<boolean[]>> algFactory = () -> (Algorithm<boolean[]>) createAlgorithm(request.algorithmId(), mutation, acceptance);
 
@@ -57,15 +58,18 @@ public class ExperimentService {
 
         RunLog log = popModel.run(algFactory,ss, (Problem<boolean[]>) problem, rng, stop, observer);
         return new RunResponse(
-            request.problemId(),
-            request.algorithmId(),
+            request.problemId().get(0),
+            request.algorithmId().get(0),
             log.getIterations(),
             log.getSeries()
         );
     }
 
-    private SearchSpace<boolean[]> createSearchSpace(String id, Map<String,Object> params) {
-        if (id == null) id = "bitstring";
+    private SearchSpace<boolean[]> createSearchSpace(List<String>  ids, Map<String,Object> params) {
+        String id = (ids == null || ids.isEmpty())
+                ? "default"
+                : ids.get(0);
+
         if (params == null) params = Map.of();
 
         SearchSpace<boolean[]> ss = switch (id) {
@@ -77,7 +81,10 @@ public class ExperimentService {
         return ss;
     }
 
-    private Problem<?> createProblem(String id,  int n) {
+    private Problem<?> createProblem(List<String>  ids,  int n) {
+        String id = (ids == null || ids.isEmpty())
+                ? "onemax"
+                : ids.get(0);
         Problem<?> problem = switch (id) {
             case "onemax" -> new OneMaxProblem();
             case "leadingones" -> new LeadingOnesProblem();
@@ -90,7 +97,10 @@ public class ExperimentService {
         return problem;
     }
 
-    private Algorithm<?> createAlgorithm(String id, Mutation<boolean[]> mutation, AcceptanceRule acceptance) {
+    private Algorithm<?> createAlgorithm(List<String>  ids, Mutation<boolean[]> mutation, AcceptanceRule acceptance) {
+        String id = (ids == null || ids.isEmpty())
+                ? "1p1-ea"
+                : ids.get(0);
         Algorithm<boolean[]> algorithm = switch (id) {
             case "1p1-ea" -> {
                 OnePlusOneEA<boolean[]> alg = new OnePlusOneEA<>();
@@ -109,8 +119,10 @@ public class ExperimentService {
         return algorithm;
     }
 
-    private Mutation<boolean[]> createMutation(String id, Map<String, Object> params, int n) {
-        if (id == null) id = "bit-flip";
+    private Mutation<boolean[]> createMutation(List<String>  ids, Map<String, Object> params, int n) {
+        String id = (ids == null || ids.isEmpty())
+                ? "bit-flip"
+                : ids.get(0);
         if (params == null) params = Map.of();
 
         return switch (id) {
@@ -125,8 +137,10 @@ public class ExperimentService {
         };
     }
 
-    private AcceptanceRule createAcceptanceRule(String id, Map<String, Object> params) {
-        if (id == null) id = "elitist";
+    private AcceptanceRule createAcceptanceRule(List<String>  ids, Map<String, Object> params) {
+        String id = (ids == null || ids.isEmpty())
+                ? "elitist"
+                : ids.get(0);
         if (params == null) params = Map.of();
 
         AcceptanceRule acceptance = switch (id) {
@@ -140,16 +154,20 @@ public class ExperimentService {
         return acceptance;
     }
 
-    private PopulationModel<boolean[]> createPopulationModel(String id, Map<String, Object> params) {
-        if (id == null) id = "default";
+    private PopulationModel<boolean[]> createPopulationModel(List<String>  ids, Map<String, Object> params) {
+        String id = (ids == null || ids.isEmpty())
+                ? "default"
+                : ids.get(0);
         if (params == null) params = Map.of();
         return switch (id) {
             case "default" -> new DefaultPopulationModel<>();
             default -> throw new IllegalArgumentException("Unknown population model: " + id);
         };
     }
-    private StopCondition<?> createStopCondition(String id, Map<String, Object> params) {
-        if (id == null) id = "max-iterations";
+    private StopCondition<?> createStopCondition(List<String>  ids, Map<String, Object> params) {
+        String id = (ids == null || ids.isEmpty())
+                ? "max-iterations"
+                : ids.get(0);
         if (params == null) params = Map.of();
 
         StopCondition<?> stop = switch (id) {
@@ -158,20 +176,24 @@ public class ExperimentService {
             default -> throw new IllegalArgumentException("Unknown stop condition: " + id);
         };
         stop.configure(params);
+
         return stop;
     }
 
-    private Observer<boolean[]> createObserver(List<String> observerIds) {
-        // Default observer if none specified
-        String observerId = (observerIds == null || observerIds.isEmpty())
-            ? "fitness"
-            : observerIds.get(0);
+    private Observer<boolean[]> createObserverChain(List<String> ids) {
+        if (ids == null || ids.isEmpty()) return new FitnessObserver<>();
 
-        return switch (observerId) {
+        List<Observer<boolean[]>> obs = ids.stream().map(this::createSingleObserver).toList();
+        return new BroadcastObserver<>(obs);
+    }
+
+    private Observer<boolean[]> createSingleObserver(String id) {
+        return switch (id) {
             case "fitness" -> new FitnessObserver<>();
             case "acceptance-rate" -> new AcceptanceRateObserver<>();
             case "improvements" -> new ImprovementObserver<>();
-            default -> throw new IllegalArgumentException("Unknown observer: " + observerId);
+            default -> throw new IllegalArgumentException("Unknown observer: " + id);
         };
     }
+
 }

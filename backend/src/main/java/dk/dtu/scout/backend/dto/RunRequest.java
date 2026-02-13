@@ -4,20 +4,20 @@ import java.util.List;
 import java.util.Map;
 
 public record RunRequest(
-   String searchSpaceId,
+   List<String> searchSpaceId,
     Map<String, Object> searchSpaceParams,
-    String problemId,
+   List<String>  problemId,
     Map<String, Object> problemParams,
-    String algorithmId,
+   List<String>  algorithmId,
     Map<String, Object> algorithmParams,
-    String mutationId,
+   List<String>  mutationId,
     Map<String, Object> mutationParams,
-    String populationModelId,
+   List<String>  populationModelId,
     Map<String, Object> populationModelParams,
-    String acceptanceRuleId,
+   List<String>  acceptanceRuleId,
     Map<String, Object> acceptanceRuleParams,
     List<String> observerIds,
-    String stopConditionId,
+    List<String> stopConditionId,
     Map<String, Object> stopConditionParams,
     long seed
 ) {}

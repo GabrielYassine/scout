@@ -46,56 +46,40 @@ export default function LabPage({catalog, catalogLoading, catalogError}) {
   }
 
   async function onRun() {
-    const searchSpace = puzzleConfig.searchSpace?.[0];
-    const problem = puzzleConfig.problem?.[0];
-    const algorithm = puzzleConfig.algorithm?.[0];
-    const mutation = puzzleConfig.mutation?.[0];
-    const acceptance = puzzleConfig.acceptance?.[0];
-    const populationModel = puzzleConfig.populationModel?.[0];
-    const stopCondition = puzzleConfig.stopCondition?.[0];
 
-    const observerIds = puzzleConfig.observer?.map(obs => obs.id) || [];
+    const body = {
+      searchSpaceId: puzzleConfig.searchSpace?.map((x) => x.id) ?? [],
+      searchSpaceParams: params.searchSpace,
+
+      problemId: puzzleConfig.problem?.map((x) => x.id) ?? [],
+      problemParams: params.problem,
+
+      algorithmId: puzzleConfig.algorithm?.map((x) => x.id) ?? [],
+      algorithmParams: params.algorithm,
+
+      mutationId: puzzleConfig.mutation?.map((x) => x.id) ?? [],
+      mutationParams: params.mutation,
+
+      acceptanceRuleId: puzzleConfig.acceptance?.map((x) => x.id) ?? [],
+      acceptanceRuleParams: params.acceptance,
+
+      populationModelId: puzzleConfig.populationModel?.map((x) => x.id) ?? [],
+      populationModelParams: params.populationModel,
+
+      stopConditionId: puzzleConfig.stopCondition?.map((x) => x.id) ?? [],
+      stopConditionParams: params.stopCondition,
+
+      observerIds: puzzleConfig.observer?.map((x) => x.id) ?? [],
+      seed: Date.now(),
+    };
 
     const res = await fetch("/api/run", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        searchSpaceId: searchSpace?.id,
-        searchSpaceParams: params.searchSpace,
-        problemId: problem?.id,
-        problemParams: params.problem,
-        algorithmId: algorithm?.id,
-        algorithmParams: params.algorithm,
-        mutationId: mutation?.id,
-        mutationParams: params.mutation,
-        acceptanceRuleId: acceptance?.id,
-        acceptanceRuleParams: params.acceptance,
-        populationModelId: populationModel?.id,
-        populationModelParams: params.populationModel,
-        observerIds: observerIds,
-        stopConditionId: stopCondition?.id,
-        stopConditionParams: params.stopCondition,
-        seed: Date.now(),
-      }),
+      body: JSON.stringify(body),
     });
 
-    console.log("RUN REQUEST BODY:", {
-      searchSpaceId: searchSpace?.id,
-      searchSpaceParams: params.searchSpace,
-      problemId: problem?.id,
-      problemParams: params.problem,
-      algorithmId: algorithm?.id,
-      algorithmParams: params.algorithm,
-      mutationId: mutation?.id,
-      mutationParams: params.mutation,
-      acceptanceRuleId: acceptance?.id,
-      acceptanceRuleParams: params.acceptance,
-      populationModelId: populationModel?.id,
-      populationModelParams: params.populationModel,
-      stopConditionId: stopCondition?.id,
-      stopConditionParams: params.stopCondition,
-      observerIds,
-    });
+    console.log("RUN REQUEST BODY:", body);
 
     const result = await res.json();
     console.log(result);
