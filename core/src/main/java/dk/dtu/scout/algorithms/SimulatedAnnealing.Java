@@ -73,6 +73,7 @@ public class SimulatedAnnealing<S> implements Algorithm<S> {
                 0, evaluations, current, currentFitness, best, bestFitness, false
         );
         observer.onStart(initialState, log);
+        log.tick(initialState.iteration());
         observer.onStep(initialState, log);
 
         int iteration = 1;
@@ -97,6 +98,7 @@ public class SimulatedAnnealing<S> implements Algorithm<S> {
             RunState<S> state = new RunState<>(
                     iteration, evaluations, current, currentFitness, best, bestFitness, accepted
             );
+            log.tick(state.iteration());
             observer.onStep(state, log);
 
             iteration++;

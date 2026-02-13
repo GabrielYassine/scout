@@ -42,7 +42,6 @@ public class ImprovementObserver<S> implements Observer<S> {
 
     @Override
     public void onStep(RunState<S> state, RunLog log) {
-        log.tick(state.iteration());
 
         double improvement = 0.0;
         if (state.bestFitness() > previousBestFitness) {
