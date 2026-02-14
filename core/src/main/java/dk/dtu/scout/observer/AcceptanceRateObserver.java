@@ -42,7 +42,6 @@ public class AcceptanceRateObserver<S> implements Observer<S> {
         if (state.accepted()) {
             acceptedCount++;
         }
-
         double rate = totalCount > 0 ? (double) acceptedCount / totalCount : 0.0;
         log.put("acceptanceRate", rate);
     }

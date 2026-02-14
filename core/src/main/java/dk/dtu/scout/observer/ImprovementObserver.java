@@ -36,19 +36,15 @@ public class ImprovementObserver<S> implements Observer<S> {
     }
 
     @Override
-    public void onStart(RunState<S> state, RunLog log) {
-        previousBestFitness = state.bestFitness();
-    }
+    public void onStart(RunState<S> state, RunLog log) {previousBestFitness = state.bestFitness();}
 
     @Override
     public void onStep(RunState<S> state, RunLog log) {
-
         double improvement = 0.0;
         if (state.bestFitness() > previousBestFitness) {
             improvement = state.bestFitness() - previousBestFitness;
             previousBestFitness = state.bestFitness();
         }
-
         log.put("improvement", improvement);
     }
 }

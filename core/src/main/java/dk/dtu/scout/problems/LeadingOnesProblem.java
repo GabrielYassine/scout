@@ -5,7 +5,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 
 /**
  * Implementation of the LeadingOnes problem, where the goal is to maximize the consecutive number of 1s from first bit.
@@ -18,14 +17,6 @@ public class LeadingOnesProblem implements Problem<boolean[]>{
     private int n = 100;
 
     public LeadingOnesProblem() {}
-
-    @Override
-    public void configure(Map<String, Object> params) {
-        if (params == null) return;
-        if (params.containsKey("n")) {
-            this.n = ((Number) params.get("n")).intValue();
-        }
-    }
 
     @Override
     public String id() {
@@ -50,6 +41,14 @@ public class LeadingOnesProblem implements Problem<boolean[]>{
     @Override
     public List<String> supportedSearchSpaces() {
         return List.of("bitstring");
+    }
+
+    @Override
+    public void configure(Map<String, Object> params) {
+        if (params == null) return;
+        if (params.containsKey("n")) {
+            this.n = ((Number) params.get("n")).intValue();
+        }
     }
 
     /**

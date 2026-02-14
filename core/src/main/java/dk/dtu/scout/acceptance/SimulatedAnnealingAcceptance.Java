@@ -23,6 +23,21 @@ public class SimulatedAnnealingAcceptance implements AcceptanceRule {
     public SimulatedAnnealingAcceptance() {}
 
     @Override
+    public String id() {
+        return "simulated-annealing";
+    }
+
+    @Override
+    public String displayName() {
+        return "Simulated Annealing Acceptance";
+    }
+
+    @Override
+    public String description() {
+        return "Accepts worse solutions with a probability that decreases over time";
+    }
+
+    @Override
     public List<Parameter> params() {
         return List.of(
             new Parameter("initialTemperature", "Initial temperature (T0)", "double", initialTemperature, null, null),
@@ -56,20 +71,5 @@ public class SimulatedAnnealingAcceptance implements AcceptanceRule {
         double p = Math.exp(delta / T);
 
         return rng.nextDouble() < p;
-    }
-
-    @Override
-    public String id() {
-        return "simulated-annealing";
-    }
-
-    @Override
-    public String displayName() {
-        return "Simulated Annealing Acceptance";
-    }
-
-    @Override
-    public String description() {
-        return "Accepts worse solutions with a probability that decreases over time";
     }
 }

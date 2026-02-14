@@ -20,6 +20,27 @@ public class BitString implements SearchSpace<boolean[]> {
     public BitString() {}
 
     @Override
+    public int dimension() {
+        return n;
+    }
+    @Override
+    public String id() {
+        return "bitstring";
+    }
+    @Override
+    public String displayName() {
+        return "BitString";
+    }
+    @Override
+    public String description() {
+        return "Binary string representation for boolean optimization problems";
+    }
+
+    @Override public List<Parameter> params() {
+        return List.of(new Parameter("n", "Length (n)", "int", n, 1.0, null));
+    }
+
+    @Override
     public void configure(Map<String, Object> params) {
         if (params == null) return;
         if (params.containsKey("n")) {
@@ -29,30 +50,6 @@ public class BitString implements SearchSpace<boolean[]> {
             }
             this.n = value;
         }
-    }
-    @Override
-    public int dimension() {return n;}
-
-    @Override
-    public String id() {
-        return "bitstring";
-    }
-
-    @Override
-    public String displayName() {
-        return "BitString";
-    }
-
-    @Override
-    public String description() {
-        return "Binary string representation for boolean optimization problems";
-    }
-
-    @Override
-    public List<Parameter> params() {
-        return List.of(
-            new Parameter("n", "Length (n)", "int", n, 1.0, null)
-        );
     }
 
     @Override

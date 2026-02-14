@@ -12,6 +12,7 @@ public class BroadcastObserver<S> implements Observer<S> {
     public BroadcastObserver(List<Observer<S>> observers) {
         this.observers = observers;
     }
+
     @Override
     public String id() {
         return "";
@@ -21,6 +22,7 @@ public class BroadcastObserver<S> implements Observer<S> {
     public String displayName() {
         return "";
     }
+
     @Override
     public String description() {
         return "";

@@ -13,14 +13,6 @@ public class MaxIterations<S> implements StopCondition<S> {
     public MaxIterations() {}
 
     @Override
-    public void configure(Map<String, Object> params) {
-        if (params == null) return;
-        if (params.containsKey("maxIterations")) {
-            this.maxIterations = ((Number) params.get("maxIterations")).intValue();
-        }
-    }
-
-    @Override
     public String id() {
         return "max-iterations";
     }
@@ -37,9 +29,15 @@ public class MaxIterations<S> implements StopCondition<S> {
 
     @Override
     public List<Parameter> params() {
-        return List.of(
-            new Parameter("maxIterations", "Max iterations", "int", maxIterations, 1.0, null)
-        );
+        return List.of(new Parameter("maxIterations", "Max iterations", "int", maxIterations, 1.0, null));
+    }
+
+    @Override
+    public void configure(Map<String, Object> params) {
+        if (params == null) return;
+        if (params.containsKey("maxIterations")) {
+            this.maxIterations = ((Number) params.get("maxIterations")).intValue();
+        }
     }
 
     @Override

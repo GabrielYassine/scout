@@ -21,6 +21,31 @@ public class BitMutation implements Mutation<boolean[]> {
     public BitMutation() {}
 
     @Override
+    public String id() {
+        return mode == Mode.SINGLE_BIT ? "single-bit-flip" : "bit-flip";
+    }
+
+    @Override
+    public String displayName() {
+        return "Bit Flip Mutation";
+    }
+
+    @Override
+    public String description() {
+        return mode == Mode.SINGLE_BIT
+                ? "Flips a single randomly chosen bit in a bitstring"
+                : "Flips each bit in a bitstring with a certain probability";
+    }
+
+    @Override
+    public List<Parameter> params() {
+        if (mode == Mode.SINGLE_BIT) {
+            return List.of();
+        }
+        return List.of(new Parameter("flipProbability", "Flip Probability", "string", "1/n", null, null));
+    }
+
+    @Override
     public void configure(Map<String, Object> params) {
         if (params == null) return;
         if (params.containsKey("mode")) {
@@ -48,33 +73,6 @@ public class BitMutation implements Mutation<boolean[]> {
         mutation.mode = Mode.INDEPENDENT_PROB;
         mutation.flipProbability = p;
         return mutation;
-    }
-
-    @Override
-    public String id() {
-        return mode == Mode.SINGLE_BIT ? "single-bit-flip" : "bit-flip";
-    }
-
-    @Override
-    public String displayName() {
-        return "Bit Flip Mutation";
-    }
-
-    @Override
-    public String description() {
-        return mode == Mode.SINGLE_BIT
-            ? "Flips a single randomly chosen bit in a bitstring"
-            : "Flips each bit in a bitstring with a certain probability";
-    }
-
-    @Override
-    public List<Parameter> params() {
-        if (mode == Mode.SINGLE_BIT) {
-            return List.of();
-        }
-        return List.of(
-            new Parameter("flipProbability", "Flip Probability", "string", "1/n", null, null)
-        );
     }
 
     @Override

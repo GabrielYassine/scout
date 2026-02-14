@@ -20,14 +20,6 @@ public class OneMaxProblem implements Problem<boolean[]> {
     public OneMaxProblem() {}
 
     @Override
-    public void configure(Map<String, Object> params) {
-        if (params == null) return;
-        if (params.containsKey("n")) {
-            this.n = ((Number) params.get("n")).intValue();
-        }
-    }
-
-    @Override
     public String id() {
         return "onemax";
     }
@@ -50,6 +42,14 @@ public class OneMaxProblem implements Problem<boolean[]> {
     @Override
     public List<String> supportedSearchSpaces() {
         return List.of("bitstring");
+    }
+
+    @Override
+    public void configure(Map<String, Object> params) {
+        if (params == null) return;
+        if (params.containsKey("n")) {
+            this.n = ((Number) params.get("n")).intValue();
+        }
     }
 
     /**

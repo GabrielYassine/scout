@@ -4,7 +4,6 @@ package dk.dtu.scout.stopcondition;
 import dk.dtu.scout.Parameter;
 
 import java.util.List;
-import java.util.Map;
 
 public class BroadcastStopCondition<S> implements StopCondition<S> {
 
@@ -13,17 +12,6 @@ public class BroadcastStopCondition<S> implements StopCondition<S> {
     public BroadcastStopCondition(List<StopCondition<S>> conditions) {
         this.conditions = conditions;
     }
-
-    @Override
-    public boolean shouldStop(int iteration, int evaluations, double bestFitness, S bestSolution) {
-        for (StopCondition<S> c : conditions) {
-            if (c.shouldStop(iteration, evaluations, bestFitness, bestSolution)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
 
     @Override
     public String id() {
@@ -42,8 +30,16 @@ public class BroadcastStopCondition<S> implements StopCondition<S> {
 
     @Override
     public List<Parameter> params() {
-        return List.of(
-        );
+        return List.of();
     }
 
+    @Override
+    public boolean shouldStop(int iteration, int evaluations, double bestFitness, S bestSolution) {
+        for (StopCondition<S> c : conditions) {
+            if (c.shouldStop(iteration, evaluations, bestFitness, bestSolution)) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

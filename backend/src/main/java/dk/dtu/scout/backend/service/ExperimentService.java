@@ -40,34 +40,30 @@ public class ExperimentService {
 
     public BatchRunResponse run(RunRequest request) {
 
-        // Extract algorithm parameters with defaults (missing a few params)
-        long seed = request.seed();
-
         // Initialize random number generator
+        long seed = request.seed();
         Random rng = new Random(seed);
 
+        // Create components based on request
         SearchSpace<boolean[]> ss = createSearchSpace(request.searchSpaceId(), request.searchSpaceParams());
         Mutation<boolean[]> mutation = createMutation(request.mutationId(), request.mutationParams(), ss.dimension());
         AcceptanceRule acceptance = createAcceptanceRule(request.acceptanceRuleId(), request.acceptanceRuleParams());
-
-
-        PopulationModel<boolean[]> popModel = (PopulationModel<boolean[]>) createPopulationModel(request.populationModelId(), request.populationModelParams());
-
+        PopulationModel<boolean[]> popModel = createPopulationModel(request.populationModelId(), request.populationModelParams());
         List<String> problemIds = (request.problemId() == null || request.problemId().isEmpty()) ? List.of("onemax") : request.problemId();
         List<RunResponse> runs =new ArrayList<>();
-        for (String pid : problemIds) {
 
+        for (String pid : problemIds) {
             Problem<?> problem = createProblem(pid, ss.dimension());
             Observer<boolean[]> observer = createObserverChain(request.observerIds());
             StopCondition<boolean[]> stop = (StopCondition<boolean[]>) createStopConditionChain(request.stopConditionId(), request.stopConditionParams(), problem);
-            // factory: Should create a new instance of the algorithm for each run in multistart
-            Supplier<Algorithm<boolean[]>> algFactory = () -> (Algorithm<boolean[]>) createAlgorithm(request.algorithmId(), mutation, acceptance);
 
+            // Create a fresh aglorithm instance for each population model run
+            Supplier<Algorithm<boolean[]>> algFactory = () -> (Algorithm<boolean[]>) createAlgorithm(request.algorithmId(), mutation, acceptance);
             RunLog log = popModel.run(algFactory, ss, (Problem<boolean[]>) problem, rng,stop, observer);
 
             runs.add(new RunResponse(
                     pid,
-                    request.algorithmId().get(0),
+                    request.algorithmId().getFirst(),
                     log.getIterations(),
                     log.getSeries()
             ));

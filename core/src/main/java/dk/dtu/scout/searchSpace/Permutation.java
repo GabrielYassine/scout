@@ -21,6 +21,26 @@ public class Permutation implements SearchSpace<int[]> {
 
     public Permutation() {}
 
+    @Override public int dimension() {
+        return n;
+    }
+
+    @Override public String id() {
+        return "permutation";
+    }
+
+    @Override public String displayName() {
+        return "Permutation";
+    }
+
+    @Override public String description() {
+        return "Permutation of integers {0, 1, ..., n-1} for combinatorial optimization problems,e.g. city visiting order in TSP";
+    }
+
+    @Override public List<Parameter> params() {
+        return List.of(new Parameter("n", "Length (n)", "int", n, 1.0, null));
+    }
+
     @Override
     public void configure(Map<String, Object> params) {
         if (params == null) return;
@@ -31,33 +51,6 @@ public class Permutation implements SearchSpace<int[]> {
             }
             this.n = value;
         }
-    }
-
-    @Override
-    public int dimension() {
-        return n;
-    }
-
-    @Override
-    public String id() {
-        return "permutation";
-    }
-
-    @Override
-    public String displayName() {
-        return "Permutation";
-    }
-
-    @Override
-    public String description() {
-        return "Permutation of integers {0, 1, ..., n-1} for combinatorial optimization problems,e.g. city visiting order in TSP";
-    }
-
-    @Override
-    public List<Parameter> params() {
-        return List.of(
-            new Parameter("n", "Length (n)", "int", n, 1.0, null)
-        );
     }
 
     @Override
