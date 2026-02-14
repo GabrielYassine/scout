@@ -7,38 +7,11 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
   const location = useLocation();
   const navigate = useNavigate();
 
- const batch = location.state?.batch;
- const runs = batch?.runs ?? [];
- const run = runs[0];
-
+  const batch = location.state?.batch;
   const puzzleConfig = location.state?.puzzleConfig;
   const params = location.state?.params;
-  if (!run) {
-      return (
-        <div className="run-page">
-          <LabLeftbar
-            puzzleConfig={puzzleConfig ?? {}}
-            params={params ?? {}}
-            onParamChange={() => {}}
-            onReset={() => navigate("/lab")}
-            onRun={() => navigate("/lab")}
-            catalog={catalog}
-            catalogLoading={catalogLoading}
-            catalogError={catalogError}
-            readOnly
-          />
+  const runs = batch?.runs ?? [];
 
-          <div className="run-page-content">
-            <div className="run-chart-panel">
-              <div className="run-chart-title">•</div>
-              <div>
-                    <div>No data to plot.</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    }
 
   return (
     <div className="run-page">
@@ -54,14 +27,26 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
         readOnly
       />
 
-      <div className="run-page-content">
-        <div className="run-chart-panel">
-          <div className="run-chart-title">
-            {run.problemId} • {run.algorithmId}
-          </div>
-          <RunChart run={run} />
-        </div>
-      </div>
-    </div>
-  );
+     <div className="run-page-content">
+       {runs.length === 0 ? (
+         <div className="run-chart-panel">
+           <div className="run-chart-title">No run data</div>
+           <div>No data to plot..</div>
+         </div>
+       ) : (
+         <div className="run-stack">
+           {runs.map((run, idx) => (
+             <div className="run-chart-panel">
+               <div className="run-chart-title">
+                 Run {idx + 1} • {run.problemId} • {run.algorithmId}
+               </div>
+               <RunChart run={run} />
+             </div>
+           ))}
+         </div>
+       )}
+     </div>
+   </div>
+ );
+
 }
