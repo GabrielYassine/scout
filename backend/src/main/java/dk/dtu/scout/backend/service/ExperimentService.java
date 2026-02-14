@@ -19,6 +19,7 @@ import dk.dtu.scout.problems.OneMaxProblem;
 import dk.dtu.scout.problems.Problem;
 import dk.dtu.scout.mutation.BitMutation;
 import dk.dtu.scout.searchSpace.BitString;
+import dk.dtu.scout.searchSpace.Permutation;
 import dk.dtu.scout.searchSpace.SearchSpace;
 import dk.dtu.scout.stopcondition.BroadcastStopCondition;
 import dk.dtu.scout.stopcondition.MaxIterations;

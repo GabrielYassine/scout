@@ -56,7 +56,8 @@ public class CatalogService {
             c.id(),
             c.displayName(),
             c.description(),
-            c.params().stream().map(CatalogService::toParamDef).toList()
+            c.params().stream().map(CatalogService::toParamDef).toList(),
+            c.supportedSearchSpaces()
         );
     }
 

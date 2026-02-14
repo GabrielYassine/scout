@@ -7,7 +7,7 @@
     height: var(--puzzle-piece-size);
     cursor: grab;
     user-select: none;
-    transition: box-shadow 0.15s ease, background 0.15s ease;
+    transition: box-shadow 0.15s ease, background 0.15s ease, opacity 0.15s ease;
 }
 
 .selector-item:hover {
@@ -22,6 +22,15 @@
 .selector-item.dragging {
     opacity: 0.3;
     cursor: grabbing;
+}
+
+.selector-item.disabled {
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.selector-item.disabled:hover {
+    transform: none;
 }
 
 .selector-item-title {

@@ -47,6 +47,10 @@ public class LeadingOnesProblem implements Problem<boolean[]>{
         return List.of();
     }
 
+    @Override
+    public List<String> supportedSearchSpaces() {
+        return List.of("bitstring");
+    }
 
     /**
      * Calculates the fitness of a given solution, defined as the number of consecutive 1s starting from first bit.

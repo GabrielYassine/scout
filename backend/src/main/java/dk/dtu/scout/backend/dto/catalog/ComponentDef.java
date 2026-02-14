@@ -7,5 +7,6 @@ public record ComponentDef(
         String id,
         String displayName,
         String description,
-        List<ParamDef> params
+        List<ParamDef> params,
+        List<String> supportedSearchSpaces
 ) {}

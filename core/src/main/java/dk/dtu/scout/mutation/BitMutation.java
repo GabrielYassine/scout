@@ -78,6 +78,11 @@ public class BitMutation implements Mutation<boolean[]> {
     }
 
     @Override
+    public List<String> supportedSearchSpaces() {
+        return List.of("bitstring");
+    }
+
+    @Override
     public boolean[] mutate(boolean[] bits, Random rng) {
         int n = bits.length;
         if (n == 0) return bits;

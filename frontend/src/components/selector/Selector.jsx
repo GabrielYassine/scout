@@ -17,17 +17,30 @@ export default function Selector({ catalog, catalogLoading, catalogError ,onPiec
     const [activeTab, setActiveTab] = useSessionStorageState("scout:activeSelector", "searchSpace");
     const activeType = componentTypes.find(type => type.key === activeTab);
     const items = catalog?.[activeType.catalogKey] ?? [];
-
-    // Debug logging
-    if (catalog) {
-        console.log('Catalog loaded:', catalog);
-        console.log(`Active tab: ${activeTab}, catalogKey: ${activeType.catalogKey}`);
-        console.log(`Items for ${activeTab}:`, items);
-    }
-
     const getCount = (key) => {
         if (!puzzleConfig || !puzzleConfig[key]) return 0;
         return Array.isArray(puzzleConfig[key]) ? puzzleConfig[key].length : 0;
+    };
+
+    const getSelectedSearchSpaceId = () => {
+        if (!puzzleConfig || !puzzleConfig.searchSpace || puzzleConfig.searchSpace.length === 0) {
+            return null;
+        }
+        return puzzleConfig.searchSpace[0];
+    };
+
+    const isItemCompatible = (item) => {
+        if (activeTab === 'searchSpace') {
+            return true;
+        }
+        const selectedSearchSpaceId = getSelectedSearchSpaceId();
+        if (!selectedSearchSpaceId) {
+            return true;
+        }
+        if (!item.supportedSearchSpaces || item.supportedSearchSpaces.length === 0) {
+            return true;
+        }
+        return item.supportedSearchSpaces.includes(selectedSearchSpaceId);
     };
 
     return (
@@ -57,6 +70,7 @@ export default function Selector({ catalog, catalogLoading, catalogError ,onPiec
                         type={activeTab}
                         onHover={onPieceHover}
                         onLeave={onPieceLeave}
+                        isDisabled={!isItemCompatible(item)}
                     />
                 ))}
             </div>
