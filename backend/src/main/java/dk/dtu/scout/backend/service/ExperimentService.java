@@ -6,6 +6,7 @@ import dk.dtu.scout.acceptance.SimulatedAnnealingAcceptance;
 import dk.dtu.scout.algorithms.Algorithm;
 import dk.dtu.scout.algorithms.OnePlusOneEA;
 import dk.dtu.scout.algorithms.SimulatedAnnealing;
+import dk.dtu.scout.backend.dto.BatchRunResponse;
 import dk.dtu.scout.backend.dto.RunRequest;
 import dk.dtu.scout.backend.dto.RunResponse;
 import dk.dtu.scout.backend.util.FormulaEvaluator;
@@ -27,6 +28,7 @@ import dk.dtu.scout.stopcondition.OptimumReached;
 import dk.dtu.scout.stopcondition.StopCondition;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -36,7 +38,7 @@ import java.util.function.Supplier;
 @Service
 public class ExperimentService {
 
-    public RunResponse run(RunRequest request) {
+    public BatchRunResponse run(RunRequest request) {
 
         // Extract algorithm parameters with defaults (missing a few params)
         long seed = request.seed();
@@ -45,24 +47,32 @@ public class ExperimentService {
         Random rng = new Random(seed);
 
         SearchSpace<boolean[]> ss = createSearchSpace(request.searchSpaceId(), request.searchSpaceParams());
-        Problem<?> problem = createProblem(request.problemId(),  ss.dimension());
         Mutation<boolean[]> mutation = createMutation(request.mutationId(), request.mutationParams(), ss.dimension());
         AcceptanceRule acceptance = createAcceptanceRule(request.acceptanceRuleId(), request.acceptanceRuleParams());
-        StopCondition<boolean[]> stop = (StopCondition<boolean[]>) createStopConditionChain(request.stopConditionId(), request.stopConditionParams(),problem);
-        Observer<boolean[]> observer = createObserverChain(request.observerIds());
 
-        // factory: Should create a new instance of the algorithm for each run in multistart
-        Supplier<Algorithm<boolean[]>> algFactory = () -> (Algorithm<boolean[]>) createAlgorithm(request.algorithmId(), mutation, acceptance);
 
         PopulationModel<boolean[]> popModel = (PopulationModel<boolean[]>) createPopulationModel(request.populationModelId(), request.populationModelParams());
 
-        RunLog log = popModel.run(algFactory,ss, (Problem<boolean[]>) problem, rng, stop, observer);
-        return new RunResponse(
-            request.problemId().get(0),
-            request.algorithmId().get(0),
-            log.getIterations(),
-            log.getSeries()
-        );
+        List<String> problemIds = (request.problemId() == null || request.problemId().isEmpty()) ? List.of("onemax") : request.problemId();
+        List<RunResponse> runs =new ArrayList<>();
+        for (String pid : problemIds) {
+
+            Problem<?> problem = createProblem(pid, ss.dimension());
+            Observer<boolean[]> observer = createObserverChain(request.observerIds());
+            StopCondition<boolean[]> stop = (StopCondition<boolean[]>) createStopConditionChain(request.stopConditionId(), request.stopConditionParams(), problem);
+            // factory: Should create a new instance of the algorithm for each run in multistart
+            Supplier<Algorithm<boolean[]>> algFactory = () -> (Algorithm<boolean[]>) createAlgorithm(request.algorithmId(), mutation, acceptance);
+
+            RunLog log = popModel.run(algFactory, ss, (Problem<boolean[]>) problem, rng,stop, observer);
+
+            runs.add(new RunResponse(
+                    pid,
+                    request.algorithmId().get(0),
+                    log.getIterations(),
+                    log.getSeries()
+            ));
+        }
+        return new BatchRunResponse(runs);
     }
 
     private SearchSpace<boolean[]> createSearchSpace(List<String>  ids, Map<String,Object> params) {
@@ -81,16 +91,12 @@ public class ExperimentService {
         return ss;
     }
 
-    private Problem<?> createProblem(List<String>  ids,  int n) {
-        String id = (ids == null || ids.isEmpty())
-                ? "onemax"
-                : ids.get(0);
+    private Problem<?> createProblem(String  id,  int n) {
         Problem<?> problem = switch (id) {
             case "onemax" -> new OneMaxProblem();
             case "leadingones" -> new LeadingOnesProblem();
             default -> throw new IllegalArgumentException("Unknown problem: " + id);
         };
-
         // Configure with parameters
         Map<String, Object> problemParams = Map.of("n", n);
         problem.configure(problemParams);

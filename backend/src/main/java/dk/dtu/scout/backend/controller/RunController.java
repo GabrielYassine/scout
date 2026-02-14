@@ -1,5 +1,6 @@
 package dk.dtu.scout.backend.controller;
 
+import dk.dtu.scout.backend.dto.BatchRunResponse;
 import dk.dtu.scout.backend.dto.RunRequest;
 import dk.dtu.scout.backend.dto.RunResponse;
 import dk.dtu.scout.backend.service.ExperimentService;
@@ -15,7 +16,7 @@ public class RunController {
     public RunController(ExperimentService experimentService) {    this.experimentService = experimentService;}
 
     @PostMapping("/run")
-    public RunResponse run(@RequestBody RunRequest request) {
+    public BatchRunResponse run(@RequestBody RunRequest request) {
         System.out.println("Received run request: " + request);
         return experimentService.run(request);
     }

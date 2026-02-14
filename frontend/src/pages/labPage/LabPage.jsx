@@ -81,11 +81,11 @@ export default function LabPage({catalog, catalogLoading, catalogError}) {
 
     console.log("RUN REQUEST BODY:", body);
 
-    const result = await res.json();
-    console.log(result);
+    const batch = await res.json();
+    console.log(batch);
     navigate("/run", {
       state: {
-        run: result,
+        batch,
         puzzleConfig,
         params,
       },

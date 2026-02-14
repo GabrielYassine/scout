@@ -7,7 +7,10 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const run = location.state?.run;
+ const batch = location.state?.batch;
+ const runs = batch?.runs ?? [];
+ const run = runs[0];
+
   const puzzleConfig = location.state?.puzzleConfig;
   const params = location.state?.params;
   if (!run) {
