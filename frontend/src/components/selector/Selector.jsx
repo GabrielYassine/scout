@@ -26,7 +26,7 @@ export default function Selector({ catalog, catalogLoading, catalogError ,onPiec
         if (!puzzleConfig || !puzzleConfig.searchSpace || puzzleConfig.searchSpace.length === 0) {
             return null;
         }
-        return puzzleConfig.searchSpace[0];
+        return puzzleConfig.searchSpace[0].id;
     };
 
     const isItemCompatible = (item) => {

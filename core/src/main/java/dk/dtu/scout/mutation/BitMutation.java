@@ -57,7 +57,7 @@ public class BitMutation implements Mutation<boolean[]> {
 
     @Override
     public String displayName() {
-        return mode == Mode.SINGLE_BIT ? "Single Bit Flip Mutation" : "Bit Flip Mutation";
+        return "Bit Flip Mutation";
     }
 
     @Override
