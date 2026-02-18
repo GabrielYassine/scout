@@ -12,6 +12,7 @@ import dk.dtu.scout.backend.dto.RunResponse;
 import dk.dtu.scout.backend.util.FormulaEvaluator;
 import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.mutation.Mutation;
+import dk.dtu.scout.mutation.SingleBitFlipMutation;
 import dk.dtu.scout.observer.*;
 import dk.dtu.scout.population.DefaultPopulationModel;
 import dk.dtu.scout.population.IslandModel;
@@ -19,9 +20,8 @@ import dk.dtu.scout.population.PopulationModel;
 import dk.dtu.scout.problems.LeadingOnesProblem;
 import dk.dtu.scout.problems.OneMaxProblem;
 import dk.dtu.scout.problems.Problem;
-import dk.dtu.scout.mutation.BitMutation;
+import dk.dtu.scout.mutation.BitFlipMutation;
 import dk.dtu.scout.searchSpace.BitString;
-import dk.dtu.scout.searchSpace.Permutation;
 import dk.dtu.scout.searchSpace.SearchSpace;
 import dk.dtu.scout.stopcondition.BroadcastStopCondition;
 import dk.dtu.scout.stopcondition.MaxIterations;
@@ -133,9 +133,11 @@ public class ExperimentService {
                 String formula = String.valueOf(params.getOrDefault("flipProbability", "1/n"));
                 double p = FormulaEvaluator.eval(formula, n);
                 p = Math.max(0.0, Math.min(1.0, p));
-                yield BitMutation.withProbability(p);
+                BitFlipMutation m = new BitFlipMutation();
+                m.configure(Map.of("flipProbability", p));
+                yield m;
             }
-            case "single-bit-flip" -> BitMutation.singleBit();
+            case "single-bit-flip" -> new SingleBitFlipMutation();
             default -> throw new IllegalArgumentException("Unknown mutation: " + id);
         };
     }
