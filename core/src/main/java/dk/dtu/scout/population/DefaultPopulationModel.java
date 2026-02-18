@@ -37,7 +37,7 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
 
     @Override
     public List<Parameter> params() {
-        return List.of(new Parameter("lamba", "Lamba (Children Amount)", "int", lambda, 1.0, null));
+        return List.of(new Parameter("lambda", "lambda (Children Amount)", "int", lambda, 1.0, null));
     }
 
     @Override
@@ -111,12 +111,13 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
                 }
             }
 
-            // 5) Log the current state
+            // log global state
             RunState<S> state = new RunState<>(iteration, evaluations, current, currentFitness, best, bestFitness, accepted);
             log.tick(state.iteration());
             observer.onStep(state, log);
             iteration++;
         }
+
 
         RunState<S> finalState = new RunState<>(iteration - 1, evaluations, current, currentFitness, best, bestFitness, false);
         observer.onEnd(finalState, log);

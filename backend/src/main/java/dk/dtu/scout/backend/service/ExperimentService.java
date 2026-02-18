@@ -14,6 +14,7 @@ import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.mutation.Mutation;
 import dk.dtu.scout.observer.*;
 import dk.dtu.scout.population.DefaultPopulationModel;
+import dk.dtu.scout.population.IslandModel;
 import dk.dtu.scout.population.PopulationModel;
 import dk.dtu.scout.problems.LeadingOnesProblem;
 import dk.dtu.scout.problems.OneMaxProblem;
@@ -163,6 +164,7 @@ public class ExperimentService {
         if (params == null) params = Map.of();
         return switch (id) {
             case "default" -> new DefaultPopulationModel<>();
+            case "islands" -> new IslandModel<>();
             default -> throw new IllegalArgumentException("Unknown population model: " + id);
         };
     }
