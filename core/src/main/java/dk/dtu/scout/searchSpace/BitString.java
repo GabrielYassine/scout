@@ -36,7 +36,8 @@ public class BitString implements SearchSpace<boolean[]> {
         return "Binary string representation for boolean optimization problems";
     }
 
-    @Override public List<Parameter> params() {
+    @Override
+    public List<Parameter> params() {
         return List.of(new Parameter("n", "Length (n)", "int", n, 1.0, null));
     }
 

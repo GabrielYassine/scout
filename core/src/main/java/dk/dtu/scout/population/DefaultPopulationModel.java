@@ -100,6 +100,7 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
             // 4) decide whether to accept the best child as the new current solution
             boolean accepted = alg.accept(currentFitness, bestChildFitness, iteration, rng);
 
+
             // If accepted, update current solution and fitness
             if (accepted) {
                 current = bestChild;
