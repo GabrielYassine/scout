@@ -38,7 +38,7 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
            {runs.map((run, idx) => (
              <div className="run-chart-panel">
                <div className="run-chart-title">
-                 Run {idx + 1} • {run.problemId} • {run.algorithmId}
+                 Run {idx + 1} • {run.problemId}
                </div>
                <RunChart run={run} />
              </div>

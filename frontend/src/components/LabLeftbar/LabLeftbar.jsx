@@ -18,7 +18,6 @@ export default function LabLeftbar({
   const [open, setOpen] = useState({
     searchSpace: true,
     problem: true,
-    algorithm: true,
     mutation: true,
     acceptance: true,
     populationModel: true,
@@ -34,7 +33,6 @@ export default function LabLeftbar({
     const catalogMap = {
       searchSpace: catalog.searchSpaces,
       problem: catalog.problems,
-      algorithm: catalog.algorithms,
       mutation: catalog.mutations,
       acceptance: catalog.acceptanceRules,
       populationModel: catalog.populationModels,
@@ -51,7 +49,6 @@ export default function LabLeftbar({
     return (
       puzzleConfig.searchSpace &&
       puzzleConfig.problem &&
-      puzzleConfig.algorithm &&
       puzzleConfig.mutation &&
       puzzleConfig.populationModel &&
       puzzleConfig.acceptance &&
@@ -121,7 +118,6 @@ export default function LabLeftbar({
         <div className="ll-title">Configuration</div>
         {renderPieceSection("searchSpace", "Search Space")}
         {renderPieceSection("problem", "Problem")}
-        {renderPieceSection("algorithm", "Algorithm")}
         {renderPieceSection("mutation", "Mutation")}
         {renderPieceSection("acceptance", "Acceptance Rule")}
         {renderPieceSection("populationModel", "Population Model")}

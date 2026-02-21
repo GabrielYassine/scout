@@ -24,7 +24,6 @@ export default function LabPage({catalog, catalogLoading, catalogError}) {
       const map = {
         searchSpace: catalog.searchSpaces,
         problem: catalog.problems,
-        algorithm: catalog.algorithms,
         mutation: catalog.mutations,
         acceptance: catalog.acceptanceRules,
         populationModel: catalog.populationModels,
@@ -54,8 +53,6 @@ export default function LabPage({catalog, catalogLoading, catalogError}) {
       problemId: puzzleConfig.problem?.map((x) => x.id) ?? [],
       problemParams: params.problem,
 
-      algorithmId: puzzleConfig.algorithm?.map((x) => x.id) ?? [],
-      algorithmParams: params.algorithm,
 
       mutationId: puzzleConfig.mutation?.map((x) => x.id) ?? [],
       mutationParams: params.mutation,

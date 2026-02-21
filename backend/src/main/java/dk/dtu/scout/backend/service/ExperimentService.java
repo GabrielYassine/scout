@@ -4,9 +4,6 @@ import dk.dtu.scout.Parameter;
 import dk.dtu.scout.acceptance.AcceptanceRule;
 import dk.dtu.scout.acceptance.ElitistAcceptance;
 import dk.dtu.scout.acceptance.SimulatedAnnealingAcceptance;
-import dk.dtu.scout.algorithms.Algorithm;
-import dk.dtu.scout.algorithms.OnePlusOneEA;
-import dk.dtu.scout.algorithms.SimulatedAnnealing;
 import dk.dtu.scout.backend.dto.BatchRunResponse;
 import dk.dtu.scout.backend.dto.RunRequest;
 import dk.dtu.scout.backend.dto.RunResponse;
@@ -71,13 +68,12 @@ public class ExperimentService {
             Problem<S> problem = createProblem(pid, ss.dimension(), ss.id());
             StopCondition<S> stop = createStopConditionChain(request.stopConditionId(), request.stopConditionParams(), problem);
             Observer <S> observer = createObserverChain(request.observerIds());
-            // Create a fresh aglorithm instance for each population model run
-            Supplier<Algorithm<S>> algFactory = () -> createAlgorithm(request.algorithmId(), mutation, acceptance);
-            RunLog log = popModel.run(algFactory, ss, problem, rng,stop, observer);
+
+            RunLog log = popModel.run(mutation, acceptance, ss, problem, rng, stop, observer);
 
             runs.add(new RunResponse(
                     pid,
-                    request.algorithmId().getFirst(),
+                    "N/A",
                     log.getIterations(),
                     log.getSeries()
             ));
@@ -134,25 +130,6 @@ public class ExperimentService {
         );
     }
 
-    private <S>Algorithm<S> createAlgorithm(List<String>  ids, Mutation<S> mutation, AcceptanceRule acceptance) {
-        String id =  firstOrDefault( ids, "1p1-ea");
-
-        return switch (id) {
-            case "1p1-ea" -> {
-                OnePlusOneEA<S> alg = new OnePlusOneEA<>();
-                alg.setMutation(mutation);
-                alg.setAcceptance(acceptance);
-                yield alg;
-            }
-            case "sa" -> {
-                SimulatedAnnealing<S> alg = new SimulatedAnnealing<>();
-                alg.setMutation(mutation);
-                alg.setAcceptance(acceptance);
-                yield alg;
-            }
-            default -> throw new IllegalArgumentException("Unknown algorithm: " + id);
-        };
-    }
 
     private Mutation<boolean[]> createMutationBoolean(List<String>  ids, Map<String, Object> params, int n) {
         String id =  firstOrDefault( ids, "bit-flip");

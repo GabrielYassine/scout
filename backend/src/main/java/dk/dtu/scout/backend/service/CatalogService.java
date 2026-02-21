@@ -8,7 +8,6 @@ import dk.dtu.scout.Component;
 import dk.dtu.scout.Parameter;
 
 import dk.dtu.scout.acceptance.AcceptanceRule;
-import dk.dtu.scout.algorithms.Algorithm;
 import dk.dtu.scout.mutation.Mutation;
 import dk.dtu.scout.observer.Observer;
 import dk.dtu.scout.population.PopulationModel;
@@ -23,7 +22,6 @@ public class CatalogService {
 
     private final List<SearchSpace<?>> searchSpaces;
     private final List<Problem<?>> problems;
-    private final List<Algorithm<?>> algorithms;
     private final List<Mutation<?>> mutations;
     private final List<AcceptanceRule> acceptanceRules;
     private final List<PopulationModel<?>> populationModels;
@@ -33,7 +31,6 @@ public class CatalogService {
     public CatalogService(
         List<SearchSpace<?>> searchSpaces,
         List<Problem<?>> problems,
-        List<Algorithm<?>> algorithms,
         List<Mutation<?>> mutations,
         List<AcceptanceRule> acceptanceRules,
         List<PopulationModel<?>> populationModels,
@@ -42,7 +39,6 @@ public class CatalogService {
         ) {
         this.searchSpaces = searchSpaces;
         this.problems = problems;
-        this.algorithms = algorithms;
         this.mutations = mutations;
         this.acceptanceRules = acceptanceRules;
         this.populationModels = populationModels;
@@ -73,9 +69,6 @@ public class CatalogService {
         return problems.stream().map(c -> toComponentDef("problem", c)).toList();
     }
 
-    public List<ComponentDef> algorithms() {
-        return algorithms.stream().map(c -> toComponentDef("algorithm", c)).toList();
-    }
 
     public List<ComponentDef> mutations() {
         return mutations.stream().map(c -> toComponentDef("mutation", c)).toList();

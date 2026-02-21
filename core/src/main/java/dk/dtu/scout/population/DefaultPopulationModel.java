@@ -1,9 +1,10 @@
 package dk.dtu.scout.population;
 
 import dk.dtu.scout.Parameter;
-import dk.dtu.scout.algorithms.Algorithm;
+import dk.dtu.scout.acceptance.AcceptanceRule;
 import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.logging.RunState;
+import dk.dtu.scout.mutation.Mutation;
 import dk.dtu.scout.observer.Observer;
 import dk.dtu.scout.problems.Problem;
 import dk.dtu.scout.searchSpace.SearchSpace;
@@ -13,7 +14,6 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.function.Supplier;
 
 @Component
 public class DefaultPopulationModel<S> implements PopulationModel<S> {
@@ -54,14 +54,14 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
 
     @Override
     public RunLog run(
-            Supplier<Algorithm<S>> algorithmFactory,
+            Mutation<S> mutation,
+            AcceptanceRule acceptance,
             SearchSpace<S> space,
             Problem<S> problem,
             Random rng,
             StopCondition<S> stop,
             Observer<S> observer
     ) {
-        Algorithm<S> alg = algorithmFactory.get();
         RunLog log = new RunLog();
 
         // 1) Initialize parent
@@ -87,7 +87,7 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
 
             // 3) Generate λ children and evaluate them, keep the best
             for (int k = 0; k < lambda; k++) {
-                S child = alg.propose(current, iteration, rng); // call algorithm to create child
+                S child = mutation.mutate(current, rng);
                 double childFitness = problem.fitness(child);
                 evaluations++;
 
@@ -98,7 +98,7 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
             }
 
             // 4) decide whether to accept the best child as the new current solution
-            boolean accepted = alg.accept(currentFitness, bestChildFitness, iteration, rng);
+            boolean accepted = acceptance.accept(currentFitness, bestChildFitness, iteration, rng);
 
 
             // If accepted, update current solution and fitness

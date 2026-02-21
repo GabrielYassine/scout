@@ -18,7 +18,6 @@ export const usePuzzleConfig = () => {
 const componentTypes = [
     "searchSpace",
     "problem",
-    "algorithm",
     "mutation",
     "acceptance",
     "populationModel",
@@ -36,7 +35,6 @@ export function PuzzleConfigProvider({ children }) {
                 puzzleConfig: {
                     searchSpace: [],
                     problem: [],
-                    algorithm: [],
                     mutation: [],
                     acceptance: [],
                     populationModel: [],
@@ -46,7 +44,6 @@ export function PuzzleConfigProvider({ children }) {
                 params: {
                     searchSpace: {},
                     problem: {},
-                    algorithm: {},
                     mutation: {},
                     acceptance: {},
                     populationModel: {},
@@ -98,7 +95,6 @@ export function PuzzleConfigProvider({ children }) {
             puzzleConfig: {
                 searchSpace: [],
                 problem: [],
-                algorithm: [],
                 mutation: [],
                 acceptance: [],
                 populationModel: [],
@@ -108,7 +104,6 @@ export function PuzzleConfigProvider({ children }) {
             params: {
                 searchSpace: {},
                 problem: {},
-                algorithm: {},
                 mutation: {},
                 acceptance: {},
                 populationModel: {},
@@ -291,7 +286,6 @@ export function PuzzleConfigProvider({ children }) {
         setPuzzleConfig({
             searchSpace: [],
             problem: [],
-            algorithm: [],
             mutation: [],
             acceptance: [],
             populationModel: [],
@@ -301,7 +295,6 @@ export function PuzzleConfigProvider({ children }) {
         setParams({
             searchSpace: {},
             problem: {},
-            algorithm: {},
             mutation: {},
             acceptance: {},
             populationModel: {},

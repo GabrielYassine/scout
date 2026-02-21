@@ -8,8 +8,6 @@ public record RunRequest(
     Map<String, Object> searchSpaceParams,
    List<String>  problemId,
     Map<String, Object> problemParams,
-   List<String>  algorithmId,
-    Map<String, Object> algorithmParams,
    List<String>  mutationId,
     Map<String, Object> mutationParams,
    List<String>  populationModelId,

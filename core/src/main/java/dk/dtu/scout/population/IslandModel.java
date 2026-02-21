@@ -1,9 +1,10 @@
 package dk.dtu.scout.population;
 
 import dk.dtu.scout.Parameter;
-import dk.dtu.scout.algorithms.Algorithm;
+import dk.dtu.scout.acceptance.AcceptanceRule;
 import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.logging.RunState;
+import dk.dtu.scout.mutation.Mutation;
 import dk.dtu.scout.observer.Observer;
 import dk.dtu.scout.problems.Problem;
 import dk.dtu.scout.searchSpace.SearchSpace;
@@ -14,7 +15,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.function.Supplier;
 
 @Component
 public class IslandModel<S>  implements PopulationModel<S> {
@@ -73,7 +73,8 @@ public class IslandModel<S>  implements PopulationModel<S> {
 
     @Override
     public RunLog run(
-            Supplier<Algorithm<S>> algorithmFactory,
+            Mutation<S> mutation,
+            AcceptanceRule acceptance,
             SearchSpace<S> space,
             Problem<S> problem,
             Random rng,
@@ -84,14 +85,12 @@ public class IslandModel<S>  implements PopulationModel<S> {
 
         // setup islands
         List<IslandState<S>> islands = new ArrayList<>(numIslands);
-        List<Algorithm<S>> algs = new ArrayList<>(numIslands);
         List<Random> islandRng = new ArrayList<>(numIslands);
 
 
         for(int i = 0; i < numIslands; i++) {
             Random r = new Random(rng.nextLong());
             islandRng.add(r);
-            algs.add(algorithmFactory.get());
 
             S x = space.randomSolution(r);
             double fx = problem.fitness(x);
@@ -113,7 +112,6 @@ public class IslandModel<S>  implements PopulationModel<S> {
             boolean anyAccepted = false;
 
             for(int i = 0; i < numIslands; i++) {
-                Algorithm<S> alg = algs.get(i);
                 IslandState<S> isl = islands.get(i);
                 Random r = islandRng.get(i);
 
@@ -121,13 +119,13 @@ public class IslandModel<S>  implements PopulationModel<S> {
                 double bestFit = Double.NEGATIVE_INFINITY;
 
                 for (int k = 0; k < lambda; k++) {
-                    S child = alg.propose(isl.current, iteration, r);
+                    S child = mutation.mutate(isl.current, r);
                     double f = problem.fitness(child);
                     if (f > bestFit) { bestFit = f; bestChild = child; }
                 }
 
                 evaluations += lambda;
-                boolean accepted = alg.accept(isl.currentFitness, bestFit, iteration, r);
+                boolean accepted = acceptance.accept(isl.currentFitness, bestFit, iteration, r);
                 anyAccepted |= accepted;
                 if (accepted) {
                     isl.current = bestChild;

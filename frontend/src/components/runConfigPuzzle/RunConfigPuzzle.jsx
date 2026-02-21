@@ -7,7 +7,6 @@ import { usePuzzleConfig } from "../../contexts/PuzzleConfigContext.jsx";
 const componentTypes = [
     { key: "searchSpace", label: "Search Space" },
     { key: "problem", label: "Problem" },
-    { key: "algorithm", label: "Algorithm" },
     { key: "mutation", label: "Mutation" },
     { key: "acceptance", label: "Acceptance Rule" },
     { key: "populationModel", label: "Population Model" },

@@ -23,7 +23,6 @@ public class CatalogController {
         return new CatalogResponse(
             catalog.searchSpaces(),
             catalog.problems(),
-            catalog.algorithms(),
             catalog.mutations(),
             catalog.acceptanceRules(),
             catalog.populationModels(),
