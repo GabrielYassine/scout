@@ -36,12 +36,7 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
        ) : (
          <div className="run-stack">
            {runs.map((run, idx) => (
-             <div className="run-chart-panel">
-               <div className="run-chart-title">
-                 Run {idx + 1} • {run.problemId}
-               </div>
-               <RunChart run={run} />
-             </div>
+             <RunChart key={idx} run={run} runIndex={idx + 1} />
            ))}
          </div>
        )}

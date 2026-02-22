@@ -1,25 +1,45 @@
+import { useState, useMemo, memo, useCallback } from "react";
 import {LineChart,Line,XAxis,YAxis,CartesianGrid,Tooltip,Legend,ResponsiveContainer,} from "recharts";
 import "./RunChart.css";
 
-export default function RunChart({ run }) {
+function RunChart({ run, runIndex }) {
   const iterations = run?.iterations ?? [];
   const series = run?.series ?? {};
   const keys = Object.keys(series);
+  const [selectedObserver, setSelectedObserver] = useState(keys[0] || null);
+  const handleObserverChange = useCallback((observerKey) => {
+    setSelectedObserver(observerKey);
+  }, []);
 
   if (!iterations.length || keys.length === 0) {
-    return <div>No data to plot.</div>;
+    return (
+      <div className="run-chart-panel">
+        <div className="run-chart-title">
+          Run {runIndex} • {run?.problemId || 'Unknown'}
+        </div>
+        <div>No data to plot.</div>
+      </div>
+    );
   }
 
-  // If lengths mismatch, clamp to shortest length
-  const minLen = Math.min(iterations.length, ...keys.map(k => (series[k]?.length ?? 0)));
+  const data = useMemo(() => {
+    if (!selectedObserver || !series[selectedObserver]) return [];
 
-  const data = Array.from({ length: minLen }, (_, i) => {
-    const row = { iteration: iterations[i] };
-    for (const k of keys) row[k] = series[k][i];
-    return row;
-  });
+    const observerData = series[selectedObserver];
+    const minLen = Math.min(iterations.length, observerData.length);
+
+    return Array.from({ length: minLen }, (_, i) => ({
+      iteration: iterations[i],
+      [selectedObserver]: observerData[i]
+    }));
+  }, [selectedObserver, iterations, series]);
 
   return (
+    <div className="chart-panel">
+      <div className="chart-title">
+        Run {runIndex} • {run.problemId}
+      </div>
+
       <div className="run-chart-inner">
         <ResponsiveContainer>
           <LineChart data={data}>
@@ -30,11 +50,31 @@ export default function RunChart({ run }) {
             <Tooltip/>
             <Legend />
 
-            {keys.map((k) => (
-              <Line key={k} type="monotone" dataKey={k} dot={false} />
-            ))}
+            {selectedObserver && (
+              <Line key={selectedObserver} type="monotone" dataKey={selectedObserver} dot={false} stroke="#8884d8" strokeWidth={2} />
+            )}
           </LineChart>
         </ResponsiveContainer>
+      </div>
+
+      {keys.length > 1 && (
+        <div className="observer-checkboxes">
+          {keys.map((key) => (
+            <label key={key} className="observer-checkbox-label">
+              <input
+                type="radio"
+                name={`observer-${run.problemId}-${runIndex}`}
+                checked={selectedObserver === key}
+                onChange={() => handleObserverChange(key)}
+              />
+              <span>{key}</span>
+            </label>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
+
+export default memo(RunChart);
+

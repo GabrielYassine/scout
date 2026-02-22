@@ -16,13 +16,15 @@
 }
 
 .run-chart-panel {
+  display: flex;
+  flex-direction: column;
   background: var(--color-panel);
   border: 1px solid var(--color-border);
-  border-radius: 8px;
-  padding: 16px;
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  gap: var(--spacing-md);
 }
 
 .run-chart-title {
   font-weight: 700;
-  margin-bottom: 12px;
 }
