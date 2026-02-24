@@ -1,12 +1,12 @@
 package dk.dtu.scout.backend.service;
 
-import dk.dtu.scout.Parameter;
 import dk.dtu.scout.acceptance.AcceptanceRule;
 import dk.dtu.scout.acceptance.ElitistAcceptance;
 import dk.dtu.scout.acceptance.SimulatedAnnealingAcceptance;
-import dk.dtu.scout.backend.dto.BatchRunResponse;
 import dk.dtu.scout.backend.dto.RunRequest;
-import dk.dtu.scout.backend.dto.RunResponse;
+import dk.dtu.scout.backend.dto.run.BatchRunResponse;
+import dk.dtu.scout.backend.dto.run.RunGroupResponse;
+import dk.dtu.scout.backend.dto.run.RunResponse;
 import dk.dtu.scout.backend.util.FormulaEvaluator;
 import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.mutation.Mutation;
@@ -32,42 +32,84 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.function.Supplier;
 
 
 @Service
 public class ExperimentService {
+
+
+    /**
+     * Will work as outer dispatcher.
+     * @param request
+     * @return
+     */
     public BatchRunResponse run(RunRequest request) {
-        // Initialize random number generator
         long seed = request.seed();
-        Random rng = new Random(seed);
+        int runTimes = request.runTimes();
+
         AcceptanceRule acceptance = createAcceptanceRule(request.acceptanceRuleId(), request.acceptanceRuleParams());
-        String searchSpaceId=firstOrDefault(request.searchSpaceId(), "bitstring");
+        String searchSpaceId = firstOrDefault(request.searchSpaceId(), "bitstring");
+
         return switch (searchSpaceId) {
             case "bitstring" ->  {
                 SearchSpace<boolean[]> ss = createSearchSpaceBoolean(request.searchSpaceId(), request.searchSpaceParams());
                 Mutation<boolean[]> mutation = createMutationBoolean(request.mutationId(), request.mutationParams(), ss.dimension());
                 PopulationModel<boolean[]> popModel = createPopulationModel(request.populationModelId(), request.populationModelParams());
-                yield runTyped(request, rng, ss, mutation, acceptance, popModel,"onemax");
+
+                yield runTypedBatch(request, seed, runTimes, ss, mutation, acceptance, popModel,"onemax");
             }
             case "permutation" -> {
                 SearchSpace<int[]> ss = createSearchSpaceInt(request.searchSpaceId(), request.searchSpaceParams());
                 Mutation<int[]> mutation = createMutationInt(request.mutationId(), request.mutationParams(), ss.dimension());
                 PopulationModel<int[]> popModel = createPopulationModel(request.populationModelId(), request.populationModelParams());
-                yield runTyped(request, rng, ss, mutation, acceptance, popModel,"tsp");
+
+                yield runTypedBatch(request, seed, runTimes, ss, mutation, acceptance, popModel,"tsp");
             }
             default -> throw new IllegalArgumentException("Unsupported search space: " + searchSpaceId);
 
         };
     }
 
-    public<S>  BatchRunResponse runTyped(RunRequest request, Random rng, SearchSpace<S> ss, Mutation<S> mutation, AcceptanceRule acceptance, PopulationModel<S> popModel,  String defaultProblemId) {
+    private <S> BatchRunResponse runTypedBatch(
+            RunRequest request,
+            long baseSeed,
+            int runtimes,
+            SearchSpace<S> ss,
+            Mutation<S> mutation,
+            AcceptanceRule acceptance,
+            PopulationModel<S> popModel,
+            String defaultProblemId
+    ) {
+        List<RunGroupResponse> batches = new ArrayList<>();
+
+        for (int i = 0; i < runtimes; i++) {
+            long runSeed = baseSeed + i; // Simple way to get different seeds for each run, not ideal but works for now
+            Random rng = new Random(runSeed);
+
+            List<RunResponse> perProblemRuns = runTypedOnce(request, rng, ss, mutation, acceptance, popModel, defaultProblemId);
+            batches.add(new RunGroupResponse(i, runSeed, perProblemRuns));
+        }
+
+        return new BatchRunResponse(batches, null);
+    }
+
+
+    private <S> List<RunResponse> runTypedOnce(
+            RunRequest request,
+            Random rng,
+            SearchSpace<S> ss,
+            Mutation<S> mutation,
+            AcceptanceRule acceptance,
+            PopulationModel<S> popModel,
+            String defaultProblemId
+    ) {
         List<String> problemIds = (request.problemId() == null || request.problemId().isEmpty()) ? List.of(defaultProblemId) : request.problemId();
-        List<RunResponse> runs =new ArrayList<>();
+        List<RunResponse> runs = new ArrayList<>();
+
         for (String pid : problemIds) {
             Problem<S> problem = createProblem(pid, ss.dimension(), ss.id());
             StopCondition<S> stop = createStopConditionChain(request.stopConditionId(), request.stopConditionParams(), problem);
-            Observer <S> observer = createObserverChain(request.observerIds());
+            Observer<S> observer = createObserverChain(request.observerIds());
 
             RunLog log = popModel.run(mutation, acceptance, ss, problem, rng, stop, observer);
 
@@ -78,7 +120,7 @@ public class ExperimentService {
                     log.getSeries()
             ));
         }
-        return new BatchRunResponse(runs);
+        return runs;
     }
 
     private SearchSpace<boolean[]> createSearchSpaceBoolean(List<String>  ids, Map<String,Object> params) {

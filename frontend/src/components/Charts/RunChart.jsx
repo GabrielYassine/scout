@@ -2,7 +2,7 @@ import { useState, useMemo, memo, useCallback } from "react";
 import {LineChart,Line,XAxis,YAxis,CartesianGrid,Tooltip,Legend,ResponsiveContainer,} from "recharts";
 import "./RunChart.css";
 
-function RunChart({ run, runIndex }) {
+function RunChart({ run, runIndex, problemIndex }) {
   const iterations = run?.iterations ?? [];
   const series = run?.series ?? {};
   const keys = Object.keys(series);
@@ -15,7 +15,7 @@ function RunChart({ run, runIndex }) {
     return (
       <div className="run-chart-panel">
         <div className="run-chart-title">
-          Run {runIndex} • {run?.problemId || 'Unknown'}
+            {run?.problemId}
         </div>
         <div>No data to plot.</div>
       </div>
@@ -37,7 +37,7 @@ function RunChart({ run, runIndex }) {
   return (
     <div className="chart-panel">
       <div className="chart-title">
-        Run {runIndex} • {run.problemId}
+        {run.problemId}
       </div>
 
       <div className="run-chart-inner">

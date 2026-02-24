@@ -42,6 +42,7 @@ export function PuzzleConfigProvider({ children }) {
                     observer: [],
                 },
                 params: {
+                    global: {},
                     searchSpace: {},
                     problem: {},
                     mutation: {},
@@ -102,6 +103,7 @@ export function PuzzleConfigProvider({ children }) {
                 observer: [],
             },
             params: {
+                global: {},
                 searchSpace: {},
                 problem: {},
                 mutation: {},
@@ -293,6 +295,7 @@ export function PuzzleConfigProvider({ children }) {
             observer: [],
         });
         setParams({
+            global: {},
             searchSpace: {},
             problem: {},
             mutation: {},

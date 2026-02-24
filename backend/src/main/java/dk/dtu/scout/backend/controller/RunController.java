@@ -1,8 +1,7 @@
 package dk.dtu.scout.backend.controller;
 
-import dk.dtu.scout.backend.dto.BatchRunResponse;
 import dk.dtu.scout.backend.dto.RunRequest;
-import dk.dtu.scout.backend.dto.RunResponse;
+import dk.dtu.scout.backend.dto.run.BatchRunResponse;
 import dk.dtu.scout.backend.service.ExperimentService;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,7 +12,9 @@ public class RunController {
 
     private final ExperimentService experimentService;
 
-    public RunController(ExperimentService experimentService) {    this.experimentService = experimentService;}
+    public RunController(ExperimentService experimentService) {
+        this.experimentService = experimentService;
+    }
 
     @PostMapping("/run")
     public BatchRunResponse run(@RequestBody RunRequest request) {

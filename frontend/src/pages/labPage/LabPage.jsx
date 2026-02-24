@@ -45,6 +45,8 @@ export default function LabPage({catalog, catalogLoading, catalogError}) {
   }
 
   async function onRun() {
+    const seed = params.global?.seed ?? Date.now();
+    const runTimes = params.global?.runTimes ?? 1;
 
     const body = {
       searchSpaceId: puzzleConfig.searchSpace?.map((x) => x.id) ?? [],
@@ -67,7 +69,8 @@ export default function LabPage({catalog, catalogLoading, catalogError}) {
       stopConditionParams: params.stopCondition,
 
       observerIds: puzzleConfig.observer?.map((x) => x.id) ?? [],
-      seed: Date.now(),
+      seed: seed,
+      runTimes: runTimes,
     };
 
     const res = await fetch("/api/run", {

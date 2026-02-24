@@ -17,5 +17,6 @@ public record RunRequest(
     List<String> observerIds,
     List<String> stopConditionId,
     Map<String, Object> stopConditionParams,
-    long seed
+    long seed,
+    int runTimes
 ) {}

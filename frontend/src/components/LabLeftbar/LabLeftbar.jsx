@@ -16,6 +16,7 @@ export default function LabLeftbar({
   catalogError,
 }) {
   const [open, setOpen] = useState({
+    global: true,
     searchSpace: true,
     problem: true,
     mutation: true,
@@ -116,6 +117,41 @@ export default function LabLeftbar({
     <section className="lab-leftbar">
       <div className="ll-content">
         <div className="ll-title">Configuration</div>
+
+        {/* Global Settings Section */}
+        <Section
+          title="Global Settings"
+          isOpen={open.global}
+          onToggle={() => setOpen((o) => ({ ...o, global: !o.global }))}
+        >
+          <div className="ll-subsection">
+            <ParamField
+              def={{
+                key: "seed",
+                label: "Seed",
+                type: "long",
+                min: 1,
+                defaultValue: Date.now(),
+              }}
+              disabled={disabled}
+              value={params.global?.seed ?? Date.now()}
+              onValueChange={(v) => setParam("global", { key: "seed", type: "long" }, v)}
+            />
+            <ParamField
+              def={{
+                key: "runTimes",
+                label: "Run Times",
+                type: "int",
+                min: 1,
+                defaultValue: 1,
+              }}
+              disabled={disabled}
+              value={params.global?.runTimes ?? 1}
+              onValueChange={(v) => setParam("global", { key: "runTimes", type: "int" }, v)}
+            />
+          </div>
+        </Section>
+
         {renderPieceSection("searchSpace", "Search Space")}
         {renderPieceSection("problem", "Problem")}
         {renderPieceSection("mutation", "Mutation")}
