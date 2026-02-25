@@ -6,5 +6,6 @@ public record RuntimeStats(
         double variance,
         double stdDev,
         double ci95Low,
-        double ci95High
+        double ci95High,
+        double finalEvaluationsMedian
 ) {}

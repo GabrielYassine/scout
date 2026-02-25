@@ -5,8 +5,10 @@ import dk.dtu.scout.acceptance.ElitistAcceptance;
 import dk.dtu.scout.acceptance.SimulatedAnnealingAcceptance;
 import dk.dtu.scout.backend.dto.RunRequest;
 import dk.dtu.scout.backend.dto.run.BatchRunResponse;
+import dk.dtu.scout.backend.dto.run.BatchSummaryResponse;
 import dk.dtu.scout.backend.dto.run.RunGroupResponse;
 import dk.dtu.scout.backend.dto.run.RunResponse;
+import dk.dtu.scout.backend.dto.run.RuntimeStats;
 import dk.dtu.scout.backend.util.FormulaEvaluator;
 import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.mutation.Mutation;
@@ -29,6 +31,7 @@ import dk.dtu.scout.stopcondition.StopCondition;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -90,9 +93,9 @@ public class ExperimentService {
             batches.add(new RunGroupResponse(i, runSeed, perProblemRuns));
         }
 
-        return new BatchRunResponse(batches, null);
+        BatchSummaryResponse summary = calculateRuntimeStats(batches);
+        return new BatchRunResponse(batches, summary);
     }
-
 
     private <S> List<RunResponse> runTypedOnce(
             RunRequest request,
@@ -111,17 +114,71 @@ public class ExperimentService {
             StopCondition<S> stop = createStopConditionChain(request.stopConditionId(), request.stopConditionParams(), problem);
             Observer<S> observer = createObserverChain(request.observerIds());
 
+            long startTime = System.nanoTime();
             RunLog log = popModel.run(mutation, acceptance, ss, problem, rng, stop, observer);
+            long endTime = System.nanoTime();
+            double runtimeMs = (endTime - startTime) / 1_000_000.0;
+
+            List<Integer> evaluations = log.getEvaluations();
+            int finalEvaluations = evaluations.isEmpty() ? 0 : evaluations.getLast();
 
             runs.add(new RunResponse(
                     pid,
-                    "N/A",
                     log.getIterations(),
-                    log.getEvaluations(),
-                    log.getSeries()
+                    evaluations,
+                    log.getSeries(),
+                    runtimeMs,
+                    finalEvaluations
             ));
         }
         return runs;
+    }
+
+    private BatchSummaryResponse calculateRuntimeStats(List<RunGroupResponse> batches) {
+        Map<String, List<Double>> runtimesByProblem = new HashMap<>();
+        Map<String, List<Integer>> finalEvaluationsByProblem = new HashMap<>();
+
+        for (RunGroupResponse batch : batches) {
+            for (RunResponse run : batch.runs()) {
+                runtimesByProblem.computeIfAbsent(run.problemId(), k -> new ArrayList<>()).add(run.runtimeMs());
+                finalEvaluationsByProblem.computeIfAbsent(run.problemId(), k -> new ArrayList<>()).add(run.finalEvaluations());
+            }
+        }
+
+        Map<String, RuntimeStats> statsByProblem = new HashMap<>();
+        for (Map.Entry<String, List<Double>> entry : runtimesByProblem.entrySet()) {
+            String problemId = entry.getKey();
+            List<Double> runtimes = entry.getValue();
+            List<Integer> finalEvals = finalEvaluationsByProblem.get(problemId);
+            statsByProblem.put(problemId, computeStats(runtimes, finalEvals));
+        }
+
+        return new BatchSummaryResponse(statsByProblem);
+    }
+
+    private RuntimeStats computeStats(List<Double> values, List<Integer> finalEvaluations) {
+        int n = values.size();
+        if (n == 0) {
+            return new RuntimeStats(0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+        }
+        double finalEvaluationsMedian = calculateMedian(finalEvaluations);
+        return new RuntimeStats(n, 0.0, 0.0, 0.0, 0.0, 0.0, finalEvaluationsMedian);
+    }
+
+    private double calculateMedian(List<Integer> values) {
+        if (values == null || values.isEmpty()) {
+            return 0.0;
+        }
+
+        List<Integer> sorted = new ArrayList<>(values);
+        sorted.sort(Integer::compareTo);
+
+        int size = sorted.size();
+        if (size % 2 == 0) {
+            return (sorted.get(size / 2 - 1) + sorted.get(size / 2)) / 2.0;
+        } else {
+            return sorted.get(size / 2);
+        }
     }
 
     private SearchSpace<boolean[]> createSearchSpaceBoolean(List<String>  ids, Map<String,Object> params) {

@@ -5,8 +5,9 @@ import java.util.Map;
 
 public record RunResponse(
     String problemId,
-    String algorithmId,
     List<Integer> iterations,
     List<Integer> evaluations,
-    Map<String, List<Double>> series
+    Map<String, List<Double>> series,
+    double runtimeMs,
+    int finalEvaluations
 ) {}
