@@ -98,14 +98,14 @@ public class IslandModel<S>  implements PopulationModel<S> {
         }
         IslandState<S> global = globalBestIsland(islands);
         int evaluations = numIslands;
+        int iteration = 0;
 
         // Initial state
-        RunState<S> initial = new RunState<>(0, evaluations, global.current, global.currentFitness, global.best, global.bestFitness, false);
+        RunState<S> initial = new RunState<>(iteration, evaluations, global.current, global.currentFitness, global.best, global.bestFitness, false);
         observer.onStart(initial, log);
-        log.tick(initial.iteration());
+        log.tick(initial.iteration(), evaluations);
         observer.onStep(initial, log);
 
-        int iteration = 1;
         while (true) {
             global = globalBestIsland(islands);
             if(stop.shouldStop(iteration, evaluations, global.bestFitness, global.best) )break;
@@ -122,9 +122,8 @@ public class IslandModel<S>  implements PopulationModel<S> {
                     S child = mutation.mutate(isl.current, r);
                     double f = problem.fitness(child);
                     if (f > bestFit) { bestFit = f; bestChild = child; }
+                    evaluations++;
                 }
-
-                evaluations += lambda;
                 boolean accepted = acceptance.accept(isl.currentFitness, bestFit, iteration, r);
                 anyAccepted |= accepted;
                 if (accepted) {
@@ -142,7 +141,7 @@ public class IslandModel<S>  implements PopulationModel<S> {
             }
             global = globalBestIsland(islands);
             RunState<S> state = new RunState<>(iteration, evaluations, global.current, global.currentFitness, global.best, global.bestFitness, anyAccepted);
-            log.tick(state.iteration());
+            log.tick(state.iteration(), state.evaluations());
             observer.onStep(state, log);
             iteration++;
         }

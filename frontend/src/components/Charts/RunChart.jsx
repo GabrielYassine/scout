@@ -3,7 +3,7 @@ import {LineChart,Line,XAxis,YAxis,CartesianGrid,Tooltip,Legend,ResponsiveContai
 import "./RunChart.css";
 
 function RunChart({ run, runIndex, problemIndex }) {
-  const iterations = run?.iterations ?? [];
+  const evaluations = run?.evaluations ?? [];
   const series = run?.series ?? {};
   const keys = Object.keys(series);
   const [selectedObserver, setSelectedObserver] = useState(keys[0] || null);
@@ -11,7 +11,7 @@ function RunChart({ run, runIndex, problemIndex }) {
     setSelectedObserver(observerKey);
   }, []);
 
-  if (!iterations.length || keys.length === 0) {
+  if (!evaluations.length || keys.length === 0) {
     return (
       <div className="run-chart-panel">
         <div className="run-chart-title">
@@ -26,13 +26,13 @@ function RunChart({ run, runIndex, problemIndex }) {
     if (!selectedObserver || !series[selectedObserver]) return [];
 
     const observerData = series[selectedObserver];
-    const minLen = Math.min(iterations.length, observerData.length);
+    const minLen = Math.min(evaluations.length, observerData.length);
 
     return Array.from({ length: minLen }, (_, i) => ({
-      iteration: iterations[i],
+      evaluation: evaluations[i],
       [selectedObserver]: observerData[i]
     }));
-  }, [selectedObserver, iterations, series]);
+  }, [selectedObserver, evaluations, series]);
 
   return (
     <div className="chart-panel">
@@ -44,7 +44,7 @@ function RunChart({ run, runIndex, problemIndex }) {
         <ResponsiveContainer>
           <LineChart data={data}>
             <CartesianGrid stroke="#e5e5e5" strokeDasharray="3 3" />
-            <XAxis dataKey="iteration" stroke="#000" tick={{ fill: "#000" }} />
+            <XAxis dataKey="evaluation" stroke="#000" tick={{ fill: "#000" }} />
             <YAxis stroke="#000" tick={{ fill: "#000" }} />
 
             <Tooltip/>

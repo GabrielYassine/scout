@@ -71,14 +71,13 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
         double bestFitness = currentFitness;
 
         int evaluations = 1;
-
+        int iteration = 0;
         // Initial state
-        RunState<S> initial = new RunState<>(0, evaluations, current, currentFitness, best, bestFitness, false);
+        RunState<S> initial = new RunState<>(iteration, evaluations, current, currentFitness, best, bestFitness, false);
         observer.onStart(initial, log);
-        log.tick(initial.iteration());
+        log.tick(iteration, evaluations);
         observer.onStep(initial, log);
 
-        int iteration = 1;
 
         // 2) Loop until stop condition is met
         while (!stop.shouldStop(iteration, evaluations, bestFitness, best)) {
@@ -114,7 +113,7 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
 
             // log global state
             RunState<S> state = new RunState<>(iteration, evaluations, current, currentFitness, best, bestFitness, accepted);
-            log.tick(state.iteration());
+            log.tick(state.iteration(), state.evaluations());
             observer.onStep(state, log);
             iteration++;
         }

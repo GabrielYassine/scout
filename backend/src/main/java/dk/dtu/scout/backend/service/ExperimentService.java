@@ -117,6 +117,7 @@ public class ExperimentService {
                     pid,
                     "N/A",
                     log.getIterations(),
+                    log.getEvaluations(),
                     log.getSeries()
             ));
         }
