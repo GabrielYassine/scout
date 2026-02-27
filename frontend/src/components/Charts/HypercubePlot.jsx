@@ -1,0 +1,88 @@
+import { useMemo, memo } from "react";
+import "./RunChart.css";
+
+//not done
+function buildEyePaths(width, height, padding, steps = 250) {
+  const innerW = width - 2 * padding;
+  const innerH = height - 2 * padding;
+
+  const toPx = (x) => padding + ((x + 1) / 2) * innerW;
+  const toPy = (y) => padding + (1 - y) * innerH;
+
+  const left = [];
+  const right = [];
+
+  for (let i = 0; i <= steps; i++) {
+    const y = i / steps;
+    const e = Math.sin(Math.PI * y);
+    left.push([toPx(-e), toPy(y)]);
+    right.push([toPx(e), toPy(y)]);
+  }
+
+  const toPath = (pts) =>
+    pts
+      .map(([x, y], i) => `${i === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`)
+      .join(" ");
+
+  return { leftD: toPath(left), rightD: toPath(right) };
+}
+
+function HypercubePlot({
+  run,
+  width = 520,
+  height = 360,
+  padding = 20,
+  eyeSteps = 250,
+  showPoints = true,
+}) {
+  const xs = run?.series?.hypercubeX ?? [];
+  const ys = run?.series?.hypercubeY ?? [];
+
+  const { pts, leftD, rightD } = useMemo(() => {
+    const len = Math.min(xs.length, ys.length);
+    if (!len) return { pts: [], leftD: "", rightD: "" };
+
+    const innerW = width - 2 * padding;
+    const innerH = height - 2 * padding;
+
+    const pts = [];
+    for (let i = 0; i < len; i++) {
+      const x = Number(xs[i]);
+      const y = Number(ys[i]);
+      if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+
+      const px = padding + ((x + 1) / 2) * innerW;
+      const py = padding + (1 - y) * innerH;
+
+      pts.push({ i, px, py });
+    }
+
+    const { leftD, rightD } = buildEyePaths(width, height, padding, eyeSteps);
+    return { pts, leftD, rightD };
+  }, [xs, ys, width, height, padding, eyeSteps]);
+
+  if (!pts.length) return <div>No hypercube data.</div>;
+
+  const d = pts
+    .map((p, idx) => `${idx === 0 ? "M" : "L"} ${p.px.toFixed(2)} ${p.py.toFixed(2)}`)
+    .join(" ");
+
+  const last = pts[pts.length - 1];
+
+  return (
+    <svg width={width} height={height} className="hypercube-svg">
+
+      <path d={leftD} fill="none" stroke="#111" strokeWidth="2" />
+      <path d={rightD} fill="none" stroke="#111" strokeWidth="2" />
+
+      <path d={d} fill="none" stroke="#999" strokeWidth="2" />
+
+      {showPoints &&
+        pts.map((p) => <circle key={p.i} cx={p.px} cy={p.py} r="2" fill="#3b82f6" />)}
+
+      <circle cx={last.px} cy={last.py} r="5" fill="#ef4444" />
+    </svg>
+  );
+}
+
+export default memo(HypercubePlot);
