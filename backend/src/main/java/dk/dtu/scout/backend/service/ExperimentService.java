@@ -314,6 +314,7 @@ public class ExperimentService {
             case "fitness" -> new FitnessObserver<>();
             case "acceptance-rate" -> new AcceptanceRateObserver<>();
             case "improvements" -> new ImprovementObserver<>();
+            case "hypercube" ->(Observer<S>) new HypercubeObserver();
             default -> throw new IllegalArgumentException("Unknown observer: " + id);
         };
     }
