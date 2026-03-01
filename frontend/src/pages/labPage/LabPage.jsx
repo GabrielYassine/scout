@@ -7,10 +7,11 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePuzzleConfig } from "../../contexts/PuzzleConfigContext.jsx";
 
-export default function LabPage({catalog, catalogLoading, catalogError}) {
+export default function LabPage({catalog, catalogLoading, catalogError, templates, templatesLoading, templatesError}) {
   const {
     puzzleConfig,
     params,
+    applyTemplateRunRequest,
     handleParamChange,
     handleReset,
   } = usePuzzleConfig();
@@ -91,6 +92,12 @@ export default function LabPage({catalog, catalogLoading, catalogError}) {
       },
     });
   }
+  function onApplyTemplate(templateId) {
+    if (!catalog || !templateId) return;
+    const tpl = (templates ?? []).find((t) => t.id === templateId);
+    if (!tpl) return;
+    applyTemplateRunRequest(tpl.runRequest, catalog);
+  }
 
   return (
     <div className="lab-page">
@@ -103,6 +110,10 @@ export default function LabPage({catalog, catalogLoading, catalogError}) {
           catalog={catalog}
           catalogLoading={catalogLoading}
           catalogError={catalogError}
+          templates={templates}
+          templatesLoading={templatesLoading}
+          templatesError={templatesError}
+          onApplyTemplate={onApplyTemplate}
       />
       <div className="lab-page-content">
         <div className="selector-timeline">

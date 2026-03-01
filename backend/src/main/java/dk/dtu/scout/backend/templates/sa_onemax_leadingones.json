@@ -1,0 +1,32 @@
+{
+  "id": "tpl-sa-bitstring-onemax-leadingones",
+  "displayName": "Simulated Annealing on OneMax + LeadingOnes",
+  "description": "SA setup on bitstrings for OneMax and LeadingOnes with standard logging.",
+  "runRequest": {
+    "searchSpaceId": ["bitstring"],
+    "searchSpaceParams": {},
+
+    "problemId": ["onemax", "leadingones"],
+    "problemParams": {},
+
+    "mutationId": ["bit-flip"],
+    "mutationParams": { "flipProbability": "1/n" },
+
+    "acceptanceRuleId": ["simulated-annealing"],
+    "acceptanceRuleParams": {
+      "initialTemperature": 1.0,
+      "coolingRate": 0.995
+    },
+
+    "populationModelId": ["default"],
+    "populationModelParams": { "lambda": 1 },
+
+    "stopConditionId": ["max-iterations"],
+    "stopConditionParams": { "maxIterations": 10000 },
+
+    "observerIds": ["fitness", "acceptance-rate", "improvements", "hypercube"],
+
+    "seed": 1,
+    "runTimes": 10
+  }
+}

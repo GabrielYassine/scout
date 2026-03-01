@@ -13,6 +13,10 @@ export default function App() {
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [catalogError, setCatalogError] = useState(null);
 
+  const [templates, setTemplates] = useState([]);
+  const [templatesLoading, setTemplatesLoading] = useState(true);
+  const [templatesError, setTemplatesError] = useState(null);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -39,6 +43,32 @@ export default function App() {
     };
   }, []);
 
+  useEffect(() => {
+      let cancelled = false;
+
+      async function load() {
+        try {
+          setTemplatesLoading(true);
+          setTemplatesError(null);
+
+          const res = await fetch("/api/templates");
+          if (!res.ok) throw new Error(`Templates fetch failed: ${res.status}`);
+
+          const data = await res.json();
+          if (!cancelled) setTemplates(data);
+        } catch (e) {
+          if (!cancelled) setTemplatesError(e?.message ?? String(e));
+        } finally {
+          if (!cancelled) setTemplatesLoading(false);
+        }
+      }
+
+      load();
+      return () => {
+        cancelled = true;
+      };
+    }, []);
+
   return (
     <PuzzleConfigProvider>
       <div className="app-root">
@@ -53,6 +83,9 @@ export default function App() {
                 catalog={catalog}
                 catalogLoading={catalogLoading}
                 catalogError={catalogError}
+                templates={templates}
+                templatesLoading={templatesLoading}
+                templatesError={templatesError}
               />
             }
           />

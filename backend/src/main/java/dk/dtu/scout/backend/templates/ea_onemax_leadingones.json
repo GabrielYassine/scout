@@ -1,0 +1,29 @@
+{
+  "id": "tpl-ea-bitstring-onemax-leadingones",
+  "displayName": "(1+1) EA on OneMax + LeadingOnes",
+  "description": "Default (1+1) EA setup on bitstrings for OneMax and LeadingOnes with standard logging.",
+  "runRequest": {
+    "searchSpaceId": ["bitstring"],
+    "searchSpaceParams": {},
+
+    "problemId": ["onemax", "leadingones"],
+    "problemParams": {},
+
+    "mutationId": ["bit-flip"],
+    "mutationParams": { "flipProbability": "1/n" },
+
+    "acceptanceRuleId": ["elitist"],
+    "acceptanceRuleParams": {},
+
+    "populationModelId": ["default"],
+    "populationModelParams": { "lambda": 1 },
+
+    "stopConditionId": ["max-iterations"],
+    "stopConditionParams": { "maxIterations": 10000 },
+
+    "observerIds": ["fitness", "improvements", "hypercube"],
+
+    "seed": 1,
+    "runTimes": 10
+  }
+}

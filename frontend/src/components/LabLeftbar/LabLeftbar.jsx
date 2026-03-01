@@ -14,6 +14,10 @@ export default function LabLeftbar({
   catalog,
   catalogLoading,
   catalogError,
+  templates = [],
+  templatesLoading = false,
+  templatesError = null,
+  onApplyTemplate,
 }) {
   const [open, setOpen] = useState({
     global: true,
