@@ -20,7 +20,11 @@ import dk.dtu.scout.population.PopulationModel;
 import dk.dtu.scout.problems.LeadingOnesProblem;
 import dk.dtu.scout.problems.OneMaxProblem;
 import dk.dtu.scout.problems.Problem;
+import dk.dtu.scout.problems.TSPInstance;
+import dk.dtu.scout.problems.TSPProblem;
 import dk.dtu.scout.mutation.BitFlipMutation;
+import dk.dtu.scout.mutation.SwapMutation;
+import dk.dtu.scout.mutation.TwoOptMutation;
 import dk.dtu.scout.searchSpace.BitString;
 import dk.dtu.scout.searchSpace.Permutation;
 import dk.dtu.scout.searchSpace.SearchSpace;
@@ -40,6 +44,11 @@ import java.util.Random;
 @Service
 public class ExperimentService {
 
+    private final TSPInstanceService tspInstanceService;
+
+    public ExperimentService(TSPInstanceService tspInstanceService) {
+        this.tspInstanceService = tspInstanceService;
+    }
 
     /**
      * Will work as outer dispatcher.
@@ -249,8 +258,17 @@ public class ExperimentService {
         };
     }
     private Mutation<int[]> createMutationInt(List<String>  ids, Map<String, Object> params, int n) {
-       //toDO
-        throw new IllegalArgumentException("Unknown mutation: ");
+        String id = firstOrDefault(ids, "swap");
+        if (params == null) params = Map.of();
+
+        Mutation<int[]> mutation = switch (id) {
+            case "swap" -> new SwapMutation();
+            case "2opt" -> new TwoOptMutation();
+            default -> throw new IllegalArgumentException("Unknown int[] mutation: " + id);
+        };
+
+        mutation.configure(params);
+        return mutation;
     }
 
     private AcceptanceRule createAcceptanceRule(List<String>  ids, Map<String, Object> params) {
@@ -263,7 +281,6 @@ public class ExperimentService {
             default -> throw new IllegalArgumentException("Unknown acceptance rule: " + id);
         };
 
-        // Configure with parameters
         acceptance.configure(params);
         return acceptance;
     }

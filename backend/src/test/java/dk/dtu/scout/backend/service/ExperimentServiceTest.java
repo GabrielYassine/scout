@@ -13,11 +13,12 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class ExperimentServiceTest {
 
+    private TSPInstanceService tspInstanceService;
     private ExperimentService experimentService;
 
     @BeforeEach
     void setUp() {
-        experimentService = new ExperimentService();
+        experimentService = new ExperimentService(new TSPInstanceService());
     }
 
     /**
