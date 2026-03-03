@@ -119,9 +119,9 @@ public class ExperimentService {
         List<RunResponse> runs = new ArrayList<>();
 
         for (String pid : problemIds) {
-            Problem<S> problem = createProblem(pid, ss.dimension(), ss.id());
+            Problem<S> problem = createProblem(pid, ss.dimension(), ss.id(), request.problemParams());
             StopCondition<S> stop = createStopConditionChain(request.stopConditionId(), request.stopConditionParams(), problem);
-            Observer<S> observer = createObserverChain(request.observerIds());
+            Observer<S> observer = createObserverChain(request.observerIds(), problem);
 
             long startTime = System.nanoTime();
             RunLog log = popModel.run(mutation, acceptance, ss, problem, rng, stop, observer);
@@ -137,7 +137,8 @@ public class ExperimentService {
                     evaluations,
                     log.getSeries(),
                     runtimeMs,
-                    finalEvaluations
+                    finalEvaluations,
+                    log.getExtraData()
             ));
         }
         return runs;
@@ -214,29 +215,83 @@ public class ExperimentService {
     }
 
     @SuppressWarnings("unchecked")
-    private<S> Problem<S> createProblem(String  id,  int n, String searchSpaceId) {
+    private<S> Problem<S> createProblem(String  id,  int n, String searchSpaceId, Map<String, Object> problemParams) {
         return (Problem<S>) switch (searchSpaceId) {
-            case "bitstring" -> createProblemBoolean(id, n);
-            case "permutation" -> createProblemInt(id, n);
+            case "bitstring" -> createProblemBoolean(id, n, problemParams);
+            case "permutation" -> createProblemInt(id, n, problemParams);
             default -> throw new IllegalArgumentException("Unsupported search space for problems: " + searchSpaceId);
         };
     }
-    private Problem<boolean[]> createProblemBoolean(String id, int n) {
+    private Problem<boolean[]> createProblemBoolean(String id, int n, Map<String, Object> problemParams) {
         Problem<boolean[]> problem = switch (id) {
             case "onemax" -> new OneMaxProblem();
             case "leadingones" -> new LeadingOnesProblem();
             default -> throw new IllegalArgumentException("Unknown boolean problem: " + id);
         };
 
-        Map<String, Object> problemParams = Map.of("n", n);
-        problem.configure(problemParams);
+        Map<String, Object> params = new HashMap<>(Map.of("n", n));
+        if (problemParams != null) {
+            params.putAll(problemParams);
+        }
+        problem.configure(params);
         return problem;
     }
 
-    private Problem<int[]> createProblemInt(String id, int n) {
-        throw new IllegalArgumentException(
-                "Problem<int[]> not wired yet for id='" + id + "'. Add your int[] problems here."
-        );
+    private Problem<int[]> createProblemInt(String id, int n, Map<String, Object> problemParams) {
+        Problem<int[]> problem = switch (id) {
+            case "tsp" -> new TSPProblem();
+            default -> throw new IllegalArgumentException("Unknown int[] problem: " + id);
+        };
+
+        Map<String, Object> params = new HashMap<>(Map.of("n", n));
+        if (problemParams != null) {
+            // Handle TSP instance conversion
+            if (problemParams.containsKey("tspInstance")) {
+                Object tspInstanceObj = problemParams.get("tspInstance");
+                if (tspInstanceObj instanceof Map) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> tspInstanceMap = (Map<String, Object>) tspInstanceObj;
+                    TSPInstance instance = convertToTSPInstance(tspInstanceMap);
+                    params.put("instance", instance);
+                }
+            }
+            // Copy other params
+            for (Map.Entry<String, Object> entry : problemParams.entrySet()) {
+                if (!entry.getKey().equals("tspInstance")) {
+                    params.put(entry.getKey(), entry.getValue());
+                }
+            }
+        }
+        problem.configure(params);
+        return problem;
+    }
+
+    private TSPInstance convertToTSPInstance(Map<String, Object> tspInstanceMap) {
+        String name = (String) tspInstanceMap.getOrDefault("name", "Custom Instance");
+
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> citiesList = (List<Map<String, Object>>) tspInstanceMap.get("cities");
+
+        if (citiesList == null || citiesList.isEmpty()) {
+            throw new IllegalArgumentException("TSP instance must have cities");
+        }
+
+        int dimension = citiesList.size();
+        double[][] coordinates = new double[dimension][2];
+
+        for (int i = 0; i < dimension; i++) {
+            Map<String, Object> city = citiesList.get(i);
+            Object xObj = city.get("x");
+            Object yObj = city.get("y");
+
+            double x = (xObj instanceof Number) ? ((Number) xObj).doubleValue() : 0.0;
+            double y = (yObj instanceof Number) ? ((Number) yObj).doubleValue() : 0.0;
+
+            coordinates[i][0] = x;
+            coordinates[i][1] = y;
+        }
+
+        return new TSPInstance(name, dimension, coordinates);
     }
 
 
@@ -319,21 +374,43 @@ public class ExperimentService {
         return stop;
     }
 
-    private<S> Observer<S> createObserverChain(List<String> ids) {
+    private<S> Observer<S> createObserverChain(List<String> ids, Problem<S> problem) {
         if (ids == null || ids.isEmpty()) return new FitnessObserver<>();
 
-        List<Observer<S>> obs = ids.stream().map(this::<S>createSingleObserver).toList();
+        List<Observer<S>> obs = ids.stream().map(id -> this.<S>createSingleObserver(id, problem)).toList();
         return new BroadcastObserver<>(obs);
     }
 
-    private <S>Observer<S> createSingleObserver(String id) {
-        return switch (id) {
+    @SuppressWarnings("unchecked")
+    private <S>Observer<S> createSingleObserver(String id, Problem<S> problem) {
+        Observer<S> observer = switch (id) {
             case "fitness" -> new FitnessObserver<>();
             case "acceptance-rate" -> new AcceptanceRateObserver<>();
             case "improvements" -> new ImprovementObserver<>();
-            case "hypercube" ->(Observer<S>) new HypercubeObserver();
+            case "hypercube" -> (Observer<S>) new HypercubeObserver();
+            case "tsp-tour" -> {
+                TSPTourObserver tspObs = new TSPTourObserver();
+                // Configure with cities if problem is TSP
+                if (problem instanceof TSPProblem) {
+                    TSPProblem tspProblem = (TSPProblem) problem;
+                    TSPInstance instance = tspProblem.getInstance();
+                    if (instance != null) {
+                        double[][] coords = instance.getCoordinates();
+                        List<Map<String, Double>> cities = new ArrayList<>();
+                        for (int i = 0; i < coords.length; i++) {
+                            Map<String, Double> city = new HashMap<>();
+                            city.put("x", coords[i][0]);
+                            city.put("y", coords[i][1]);
+                            cities.add(city);
+                        }
+                        tspObs.setCities(cities);
+                    }
+                }
+                yield (Observer<S>) tspObs;
+            }
             default -> throw new IllegalArgumentException("Unknown observer: " + id);
         };
+        return observer;
     }
 
     /**

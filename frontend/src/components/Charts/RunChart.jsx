@@ -2,21 +2,26 @@ import { useState, useMemo, memo, useCallback } from "react";
 import {LineChart,Line,XAxis,YAxis,CartesianGrid,Tooltip,Legend,ResponsiveContainer,} from "recharts";
 import "./RunChart.css";
 import HypercubePlot from "./HypercubePlot.jsx";
+import TSPVisualization from "../TSPVisualization/TSPVisualization.jsx";
 
 const HYPERCUBE_KEY = "__hypercube__";
+const TSP_TOUR_KEY = "__tsp-tour__";
 
 function RunChart({ run, runIndex, problemIndex }) {
   const evaluations = run?.evaluations ?? [];
   const series = run?.series ?? {};
+  const extraData = run?.extraData ?? {};
   const hasHypercube =(series.hypercubeX?.length ?? 0) > 0 && (series.hypercubeY?.length ?? 0) > 0;
+  const hasTSPTour = (extraData.tspTour?.length ?? 0) > 0 && (extraData.tspCities?.length ?? 0) > 0;
 
   const keys = Object.keys(series).filter( (k) => k !== "hypercubeX" && k !== "hypercubeY" );
 
    const displayKeys = useMemo(() => {
     const out = [...keys];
      if (hasHypercube) out.push(HYPERCUBE_KEY);
+     if (hasTSPTour) out.push(TSP_TOUR_KEY);
      return out;
-   }, [keys, hasHypercube]);
+   }, [keys, hasHypercube, hasTSPTour]);
 
   const [selectedObserver, setSelectedObserver] = useState(displayKeys[0] || null);
   const handleObserverChange = useCallback((observerKey) => {
@@ -35,7 +40,7 @@ function RunChart({ run, runIndex, problemIndex }) {
   }
 
   const data = useMemo(() => {
-    if (!selectedObserver || !series[selectedObserver]|| selectedObserver === HYPERCUBE_KEY) return [];
+    if (!selectedObserver || !series[selectedObserver]|| selectedObserver === HYPERCUBE_KEY || selectedObserver === TSP_TOUR_KEY) return [];
 
     const observerData = series[selectedObserver];
     const minLen = Math.min(evaluations.length, observerData.length);
@@ -54,7 +59,9 @@ function RunChart({ run, runIndex, problemIndex }) {
 
       <div className="run-chart-inner">
         {selectedObserver === HYPERCUBE_KEY ? (
-                  <HypercubePlot run={run} />
+          <HypercubePlot run={run} />
+        ) : selectedObserver === TSP_TOUR_KEY ? (
+          <TSPVisualization run={run} />
         ) : (
         <ResponsiveContainer>
           <LineChart data={data}>
@@ -73,19 +80,25 @@ function RunChart({ run, runIndex, problemIndex }) {
         )}
       </div>
 
-      {keys.length > 1 && (
+      {displayKeys.length > 1 && (
         <div className="observer-checkboxes">
-          {displayKeys.map((key) => (
-            <label key={key} className="observer-checkbox-label">
-              <input
-                type="radio"
-                name={`observer-${run.problemId}-${runIndex}`}
-                checked={selectedObserver === key}
-                onChange={() => handleObserverChange(key)}
-              />
-              <span>{key}</span>
-            </label>
-          ))}
+          {displayKeys.map((key) => {
+            // Display friendly names for special keys
+            const displayName = key === HYPERCUBE_KEY ? "Hypercube" :
+                               key === TSP_TOUR_KEY ? "TSP Tour" : key;
+
+            return (
+              <label key={key} className="observer-checkbox-label">
+                <input
+                  type="radio"
+                  name={`observer-${run.problemId}-${runIndex}`}
+                  checked={selectedObserver === key}
+                  onChange={() => handleObserverChange(key)}
+                />
+                <span>{displayName}</span>
+              </label>
+            );
+          })}
         </div>
       )}
     </div>

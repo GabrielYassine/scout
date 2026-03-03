@@ -1,5 +1,6 @@
 package dk.dtu.scout.backend.controller;
 
+import dk.dtu.scout.backend.dto.permutation.TSPDto;
 import dk.dtu.scout.backend.service.TSPInstanceService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,13 +22,12 @@ public class TSPController {
     // We take the raw content of the uploaded TSP file as a string in the request body, and parse it in the service layer
     // We do this instead of a DTO because we expect the user to upload a file in a specific format
     @PostMapping("/upload")
-    public ResponseEntity<?> uploadTSPInstance(@RequestBody String content) {
+    public ResponseEntity<TSPDto> uploadTSPInstance(@RequestBody String content) {
         try {
-            tspInstanceService.uploadInstance(content);
-            return ResponseEntity.ok(HttpStatus.OK);
+            TSPDto tspDto = tspInstanceService.uploadInstance(content);
+            return ResponseEntity.ok(tspDto);
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
     }
-
 }

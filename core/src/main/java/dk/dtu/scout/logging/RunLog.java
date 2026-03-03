@@ -9,6 +9,7 @@ public class RunLog {
     private final List<Integer> iterations = new ArrayList<>();
     private final List<Integer> evaluations = new ArrayList<>();
     private final Map<String, List<Double>> series = new LinkedHashMap<>();
+    private final Map<String, Object> extraData = new LinkedHashMap<>(); // For non-numeric data
 
     public void tick(int iteration, int evaluation) {
         iterations.add(iteration);
@@ -19,8 +20,13 @@ public class RunLog {
         series.computeIfAbsent(key, k -> new ArrayList<>()).add(value);
     }
 
+    public void putExtra(String key, Object value) {
+        extraData.put(key, value);
+    }
+
     public List<Integer> getIterations() { return iterations; }
     public List<Integer> getEvaluations() { return evaluations; }
     public Map<String, List<Double>> getSeries() { return series; }
+    public Map<String, Object> getExtraData() { return extraData; }
 }
 

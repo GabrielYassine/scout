@@ -9,5 +9,6 @@ public record RunResponse(
     List<Integer> evaluations,
     Map<String, List<Double>> series,
     double runtimeMs,
-    int finalEvaluations
+    int finalEvaluations,
+    Map<String, Object> extraData
 ) {}

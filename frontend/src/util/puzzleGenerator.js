@@ -112,11 +112,6 @@ function randomEdge() {
 
 
 export function generatePuzzleKey({col, row, totalCols, neighbors = {} }) {
-    console.log("  Left:", neighbors.left);
-    console.log("  Right:", neighbors.right);
-    console.log("  Top:", neighbors.top);
-    console.log("  Bottom:", neighbors.bottom);
-
     let N = null,
         E = null,
         S = null,
@@ -141,7 +136,6 @@ export function generatePuzzleKey({col, row, totalCols, neighbors = {} }) {
         S = complement(neighbors.bottom.edge);
     }
 
-    console.log("After pair-fill:", { N, E, S, W });
 
     // For any remaining edges, we compute each edge randomly for Tab or Hole
     if (N === null) N = randomEdge();
@@ -150,11 +144,7 @@ export function generatePuzzleKey({col, row, totalCols, neighbors = {} }) {
     if (W === null) W = randomEdge();
 
     const logicalKey = `${N}${E}${S}${W}`;
-    console.log("Final logical key:", logicalKey); // e.g. "1202"
-
     const mapping = PNG_MAP[logicalKey] ?? PNG_MAP["0000"];
-    console.log("Mapped to:", mapping);
-
     return {
         logicalKey,
         renderKey: mapping.renderKey,

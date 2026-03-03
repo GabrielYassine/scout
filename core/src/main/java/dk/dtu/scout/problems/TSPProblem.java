@@ -61,6 +61,9 @@ public class TSPProblem implements Problem<int[]> {
 
     @Override
     public double fitness(int[] tour) {
+        if (instance == null) {
+            throw new IllegalStateException("TSP instance not configured. Make sure to upload or configure a TSP instance before running.");
+        }
         if (tour == null || tour.length != instance.getDimension()) {
             throw new IllegalArgumentException("Tour must have length " + instance.getDimension());
         }
