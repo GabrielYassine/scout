@@ -7,13 +7,14 @@ export default function TSPVisualization({ tspData, run, width, height }) {
   const [dimensions, setDimensions] = useState({ width: width || 800, height: height || 600 });
   const [draggedCity, setDraggedCity] = useState(null);
 
-  // Extract data from either tspData prop or run prop
   const sourceData = useMemo(() => {
-    if (run?.extraData?.tspTour && run?.extraData?.tspCities) {
-      // Run result format
+    if (run?.series?.tspTour && run?.series?.tspCities) {
+      const citiesData = run.series.tspCities[0];
+      const tourData = run.series.tspTour[run.series.tspTour.length - 1];
+
       return {
-        tour: run.extraData.tspTour[0],
-        cities: run.extraData.tspCities.map((city, index) => ({
+        tour: tourData,
+        cities: citiesData.map((city, index) => ({
           id: index,
           x: city.x,
           y: city.y
@@ -22,7 +23,6 @@ export default function TSPVisualization({ tspData, run, width, height }) {
           Math.abs(run.series.fitness[run.series.fitness.length - 1]) : null
       };
     } else if (tspData) {
-      // Direct tspData format
       return {
         tour: tspData.tour,
         cities: tspData.cities,
@@ -34,16 +34,14 @@ export default function TSPVisualization({ tspData, run, width, height }) {
 
   const [cities, setCities] = useState([]);
 
-  // Initialize cities when source data changes
   useEffect(() => {
     if (sourceData?.cities) {
       setCities([...sourceData.cities]);
     }
   }, [sourceData]);
 
-  // Observe container size changes (for responsive mode)
   useEffect(() => {
-    if (!containerRef.current || (width && height)) return; // Skip if fixed dimensions provided
+    if (!containerRef.current || (width && height)) return;
 
     const updateDimensions = () => {
       if (containerRef.current) {
@@ -63,13 +61,12 @@ export default function TSPVisualization({ tspData, run, width, height }) {
     return () => resizeObserver.disconnect();
   }, [width, height]);
 
-  // Calculate bounds to fit all cities
   const { minX, maxX, minY, maxY, scale, offsetX, offsetY } = useMemo(() => {
     if (!cities || cities.length === 0) {
       return { minX: 0, maxX: 100, minY: 0, maxY: 100, scale: 1, offsetX: 0, offsetY: 0 };
     }
 
-    const padding = 30; // Reduced padding
+    const padding = 30;
     const { width: w, height: h } = dimensions;
     const minX = Math.min(...cities.map(c => c.x));
     const maxX = Math.max(...cities.map(c => c.x));
@@ -89,7 +86,6 @@ export default function TSPVisualization({ tspData, run, width, height }) {
     return { minX, maxX, minY, maxY, scale, offsetX, offsetY };
   }, [cities, dimensions]);
 
-  // Convert data coordinates to SVG coordinates
   const toSVGCoords = useCallback((x, y) => {
     return {
       x: (x - minX) * scale + offsetX,
@@ -97,7 +93,6 @@ export default function TSPVisualization({ tspData, run, width, height }) {
     };
   }, [minX, minY, scale, offsetX, offsetY, dimensions.height]);
 
-  // Convert SVG coordinates back to data coordinates
   const fromSVGCoords = useCallback((svgX, svgY) => {
     return {
       x: (svgX - offsetX) / scale + minX,
@@ -105,7 +100,6 @@ export default function TSPVisualization({ tspData, run, width, height }) {
     };
   }, [minX, minY, scale, offsetX, offsetY, dimensions.height]);
 
-  // Get SVG coordinates relative to the SVG element
   const getSVGPoint = useCallback((clientX, clientY) => {
     if (!svgRef.current) return { x: 0, y: 0 };
     const rect = svgRef.current.getBoundingClientRect();
@@ -139,7 +133,6 @@ export default function TSPVisualization({ tspData, run, width, height }) {
     setDraggedCity(null);
   }, []);
 
-  // Generate tour path
   const tourPath = useMemo(() => {
     if (!sourceData?.tour || !cities || cities.length === 0) return "";
 
@@ -150,7 +143,6 @@ export default function TSPVisualization({ tspData, run, width, height }) {
       return `${coords.x},${coords.y}`;
     }).filter(p => p !== null);
 
-    // Close the tour by connecting back to the first city
     if (pathPoints.length > 0) {
       const firstCity = cities[sourceData.tour[0]];
       if (firstCity) {
@@ -162,7 +154,6 @@ export default function TSPVisualization({ tspData, run, width, height }) {
     return pathPoints.join(" ");
   }, [sourceData?.tour, cities, toSVGCoords]);
 
-  // Calculate current tour length based on modified cities
   const currentTourLength = useMemo(() => {
     if (!sourceData?.tour || !cities || cities.length === 0) return 0;
 
@@ -180,14 +171,6 @@ export default function TSPVisualization({ tspData, run, width, height }) {
     return totalDistance;
   }, [sourceData?.tour, cities]);
 
-  if (!sourceData) {
-    return (
-      <div ref={containerRef} className="tsp-empty">
-        No TSP data available
-      </div>
-    );
-  }
-
   return (
     <div ref={containerRef} className="tsp-visualization">
       <svg
@@ -199,7 +182,6 @@ export default function TSPVisualization({ tspData, run, width, height }) {
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
       >
-        {/* Tour path */}
         {tourPath && (
           <polyline
             points={tourPath}
@@ -210,8 +192,6 @@ export default function TSPVisualization({ tspData, run, width, height }) {
             className="tour-path"
           />
         )}
-
-        {/* Cities */}
         {cities.map((city, index) => {
           const coords = toSVGCoords(city.x, city.y);
           const isDragging = draggedCity === index;

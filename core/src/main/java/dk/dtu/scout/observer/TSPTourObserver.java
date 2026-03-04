@@ -15,6 +15,7 @@ public class TSPTourObserver implements Observer<int[]> {
 
     private final List<int[]> tourHistory = new ArrayList<>();
     private List<Map<String, Double>> cities;
+    private boolean citiesLogged = false;
 
     @Override
     public String id() {
@@ -42,20 +43,22 @@ public class TSPTourObserver implements Observer<int[]> {
 
     @Override
     public void onStep(RunState<int[]> state, RunLog log) {
+        if (!citiesLogged && cities != null) {
+            log.putSeries("tspCities", cities);
+            citiesLogged = true;
+        }
+
         if (state.accepted() && state.currentSolution() != null) {
             tourHistory.add(state.currentSolution().clone());
         }
+
         if (!tourHistory.isEmpty()) {
             int[] lastTour = tourHistory.getLast();
             List<Integer> tourList = new ArrayList<>();
             for (int city : lastTour) {
                 tourList.add(city);
             }
-            log.putExtra("tspTour", List.of(tourList));
-        }
-
-        if (cities != null && !cities.isEmpty()) {
-            log.putExtra("tspCities", cities);
+            log.putSeries("tspTour", tourList);
         }
     }
 }

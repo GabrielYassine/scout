@@ -7,8 +7,7 @@ public record RunResponse(
     String problemId,
     List<Integer> iterations,
     List<Integer> evaluations,
-    Map<String, List<Double>> series,
+    Map<String, List<?>> series,
     double runtimeMs,
-    int finalEvaluations,
-    Map<String, Object> extraData
+    int finalEvaluations
 ) {}

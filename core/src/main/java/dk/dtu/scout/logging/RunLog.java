@@ -8,8 +8,7 @@ import java.util.Map;
 public class RunLog {
     private final List<Integer> iterations = new ArrayList<>();
     private final List<Integer> evaluations = new ArrayList<>();
-    private final Map<String, List<Double>> series = new LinkedHashMap<>();
-    private final Map<String, Object> extraData = new LinkedHashMap<>(); // For non-numeric data
+    private final Map<String, List<?>> series = new LinkedHashMap<>();
 
     public void tick(int iteration, int evaluation) {
         iterations.add(iteration);
@@ -17,16 +16,19 @@ public class RunLog {
     }
 
     public void put(String key, double value) {
-        series.computeIfAbsent(key, k -> new ArrayList<>()).add(value);
+        @SuppressWarnings("unchecked")
+        List<Double> list = (List<Double>) series.computeIfAbsent(key, k -> new ArrayList<Double>());
+        list.add(value);
     }
 
-    public void putExtra(String key, Object value) {
-        extraData.put(key, value);
+    public <T> void putSeries(String key, T value) {
+        @SuppressWarnings("unchecked")
+        List<T> list = (List<T>) series.computeIfAbsent(key, k -> new ArrayList<T>());
+        list.add(value);
     }
 
     public List<Integer> getIterations() { return iterations; }
     public List<Integer> getEvaluations() { return evaluations; }
-    public Map<String, List<Double>> getSeries() { return series; }
-    public Map<String, Object> getExtraData() { return extraData; }
+    public Map<String, List<?>> getSeries() { return series; }
 }
 

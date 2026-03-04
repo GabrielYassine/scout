@@ -137,8 +137,7 @@ public class ExperimentService {
                     evaluations,
                     log.getSeries(),
                     runtimeMs,
-                    finalEvaluations,
-                    log.getExtraData()
+                    finalEvaluations
             ));
         }
         return runs;

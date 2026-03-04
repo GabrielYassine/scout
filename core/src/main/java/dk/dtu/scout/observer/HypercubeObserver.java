@@ -30,23 +30,10 @@ public class HypercubeObserver implements Observer<boolean[]> {
     }
 
     @Override
-    public void configure(Map<String, Object> params) {
-
-    }
-
-    @Override
-    public void onStart(RunState<boolean[]> state, RunLog log) {
-    }
-
-    @Override
     public void onStep(RunState<boolean[]> state, RunLog log) {
         Point2D p = map(state.currentSolution());
         log.put("hypercubeX", p.x());
         log.put("hypercubeY", p.y());
-    }
-
-    @Override
-    public void onEnd(RunState<boolean[]> state, RunLog log) {
     }
 
     public record Point2D(double x, double y) {}
@@ -79,6 +66,4 @@ public class HypercubeObserver implements Observer<boolean[]> {
 
         return new Point2D(xRaw * envelope, y);
     }
-
-
 }

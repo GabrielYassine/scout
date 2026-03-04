@@ -10,11 +10,10 @@ const TSP_TOUR_KEY = "__tsp-tour__";
 function RunChart({ run, runIndex, problemIndex }) {
   const evaluations = run?.evaluations ?? [];
   const series = run?.series ?? {};
-  const extraData = run?.extraData ?? {};
   const hasHypercube =(series.hypercubeX?.length ?? 0) > 0 && (series.hypercubeY?.length ?? 0) > 0;
-  const hasTSPTour = (extraData.tspTour?.length ?? 0) > 0 && (extraData.tspCities?.length ?? 0) > 0;
+  const hasTSPTour = (series.tspTour?.length ?? 0) > 0 && (series.tspCities?.length ?? 0) > 0;
 
-  const keys = Object.keys(series).filter( (k) => k !== "hypercubeX" && k !== "hypercubeY" );
+  const keys = Object.keys(series).filter( (k) => k !== "hypercubeX" && k !== "hypercubeY" && k !== "tspTour" && k !== "tspCities" );
 
    const displayKeys = useMemo(() => {
     const out = [...keys];
