@@ -11,21 +11,14 @@ export default function LabPage({catalog, catalogLoading, catalogError, template
   const {
     puzzleConfig,
     params,
+    tspInstance,
+    setTspInstance,
     applyTemplateRunRequest,
     handleParamChange,
     handleReset,
   } = usePuzzleConfig();
 
   const [hoverInfo, setHoverInfo] = useState(null);
-  const [tspInstance, setTspInstance] = useState({
-    name: "Default Instance",
-    cities: [
-      { id: 0, x: 50, y: 0 },
-      { id: 1, x: 100, y: 0 },
-      { id: 2, x: 100, y: 100 },
-      { id: 3, x: 50, y: 100 },
-    ]
-  });
   const navigate = useNavigate();
 
   function getCatalogItem(type, id) {
@@ -58,13 +51,11 @@ export default function LabPage({catalog, catalogLoading, catalogError, template
     const seed = params.global?.seed ?? Date.now();
     const runTimes = params.global?.runTimes ?? 1;
 
-    // Prepare problem params with TSP instance if available
     const problemParams = { ...params.problem };
     if (tspInstance && tspInstance.cities && tspInstance.cities.length > 0) {
       problemParams.tspInstance = tspInstance;
     }
 
-    // Prepare search space params - set n from TSP instance if TSP problem is selected
     const searchSpaceParams = { ...params.searchSpace };
     const isTSPProblem = puzzleConfig.problem?.some(p => p.id === 'tsp');
     if (isTSPProblem && tspInstance && tspInstance.cities && tspInstance.cities.length > 0) {
@@ -111,6 +102,7 @@ export default function LabPage({catalog, catalogLoading, catalogError, template
         batch,
         puzzleConfig,
         params,
+        tspInstance,
       },
     });
   }

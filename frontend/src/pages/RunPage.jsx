@@ -1,9 +1,12 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import LabLeftbar from "../components/LabLeftbar/LabLeftbar.jsx";
+import LabRightbar from "../components/LabRightbar.jsx";
 import RunChart from "../components/charts/RunChart.jsx";
+import { DEFAULT_TSP_INSTANCE } from "../contexts/PuzzleConfigContext.jsx";
 import "./RunPage.css";
 import "../components/LabLeftbar/LabLeftbar.css";
+import "../components/LabRightbar.css";
 
 export default function RunPage({ catalog, catalogLoading, catalogError }) {
   const location = useLocation();
@@ -12,11 +15,14 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
   const batchResponse = location.state?.batch;
   const puzzleConfig = location.state?.puzzleConfig;
   const params = location.state?.params;
+  const initialTspInstance = location.state?.tspInstance;
 
   const batches = batchResponse?.batches ?? [];
   const [selectedBatchIndex, setSelectedBatchIndex] = useState(0);
   const selectedBatch = batches[selectedBatchIndex];
   const runs = selectedBatch?.runs ?? [];
+
+  const [tspInstance] = useState(initialTspInstance || DEFAULT_TSP_INSTANCE);
 
   return (
     <div className="run-page">
@@ -73,6 +79,11 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
          </>
        )}
      </div>
+     <LabRightbar
+       hoverInfo={null}
+       tspInstance={tspInstance}
+       onTspInstanceChange={() => {}}
+     />
    </div>
  );
 
