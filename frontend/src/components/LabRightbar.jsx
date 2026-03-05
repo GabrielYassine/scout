@@ -146,7 +146,6 @@ export default function LabRightbar({ hoverInfo, tspInstance, onTspInstanceChang
                 {uploading ? "Uploading..." : "Upload TSP File"}
               </label>
               <div className="tsp-file-hint">Accepts .tsp file format only</div>
-              {uploadError && <div className="tsp-error">{uploadError}</div>}
             </div>
 
             {tspInstance?.name && (
@@ -172,14 +171,12 @@ export default function LabRightbar({ hoverInfo, tspInstance, onTspInstanceChang
                       className="city-input"
                       value={city.x}
                       onChange={(e) => handleCityChange(index, 'x', e.target.value)}
-                      step="0.01"
                     />
                     <input
                       type="number"
                       className="city-input"
                       value={city.y}
                       onChange={(e) => handleCityChange(index, 'y', e.target.value)}
-                      step="0.01"
                     />
                     <button
                       className="city-remove-btn"

@@ -16,7 +16,8 @@ public class TSPInstanceService {
     public TSPDto uploadInstance(String content) throws IOException {
         TSPInstance instance = TSPLibParser.parse(content);
 
-        // Convert TSPInstance to TSPDto
+        // TODO: Following code should be moved into a viewmapper class.
+
         double[][] coordinates = instance.getCoordinates();
         List<CityDto> cities = new ArrayList<>();
 
@@ -24,19 +25,12 @@ public class TSPInstanceService {
             cities.add(new CityDto(i, coordinates[i][0], coordinates[i][1]));
         }
 
-        int[] defaultTour = new int[instance.getDimension()];
-        for (int i = 0; i < defaultTour.length; i++) {
-            defaultTour[i] = i;
-        }
-
-        double tourLength = instance.getTourLength(defaultTour);
-
         return new TSPDto(
             instance.getName(),
             instance.getDimension(),
             cities,
-            defaultTour,
-            tourLength
+            null, // We will just show cities without a route when they upload.
+            0.0 // no route, so distance is 0.0
         );
     }
 }

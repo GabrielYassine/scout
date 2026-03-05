@@ -6,6 +6,7 @@ export default function TSPVisualization({ tspData, run, width, height }) {
   const svgRef = useRef(null);
   const [dimensions, setDimensions] = useState({ width: width || 800, height: height || 600 });
   const [draggedCity, setDraggedCity] = useState(null);
+  const [dragPosition, setDragPosition] = useState(null);
 
   const sourceData = useMemo(() => {
     if (run?.series?.tspTour && run?.series?.tspCities) {
@@ -120,6 +121,10 @@ export default function TSPVisualization({ tspData, run, width, height }) {
     const svgPoint = getSVGPoint(e.clientX, e.clientY);
     const dataCoords = fromSVGCoords(svgPoint.x, svgPoint.y);
 
+    // Update drag position immediately for visual feedback
+    setDragPosition(dataCoords);
+
+    // Also update cities state for tour path
     setCities(prevCities =>
       prevCities.map((city, index) =>
         index === draggedCity
@@ -131,6 +136,7 @@ export default function TSPVisualization({ tspData, run, width, height }) {
 
   const handleMouseUp = useCallback(() => {
     setDraggedCity(null);
+    setDragPosition(null);
   }, []);
 
   const tourPath = useMemo(() => {
@@ -193,8 +199,10 @@ export default function TSPVisualization({ tspData, run, width, height }) {
           />
         )}
         {cities.map((city, index) => {
-          const coords = toSVGCoords(city.x, city.y);
           const isDragging = draggedCity === index;
+          // Use drag position for immediate feedback during drag
+          const displayCity = isDragging && dragPosition ? dragPosition : city;
+          const coords = toSVGCoords(displayCity.x, displayCity.y);
 
           return (
             <g key={index} className={`city ${isDragging ? "dragging" : ""}`}>

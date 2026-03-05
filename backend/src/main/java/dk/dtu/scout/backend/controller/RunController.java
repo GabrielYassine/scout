@@ -18,7 +18,6 @@ public class RunController {
 
     @PostMapping("/run")
     public BatchRunResponse run(@RequestBody RunRequest request) {
-        System.out.println("Received run request: " + request);
         return experimentService.run(request);
     }
 }
