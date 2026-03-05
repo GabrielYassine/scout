@@ -13,19 +13,45 @@
   height: 100%;
   user-select: none;
   display: block;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
+/* Tour path */
 .tour-path {
+  fill: none;
+  stroke: #3b82f6;
+  stroke-width: 2;
+  stroke-linejoin: round;
   transition: opacity 0.2s;
 }
 
+/* City group */
 .city {
-  transition: all 0.1s ease;
+  transition: none;
 }
 
-.city circle {
-  transition: all 0.15s ease;
+/* City dot */
+.city-dot {
+  r: 8;
+  fill: #10b981;
+  stroke: #fff;
+  stroke-width: 2;
+  cursor: grab;
+  transition: r 0.15s ease, fill 0.15s ease;
+}
+
+.city-dot:hover {
+  r: 12;
+}
+
+.city.dragging .city-dot {
+  r: 12;
+  cursor: grabbing;
+}
+
+/* City label */
+.city-label {
+  text-anchor: middle;
+  font-size: 11px;
+  fill: #333;
+  pointer-events: none;
 }

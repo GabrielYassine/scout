@@ -189,41 +189,22 @@ export default function TSPVisualization({ tspData, run, width, height }) {
         onMouseLeave={handleMouseUp}
       >
         {tourPath && (
-          <polyline
-            points={tourPath}
-            fill="none"
-            stroke="#3b82f6"
-            strokeWidth="2"
-            strokeLinejoin="round"
-            className="tour-path"
-          />
+          <polyline points={tourPath} className="tour-path" />
         )}
         {cities.map((city, index) => {
           const isDragging = draggedCity === index;
-          // Use drag position for immediate feedback during drag
           const displayCity = isDragging && dragPosition ? dragPosition : city;
           const coords = toSVGCoords(displayCity.x, displayCity.y);
 
           return (
-            <g key={index} className={`city ${isDragging ? "dragging" : ""}`}>
+            <g key={city.id ?? index} className={`city ${isDragging ? "dragging" : ""}`}>
               <circle
+                className="city-dot"
                 cx={coords.x}
                 cy={coords.y}
-                r={isDragging ? 8 : 6}
-                fill={isDragging ? "#ef4444" : "#10b981"}
-                stroke="#fff"
-                strokeWidth="2"
                 onMouseDown={(e) => handleMouseDown(e, index)}
-                style={{ cursor: "grab" }}
               />
-              <text
-                x={coords.x}
-                y={coords.y - 12}
-                textAnchor="middle"
-                fontSize="11"
-                fill="#333"
-                pointerEvents="none"
-              >
+              <text className="city-label" x={coords.x} y={coords.y - 12}>
                 {index}
               </text>
             </g>
