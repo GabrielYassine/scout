@@ -20,6 +20,7 @@ export default function LabLeftbar({
   onApplyTemplate,
 }) {
   const [open, setOpen] = useState({
+    templates: true,
     global: true,
     searchSpace: true,
     problem: true,
@@ -31,7 +32,7 @@ export default function LabLeftbar({
   });
 
   const disabled = catalogLoading || !!catalogError;
-
+  const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const findPieceDef = (type, id) => {
     if (!catalog || !id) return null;
 
@@ -164,6 +165,45 @@ export default function LabLeftbar({
         {renderPieceSection("stopCondition", "Stop Condition")}
         {renderPieceSection("observer", "Observer")}
       </div>
+      <Section
+        title="Templates"
+        isOpen={open.templates ?? true}
+        onToggle={() => setOpen((o) => ({ ...o, templates: !(o.templates ?? true) }))}
+      >
+        <div className="ll-subsection">
+          <select
+            className="form-select"
+            value={selectedTemplateId}
+            onChange={(e) => setSelectedTemplateId(e.target.value)}
+            disabled={disabled || templatesLoading || templates.length === 0}
+          >
+            <option value="">Select template</option>
+            {templates.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.displayName}
+              </option>
+            ))}
+          </select>
+
+          <button
+            className="btn btn--green .ll-subsection"
+            type="button"
+            disabled={disabled || !selectedTemplateId}
+            onClick={() => {
+              onApplyTemplate?.(selectedTemplateId);
+              setSelectedTemplateId(""); 
+            }}
+          >
+            Apply Template
+          </button>
+
+          {templatesError && (
+            <div className="ll-subsection">
+              Failed to load templates: {templatesError}
+            </div>
+          )}
+        </div>
+      </Section>
 
       <div className="ll-actions">
         <button

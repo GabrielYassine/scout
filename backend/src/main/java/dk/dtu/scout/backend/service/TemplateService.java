@@ -24,8 +24,7 @@ public class TemplateService {
             List<ExperimentTemplateDto> out = new ArrayList<>();
             for (Resource r : resources) {
                 try (InputStream in = r.getInputStream()) {
-                    ExperimentTemplateDto t = mapper.readValue(in, new TypeReference<>() {});
-                    out.add(t);
+                    out.add(mapper.readValue(in, ExperimentTemplateDto.class));
                 }
             }
             return out;
