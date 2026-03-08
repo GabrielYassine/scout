@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import "./TSPVisualization.css";
 
-export default function TSPVisualization({ tspData, run, width, height }) {
+export default function TSPVisualization({ tspData, run, width, height, editable = false, onCitiesChange }) {
   const containerRef = useRef(null);
   const svgRef = useRef(null);
   const [dimensions, setDimensions] = useState({ width: width || 800, height: height || 600 });
@@ -111,9 +111,10 @@ export default function TSPVisualization({ tspData, run, width, height }) {
   }, []);
 
   const handleMouseDown = useCallback((e, cityIndex) => {
+    if (!editable) return;
     e.preventDefault();
     setDraggedCity(cityIndex);
-  }, []);
+  }, [editable]);
 
   const handleMouseMove = useCallback((e) => {
     if (draggedCity === null) return;
@@ -121,10 +122,8 @@ export default function TSPVisualization({ tspData, run, width, height }) {
     const svgPoint = getSVGPoint(e.clientX, e.clientY);
     const dataCoords = fromSVGCoords(svgPoint.x, svgPoint.y);
 
-    // Update drag position immediately for visual feedback
     setDragPosition(dataCoords);
 
-    // Also update cities state for tour path
     setCities(prevCities =>
       prevCities.map((city, index) =>
         index === draggedCity
@@ -135,9 +134,12 @@ export default function TSPVisualization({ tspData, run, width, height }) {
   }, [draggedCity, getSVGPoint, fromSVGCoords]);
 
   const handleMouseUp = useCallback(() => {
+    if (draggedCity !== null && editable && onCitiesChange) {
+      onCitiesChange(cities);
+    }
     setDraggedCity(null);
     setDragPosition(null);
-  }, []);
+  }, [draggedCity, editable, onCitiesChange, cities]);
 
   const tourPath = useMemo(() => {
     if (!sourceData?.tour || !cities || cities.length === 0) return "";
@@ -197,7 +199,7 @@ export default function TSPVisualization({ tspData, run, width, height }) {
           const coords = toSVGCoords(displayCity.x, displayCity.y);
 
           return (
-            <g key={city.id ?? index} className={`city ${isDragging ? "dragging" : ""}`}>
+            <g key={city.id ?? index} className={`city ${isDragging ? "dragging" : ""} ${editable ? "editable" : "readonly"}`}>
               <circle
                 className="city-dot"
                 cx={coords.x}

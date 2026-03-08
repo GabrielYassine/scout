@@ -128,6 +128,22 @@
   color: var(--color-border-highlight);
 }
 
+.view-graph-btn {
+  padding: var(--spacing-sm);
+  border-radius: var(--radius-md);
+  background: var(--color-border-highlight);
+  cursor: pointer;
+  text-align: center;
+  font-weight: 600;
+  transition: all 0.2s;
+  border: none;
+  color: inherit;
+}
+
+.view-graph-btn:hover {
+  opacity: 0.9;
+}
+
 .cities-list {
   display: flex;
   flex-direction: column;

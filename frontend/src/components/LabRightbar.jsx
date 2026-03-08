@@ -1,9 +1,11 @@
 import { useState, useRef } from "react";
 import "./LabRightbar.css";
+import TSPGraphModal from "./TSPGraphModal.jsx";
 
 export default function LabRightbar({ hoverInfo, tspInstance, onTspInstanceChange }) {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const fileInputRef = useRef(null);
 
   const handleFileUpload = async (e) => {
@@ -99,6 +101,13 @@ export default function LabRightbar({ hoverInfo, tspInstance, onTspInstanceChang
     });
   };
 
+  const handleCitiesUpdate = (updatedCities) => {
+    onTspInstanceChange({
+      ...tspInstance,
+      cities: updatedCities
+    });
+  };
+
   return (
     <section className="lab-rightbar">
       <div className="lr-content">
@@ -154,6 +163,15 @@ export default function LabRightbar({ hoverInfo, tspInstance, onTspInstanceChang
               </div>
             )}
 
+            {tspInstance?.cities && tspInstance.cities.length > 0 && (
+              <button
+                className="view-graph-btn"
+                onClick={() => setIsModalOpen(true)}
+              >
+                View Graph
+              </button>
+            )}
+
             <div className="cities-list">
               <div className="cities-header">
                 <span className="city-col-id">ID</span>
@@ -197,6 +215,13 @@ export default function LabRightbar({ hoverInfo, tspInstance, onTspInstanceChang
           </div>
         </div>
       </div>
+
+      <TSPGraphModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        tspInstance={tspInstance}
+        onCitiesUpdate={handleCitiesUpdate}
+      />
     </section>
   );
 }
