@@ -55,6 +55,4 @@
   height: 100%;
   display: block;
   background: white;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
 }

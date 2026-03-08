@@ -70,8 +70,11 @@ function HypercubePlot({
   const last = pts[pts.length - 1];
 
   return (
-    <svg width={width} height={height} className="hypercube-svg">
-
+      <svg
+         className="hypercube-svg"
+         viewBox={`0 0 ${width} ${height}`}
+         preserveAspectRatio="xMidYMid meet"
+      >
       <path d={leftD} fill="none" stroke="#111" strokeWidth="2" />
       <path d={rightD} fill="none" stroke="#111" strokeWidth="2" />
 
