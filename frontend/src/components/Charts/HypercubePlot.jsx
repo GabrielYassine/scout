@@ -2,7 +2,7 @@ import { useMemo, memo } from "react";
 import "./RunChart.css";
 
 //not done
-function buildEyePaths(width, height, padding, steps = 250) {
+function buildEyePaths(width, height,padding,  gaussianScale, steps = 250) {
   const innerW = width - 2 * padding;
   const innerH = height - 2 * padding;
 
@@ -12,12 +12,13 @@ function buildEyePaths(width, height, padding, steps = 250) {
   const left = [];
   const right = [];
 
-  for (let i = 0; i <= steps; i++) {
-    const y = i / steps;
-    const e = Math.sin(Math.PI * y);
-    left.push([toPx(-e), toPy(y)]);
-    right.push([toPx(e), toPy(y)]);
-  }
+ for (let i = 0; i <= steps; i++) {
+   const y = i / steps;
+   const u = (2 * y - 1) * gaussianScale;
+   const e = Math.exp(-(u * u) / 8);
+   left.push([toPx(-e), toPy(y)]);
+   right.push([toPx(e), toPy(y)]);
+ }
 
   const toPath = (pts) =>
     pts
@@ -32,6 +33,7 @@ function HypercubePlot({
   width = 520,
   height = 360,
   padding = 20,
+  gaussianScale = 7.0,
   eyeSteps = 250,
   showPoints = true,
 }) {
@@ -57,9 +59,9 @@ function HypercubePlot({
       pts.push({ i, px, py });
     }
 
-    const { leftD, rightD } = buildEyePaths(width, height, padding, eyeSteps);
+    const { leftD, rightD } = buildEyePaths(width, height, padding, gaussianScale,  eyeSteps);
     return { pts, leftD, rightD };
-  }, [xs, ys, width, height, padding, eyeSteps]);
+  }, [xs, ys, width, height, padding, gaussianScale,  eyeSteps]);
 
   if (!pts.length) return <div>No hypercube data.</div>;
 

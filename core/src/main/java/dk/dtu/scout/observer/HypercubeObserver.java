@@ -62,7 +62,9 @@ public class HypercubeObserver implements Observer<boolean[]> {
         }
 
         double xRaw = 2.0 * t - 1.0;
-        double envelope = Math.sin(Math.PI * y);
+        double scale = 7.0;
+        double u = (2.0 * y - 1.0) * scale;
+        double envelope = Math.exp(-(u * u) / 8.0);
 
         return new Point2D(xRaw * envelope, y);
     }
