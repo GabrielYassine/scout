@@ -39,6 +39,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.Comparator;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 
 @Service
@@ -58,27 +64,30 @@ public class ExperimentService {
     public BatchRunResponse run(RunRequest request) {
         long seed = request.seed();
         int runTimes = request.runTimes();
-
-        AcceptanceRule acceptance = createAcceptanceRule(request.acceptanceRuleId(), request.acceptanceRuleParams());
         String searchSpaceId = firstOrDefault(request.searchSpaceId(), "bitstring");
 
         return switch (searchSpaceId) {
-            case "bitstring" ->  {
-                SearchSpace<boolean[]> ss = createSearchSpaceBoolean(request.searchSpaceId(), request.searchSpaceParams());
-                Mutation<boolean[]> mutation = createMutationBoolean(request.mutationId(), request.mutationParams(), ss.dimension());
-                PopulationModel<boolean[]> popModel = createPopulationModel(request.populationModelId(), request.populationModelParams());
-
-                yield runTypedBatch(request, seed, runTimes, ss, mutation, acceptance, popModel,"onemax");
-            }
-            case "permutation" -> {
-                SearchSpace<int[]> ss = createSearchSpaceInt(request.searchSpaceId(), request.searchSpaceParams());
-                Mutation<int[]> mutation = createMutationInt(request.mutationId(), request.mutationParams(), ss.dimension());
-                PopulationModel<int[]> popModel = createPopulationModel(request.populationModelId(), request.populationModelParams());
-
-                yield runTypedBatch(request, seed, runTimes, ss, mutation, acceptance, popModel,"tsp");
-            }
+            case "bitstring" -> runTypedBatch(
+                    request,
+                    seed,
+                    runTimes,
+                    "onemax",
+                    () -> createSearchSpaceBoolean(request.searchSpaceId(), request.searchSpaceParams()),
+                    n -> createMutationBoolean(request.mutationId(), request.mutationParams(), n),
+                    () -> createAcceptanceRule(request.acceptanceRuleId(), request.acceptanceRuleParams()),
+                    () -> createPopulationModel(request.populationModelId(), request.populationModelParams())
+            );
+            case "permutation" -> runTypedBatch(
+                    request,
+                    seed,
+                    runTimes,
+                    "tsp",
+                    () -> createSearchSpaceInt(request.searchSpaceId(), request.searchSpaceParams()),
+                    n -> createMutationInt(request.mutationId(), request.mutationParams(), n),
+                    () -> createAcceptanceRule(request.acceptanceRuleId(), request.acceptanceRuleParams()),
+                    () -> createPopulationModel(request.populationModelId(), request.populationModelParams())
+            );
             default -> throw new IllegalArgumentException("Unsupported search space: " + searchSpaceId);
-
         };
     }
 
@@ -86,24 +95,54 @@ public class ExperimentService {
             RunRequest request,
             long baseSeed,
             int runtimes,
-            SearchSpace<S> ss,
-            Mutation<S> mutation,
-            AcceptanceRule acceptance,
-            PopulationModel<S> popModel,
-            String defaultProblemId
+            String defaultProblemId,
+            Supplier<SearchSpace<S>> searchSpaceFactory,
+            Function<Integer, Mutation<S>> mutationFactory,
+            Supplier<AcceptanceRule> acceptanceFactory,
+            Supplier<PopulationModel<S>> populationModelFactory
     ) {
-        List<RunGroupResponse> batches = new ArrayList<>();
+        int threads=Math.max(1, Runtime.getRuntime().availableProcessors());
+        ExecutorService executor = Executors.newFixedThreadPool(threads);
+        try{
+            List<CompletableFuture<RunGroupResponse>> futures = new ArrayList<>();
+            for (int i = 0; i < runtimes; i++) {
+                final int runIndex = i;
+                final long runSeed = baseSeed + i;
 
-        for (int i = 0; i < runtimes; i++) {
-            long runSeed = baseSeed + i; // Simple way to get different seeds for each run, not ideal but works for now
-            Random rng = new Random(runSeed);
+                CompletableFuture<RunGroupResponse> future = CompletableFuture.supplyAsync(() -> {
+                    Random rng = new Random(runSeed);
 
-            List<RunResponse> perProblemRuns = runTypedOnce(request, rng, ss, mutation, acceptance, popModel, defaultProblemId);
-            batches.add(new RunGroupResponse(i, runSeed, perProblemRuns));
+                    SearchSpace<S> ss = searchSpaceFactory.get();
+                    Mutation<S> mutation = mutationFactory.apply(ss.dimension());
+                    AcceptanceRule acceptance = acceptanceFactory.get();
+                    PopulationModel<S> popModel = populationModelFactory.get();
+
+                    List<RunResponse> perProblemRuns = runTypedOnce(
+                            request,
+                            rng,
+                            ss,
+                            mutation,
+                            acceptance,
+                            popModel,
+                            defaultProblemId
+                    );
+
+                    return new RunGroupResponse(runIndex, runSeed, perProblemRuns);
+                }, executor);
+
+                futures.add(future);
+            }
+
+            List<RunGroupResponse> batches = futures.stream()
+                    .map(CompletableFuture::join)
+                    .sorted(Comparator.comparingInt(RunGroupResponse::runIndex))
+                    .toList();
+
+            BatchSummaryResponse summary = calculateRuntimeStats(batches);
+            return new BatchRunResponse(batches, summary);
+        }finally {
+            executor.shutdown();
         }
-
-        BatchSummaryResponse summary = calculateRuntimeStats(batches);
-        return new BatchRunResponse(batches, summary);
     }
 
     private <S> List<RunResponse> runTypedOnce(
