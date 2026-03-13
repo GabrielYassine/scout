@@ -9,6 +9,7 @@ import dk.dtu.scout.observer.Observer;
 import dk.dtu.scout.problems.Problem;
 import dk.dtu.scout.searchSpace.SearchSpace;
 import dk.dtu.scout.stopcondition.StopCondition;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -17,6 +18,7 @@ import java.util.Map;
 import java.util.Random;
 
 @Component
+@Scope("prototype")
 public class IslandModel<S>  implements PopulationModel<S> {
     private int numIslands = 4;
     private int lambda = 1;        // per island (1+λ)

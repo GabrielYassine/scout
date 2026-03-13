@@ -1,12 +1,14 @@
 package dk.dtu.scout.mutation;
 
 import dk.dtu.scout.Parameter;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Random;
 
 @Component
+@Scope("prototype")
 public class TwoOptMutation implements Mutation<int[]> {
 
     @Override

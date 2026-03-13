@@ -5,6 +5,9 @@ import java.util.List;
 public record CatalogResponse(
     List<ComponentDef> searchSpaces,
     List<ComponentDef> problems,
+    List<ComponentDef> heuristicFunctions,
+    List<ComponentDef> constructionPolicies,
+    List<ComponentDef> pheromoneModels,
     List<ComponentDef> mutations,
     List<ComponentDef> acceptanceRules,
     List<ComponentDef> populationModels,

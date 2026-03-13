@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import org.springframework.context.annotation.Scope;
 
 /**
  * Implementation of the OneMax problem, where the goal is to maximize the number of 1s in a binary string.
@@ -13,6 +14,7 @@ import java.util.Random;
  */
 
 @Component
+@Scope("prototype")
 public class OneMaxProblem implements Problem<boolean[]> {
 
     private int n = 100;

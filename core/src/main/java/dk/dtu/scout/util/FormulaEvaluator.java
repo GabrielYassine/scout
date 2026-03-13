@@ -1,4 +1,4 @@
-package dk.dtu.scout.backend.util;
+package dk.dtu.scout.util;
 
 import java.util.*;
 

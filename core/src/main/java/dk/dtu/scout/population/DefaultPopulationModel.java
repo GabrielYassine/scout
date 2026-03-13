@@ -9,6 +9,7 @@ import dk.dtu.scout.observer.Observer;
 import dk.dtu.scout.problems.Problem;
 import dk.dtu.scout.searchSpace.SearchSpace;
 import dk.dtu.scout.stopcondition.StopCondition;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -16,6 +17,7 @@ import java.util.Map;
 import java.util.Random;
 
 @Component
+@Scope("prototype")
 public class DefaultPopulationModel<S> implements PopulationModel<S> {
 
     private int lambda = 1; // (1+1) by default

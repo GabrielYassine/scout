@@ -23,6 +23,9 @@ public class CatalogController {
         return new CatalogResponse(
             catalog.searchSpaces(),
             catalog.problems(),
+            catalog.heuristicFunctions(),
+            catalog.constructionPolicies(),
+            catalog.pheromoneModels(),
             catalog.mutations(),
             catalog.acceptanceRules(),
             catalog.populationModels(),

@@ -1,6 +1,7 @@
 package dk.dtu.scout.acceptance;
 
 import dk.dtu.scout.Parameter;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 
@@ -14,6 +15,7 @@ import java.util.Random;
  */
 
 @Component
+@Scope("prototype")
 public class SimulatedAnnealingAcceptance implements AcceptanceRule {
 
     private double initialTemperature = 5.0;

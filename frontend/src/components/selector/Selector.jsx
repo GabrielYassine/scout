@@ -5,6 +5,9 @@ import { useSessionStorageState } from "../../hooks/useSessionStorageState.js";
 const componentTypes = [
     { key: "searchSpace", label: "Search Space", catalogKey: "searchSpaces" },
     { key: "problem", label: "Problem", catalogKey: "problems" },
+    { key: "heuristicFunction", label: "Heuristic", catalogKey: "heuristicFunctions" },
+    { key: "constructionPolicy", label: "Construction", catalogKey: "constructionPolicies" },
+    { key: "pheromoneModel", label: "Pheromone", catalogKey: "pheromoneModels" },
     { key: "mutation", label: "Mutation", catalogKey: "mutations" },
     { key: "acceptance", label: "Acceptance Rule", catalogKey: "acceptanceRules" },
     { key: "populationModel", label: "Population Model", catalogKey: "populationModels" },

@@ -16,6 +16,9 @@ export const usePuzzleConfig = () => {
 const componentTypes = [
   "searchSpace",
   "problem",
+  "heuristicFunction",
+  "constructionPolicy",
+  "pheromoneModel",
   "mutation",
   "acceptance",
   "populationModel",

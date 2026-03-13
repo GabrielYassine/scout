@@ -1,12 +1,14 @@
 package dk.dtu.scout.problems;
 
 import dk.dtu.scout.Parameter;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
 
 @Component
+@Scope("prototype")
 public class TSPProblem implements Problem<int[]> {
 
     private TSPInstance instance;
@@ -43,12 +45,48 @@ public class TSPProblem implements Problem<int[]> {
     @Override
     public void configure(Map<String, Object> params) {
         if (params == null) return;
-        if (params.containsKey("instance")) {
+        if (params.containsKey("tspInstance")) {
+            Object tspInstanceObj = params.get("tspInstance");
+            if (tspInstanceObj instanceof Map) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> tspInstanceMap = (Map<String, Object>) tspInstanceObj;
+                this.instance = convertMapToInstance(tspInstanceMap);
+            }
+        }
+        else if (params.containsKey("instance")) {
             this.instance = (TSPInstance) params.get("instance");
         }
         if (params.containsKey("optimalTourLength")) {
             this.optimalTourLength = ((Number) params.get("optimalTourLength")).doubleValue();
         }
+    }
+
+    private TSPInstance convertMapToInstance(Map<String, Object> tspInstanceMap) {
+        String name = (String) tspInstanceMap.getOrDefault("name", "Custom Instance");
+
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> citiesList = (List<Map<String, Object>>) tspInstanceMap.get("cities");
+
+        if (citiesList == null || citiesList.isEmpty()) {
+            throw new IllegalArgumentException("TSP instance must have cities");
+        }
+
+        int dimension = citiesList.size();
+        double[][] coordinates = new double[dimension][2];
+
+        for (int i = 0; i < dimension; i++) {
+            Map<String, Object> city = citiesList.get(i);
+            Object xObj = city.get("x");
+            Object yObj = city.get("y");
+
+            double x = (xObj instanceof Number) ? ((Number) xObj).doubleValue() : 0.0;
+            double y = (yObj instanceof Number) ? ((Number) yObj).doubleValue() : 0.0;
+
+            coordinates[i][0] = x;
+            coordinates[i][1] = y;
+        }
+
+        return new TSPInstance(name, dimension, coordinates);
     }
 
     public void setInstance(TSPInstance instance) {

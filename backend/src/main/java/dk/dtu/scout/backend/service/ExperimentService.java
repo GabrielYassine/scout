@@ -1,36 +1,26 @@
 package dk.dtu.scout.backend.service;
 
+import dk.dtu.scout.ConfigurationContext;
 import dk.dtu.scout.acceptance.AcceptanceRule;
-import dk.dtu.scout.acceptance.ElitistAcceptance;
-import dk.dtu.scout.acceptance.SimulatedAnnealingAcceptance;
+import dk.dtu.scout.algorithm.Algorithm;
+import dk.dtu.scout.algorithm.ConstructionAlgorithm;
+import dk.dtu.scout.algorithm.VariationAlgorithm;
 import dk.dtu.scout.backend.dto.RunRequest;
 import dk.dtu.scout.backend.dto.run.BatchRunResponse;
 import dk.dtu.scout.backend.dto.run.BatchSummaryResponse;
 import dk.dtu.scout.backend.dto.run.RunGroupResponse;
 import dk.dtu.scout.backend.dto.run.RunResponse;
-import dk.dtu.scout.backend.dto.run.RuntimeStats;
-import dk.dtu.scout.backend.util.FormulaEvaluator;
+import dk.dtu.scout.construction.ConstructionPolicy;
+import dk.dtu.scout.heuristic.HeuristicFunction;
+import dk.dtu.scout.pheromone.PheromoneModel;
 import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.mutation.Mutation;
-import dk.dtu.scout.mutation.SingleBitFlipMutation;
 import dk.dtu.scout.observer.*;
-import dk.dtu.scout.population.DefaultPopulationModel;
-import dk.dtu.scout.population.IslandModel;
 import dk.dtu.scout.population.PopulationModel;
-import dk.dtu.scout.problems.LeadingOnesProblem;
-import dk.dtu.scout.problems.OneMaxProblem;
 import dk.dtu.scout.problems.Problem;
-import dk.dtu.scout.problems.TSPInstance;
-import dk.dtu.scout.problems.TSPProblem;
-import dk.dtu.scout.mutation.BitFlipMutation;
-import dk.dtu.scout.mutation.SwapMutation;
-import dk.dtu.scout.mutation.TwoOptMutation;
-import dk.dtu.scout.searchSpace.BitString;
-import dk.dtu.scout.searchSpace.Permutation;
 import dk.dtu.scout.searchSpace.SearchSpace;
 import dk.dtu.scout.stopcondition.BroadcastStopCondition;
 import dk.dtu.scout.stopcondition.MaxIterations;
-import dk.dtu.scout.stopcondition.OptimumReached;
 import dk.dtu.scout.stopcondition.StopCondition;
 import org.springframework.stereotype.Service;
 
@@ -50,60 +40,106 @@ import java.util.concurrent.Executors;
 @Service
 public class ExperimentService {
 
-    private final TSPInstanceService tspInstanceService;
+    private final StatisticsService statisticsService;
+    private final ComponentRegistry<Mutation> mutationRegistry;
+    private final ComponentRegistry<AcceptanceRule> acceptanceRegistry;
+    private final ComponentRegistry<PopulationModel> populationModelRegistry;
+    private final ComponentRegistry<Problem> problemRegistry;
+    private final ComponentRegistry<SearchSpace> searchSpaceRegistry;
+    private final ComponentRegistry<StopCondition> stopConditionRegistry;
+    private final ComponentRegistry<Observer> observerRegistry;
+    private final ComponentRegistry<PheromoneModel> pheromoneRegistry;
+    private final ComponentRegistry<HeuristicFunction> heuristicRegistry;
+    private final ComponentRegistry<ConstructionPolicy> constructionRegistry;
 
-    public ExperimentService(TSPInstanceService tspInstanceService) {
-        this.tspInstanceService = tspInstanceService;
+    public ExperimentService(
+            StatisticsService statisticsService,
+            ComponentRegistry<Mutation> mutationRegistry,
+            ComponentRegistry<AcceptanceRule> acceptanceRegistry,
+            ComponentRegistry<PopulationModel> populationModelRegistry,
+            ComponentRegistry<Problem> problemRegistry,
+            ComponentRegistry<SearchSpace> searchSpaceRegistry,
+            ComponentRegistry<StopCondition> stopConditionRegistry,
+            ComponentRegistry<Observer> observerRegistry,
+            ComponentRegistry<PheromoneModel> pheromoneRegistry,
+            ComponentRegistry<HeuristicFunction> heuristicRegistry,
+            ComponentRegistry<ConstructionPolicy> constructionRegistry
+    ) {
+        this.statisticsService = statisticsService;
+        this.mutationRegistry = mutationRegistry;
+        this.acceptanceRegistry = acceptanceRegistry;
+        this.populationModelRegistry = populationModelRegistry;
+        this.problemRegistry = problemRegistry;
+        this.searchSpaceRegistry = searchSpaceRegistry;
+        this.stopConditionRegistry = stopConditionRegistry;
+        this.observerRegistry = observerRegistry;
+        this.pheromoneRegistry = pheromoneRegistry;
+        this.heuristicRegistry = heuristicRegistry;
+        this.constructionRegistry = constructionRegistry;
     }
 
     /**
-     * Will work as outer dispatcher.
+     * Main method to run a batch of experiments based on the provided request.
+     * It handles multiple runs, parallel execution, and aggregation of results.
      * @param request
      * @return
      */
     public BatchRunResponse run(RunRequest request) {
         long seed = request.seed();
         int runTimes = request.runTimes();
-        String searchSpaceId = firstOrDefault(request.searchSpaceId(), "bitstring");
+        String algorithmType = request.algorithmType() != null ? request.algorithmType() : "variation";
+        if (request.searchSpaceId() == null || request.searchSpaceId().isEmpty()) {
+            throw new IllegalArgumentException("Search space must be specified");
+        }
+        String searchSpaceId = request.searchSpaceId().getFirst();
 
         return switch (searchSpaceId) {
-            case "bitstring" -> runTypedBatch(
+            case "bitstring" -> runBatch(
                     request,
                     seed,
                     runTimes,
-                    "onemax",
-                    () -> createSearchSpaceBoolean(request.searchSpaceId(), request.searchSpaceParams()),
-                    n -> createMutationBoolean(request.mutationId(), request.mutationParams(), n),
-                    () -> createAcceptanceRule(request.acceptanceRuleId(), request.acceptanceRuleParams()),
-                    () -> createPopulationModel(request.populationModelId(), request.populationModelParams())
+                    () -> createSearchSpace(request.searchSpaceId(), request.searchSpaceParams()),
+                    ss -> createVariationAlgorithm(request, ss)
             );
-            case "permutation" -> runTypedBatch(
+            case "permutation" -> runBatch(
                     request,
                     seed,
                     runTimes,
-                    "tsp",
-                    () -> createSearchSpaceInt(request.searchSpaceId(), request.searchSpaceParams()),
-                    n -> createMutationInt(request.mutationId(), request.mutationParams(), n),
-                    () -> createAcceptanceRule(request.acceptanceRuleId(), request.acceptanceRuleParams()),
-                    () -> createPopulationModel(request.populationModelId(), request.populationModelParams())
+                    () -> createSearchSpace(request.searchSpaceId(), request.searchSpaceParams()),
+                    ss -> {
+                        if ("constructive".equals(algorithmType) || "aco".equals(algorithmType)) {
+                            return createACOAlgorithm(request);
+                        }
+                        return createVariationAlgorithm(request, ss);
+                    }
             );
             default -> throw new IllegalArgumentException("Unsupported search space: " + searchSpaceId);
         };
     }
 
-    private <S> BatchRunResponse runTypedBatch(
+    /**
+     * Helper method to run a batch of experiments with parallel execution and result aggregation.
+     * It creates multiple runs with different seeds, executes them in parallel,
+     * and collects the results into a BatchRunResponse.
+     * @param request
+     * @param baseSeed
+     * @param runtimes
+     * @param searchSpaceFactory
+     * @param algorithmFactory
+     * @return
+     * @param <S>
+     */
+    private <S> BatchRunResponse runBatch(
             RunRequest request,
             long baseSeed,
             int runtimes,
-            String defaultProblemId,
             Supplier<SearchSpace<S>> searchSpaceFactory,
-            Function<Integer, Mutation<S>> mutationFactory,
-            Supplier<AcceptanceRule> acceptanceFactory,
-            Supplier<PopulationModel<S>> populationModelFactory
+            Function<SearchSpace<S>, Algorithm<S>> algorithmFactory
     ) {
-        int threads=Math.max(1, Runtime.getRuntime().availableProcessors());
+        int threads = Math.max(1, Runtime.getRuntime().availableProcessors());
         ExecutorService executor = Executors.newFixedThreadPool(threads);
-        try{
+
+        try {
             List<CompletableFuture<RunGroupResponse>> futures = new ArrayList<>();
             for (int i = 0; i < runtimes; i++) {
                 final int runIndex = i;
@@ -111,20 +147,14 @@ public class ExperimentService {
 
                 CompletableFuture<RunGroupResponse> future = CompletableFuture.supplyAsync(() -> {
                     Random rng = new Random(runSeed);
-
                     SearchSpace<S> ss = searchSpaceFactory.get();
-                    Mutation<S> mutation = mutationFactory.apply(ss.dimension());
-                    AcceptanceRule acceptance = acceptanceFactory.get();
-                    PopulationModel<S> popModel = populationModelFactory.get();
+                    Algorithm<S> algorithm = algorithmFactory.apply(ss);
 
                     List<RunResponse> perProblemRuns = runTypedOnce(
                             request,
                             rng,
                             ss,
-                            mutation,
-                            acceptance,
-                            popModel,
-                            defaultProblemId
+                            algorithm
                     );
 
                     return new RunGroupResponse(runIndex, runSeed, perProblemRuns);
@@ -133,37 +163,87 @@ public class ExperimentService {
                 futures.add(future);
             }
 
-            List<RunGroupResponse> batches = futures.stream()
-                    .map(CompletableFuture::join)
-                    .sorted(Comparator.comparingInt(RunGroupResponse::runIndex))
-                    .toList();
+            List<RunGroupResponse> batches = futures.stream().map(CompletableFuture::join)
+                    .sorted(Comparator.comparingInt(RunGroupResponse::runIndex)).toList();
 
-            BatchSummaryResponse summary = calculateRuntimeStats(batches);
+            BatchSummaryResponse summary = statisticsService.calculateSummary(batches);
             return new BatchRunResponse(batches, summary);
-        }finally {
+        } finally {
             executor.shutdown();
         }
     }
 
+    /**
+     * Create a variation-based algorithm (mutation + acceptance + population model)
+     * based on the search space type.
+     * @param request
+     * @param ss
+     * @return
+     * @param <S>
+     */
+    private <S> Algorithm<S> createVariationAlgorithm(RunRequest request, SearchSpace<S> ss) {
+        int n = ss.dimension();
+        Mutation<S> mutation = createMutation(request.mutationId(), request.mutationParams(), n, ss.id());
+        AcceptanceRule acceptance = createAcceptanceRule(request.acceptanceRuleId(), request.acceptanceRuleParams());
+        PopulationModel<S> popModel = createPopulationModel(request.populationModelId(), request.populationModelParams());
+        return new VariationAlgorithm<>(mutation, acceptance, popModel);
+    }
+
+    /**
+     * Create an Ant Colony Optimization algorithm based on the provided request parameters.
+     * @param request
+     * @return
+     * @param <S>
+     */
+    private <S> Algorithm<S> createACOAlgorithm(RunRequest request) {
+        Map<String, Object> acoParams = request.constructionPolicyParams() != null ? request.constructionPolicyParams() : Map.of();
+        PheromoneModel<int[]> pheromoneModel = createPheromoneModel(request.pheromoneModelId(), request.pheromoneModelParams());
+        HeuristicFunction<int[]> heuristicFunction = createHeuristicFunction(request.heuristicFunctionId(), request.heuristicFunctionParams());
+        ConstructionPolicy<int[]> constructionPolicy = createConstructionPolicy(request.constructionPolicyId(), request.constructionPolicyParams());
+        int numAnts = ((Number) acoParams.getOrDefault("numAnts", 10)).intValue();
+        double evaporationRate = ((Number) acoParams.getOrDefault("evaporationRate", 0.1)).doubleValue();
+        double q = ((Number) acoParams.getOrDefault("q", 100.0)).doubleValue();
+
+        Algorithm<S> algorithm = (Algorithm<S>) new ConstructionAlgorithm<>(
+                pheromoneModel,
+                heuristicFunction,
+                constructionPolicy,
+                numAnts,
+                evaporationRate,
+                q
+        );
+        return algorithm;
+    }
+
+    /**
+     * Run a single execution of the algorithm on the specified problems,
+     * collecting logs and results.
+     * @param request
+     * @param rng
+     * @param ss
+     * @param algorithm
+     * @return
+     * @param <S>
+     */
     private <S> List<RunResponse> runTypedOnce(
             RunRequest request,
             Random rng,
             SearchSpace<S> ss,
-            Mutation<S> mutation,
-            AcceptanceRule acceptance,
-            PopulationModel<S> popModel,
-            String defaultProblemId
+            Algorithm<S> algorithm
     ) {
-        List<String> problemIds = (request.problemId() == null || request.problemId().isEmpty()) ? List.of(defaultProblemId) : request.problemId();
+        if (request.problemId() == null || request.problemId().isEmpty()) {
+            throw new IllegalArgumentException("Problem must be specified");
+        }
+        List<String> problemIds = request.problemId();
         List<RunResponse> runs = new ArrayList<>();
 
         for (String pid : problemIds) {
-            Problem<S> problem = createProblem(pid, ss.dimension(), ss.id(), request.problemParams());
+            Problem<S> problem = createProblem(pid, ss.dimension(), request.problemParams());
             StopCondition<S> stop = createStopConditionChain(request.stopConditionId(), request.stopConditionParams(), problem);
             Observer<S> observer = createObserverChain(request.observerIds(), problem);
 
             long startTime = System.nanoTime();
-            RunLog log = popModel.run(mutation, acceptance, ss, problem, rng, stop, observer);
+            RunLog log = algorithm.run(ss, problem, rng, stop, observer);
             long endTime = System.nanoTime();
             double runtimeMs = (endTime - startTime) / 1_000_000.0;
 
@@ -182,279 +262,103 @@ public class ExperimentService {
         return runs;
     }
 
-    private BatchSummaryResponse calculateRuntimeStats(List<RunGroupResponse> batches) {
-        Map<String, List<Double>> runtimesByProblem = new HashMap<>();
-        Map<String, List<Integer>> finalEvaluationsByProblem = new HashMap<>();
+    // ==================== Component Creation Methods ====================
 
-        for (RunGroupResponse batch : batches) {
-            for (RunResponse run : batch.runs()) {
-                runtimesByProblem.computeIfAbsent(run.problemId(), k -> new ArrayList<>()).add(run.runtimeMs());
-                finalEvaluationsByProblem.computeIfAbsent(run.problemId(), k -> new ArrayList<>()).add(run.finalEvaluations());
+    private <T> T createAndConfigure(
+            ComponentRegistry<?> registry,
+            List<String> ids,
+            String componentType,
+            Map<String, Object> params,
+            ConfigurationContext context
+    ) {
+        if (ids == null || ids.isEmpty()) {
+            throw new IllegalArgumentException(componentType + " must be specified");
+        }
+
+        String id = ids.get(0);
+        Object component = registry.create(id);
+
+        try {
+            if (context != null) {
+                try {
+                    component.getClass()
+                        .getMethod("configure", Map.class, ConfigurationContext.class)
+                        .invoke(component, params != null ? params : Map.of(), context);
+                    return (T) component;
+                } catch (NoSuchMethodException e) {
+                }
             }
+
+            component.getClass()
+                .getMethod("configure", Map.class)
+                .invoke(component, params != null ? params : Map.of());
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to configure component: " + component.getClass().getSimpleName(), e);
         }
-
-        Map<String, RuntimeStats> statsByProblem = new HashMap<>();
-        for (Map.Entry<String, List<Double>> entry : runtimesByProblem.entrySet()) {
-            String problemId = entry.getKey();
-            List<Double> runtimes = entry.getValue();
-            List<Integer> finalEvals = finalEvaluationsByProblem.get(problemId);
-            statsByProblem.put(problemId, computeStats(runtimes, finalEvals));
-        }
-
-        return new BatchSummaryResponse(statsByProblem);
+        return (T) component;
     }
 
-    private RuntimeStats computeStats(List<Double> values, List<Integer> finalEvaluations) {
-        int n = values.size();
-        if (n == 0) {
-            return new RuntimeStats(0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
-        }
-        double finalEvaluationsMedian = calculateMedian(finalEvaluations);
-        return new RuntimeStats(n, 0.0, 0.0, 0.0, 0.0, 0.0, finalEvaluationsMedian);
+    private <S> SearchSpace<S> createSearchSpace(List<String> ids, Map<String, Object> params) {
+        return createAndConfigure(searchSpaceRegistry, ids, "Search space", params, null);
     }
 
-    private double calculateMedian(List<Integer> values) {
-        if (values == null || values.isEmpty()) {
-            return 0.0;
-        }
-
-        List<Integer> sorted = new ArrayList<>(values);
-        sorted.sort(Integer::compareTo);
-
-        int size = sorted.size();
-        if (size % 2 == 0) {
-            return (sorted.get(size / 2 - 1) + sorted.get(size / 2)) / 2.0;
-        } else {
-            return sorted.get(size / 2);
-        }
-    }
-
-    private SearchSpace<boolean[]> createSearchSpaceBoolean(List<String>  ids, Map<String,Object> params) {
-        String id =  firstOrDefault( ids, "bitstring");
-        if (params == null) params = Map.of();
-        SearchSpace<boolean[]> ss = switch (id) {
-            case "bitstring" -> new BitString();
-            default -> throw new IllegalArgumentException("Unknown search space: " + id);
-        };
-        ss.configure(params);
-        return ss;
-    }
-    private SearchSpace<int[]> createSearchSpaceInt(List<String>  ids, Map<String,Object> params) {
-        String id =  firstOrDefault( ids, "permutation");
-
-        if (params == null) params = Map.of();
-
-        SearchSpace<int[]> ss = switch (id) {
-            case "permutation" -> new Permutation();
-            default -> throw new IllegalArgumentException("Unknown search space: " + id);
-        };
-        ss.configure(params);
-        return ss;
-    }
-
-    @SuppressWarnings("unchecked")
-    private<S> Problem<S> createProblem(String  id,  int n, String searchSpaceId, Map<String, Object> problemParams) {
-        return (Problem<S>) switch (searchSpaceId) {
-            case "bitstring" -> createProblemBoolean(id, n, problemParams);
-            case "permutation" -> createProblemInt(id, n, problemParams);
-            default -> throw new IllegalArgumentException("Unsupported search space for problems: " + searchSpaceId);
-        };
-    }
-    private Problem<boolean[]> createProblemBoolean(String id, int n, Map<String, Object> problemParams) {
-        Problem<boolean[]> problem = switch (id) {
-            case "onemax" -> new OneMaxProblem();
-            case "leadingones" -> new LeadingOnesProblem();
-            default -> throw new IllegalArgumentException("Unknown boolean problem: " + id);
-        };
+    private <S> Problem<S> createProblem(String id, int n, Map<String, Object> problemParams) {
+        Problem<S> problem = (Problem<S>) problemRegistry.create(id);
 
         Map<String, Object> params = new HashMap<>(Map.of("n", n));
         if (problemParams != null) {
             params.putAll(problemParams);
         }
+
         problem.configure(params);
         return problem;
     }
 
-    private Problem<int[]> createProblemInt(String id, int n, Map<String, Object> problemParams) {
-        Problem<int[]> problem = switch (id) {
-            case "tsp" -> new TSPProblem();
-            default -> throw new IllegalArgumentException("Unknown int[] problem: " + id);
-        };
-
-        Map<String, Object> params = new HashMap<>(Map.of("n", n));
-        if (problemParams != null) {
-            // Handle TSP instance conversion
-            if (problemParams.containsKey("tspInstance")) {
-                Object tspInstanceObj = problemParams.get("tspInstance");
-                if (tspInstanceObj instanceof Map) {
-                    @SuppressWarnings("unchecked")
-                    Map<String, Object> tspInstanceMap = (Map<String, Object>) tspInstanceObj;
-                    TSPInstance instance = convertToTSPInstance(tspInstanceMap);
-                    params.put("instance", instance);
-                }
-            }
-            // Copy other params
-            for (Map.Entry<String, Object> entry : problemParams.entrySet()) {
-                if (!entry.getKey().equals("tspInstance")) {
-                    params.put(entry.getKey(), entry.getValue());
-                }
-            }
-        }
-        problem.configure(params);
-        return problem;
-    }
-
-    private TSPInstance convertToTSPInstance(Map<String, Object> tspInstanceMap) {
-        String name = (String) tspInstanceMap.getOrDefault("name", "Custom Instance");
-
-        @SuppressWarnings("unchecked")
-        List<Map<String, Object>> citiesList = (List<Map<String, Object>>) tspInstanceMap.get("cities");
-
-        if (citiesList == null || citiesList.isEmpty()) {
-            throw new IllegalArgumentException("TSP instance must have cities");
-        }
-
-        int dimension = citiesList.size();
-        double[][] coordinates = new double[dimension][2];
-
-        for (int i = 0; i < dimension; i++) {
-            Map<String, Object> city = citiesList.get(i);
-            Object xObj = city.get("x");
-            Object yObj = city.get("y");
-
-            double x = (xObj instanceof Number) ? ((Number) xObj).doubleValue() : 0.0;
-            double y = (yObj instanceof Number) ? ((Number) yObj).doubleValue() : 0.0;
-
-            coordinates[i][0] = x;
-            coordinates[i][1] = y;
-        }
-
-        return new TSPInstance(name, dimension, coordinates);
-    }
-
-
-    private Mutation<boolean[]> createMutationBoolean(List<String>  ids, Map<String, Object> params, int n) {
-        String id =  firstOrDefault( ids, "bit-flip");
-        if (params == null) params = Map.of();
-
-        return switch (id) {
-            case "bit-flip" -> {
-                String formula = String.valueOf(params.getOrDefault("flipProbability", "1/n"));
-                double p = FormulaEvaluator.eval(formula, n);
-                p = Math.max(0.0, Math.min(1.0, p));
-                BitFlipMutation m = new BitFlipMutation();
-                m.configure(Map.of("flipProbability", p));
-                yield m;
-            }
-            case "single-bit-flip" -> new SingleBitFlipMutation();
-            default -> throw new IllegalArgumentException("Unknown mutation: " + id);
-        };
-    }
-    private Mutation<int[]> createMutationInt(List<String>  ids, Map<String, Object> params, int n) {
-        String id = firstOrDefault(ids, "swap");
-        if (params == null) params = Map.of();
-
-        Mutation<int[]> mutation = switch (id) {
-            case "swap" -> new SwapMutation();
-            case "2opt" -> new TwoOptMutation();
-            default -> throw new IllegalArgumentException("Unknown int[] mutation: " + id);
-        };
-
-        mutation.configure(params);
-        return mutation;
+    private <S> Mutation<S> createMutation(List<String> ids, Map<String, Object> params, int n, String searchSpaceId) {
+        ConfigurationContext context = new ConfigurationContext(n);
+        return createAndConfigure(mutationRegistry, ids, "Mutation", params, context);
     }
 
     private AcceptanceRule createAcceptanceRule(List<String>  ids, Map<String, Object> params) {
-        String id =  firstOrDefault( ids, "elitist");
-        if (params == null) params = Map.of();
-
-        AcceptanceRule acceptance = switch (id) {
-            case "elitist" -> new ElitistAcceptance();
-            case "simulated-annealing" -> new SimulatedAnnealingAcceptance();
-            default -> throw new IllegalArgumentException("Unknown acceptance rule: " + id);
-        };
-
-        acceptance.configure(params);
-        return acceptance;
+        return createAndConfigure(acceptanceRegistry, ids, "Acceptance rule", params, null);
     }
 
     private<S>  PopulationModel<S> createPopulationModel(List<String>  ids, Map<String, Object> params) {
-        String id =  firstOrDefault( ids, "default");
-        if (params == null) params = Map.of();
-        PopulationModel<S> model =switch (id) {
-            case "default" -> new DefaultPopulationModel<>();
-            case "islands" -> new IslandModel<>();
-            default -> throw new IllegalArgumentException("Unknown population model: " + id);
-        };
-        model.configure(params);
-        return model;
+        return createAndConfigure(populationModelRegistry, ids, "Population model", params, null);
     }
+
     private<S> StopCondition<S> createStopConditionChain(List<String>  ids, Map<String, Object> params, Problem<S> problem) {
         if (ids == null || ids.isEmpty()) return new MaxIterations<>();
         final Map<String, Object> p = (params == null) ? Map.of() : params;
-
-
         List<StopCondition<S>> stops = ids.stream().map(id -> createSingleStopCondition(id, p, problem)).toList();
-
         return new BroadcastStopCondition<>(stops);
     }
+
     private<S> StopCondition<S>createSingleStopCondition(String id, Map<String, Object> params, Problem<S> problem) {
-        StopCondition<S> stop = switch (id) {
-            case "max-iterations" -> new MaxIterations<>();
-            case "optimum-reached" ->{
-                OptimumReached<S> s = new OptimumReached<>();
-                s.setProblem(problem);
-                yield s;
-            }
-            default -> throw new IllegalArgumentException("Unknown stop condition: " + id);
-        };
-        stop.configure(params);
-        return stop;
+        ConfigurationContext context = new ConfigurationContext(0, problem);
+        return createAndConfigure(stopConditionRegistry, List.of(id), "Stop condition", params, context);
     }
 
     private<S> Observer<S> createObserverChain(List<String> ids, Problem<S> problem) {
         if (ids == null || ids.isEmpty()) return new FitnessObserver<>();
-
         List<Observer<S>> obs = ids.stream().map(id -> this.<S>createSingleObserver(id, problem)).toList();
         return new BroadcastObserver<>(obs);
     }
 
-    @SuppressWarnings("unchecked")
     private <S>Observer<S> createSingleObserver(String id, Problem<S> problem) {
-        Observer<S> observer = switch (id) {
-            case "fitness" -> new FitnessObserver<>();
-            case "acceptance-rate" -> new AcceptanceRateObserver<>();
-            case "improvements" -> new ImprovementObserver<>();
-            case "hypercube" -> (Observer<S>) new HypercubeObserver();
-            case "tsp-tour" -> {
-                TSPTourObserver tspObs = new TSPTourObserver();
-                // Configure with cities if problem is TSP
-                if (problem instanceof TSPProblem) {
-                    TSPProblem tspProblem = (TSPProblem) problem;
-                    TSPInstance instance = tspProblem.getInstance();
-                    if (instance != null) {
-                        double[][] coords = instance.getCoordinates();
-                        List<Map<String, Double>> cities = new ArrayList<>();
-                        for (int i = 0; i < coords.length; i++) {
-                            Map<String, Double> city = new HashMap<>();
-                            city.put("x", coords[i][0]);
-                            city.put("y", coords[i][1]);
-                            cities.add(city);
-                        }
-                        tspObs.setCities(cities);
-                    }
-                }
-                yield (Observer<S>) tspObs;
-            }
-            default -> throw new IllegalArgumentException("Unknown observer: " + id);
-        };
-        return observer;
+        ConfigurationContext context = new ConfigurationContext(0, problem);
+        return createAndConfigure(observerRegistry, List.of(id), "Observer", Map.of(), context);
     }
 
-    /**
-     * Helper method to get the first element of a list or return a default value if the list is null or empty.
-     */
-    private String firstOrDefault(List<String> ids, String def) {
-        return (ids == null || ids.isEmpty()) ? def : ids.get(0);
+    private PheromoneModel<int[]> createPheromoneModel(List<String> ids, Map<String, Object> params) {
+        return createAndConfigure(pheromoneRegistry, ids, "Pheromone model", params, null);
+    }
+
+    private HeuristicFunction<int[]> createHeuristicFunction(List<String> ids, Map<String, Object> params) {
+        return createAndConfigure(heuristicRegistry, ids, "Heuristic function", params, null);
+    }
+
+    private ConstructionPolicy<int[]> createConstructionPolicy(List<String> ids, Map<String, Object> params) {
+        return createAndConfigure(constructionRegistry, ids, "Construction policy", params, null);
     }
 }

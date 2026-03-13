@@ -2,24 +2,22 @@ package dk.dtu.scout.backend.service;
 
 import dk.dtu.scout.backend.dto.RunRequest;
 import dk.dtu.scout.backend.dto.run.BatchRunResponse;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@SpringBootTest
 class ExperimentServiceTest {
 
-    private TSPInstanceService tspInstanceService;
+    @Autowired
     private ExperimentService experimentService;
 
-    @BeforeEach
-    void setUp() {
-        experimentService = new ExperimentService(new TSPInstanceService());
-    }
 
     /**
      * Helper method to run the (1+1) EA on a given problem and return the median number of evaluations to reach the optimum.
@@ -32,6 +30,7 @@ class ExperimentServiceTest {
      */
     private double runAndGetMedianFinalEvals(String problemId, int n, long seed, int runs, int maxIterations) {
         RunRequest request = new RunRequest(
+                null,
                 List.of("bitstring"),
                 Map.of("n", n),
                 List.of(problemId),
@@ -41,6 +40,12 @@ class ExperimentServiceTest {
                 List.of("default"),
                 Map.of("lambda", 1),
                 List.of("elitist"),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
                 null,
                 List.of("fitness"),
                 List.of("optimum-reached", "max-iterations"),

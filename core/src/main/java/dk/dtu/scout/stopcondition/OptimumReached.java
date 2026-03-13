@@ -1,12 +1,16 @@
 package dk.dtu.scout.stopcondition;
 
+import dk.dtu.scout.ConfigurationContext;
 import dk.dtu.scout.Parameter;
 import dk.dtu.scout.problems.Problem;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 
 @Component
+@Scope("prototype")
 public class OptimumReached<S> implements StopCondition<S> {
     private Problem<?> problem;
 
@@ -34,6 +38,16 @@ public class OptimumReached<S> implements StopCondition<S> {
     @Override
     public List<Parameter> params() {
         return List.of();
+    }
+
+
+    public void configure(Map<String, Object> params, ConfigurationContext context) {
+        if (context.hasProblem()) {
+            this.problem = context.getProblem();
+        }
+        if (params != null && !params.isEmpty()) {
+            configure(params);
+        }
     }
 
     @Override
