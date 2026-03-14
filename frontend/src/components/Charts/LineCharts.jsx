@@ -1,0 +1,86 @@
+import { useMemo, memo } from "react";
+import ReactECharts from "echarts-for-react";
+
+function LineCharts({ selectedObserver, chartPoints }) {
+  const option = useMemo(() => {
+    if (!selectedObserver || !chartPoints?.length) return null;
+
+    return {
+      animation: false,
+      grid: {
+        top: 24,
+        right: 24,
+        bottom: 70,
+        left: 64,
+        containLabel: true,
+      },
+      tooltip: {
+        trigger: "axis",
+        axisPointer: { type: "cross" },
+        formatter: (params) => {
+          const first = Array.isArray(params) ? params[0] : params;
+          const value = first?.value ?? [];
+          const x = value[0] ?? "-";
+          const y = value[1] ?? "-";
+          return `Evaluation: ${x}<br/>${selectedObserver}: ${y}`;
+        },
+      },
+      xAxis: {
+        type: "value",
+        name: "Evaluation",
+        nameLocation: "middle",
+        nameGap: 30,
+        min: "dataMin",
+        max: "dataMax",
+      },
+      yAxis: {
+        type: "value",
+        name: selectedObserver,
+        nameLocation: "middle",
+        nameGap: 45,
+        scale: true,
+      },
+      dataZoom: [
+        {
+             type: "slider",
+             xAxisIndex: 0,
+             bottom: 16,
+             height: 24,
+             filterMode: "none",
+           },
+      ],
+      series: [
+        {
+          name: selectedObserver,
+          type: "line",
+          data: chartPoints,
+          showSymbol: false,
+          symbol: "none",
+          connectNulls: false,
+          lineStyle: {
+            width: 2,
+          },
+          sampling: "lttb",
+          progressive: 2000,
+          progressiveThreshold: 3000,
+        },
+      ],
+    };
+  }, [selectedObserver, chartPoints]);
+
+  if (!option) {
+    return <div>No chart data.</div>;
+  }
+
+  return (
+    <ReactECharts
+      option={option}
+      notMerge={true}
+      lazyUpdate={true}
+      opts={{ renderer: "canvas" }}
+      style={{ width: "100%", height: "100%" }}
+    />
+  );
+}
+
+export default memo(LineCharts);
