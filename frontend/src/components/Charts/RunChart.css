@@ -15,7 +15,6 @@
 .run-chart-inner {
   background: white;
   height: 30rem;
-  padding: var(--spacing-sm) var(--spacing-md);
 }
 
 .observer-checkboxes {

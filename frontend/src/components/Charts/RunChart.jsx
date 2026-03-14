@@ -1,8 +1,9 @@
 import { useState, useMemo, memo, useCallback } from "react";
-import {LineChart,Line,XAxis,YAxis,CartesianGrid,Tooltip,Legend,ResponsiveContainer,} from "recharts";
 import "./RunChart.css";
 import HypercubePlot from "./HypercubePlot.jsx";
 import TSPVisualization from "../TSPVisualization/TSPVisualization.jsx";
+import LineCharts from "./LineCharts.jsx";
+
 
 const HYPERCUBE_KEY = "__hypercube__";
 const TSP_TOUR_KEY = "__tsp-tour__";
@@ -38,17 +39,24 @@ function RunChart({ run, runIndex, problemIndex }) {
     );
   }
 
-  const data = useMemo(() => {
-    if (!selectedObserver || !series[selectedObserver]|| selectedObserver === HYPERCUBE_KEY || selectedObserver === TSP_TOUR_KEY) return [];
+ const data = useMemo(() => {
+   if (
+     !selectedObserver ||
+     selectedObserver === HYPERCUBE_KEY ||
+     selectedObserver === TSP_TOUR_KEY ||
+     !series[selectedObserver]
+   ) {
+     return [];
+   }
 
-    const observerData = series[selectedObserver];
-    const minLen = Math.min(evaluations.length, observerData.length);
+   const observerData = series[selectedObserver];
+   const minLen = Math.min(evaluations.length, observerData.length);
 
-    return Array.from({ length: minLen }, (_, i) => ({
-      evaluation: evaluations[i],
-      [selectedObserver]: observerData[i]
-    }));
-  }, [selectedObserver, evaluations, series]);
+   return Array.from({ length: minLen }, (_, i) => [
+     Number(evaluations[i]),
+     Number(observerData[i]),
+   ]).filter(([x, y]) => Number.isFinite(x) && Number.isFinite(y));
+ }, [selectedObserver, evaluations, series]);
 
   return (
     <div className="chart-panel">
@@ -61,21 +69,11 @@ function RunChart({ run, runIndex, problemIndex }) {
           <HypercubePlot run={run} />
         ) : selectedObserver === TSP_TOUR_KEY ? (
           <TSPVisualization run={run} />
-        ) : (
-        <ResponsiveContainer>
-          <LineChart data={data}>
-            <CartesianGrid stroke="#e5e5e5" strokeDasharray="3 3" />
-            <XAxis dataKey="evaluation" stroke="#000" tick={{ fill: "#000" }} />
-            <YAxis stroke="#000" tick={{ fill: "#000" }} />
-
-            <Tooltip/>
-            <Legend />
-
-            {selectedObserver && (
-              <Line key={selectedObserver} type="monotone" dataKey={selectedObserver} dot={false} stroke="#8884d8" strokeWidth={2} />
-            )}
-          </LineChart>
-        </ResponsiveContainer>
+        ) :  (
+          <LineCharts
+            selectedObserver={selectedObserver}
+            chartPoints={data}
+          />
         )}
       </div>
 
