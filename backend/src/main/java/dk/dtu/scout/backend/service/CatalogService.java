@@ -113,4 +113,21 @@ public class CatalogService {
     public List<ComponentDef> observers() {
         return observers.stream().map(c -> toComponentDef("observer", c)).toList();
     }
+
+    public List<AlgorithmDef> algorithmTypes() {
+        return List.of(
+            new AlgorithmDef(
+                "variation",
+                "Variation",
+                "Variation algorithm with mutation and acceptance rules",
+                List.of("searchSpace", "problem", "mutation", "acceptance", "populationModel", "stopCondition", "observer")
+            ),
+            new AlgorithmDef(
+                "construction",
+                "Construction",
+                "Construction algorithm using pheromone and heuristic guidance",
+                List.of("searchSpace", "problem", "constructionPolicy", "pheromoneModel", "heuristicFunction", "stopCondition", "observer")
+            )
+        );
+    }
 }

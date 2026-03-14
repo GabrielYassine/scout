@@ -44,6 +44,9 @@ const cloneTspInstance = (tsp = DEFAULT_TSP_INSTANCE) => ({
 const createEmptyPuzzleConfig = () => ({
   searchSpace: [],
   problem: [],
+  heuristicFunction: [],
+  constructionPolicy: [],
+  pheromoneModel: [],
   mutation: [],
   acceptance: [],
   populationModel: [],
@@ -55,6 +58,9 @@ const createEmptyParams = () => ({
   global: {},
   searchSpace: {},
   problem: {},
+  heuristicFunction: {},
+  constructionPolicy: {},
+  pheromoneModel: {},
   mutation: {},
   acceptance: {},
   populationModel: {},
@@ -65,6 +71,7 @@ const createEmptyParams = () => ({
 const createDefaultConfig = (id, name) => ({
   id,
   name,
+  algorithmType: null,
   puzzleConfig: createEmptyPuzzleConfig(),
   params: createEmptyParams(),
   tspInstance: cloneTspInstance(DEFAULT_TSP_INSTANCE),
@@ -106,6 +113,7 @@ export function PuzzleConfigProvider({ children }) {
   const setPuzzleConfig = (updater) => updateActiveConfig("puzzleConfig", updater);
   const setParams = (updater) => updateActiveConfig("params", updater);
   const setTspInstance = (updater) => updateActiveConfig("tspInstance", updater);
+  const setAlgorithmType = (algorithmType) => updateActiveConfig("algorithmType", algorithmType);
 
   const addNewConfig = () => {
     const newId = `config-${Date.now()}`;
@@ -288,6 +296,9 @@ export function PuzzleConfigProvider({ children }) {
     const componentMapping = [
       { type: "searchSpace", catalogKey: "searchSpaces", requestKey: "searchSpaceId" },
       { type: "problem", catalogKey: "problems", requestKey: "problemId" },
+      { type: "heuristicFunction", catalogKey: "heuristicFunctions", requestKey: "heuristicFunctionId" },
+      { type: "constructionPolicy", catalogKey: "constructionPolicies", requestKey: "constructionPolicyId" },
+      { type: "pheromoneModel", catalogKey: "pheromoneModels", requestKey: "pheromoneModelId" },
       { type: "mutation", catalogKey: "mutations", requestKey: "mutationId" },
       { type: "acceptance", catalogKey: "acceptanceRules", requestKey: "acceptanceRuleId" },
       { type: "populationModel", catalogKey: "populationModels", requestKey: "populationModelId" },
@@ -315,6 +326,9 @@ export function PuzzleConfigProvider({ children }) {
       },
       searchSpace: runRequest.searchSpaceParams || {},
       problem: runRequest.problemParams || {},
+      heuristicFunction: runRequest.heuristicFunctionParams || {},
+      constructionPolicy: runRequest.constructionPolicyParams || {},
+      pheromoneModel: runRequest.pheromoneModelParams || {},
       mutation: runRequest.mutationParams || {},
       acceptance: runRequest.acceptanceRuleParams || {},
       populationModel: runRequest.populationModelParams || {},
@@ -327,11 +341,13 @@ export function PuzzleConfigProvider({ children }) {
     configs,
     activeConfigId,
     activeConfig,
+    algorithmType: activeConfig?.algorithmType ?? null,
     puzzleConfig,
     params,
     tspInstance,
 
     setActiveConfigId,
+    setAlgorithmType,
     addNewConfig,
     deleteConfig,
     renameConfig,

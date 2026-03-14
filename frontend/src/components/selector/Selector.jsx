@@ -1,8 +1,10 @@
 import "./Selector.css";
+import AlgorithmTypeSelector from "./AlgorithmTypeSelector.jsx";
 import PuzzlePiece from "../puzzlePiece/PuzzlePiece";
 import { useSessionStorageState } from "../../hooks/useSessionStorageState.js";
+import { usePuzzleConfig } from "../../contexts/PuzzleConfigContext.jsx";
 
-const componentTypes = [
+const componentTypesAll = [
     { key: "searchSpace", label: "Search Space", catalogKey: "searchSpaces" },
     { key: "problem", label: "Problem", catalogKey: "problems" },
     { key: "heuristicFunction", label: "Heuristic", catalogKey: "heuristicFunctions" },
@@ -16,9 +18,28 @@ const componentTypes = [
 ];
 
 export default function Selector({ catalog, catalogLoading, catalogError ,onPieceHover, onPieceLeave, puzzleConfig}) {
+    const { algorithmType, setAlgorithmType } = usePuzzleConfig();
     const [activeTab, setActiveTab] = useSessionStorageState("scout:activeSelector", "searchSpace");
-    const activeType = componentTypes.find(type => type.key === activeTab);
-    const items = catalog?.[activeType.catalogKey] ?? [];
+
+    const getComponentTypesForAlgorithm = () => {
+        if (!algorithmType || !catalog?.algorithmTypes) return [];
+
+        const selectedAlgo = catalog.algorithmTypes.find(algo => algo.id === algorithmType);
+        if (!selectedAlgo || !selectedAlgo.componentTypes) return [];
+
+        return componentTypesAll.filter(type => selectedAlgo.componentTypes.includes(type.key));
+    };
+
+    const componentTypes = getComponentTypesForAlgorithm();
+
+    const validTabKeys = componentTypes.map(t => t.key);
+    const currentActiveTab = validTabKeys.includes(activeTab) ? activeTab : (validTabKeys[0] || "searchSpace");
+    if (currentActiveTab !== activeTab) {
+        setActiveTab(currentActiveTab);
+    }
+
+    const activeType = componentTypes.find(type => type.key === currentActiveTab);
+    const items = activeType ? (catalog?.[activeType.catalogKey] ?? []) : [];
     const getCount = (key) => {
         if (!puzzleConfig || !puzzleConfig[key]) return 0;
         return Array.isArray(puzzleConfig[key]) ? puzzleConfig[key].length : 0;
@@ -32,7 +53,7 @@ export default function Selector({ catalog, catalogLoading, catalogError ,onPiec
     };
 
     const isItemCompatible = (item) => {
-        if (activeTab === 'searchSpace') {
+        if (currentActiveTab === 'searchSpace') {
             return true;
         }
         const selectedSearchSpaceId = getSelectedSearchSpaceId();
@@ -45,13 +66,33 @@ export default function Selector({ catalog, catalogLoading, catalogError ,onPiec
         return item.supportedSearchSpaces.includes(selectedSearchSpaceId);
     };
 
+    const handleSelectAlgorithm = (algoType) => {
+        setAlgorithmType(algoType);
+        if (catalog?.algorithmTypes) {
+            const selectedAlgo = catalog.algorithmTypes.find(algo => algo.id === algoType);
+            if (selectedAlgo?.componentTypes && selectedAlgo.componentTypes.length > 0) {
+                const firstComponentKey = selectedAlgo.componentTypes[0];
+                setActiveTab(firstComponentKey);
+            }
+        }
+    };
+
+    if (!algorithmType) {
+        return (
+            <AlgorithmTypeSelector
+                algorithmTypes={catalog?.algorithmTypes || []}
+                onSelectAlgorithm={handleSelectAlgorithm}
+            />
+        );
+    }
+
     return (
         <div className="selector-container">
             <div className="tab-buttons-row">
                 {componentTypes.map(({ key, label }) => {
                     const count = getCount(key);
                     return (
-                        <button key={key} className={`tab-button ${activeTab === key ? "active" : ""}`} onClick={() => setActiveTab(key)}>
+                        <button key={key} className={`tab-button ${currentActiveTab === key ? "active" : ""}`} onClick={() => setActiveTab(key)}>
                             <span className={`count-badge count-badge-${key}`}>{count}</span>
                             {label}
                         </button>
@@ -69,7 +110,7 @@ export default function Selector({ catalog, catalogLoading, catalogError ,onPiec
                         key={item.id}
                         id={item.id}
                         label={item.displayName}
-                        type={activeTab}
+                        type={currentActiveTab}
                         onHover={onPieceHover}
                         onLeave={onPieceLeave}
                         isDisabled={!isItemCompatible(item)}

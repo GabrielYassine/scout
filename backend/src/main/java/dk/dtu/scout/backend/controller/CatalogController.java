@@ -21,6 +21,7 @@ public class CatalogController {
     @GetMapping("/catalog")
     public CatalogResponse catalog() {
         return new CatalogResponse(
+            catalog.algorithmTypes(),
             catalog.searchSpaces(),
             catalog.problems(),
             catalog.heuristicFunctions(),
