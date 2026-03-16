@@ -3,10 +3,12 @@ package dk.dtu.scout.backend.service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dk.dtu.scout.backend.dto.template.ExperimentTemplateDto;
+import dk.dtu.scout.backend.exception.TemplateLoadException;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,8 +30,8 @@ public class TemplateService {
                 }
             }
             return out;
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to load templates", e);
+        } catch (IOException e) {
+            throw new TemplateLoadException("Failed to load templates", e);
         }
     }
 }

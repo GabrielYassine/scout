@@ -1,6 +1,7 @@
 package dk.dtu.scout.backend.service;
 
 import dk.dtu.scout.Component;
+import dk.dtu.scout.backend.exception.BadRequestException;
 import org.springframework.context.ApplicationContext;
 
 import java.util.List;
@@ -30,10 +31,7 @@ public class ComponentRegistry<T extends Component> {
     public T create(String id) {
         Class<? extends T> componentClass = componentClassById.get(id);
         if (componentClass == null) {
-            throw new IllegalArgumentException(
-                "Unknown component: " + id +
-                ". Available: " + componentClassById.keySet()
-            );
+            throw new BadRequestException("Unknown component: " + id + ". Available: " + componentClassById.keySet());
         }
         return applicationContext.getBean(componentClass);
     }

@@ -10,6 +10,7 @@ import dk.dtu.scout.backend.dto.run.BatchRunResponse;
 import dk.dtu.scout.backend.dto.run.BatchSummaryResponse;
 import dk.dtu.scout.backend.dto.run.RunGroupResponse;
 import dk.dtu.scout.backend.dto.run.RunResponse;
+import dk.dtu.scout.backend.exception.BadRequestException;
 import dk.dtu.scout.construction.ConstructionPolicy;
 import dk.dtu.scout.heuristic.HeuristicFunction;
 import dk.dtu.scout.pheromone.PheromoneModel;
@@ -89,7 +90,7 @@ public class ExperimentService {
         int runTimes = request.runTimes();
         String algorithmType = request.algorithmType() != null ? request.algorithmType() : "variation";
         if (request.searchSpaceId() == null || request.searchSpaceId().isEmpty()) {
-            throw new IllegalArgumentException("Search space must be specified");
+            throw new BadRequestException("Search space must be specified");
         }
         String searchSpaceId = request.searchSpaceId().getFirst();
 
@@ -113,7 +114,7 @@ public class ExperimentService {
                         return createVariationAlgorithm(request, ss);
                     }
             );
-            default -> throw new IllegalArgumentException("Unsupported search space: " + searchSpaceId);
+            default -> throw new BadRequestException("Unsupported search space: " + searchSpaceId);
         };
     }
 
@@ -232,7 +233,7 @@ public class ExperimentService {
             Algorithm<S> algorithm
     ) {
         if (request.problemId() == null || request.problemId().isEmpty()) {
-            throw new IllegalArgumentException("Problem must be specified");
+            throw new BadRequestException("Problem must be specified");
         }
         List<String> problemIds = request.problemId();
         List<RunResponse> runs = new ArrayList<>();
@@ -272,7 +273,7 @@ public class ExperimentService {
             ConfigurationContext context
     ) {
         if (ids == null || ids.isEmpty()) {
-            throw new IllegalArgumentException(componentType + " must be specified");
+            throw new BadRequestException(componentType + " must be specified");
         }
 
         String id = ids.get(0);
