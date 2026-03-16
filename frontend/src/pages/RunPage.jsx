@@ -13,16 +13,16 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
   const navigate = useNavigate();
 
   const batchResponse = location.state?.batch;
-  const puzzleConfig = location.state?.puzzleConfig;
-  const params = location.state?.params;
-  const initialTspInstance = location.state?.tspInstance;
+  const puzzleConfig = location.state?.puzzleConfig ?? [];
+  const params = location.state?.params ?? [];
+  const initialTspInstance = location.state?.tspInstance ?? DEFAULT_TSP_INSTANCE;
 
   const batches = batchResponse?.batches ?? [];
   const [selectedBatchIndex, setSelectedBatchIndex] = useState(0);
   const selectedBatch = batches[selectedBatchIndex];
   const runs = selectedBatch?.runs ?? [];
 
-  const [tspInstance] = useState(initialTspInstance || DEFAULT_TSP_INSTANCE);
+  const [tspInstance] = useState(initialTspInstance);
 
   return (
     <div className="run-page">
