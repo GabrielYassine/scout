@@ -1,6 +1,7 @@
 package dk.dtu.scout.searchSpace;
 
 import dk.dtu.scout.Parameter;
+import dk.dtu.scout.State;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -20,6 +21,13 @@ public class Permutation implements SearchSpace<int[]> {
     private int n = 10;
 
     public Permutation() {}
+
+    @Override
+    public void init(State state) {
+        if (state != null) {
+            state.update(Map.of("dimension", n));
+        }
+    }
 
     @Override public int dimension() {
         return n;

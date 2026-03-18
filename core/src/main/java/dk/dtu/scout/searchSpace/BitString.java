@@ -1,6 +1,7 @@
 package dk.dtu.scout.searchSpace;
 
 import dk.dtu.scout.Parameter;
+import dk.dtu.scout.State;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -18,6 +19,13 @@ public class BitString implements SearchSpace<boolean[]> {
     private int n = 100;
 
     public BitString() {}
+
+    @Override
+    public void init(State state) {
+        if (state != null) {
+            state.update(Map.of("dimension", n));
+        }
+    }
 
     @Override
     public int dimension() {

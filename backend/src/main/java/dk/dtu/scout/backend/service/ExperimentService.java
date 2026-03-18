@@ -78,10 +78,7 @@ public class ExperimentService {
         String searchSpaceId = request.searchSpaceId().getFirst();
 
         return switch (searchSpaceId) {
-            case "bitstring", "permutation" -> runBatch(
-                    request,
-                    seed,
-                    runTimes,
+            case "bitstring", "permutation" -> runBatch(request, seed, runTimes,
                     () -> createSearchSpace(request.searchSpaceId(), request.searchSpaceParams())
             );
             default -> throw new BadRequestException("Unsupported search space: " + searchSpaceId);
@@ -171,7 +168,10 @@ public class ExperimentService {
             Observer<S> observer = createObserverChain(request.observerIds(), problem);
 
             long startTime = System.nanoTime();
+
+            // MAIN EXECUTION
             RunLog log = popModel.run(generator, acceptance, ss, problem, rng, stop, observer);
+
             long endTime = System.nanoTime();
             double runtimeMs = (endTime - startTime) / 1_000_000.0;
 

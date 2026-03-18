@@ -1,6 +1,7 @@
 package dk.dtu.scout.generator;
 
 import dk.dtu.scout.Parameter;
+import dk.dtu.scout.State;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -12,7 +13,36 @@ import java.util.Random;
 @Scope("prototype")
 public class PheromoneGuidedGenerator implements Generator<int[]> {
 
-    private double[][] pheromoneMatrix = null;
+    private double[][] pheromoneMatrix;
+
+    @Override
+    public void init(State state) {
+        if (pheromoneMatrix == null) {
+            int dimension = 0;
+
+            if (state != null) {
+                Object dimObj = state.get("dimension");
+                if (dimObj instanceof Integer) { // parsing might have to be moved to another file
+                    dimension = (Integer) dimObj;
+                }
+            }
+
+            if (dimension > 0) {
+                pheromoneMatrix = new double[dimension][dimension];
+                for (int i = 0; i < dimension; i++) {
+                    for (int j = 0; j < dimension; j++) {
+                        pheromoneMatrix[i][j] = 1.0;
+                    }
+                }
+            } else {
+                pheromoneMatrix = new double[0][0]; // might want to throw an exception or log a warning here
+            }
+        }
+
+        if (state != null) {
+            state.update(Map.of("pheromoneMatrix", pheromoneMatrix));
+        }
+    }
 
     @Override
     public String id() {
