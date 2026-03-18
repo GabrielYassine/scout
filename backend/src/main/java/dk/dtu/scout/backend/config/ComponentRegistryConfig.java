@@ -2,10 +2,7 @@ package dk.dtu.scout.backend.config;
 
 import dk.dtu.scout.acceptance.AcceptanceRule;
 import dk.dtu.scout.backend.service.ComponentRegistry;
-import dk.dtu.scout.construction.ConstructionPolicy;
-import dk.dtu.scout.heuristic.HeuristicFunction;
-import dk.dtu.scout.mutation.Generator;
-import dk.dtu.scout.pheromone.PheromoneModel;
+import dk.dtu.scout.generator.Generator;
 import dk.dtu.scout.observer.Observer;
 import dk.dtu.scout.population.PopulationModel;
 import dk.dtu.scout.problems.Problem;
@@ -69,29 +66,6 @@ public class ComponentRegistryConfig {
     @Bean
     public ComponentRegistry<Generator> mutationRegistry(
             List<Generator> components,
-            ApplicationContext context) {
-        return new ComponentRegistry<>(components, context);
-    }
-
-    // ACO/Constructive components
-
-    @Bean
-    public ComponentRegistry<PheromoneModel> pheromoneModelRegistry(
-            List<PheromoneModel> components,
-            ApplicationContext context) {
-        return new ComponentRegistry<>(components, context);
-    }
-
-    @Bean
-    public ComponentRegistry<HeuristicFunction> heuristicFunctionRegistry(
-            List<HeuristicFunction> components,
-            ApplicationContext context) {
-        return new ComponentRegistry<>(components, context);
-    }
-
-    @Bean
-    public ComponentRegistry<ConstructionPolicy> constructionPolicyRegistry(
-            List<ConstructionPolicy> components,
             ApplicationContext context) {
         return new ComponentRegistry<>(components, context);
     }

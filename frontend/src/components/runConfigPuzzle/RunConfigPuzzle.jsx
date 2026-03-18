@@ -7,10 +7,7 @@ import { usePuzzleConfig } from "../../contexts/PuzzleConfigContext.jsx";
 const componentTypesAll = [
     { key: "searchSpace", label: "Search Space" },
     { key: "problem", label: "Problem" },
-    { key: "heuristicFunction", label: "Heuristic" },
-    { key: "constructionPolicy", label: "Construction" },
-    { key: "pheromoneModel", label: "Pheromone" },
-    { key: "generator", label: "Mutation" },
+    { key: "generator", label: "Generator" },
     { key: "acceptance", label: "Acceptance Rule" },
     { key: "populationModel", label: "Population Model" },
     { key: "stopCondition", label: "Stop Condition" },
@@ -19,7 +16,6 @@ const componentTypesAll = [
 
 export default function RunConfigPuzzle({ catalog, onPieceHover, onPieceLeave }) {
     const {
-        algorithmType,
         configs,
         activeConfigId,
         setActiveConfigId,
@@ -30,17 +26,7 @@ export default function RunConfigPuzzle({ catalog, onPieceHover, onPieceLeave })
         puzzleConfig: config,
     } = usePuzzleConfig();
 
-    // Get available component types from backend algorithmTypes
-    const getComponentTypesForAlgorithm = () => {
-        if (!algorithmType || !catalog?.algorithmTypes) return componentTypesAll;
-
-        const selectedAlgo = catalog.algorithmTypes.find(algo => algo.id === algorithmType);
-        if (!selectedAlgo || !selectedAlgo.componentTypes) return componentTypesAll;
-
-        return componentTypesAll.filter(type => selectedAlgo.componentTypes.includes(type.key));
-    };
-
-    const componentTypes = getComponentTypesForAlgorithm();
+    const componentTypes = componentTypesAll;
 
     const { setNodeRef, isOver } = useDroppable({
         id: "shared-drop-area",

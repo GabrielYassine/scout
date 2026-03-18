@@ -1,16 +1,11 @@
 import "./Selector.css";
-import AlgorithmTypeSelector from "./AlgorithmTypeSelector.jsx";
 import PuzzlePiece from "../puzzlePiece/PuzzlePiece";
 import { useSessionStorageState } from "../../hooks/useSessionStorageState.js";
-import { usePuzzleConfig } from "../../contexts/PuzzleConfigContext.jsx";
 
 const componentTypesAll = [
     { key: "searchSpace", label: "Search Space", catalogKey: "searchSpaces" },
     { key: "problem", label: "Problem", catalogKey: "problems" },
-    { key: "heuristicFunction", label: "Heuristic", catalogKey: "heuristicFunctions" },
-    { key: "constructionPolicy", label: "Construction", catalogKey: "constructionPolicies" },
-    { key: "pheromoneModel", label: "Pheromone", catalogKey: "pheromoneModels" },
-    { key: "generator", label: "Mutation", catalogKey: "generators" },
+    { key: "generator", label: "Generator", catalogKey: "generators" },
     { key: "acceptance", label: "Acceptance Rule", catalogKey: "acceptanceRules" },
     { key: "populationModel", label: "Population Model", catalogKey: "populationModels" },
     { key: "stopCondition", label: "Stop Condition", catalogKey: "stopConditions" },
@@ -18,19 +13,9 @@ const componentTypesAll = [
 ];
 
 export default function Selector({ catalog, catalogLoading, catalogError ,onPieceHover, onPieceLeave, puzzleConfig}) {
-    const { algorithmType, setAlgorithmType } = usePuzzleConfig();
     const [activeTab, setActiveTab] = useSessionStorageState("scout:activeSelector", "searchSpace");
 
-    const getComponentTypesForAlgorithm = () => {
-        if (!algorithmType || !catalog?.algorithmTypes) return [];
-
-        const selectedAlgo = catalog.algorithmTypes.find(algo => algo.id === algorithmType);
-        if (!selectedAlgo || !selectedAlgo.componentTypes) return [];
-
-        return componentTypesAll.filter(type => selectedAlgo.componentTypes.includes(type.key));
-    };
-
-    const componentTypes = getComponentTypesForAlgorithm();
+    const componentTypes = componentTypesAll;
 
     const validTabKeys = componentTypes.map(t => t.key);
     const currentActiveTab = validTabKeys.includes(activeTab) ? activeTab : (validTabKeys[0] || "searchSpace");
@@ -66,25 +51,6 @@ export default function Selector({ catalog, catalogLoading, catalogError ,onPiec
         return item.supportedSearchSpaces.includes(selectedSearchSpaceId);
     };
 
-    const handleSelectAlgorithm = (algoType) => {
-        setAlgorithmType(algoType);
-        if (catalog?.algorithmTypes) {
-            const selectedAlgo = catalog.algorithmTypes.find(algo => algo.id === algoType);
-            if (selectedAlgo?.componentTypes && selectedAlgo.componentTypes.length > 0) {
-                const firstComponentKey = selectedAlgo.componentTypes[0];
-                setActiveTab(firstComponentKey);
-            }
-        }
-    };
-
-    if (!algorithmType) {
-        return (
-            <AlgorithmTypeSelector
-                algorithmTypes={catalog?.algorithmTypes || []}
-                onSelectAlgorithm={handleSelectAlgorithm}
-            />
-        );
-    }
 
     return (
         <div className="selector-container">

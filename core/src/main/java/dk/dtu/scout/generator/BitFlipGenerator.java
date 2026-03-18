@@ -1,4 +1,4 @@
-package dk.dtu.scout.mutation;
+package dk.dtu.scout.generator;
 
 import dk.dtu.scout.ConfigurationContext;
 import dk.dtu.scout.Parameter;

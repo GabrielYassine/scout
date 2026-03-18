@@ -70,8 +70,8 @@ export default function LabPage({catalog, catalogLoading, catalogError, template
       problemParams: problemParams,
 
 
-      mutationId: puzzleConfig.generator?.map((x) => x.id) ?? [],
-      mutationParams: params.generator,
+      generatorId: puzzleConfig.generator?.map((x) => x.id) ?? [],
+      generatorParams: params.generator,
 
       acceptanceRuleId: puzzleConfig.acceptance?.map((x) => x.id) ?? [],
       acceptanceRuleParams: params.acceptance,

@@ -1,11 +1,15 @@
-package dk.dtu.scout.mutation;
+package dk.dtu.scout.generator;
 
 import dk.dtu.scout.Parameter;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+@Component
+@Scope("prototype")
 public class PheromoneGuidedGenerator implements Generator<int[]> {
 
     private double[][] pheromoneMatrix = null;

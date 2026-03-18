@@ -14,8 +14,8 @@ public record RunRequest(
     Map<String, Object> problemParams,
 
    // Variation-based algorithm parameters
-   List<String>  mutationId,
-    Map<String, Object> mutationParams,
+   List<String>  generatorId,
+    Map<String, Object> generatorParams,
    List<String>  populationModelId,
     Map<String, Object> populationModelParams,
    List<String>  acceptanceRuleId,

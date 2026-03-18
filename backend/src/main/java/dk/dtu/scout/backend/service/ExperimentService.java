@@ -2,19 +2,13 @@ package dk.dtu.scout.backend.service;
 
 import dk.dtu.scout.ConfigurationContext;
 import dk.dtu.scout.acceptance.AcceptanceRule;
-import dk.dtu.scout.algorithm.Algorithm;
-import dk.dtu.scout.algorithm.ConstructionAlgorithm;
-import dk.dtu.scout.algorithm.VariationAlgorithm;
 import dk.dtu.scout.backend.dto.RunRequest;
 import dk.dtu.scout.backend.dto.run.BatchRunResponse;
 import dk.dtu.scout.backend.dto.run.BatchSummaryResponse;
 import dk.dtu.scout.backend.dto.run.RunGroupResponse;
 import dk.dtu.scout.backend.dto.run.RunResponse;
 import dk.dtu.scout.backend.exception.BadRequestException;
-import dk.dtu.scout.construction.ConstructionPolicy;
-import dk.dtu.scout.heuristic.HeuristicFunction;
-import dk.dtu.scout.mutation.Generator;
-import dk.dtu.scout.pheromone.PheromoneModel;
+import dk.dtu.scout.generator.Generator;
 import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.observer.*;
 import dk.dtu.scout.population.PopulationModel;
@@ -30,7 +24,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.Comparator;
 import java.util.concurrent.CompletableFuture;
@@ -49,9 +42,6 @@ public class ExperimentService {
     private final ComponentRegistry<SearchSpace> searchSpaceRegistry;
     private final ComponentRegistry<StopCondition> stopConditionRegistry;
     private final ComponentRegistry<Observer> observerRegistry;
-    private final ComponentRegistry<PheromoneModel> pheromoneRegistry;
-    private final ComponentRegistry<HeuristicFunction> heuristicRegistry;
-    private final ComponentRegistry<ConstructionPolicy> constructionRegistry;
 
     public ExperimentService(
             StatisticsService statisticsService,
@@ -61,10 +51,7 @@ public class ExperimentService {
             ComponentRegistry<Problem> problemRegistry,
             ComponentRegistry<SearchSpace> searchSpaceRegistry,
             ComponentRegistry<StopCondition> stopConditionRegistry,
-            ComponentRegistry<Observer> observerRegistry,
-            ComponentRegistry<PheromoneModel> pheromoneRegistry,
-            ComponentRegistry<HeuristicFunction> heuristicRegistry,
-            ComponentRegistry<ConstructionPolicy> constructionRegistry
+            ComponentRegistry<Observer> observerRegistry
     ) {
         this.statisticsService = statisticsService;
         this.mutationRegistry = mutationRegistry;
@@ -74,9 +61,6 @@ public class ExperimentService {
         this.searchSpaceRegistry = searchSpaceRegistry;
         this.stopConditionRegistry = stopConditionRegistry;
         this.observerRegistry = observerRegistry;
-        this.pheromoneRegistry = pheromoneRegistry;
-        this.heuristicRegistry = heuristicRegistry;
-        this.constructionRegistry = constructionRegistry;
     }
 
     /**
@@ -88,31 +72,17 @@ public class ExperimentService {
     public BatchRunResponse run(RunRequest request) {
         long seed = request.seed();
         int runTimes = request.runTimes();
-        String algorithmType = request.algorithmType() != null ? request.algorithmType() : "variation";
         if (request.searchSpaceId() == null || request.searchSpaceId().isEmpty()) {
             throw new BadRequestException("Search space must be specified");
         }
         String searchSpaceId = request.searchSpaceId().getFirst();
 
         return switch (searchSpaceId) {
-            case "bitstring" -> runBatch(
+            case "bitstring", "permutation" -> runBatch(
                     request,
                     seed,
                     runTimes,
-                    () -> createSearchSpace(request.searchSpaceId(), request.searchSpaceParams()),
-                    ss -> createVariationAlgorithm(request, ss)
-            );
-            case "permutation" -> runBatch(
-                    request,
-                    seed,
-                    runTimes,
-                    () -> createSearchSpace(request.searchSpaceId(), request.searchSpaceParams()),
-                    ss -> {
-                        if ("constructive".equals(algorithmType) || "aco".equals(algorithmType)) {
-                            return createACOAlgorithm(request);
-                        }
-                        return createVariationAlgorithm(request, ss);
-                    }
+                    () -> createSearchSpace(request.searchSpaceId(), request.searchSpaceParams())
             );
             default -> throw new BadRequestException("Unsupported search space: " + searchSpaceId);
         };
@@ -126,7 +96,6 @@ public class ExperimentService {
      * @param baseSeed
      * @param runtimes
      * @param searchSpaceFactory
-     * @param algorithmFactory
      * @return
      * @param <S>
      */
@@ -134,8 +103,7 @@ public class ExperimentService {
             RunRequest request,
             long baseSeed,
             int runtimes,
-            Supplier<SearchSpace<S>> searchSpaceFactory,
-            Function<SearchSpace<S>, Algorithm<S>> algorithmFactory
+            Supplier<SearchSpace<S>> searchSpaceFactory
     ) {
         int threads = Math.max(1, Runtime.getRuntime().availableProcessors());
         ExecutorService executor = Executors.newFixedThreadPool(threads);
@@ -149,15 +117,12 @@ public class ExperimentService {
                 CompletableFuture<RunGroupResponse> future = CompletableFuture.supplyAsync(() -> {
                     Random rng = new Random(runSeed);
                     SearchSpace<S> ss = searchSpaceFactory.get();
-                    Algorithm<S> algorithm = algorithmFactory.apply(ss);
 
-                    List<RunResponse> perProblemRuns = runTypedOnce(
-                            request,
-                            rng,
-                            ss,
-                            algorithm
-                    );
+                    Generator<S> generator = createGenerator(request.generatorId(), request.generatorParams(), ss.dimension(), ss.id());
+                    AcceptanceRule acceptance = createAcceptanceRule(request.acceptanceRuleId(), request.acceptanceRuleParams());
+                    PopulationModel<S> popModel = createPopulationModel(request.populationModelId(), request.populationModelParams());
 
+                    List<RunResponse> perProblemRuns = runTypedOnce(request, rng, ss, generator, acceptance, popModel);
                     return new RunGroupResponse(runIndex, runSeed, perProblemRuns);
                 }, executor);
 
@@ -175,54 +140,14 @@ public class ExperimentService {
     }
 
     /**
-     * Create a variation-based algorithm (mutation + acceptance + population model)
-     * based on the search space type.
-     * @param request
-     * @param ss
-     * @return
-     * @param <S>
-     */
-    private <S> Algorithm<S> createVariationAlgorithm(RunRequest request, SearchSpace<S> ss) {
-        int n = ss.dimension();
-        Generator<S> generator = createMutation(request.mutationId(), request.mutationParams(), n, ss.id());
-        AcceptanceRule acceptance = createAcceptanceRule(request.acceptanceRuleId(), request.acceptanceRuleParams());
-        PopulationModel<S> popModel = createPopulationModel(request.populationModelId(), request.populationModelParams());
-        return new VariationAlgorithm<>(generator, acceptance, popModel);
-    }
-
-    /**
-     * Create an Ant Colony Optimization algorithm based on the provided request parameters.
-     * @param request
-     * @return
-     * @param <S>
-     */
-    private <S> Algorithm<S> createACOAlgorithm(RunRequest request) {
-        Map<String, Object> acoParams = request.constructionPolicyParams() != null ? request.constructionPolicyParams() : Map.of();
-        PheromoneModel<int[]> pheromoneModel = createPheromoneModel(request.pheromoneModelId(), request.pheromoneModelParams());
-        HeuristicFunction<int[]> heuristicFunction = createHeuristicFunction(request.heuristicFunctionId(), request.heuristicFunctionParams());
-        ConstructionPolicy<int[]> constructionPolicy = createConstructionPolicy(request.constructionPolicyId(), request.constructionPolicyParams());
-        int numAnts = ((Number) acoParams.getOrDefault("numAnts", 10)).intValue();
-        double evaporationRate = ((Number) acoParams.getOrDefault("evaporationRate", 0.1)).doubleValue();
-        double q = ((Number) acoParams.getOrDefault("q", 100.0)).doubleValue();
-
-        Algorithm<S> algorithm = (Algorithm<S>) new ConstructionAlgorithm<>(
-                pheromoneModel,
-                heuristicFunction,
-                constructionPolicy,
-                numAnts,
-                evaporationRate,
-                q
-        );
-        return algorithm;
-    }
-
-    /**
      * Run a single execution of the algorithm on the specified problems,
      * collecting logs and results.
      * @param request
      * @param rng
      * @param ss
-     * @param algorithm
+     * @param generator
+     * @param acceptance
+     * @param popModel
      * @return
      * @param <S>
      */
@@ -230,7 +155,9 @@ public class ExperimentService {
             RunRequest request,
             Random rng,
             SearchSpace<S> ss,
-            Algorithm<S> algorithm
+            Generator<S> generator,
+            AcceptanceRule acceptance,
+            PopulationModel<S> popModel
     ) {
         if (request.problemId() == null || request.problemId().isEmpty()) {
             throw new BadRequestException("Problem must be specified");
@@ -244,7 +171,7 @@ public class ExperimentService {
             Observer<S> observer = createObserverChain(request.observerIds(), problem);
 
             long startTime = System.nanoTime();
-            RunLog log = algorithm.run(ss, problem, rng, stop, observer);
+            RunLog log = popModel.run(generator, acceptance, ss, problem, rng, stop, observer);
             long endTime = System.nanoTime();
             double runtimeMs = (endTime - startTime) / 1_000_000.0;
 
@@ -276,7 +203,7 @@ public class ExperimentService {
             throw new BadRequestException(componentType + " must be specified");
         }
 
-        String id = ids.get(0);
+        String id = ids.getFirst();
         Object component = registry.create(id);
 
         try {
@@ -315,9 +242,9 @@ public class ExperimentService {
         return problem;
     }
 
-    private <S> Generator<S> createMutation(List<String> ids, Map<String, Object> params, int n, String searchSpaceId) {
+    private <S> Generator<S> createGenerator(List<String> ids, Map<String, Object> params, int n, String searchSpaceId) {
         ConfigurationContext context = new ConfigurationContext(n);
-        return createAndConfigure(mutationRegistry, ids, "Mutation", params, context);
+        return createAndConfigure(mutationRegistry, ids, "Generator", params, context);
     }
 
     private AcceptanceRule createAcceptanceRule(List<String>  ids, Map<String, Object> params) {
@@ -349,17 +276,5 @@ public class ExperimentService {
     private <S>Observer<S> createSingleObserver(String id, Problem<S> problem) {
         ConfigurationContext context = new ConfigurationContext(0, problem);
         return createAndConfigure(observerRegistry, List.of(id), "Observer", Map.of(), context);
-    }
-
-    private PheromoneModel<int[]> createPheromoneModel(List<String> ids, Map<String, Object> params) {
-        return createAndConfigure(pheromoneRegistry, ids, "Pheromone model", params, null);
-    }
-
-    private HeuristicFunction<int[]> createHeuristicFunction(List<String> ids, Map<String, Object> params) {
-        return createAndConfigure(heuristicRegistry, ids, "Heuristic function", params, null);
-    }
-
-    private ConstructionPolicy<int[]> createConstructionPolicy(List<String> ids, Map<String, Object> params) {
-        return createAndConfigure(constructionRegistry, ids, "Construction policy", params, null);
     }
 }

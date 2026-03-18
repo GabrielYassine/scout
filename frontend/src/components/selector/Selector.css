@@ -84,20 +84,8 @@
     background-color: var(--color-algorithm);
 }
 
-.count-badge-heuristicFunction {
-    background-color: var(--color-heuristicFunction);
-}
-
-.count-badge-constructionPolicy {
-    background-color: var(--color-constructionPolicy);
-}
-
-.count-badge-pheromoneModel {
-    background-color: var(--color-pheromoneModel);
-}
-
-.count-badge-mutation {
-    background-color: var(--color-mutation);
+.count-badge-generator {
+    background-color: var(--color-generator);
 }
 
 .count-badge-acceptance {

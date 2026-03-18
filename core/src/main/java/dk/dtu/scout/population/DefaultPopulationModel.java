@@ -5,7 +5,7 @@ import dk.dtu.scout.State;
 import dk.dtu.scout.acceptance.AcceptanceRule;
 import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.logging.RunState;
-import dk.dtu.scout.mutation.Generator;
+import dk.dtu.scout.generator.Generator;
 import dk.dtu.scout.observer.Observer;
 import dk.dtu.scout.problems.Problem;
 import dk.dtu.scout.searchSpace.SearchSpace;
