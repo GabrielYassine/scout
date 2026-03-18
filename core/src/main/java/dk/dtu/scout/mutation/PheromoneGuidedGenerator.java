@@ -93,10 +93,10 @@ public class PheromoneGuidedGenerator implements Generator<int[]> {
         return 0;
     }
 
-    public void update(Map<Double, int[]> solutions) {
-        if (this.pheromoneMatrix == null) {
-            int dimension = solutions.values().iterator().next().length;
-            this.pheromoneMatrix = new double[dimension][dimension];
-        }
+    @Override
+    public Map<String, Object> getStateVariables() {
+        return Map.of(
+            "pheromoneMatrix", pheromoneMatrix
+        );
     }
 }

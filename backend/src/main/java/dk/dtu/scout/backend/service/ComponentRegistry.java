@@ -1,6 +1,6 @@
 package dk.dtu.scout.backend.service;
 
-import dk.dtu.scout.Component;
+import dk.dtu.scout.ScoutComponent;
 import dk.dtu.scout.backend.exception.BadRequestException;
 import org.springframework.context.ApplicationContext;
 
@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class ComponentRegistry<T extends Component> {
+public class ComponentRegistry<T extends ScoutComponent> {
 
     private final Map<String, Class<? extends T>> componentClassById;
     private final ApplicationContext applicationContext;
@@ -17,7 +17,7 @@ public class ComponentRegistry<T extends Component> {
         this.applicationContext = applicationContext;
         this.componentClassById = components.stream()
             .collect(Collectors.toMap(
-                Component::id,
+                ScoutComponent::id,
                 component -> (Class<? extends T>) component.getClass(),
                 (c1, c2) -> {
                     throw new IllegalStateException(

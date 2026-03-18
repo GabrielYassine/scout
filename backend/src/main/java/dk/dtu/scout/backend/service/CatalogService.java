@@ -4,7 +4,7 @@ import java.util.List;
 
 import dk.dtu.scout.backend.dto.catalog.*;
 
-import dk.dtu.scout.Component;
+import dk.dtu.scout.ScoutComponent;
 import dk.dtu.scout.Parameter;
 
 import dk.dtu.scout.acceptance.AcceptanceRule;
@@ -58,7 +58,7 @@ public class CatalogService {
         this.observers = observers;
     }
 
-    private static ComponentDef toComponentDef(String kind, Component c) {
+    private static ComponentDef toComponentDef(String kind, ScoutComponent c) {
         return new ComponentDef(
             kind,
             c.id(),

@@ -1,12 +1,12 @@
 package dk.dtu.scout.observer;
 
-import dk.dtu.scout.Component;
+import dk.dtu.scout.ScoutComponent;
 import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.logging.RunState;
 
 import java.util.Map;
 
-public interface Observer<S> extends Component  {
+public interface Observer<S> extends ScoutComponent {
     String id();
     String displayName();
 

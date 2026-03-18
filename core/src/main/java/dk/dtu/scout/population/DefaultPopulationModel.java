@@ -1,6 +1,7 @@
 package dk.dtu.scout.population;
-
 import dk.dtu.scout.Parameter;
+import dk.dtu.scout.ScoutComponent;
+import dk.dtu.scout.State;
 import dk.dtu.scout.acceptance.AcceptanceRule;
 import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.logging.RunState;
@@ -12,10 +13,11 @@ import dk.dtu.scout.stopcondition.StopCondition;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-
 @Component
 @Scope("prototype")
 public class DefaultPopulationModel<S> implements PopulationModel<S> {
@@ -54,6 +56,24 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
         }
     }
 
+    private List<ScoutComponent> initializeComponents(
+            Generator<S> generator,
+            AcceptanceRule acceptance,
+            SearchSpace<S> space,
+            Problem<S> problem,
+            StopCondition<S> stop,
+            Observer<S> observer
+    ) {
+        List<ScoutComponent> components = new ArrayList<>();
+        components.add(generator);
+        components.add(acceptance);
+        components.add(space);
+        components.add(problem);
+        components.add(stop);
+        components.add(observer);
+        return components;
+    }
+
     @Override
     public RunLog run(
             Generator<S> generator,
@@ -65,6 +85,10 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
             Observer<S> observer
     ) {
         RunLog log = new RunLog();
+        State varState = new State();
+
+        // Initialize components list
+        List<ScoutComponent> components = initializeComponents(generator, acceptance, space, problem, stop, observer);
 
         // 1) Initialize parent
         S current = space.randomSolution(rng);
@@ -101,7 +125,6 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
             // 4) decide whether to accept the best child as the new current solution
             boolean accepted = acceptance.accept(currentFitness, bestChildFitness, iteration, rng);
 
-
             // If accepted, update current solution and fitness
             if (accepted) {
                 current = bestChild;
@@ -113,10 +136,21 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
                 }
             }
 
+            Map<String, Object> combinedStateVariables = new HashMap<>();
+            for (ScoutComponent component : components) {
+                combinedStateVariables.putAll(component.getStateVariables());
+            }
+
+            varState.update(Map.of(
+                    "best", best,
+                    "bestFitness", bestFitness
+            ));
+            varState.update(combinedStateVariables);
+
             // log global state
-            RunState<S> state = new RunState<>(iteration, evaluations, current, currentFitness, best, bestFitness, accepted);
-            log.tick(state.iteration(), state.evaluations());
-            observer.onStep(state, log);
+            RunState<S> stateLog = new RunState<>(iteration, evaluations, current, currentFitness, best, bestFitness, accepted);
+            log.tick(stateLog.iteration(), stateLog.evaluations());
+            observer.onStep(stateLog, log);
             iteration++;
         }
 

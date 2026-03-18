@@ -1,6 +1,6 @@
 package dk.dtu.scout.population;
 
-import dk.dtu.scout.Component;
+import dk.dtu.scout.ScoutComponent;
 import dk.dtu.scout.acceptance.AcceptanceRule;
 import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.mutation.Generator;
@@ -12,7 +12,7 @@ import dk.dtu.scout.stopcondition.StopCondition;
 import java.util.Map;
 import java.util.Random;
 
-public interface PopulationModel<S> extends Component  {
+public interface PopulationModel<S> extends ScoutComponent {
 
     RunLog run(Generator<S> generator, AcceptanceRule acceptance, SearchSpace<S> space, Problem<S> problem, Random rng, StopCondition<S> stop, Observer<S> observer
     );

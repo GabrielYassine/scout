@@ -1,10 +1,10 @@
 package dk.dtu.scout.pheromone;
 
-import dk.dtu.scout.Component;
+import dk.dtu.scout.ScoutComponent;
 
 import java.util.Map;
 
-public interface PheromoneModel<S> extends Component {
+public interface PheromoneModel<S> extends ScoutComponent {
     void initialize(int dimension);
     double getPheromone(int from, int to);
     void setPheromone(int from, int to, double value);
