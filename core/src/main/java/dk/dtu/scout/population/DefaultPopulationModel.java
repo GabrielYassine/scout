@@ -109,12 +109,16 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
         while (!stop.shouldStop(iteration, evaluations, bestFitness, best)) {
             S bestChild = null;
             double bestChildFitness = Double.NEGATIVE_INFINITY;
+            List<S> generationSolutions = new ArrayList<>();
+            List<Double> generationFitness = new ArrayList<>();
 
             // 3) Generate λ children and evaluate them, keep the best
             for (int k = 0; k < lambda; k++) {
                 S child = generator.generate(current, rng);
                 double childFitness = problem.fitness(child);
                 evaluations++;
+                generationSolutions.add(child);
+                generationFitness.add(childFitness);
 
                 if (childFitness > bestChildFitness) {
                     bestChildFitness = childFitness;
@@ -138,12 +142,14 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
 
             Map<String, Object> combinedStateVariables = new HashMap<>();
             for (ScoutComponent component : components) {
-                combinedStateVariables.putAll(component.getStateVariables());
+                combinedStateVariables.putAll(component.getStateVariables(varState));
             }
 
             varState.update(Map.of(
                     "best", best,
-                    "bestFitness", bestFitness
+                    "bestFitness", bestFitness,
+                    "generationSolutions", generationSolutions,
+                    "generationFitness", generationFitness
             ));
             varState.update(combinedStateVariables);
 

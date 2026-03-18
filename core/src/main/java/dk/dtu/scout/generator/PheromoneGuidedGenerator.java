@@ -13,6 +13,7 @@ import java.util.Random;
 @Scope("prototype")
 public class PheromoneGuidedGenerator implements Generator<int[]> {
 
+    private double evaporationRate = 0.1;
     private double[][] pheromoneMatrix;
 
     @Override
@@ -61,7 +62,19 @@ public class PheromoneGuidedGenerator implements Generator<int[]> {
 
     @Override
     public List<Parameter> params() {
-        return List.of();
+        return List.of(new Parameter("evaporationRate", "Pheromone Evaporation Rate", "double", evaporationRate, 0.0, 1.0));
+    }
+
+    @Override
+    public void configure(Map<String, Object> params) {
+        if (params == null) return;
+        if (params.containsKey("evaporationRate")) {
+            double value = ((Number) params.get("evaporationRate")).doubleValue();
+            if (value < 0.0 || value > 1.0) {
+                throw new IllegalArgumentException("Evaporation rate must be between 0 and 1");
+            }
+            this.evaporationRate = value;
+        }
     }
 
     @Override
@@ -118,7 +131,7 @@ public class PheromoneGuidedGenerator implements Generator<int[]> {
             }
         }
 
-        // Fallback: return first unvisited city (should not happen)
+        // Fallback
         for (int i = 0; i < dimension; i++) {
             if (!visited[i]) {
                 return i;
@@ -128,9 +141,57 @@ public class PheromoneGuidedGenerator implements Generator<int[]> {
     }
 
     @Override
-    public Map<String, Object> getStateVariables() {
-        return Map.of(
-            "pheromoneMatrix", pheromoneMatrix
-        );
+    public Map<String, Object> getStateVariables(State state) {
+        updatePheromoneMatrix(state);
+        return Map.of("pheromoneMatrix", pheromoneMatrix);
+    }
+
+
+    private void updatePheromoneMatrix(State state) {
+        if (state == null || pheromoneMatrix.length == 0) {
+            return;
+        }
+
+        Object solutionsObj = state.get("generationSolutions");
+        Object fitnessObj = state.get("generationFitness");
+
+        if (!(solutionsObj instanceof List<?> solutions) || !(fitnessObj instanceof List<?> fitnessValues)) {
+            return;
+        }
+
+        if (solutions.isEmpty() || solutions.size() != fitnessValues.size()) {
+            return;
+        }
+        evaporate(evaporationRate);
+
+        for (int i = 0; i < solutions.size(); i++) {
+            Object solObj = solutions.get(i);
+            Object fitObj = fitnessValues.get(i);
+
+            if (solObj instanceof int[] solution && fitObj instanceof Double) {
+                double fitness = (Double) fitObj;
+                depositPheromone(solution, fitness);
+            }
+        }
+    }
+
+    private void evaporate(double rate) {
+        for (int i = 0; i < pheromoneMatrix.length; i++) {
+            for (int j = 0; j < pheromoneMatrix.length; j++) {
+                pheromoneMatrix[i][j] *= (1.0 - rate);
+            }
+        }
+    }
+
+    private void depositPheromone(int[] solution, double fitness) {
+        double deposit = Math.max(0.01, fitness);
+
+        for (int i = 0; i < solution.length; i++) {
+            int from = solution[i];
+            int to = solution[(i + 1) % solution.length];
+
+            pheromoneMatrix[from][to] += deposit;
+            pheromoneMatrix[to][from] += deposit; // Symmetric for undirected graph
+        }
     }
 }
