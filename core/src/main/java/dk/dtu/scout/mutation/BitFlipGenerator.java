@@ -12,9 +12,8 @@ import java.util.Random;
 
 @Component
 @Scope("prototype")
-public class BitFlipMutation implements Mutation<boolean[]> {
+public class BitFlipGenerator implements Generator<boolean[]> {
     private double flipProbability = 0.0;
-    @Override
     public String id() { return "bit-flip"; }
     @Override
     public String displayName() { return "Bit Flip (p)"; }
@@ -54,7 +53,7 @@ public class BitFlipMutation implements Mutation<boolean[]> {
     public List<String> supportedSearchSpaces() { return List.of("bitstring"); }
 
     @Override
-    public boolean[] mutate(boolean[] bits, Random rng) {
+    public boolean[] generate(boolean[] bits, Random rng) {
         int n = bits.length;
         if (n == 0) return bits;
         boolean[] mutated = bits.clone();

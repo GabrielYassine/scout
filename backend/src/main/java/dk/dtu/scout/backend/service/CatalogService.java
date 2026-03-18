@@ -10,7 +10,7 @@ import dk.dtu.scout.Parameter;
 import dk.dtu.scout.acceptance.AcceptanceRule;
 import dk.dtu.scout.construction.ConstructionPolicy;
 import dk.dtu.scout.heuristic.HeuristicFunction;
-import dk.dtu.scout.mutation.Mutation;
+import dk.dtu.scout.mutation.Generator;
 import dk.dtu.scout.observer.Observer;
 import dk.dtu.scout.pheromone.PheromoneModel;
 import dk.dtu.scout.population.PopulationModel;
@@ -28,7 +28,7 @@ public class CatalogService {
     private final List<HeuristicFunction<?>> heuristicFunctions;
     private final List<ConstructionPolicy<?>> constructionPolicies;
     private final List<PheromoneModel<?>> pheromoneModels;
-    private final List<Mutation<?>> mutations;
+    private final List<Generator<?>> generators;
     private final List<AcceptanceRule> acceptanceRules;
     private final List<PopulationModel<?>> populationModels;
     private final List<StopCondition<?>> stopConditions;
@@ -40,7 +40,7 @@ public class CatalogService {
         List<HeuristicFunction<?>> heuristicFunctions,
         List<ConstructionPolicy<?>> constructionPolicies,
         List<PheromoneModel<?>> pheromoneModels,
-        List<Mutation<?>> mutations,
+        List<Generator<?>> generators,
         List<AcceptanceRule> acceptanceRules,
         List<PopulationModel<?>> populationModels,
         List<StopCondition<?>> stopConditions,
@@ -51,7 +51,7 @@ public class CatalogService {
         this.heuristicFunctions = heuristicFunctions;
         this.constructionPolicies = constructionPolicies;
         this.pheromoneModels = pheromoneModels;
-        this.mutations = mutations;
+        this.generators = generators;
         this.acceptanceRules = acceptanceRules;
         this.populationModels = populationModels;
         this.stopConditions = stopConditions;
@@ -95,7 +95,7 @@ public class CatalogService {
 
 
     public List<ComponentDef> mutations() {
-        return mutations.stream().map(c -> toComponentDef("mutation", c)).toList();
+        return generators.stream().map(c -> toComponentDef("mutation", c)).toList();
     }
 
     public List<ComponentDef> acceptanceRules() {

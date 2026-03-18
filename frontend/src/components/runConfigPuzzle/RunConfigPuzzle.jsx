@@ -10,7 +10,7 @@ const componentTypesAll = [
     { key: "heuristicFunction", label: "Heuristic" },
     { key: "constructionPolicy", label: "Construction" },
     { key: "pheromoneModel", label: "Pheromone" },
-    { key: "mutation", label: "Mutation" },
+    { key: "generator", label: "Mutation" },
     { key: "acceptance", label: "Acceptance Rule" },
     { key: "populationModel", label: "Population Model" },
     { key: "stopCondition", label: "Stop Condition" },

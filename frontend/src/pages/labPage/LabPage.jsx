@@ -27,7 +27,7 @@ export default function LabPage({catalog, catalogLoading, catalogError, template
       const map = {
         searchSpace: catalog.searchSpaces,
         problem: catalog.problems,
-        mutation: catalog.mutations,
+        generator: catalog.generators,
         acceptance: catalog.acceptanceRules,
         populationModel: catalog.populationModels,
         stopCondition: catalog.stopConditions,
@@ -70,8 +70,8 @@ export default function LabPage({catalog, catalogLoading, catalogError, template
       problemParams: problemParams,
 
 
-      mutationId: puzzleConfig.mutation?.map((x) => x.id) ?? [],
-      mutationParams: params.mutation,
+      mutationId: puzzleConfig.generator?.map((x) => x.id) ?? [],
+      mutationParams: params.generator,
 
       acceptanceRuleId: puzzleConfig.acceptance?.map((x) => x.id) ?? [],
       acceptanceRuleParams: params.acceptance,

@@ -4,7 +4,7 @@ import dk.dtu.scout.Parameter;
 import dk.dtu.scout.acceptance.AcceptanceRule;
 import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.logging.RunState;
-import dk.dtu.scout.mutation.Mutation;
+import dk.dtu.scout.mutation.Generator;
 import dk.dtu.scout.observer.Observer;
 import dk.dtu.scout.problems.Problem;
 import dk.dtu.scout.searchSpace.SearchSpace;
@@ -56,7 +56,7 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
 
     @Override
     public RunLog run(
-            Mutation<S> mutation,
+            Generator<S> generator,
             AcceptanceRule acceptance,
             SearchSpace<S> space,
             Problem<S> problem,
@@ -74,12 +74,12 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
 
         int evaluations = 1;
         int iteration = 0;
+
         // Initial state
         RunState<S> initial = new RunState<>(iteration, evaluations, current, currentFitness, best, bestFitness, false);
         observer.onStart(initial, log);
         log.tick(iteration, evaluations);
         observer.onStep(initial, log);
-
 
         // 2) Loop until stop condition is met
         while (!stop.shouldStop(iteration, evaluations, bestFitness, best)) {
@@ -88,7 +88,7 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
 
             // 3) Generate λ children and evaluate them, keep the best
             for (int k = 0; k < lambda; k++) {
-                S child = mutation.mutate(current, rng);
+                S child = generator.generate(current, rng);
                 double childFitness = problem.fitness(child);
                 evaluations++;
 
@@ -119,7 +119,6 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
             observer.onStep(state, log);
             iteration++;
         }
-
 
         RunState<S> finalState = new RunState<>(iteration - 1, evaluations, current, currentFitness, best, bestFitness, false);
         observer.onEnd(finalState, log);

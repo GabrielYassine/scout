@@ -9,7 +9,7 @@ import java.util.Random;
 
 @Component
 @Scope("prototype")
-public class TwoOptMutation implements Mutation<int[]> {
+public class TwoOptGenerator implements Generator<int[]> {
 
     @Override
     public String id() {
@@ -37,7 +37,7 @@ public class TwoOptMutation implements Mutation<int[]> {
     }
 
     @Override
-    public int[] mutate(int[] solution, Random rng) {
+    public int[] generate(int[] solution, Random rng) {
         int[] mutated = solution.clone();
 
         if (mutated.length < 2) {

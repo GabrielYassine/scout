@@ -24,7 +24,7 @@ export default function LabLeftbar({
     global: true,
     searchSpace: true,
     problem: true,
-    mutation: true,
+    generator: true,
     acceptance: true,
     populationModel: true,
     stopCondition: true,
@@ -39,7 +39,7 @@ export default function LabLeftbar({
     const catalogMap = {
       searchSpace: catalog.searchSpaces,
       problem: catalog.problems,
-      mutation: catalog.mutations,
+      generator: catalog.generators,
       acceptance: catalog.acceptanceRules,
       populationModel: catalog.populationModels,
       stopCondition: catalog.stopConditions,
@@ -55,7 +55,7 @@ export default function LabLeftbar({
     return (
       puzzleConfig.searchSpace &&
       puzzleConfig.problem &&
-      puzzleConfig.mutation &&
+      puzzleConfig.generator &&
       puzzleConfig.populationModel &&
       puzzleConfig.acceptance &&
       puzzleConfig.stopCondition &&
@@ -159,7 +159,7 @@ export default function LabLeftbar({
 
         {renderPieceSection("searchSpace", "Search Space")}
         {renderPieceSection("problem", "Problem")}
-        {renderPieceSection("mutation", "Mutation")}
+        {renderPieceSection("generator", "Mutation")}
         {renderPieceSection("acceptance", "Acceptance Rule")}
         {renderPieceSection("populationModel", "Population Model")}
         {renderPieceSection("stopCondition", "Stop Condition")}

@@ -4,8 +4,8 @@ import dk.dtu.scout.acceptance.AcceptanceRule;
 import dk.dtu.scout.backend.service.ComponentRegistry;
 import dk.dtu.scout.construction.ConstructionPolicy;
 import dk.dtu.scout.heuristic.HeuristicFunction;
+import dk.dtu.scout.mutation.Generator;
 import dk.dtu.scout.pheromone.PheromoneModel;
-import dk.dtu.scout.mutation.Mutation;
 import dk.dtu.scout.observer.Observer;
 import dk.dtu.scout.population.PopulationModel;
 import dk.dtu.scout.problems.Problem;
@@ -67,8 +67,8 @@ public class ComponentRegistryConfig {
     }
 
     @Bean
-    public ComponentRegistry<Mutation> mutationRegistry(
-            List<Mutation> components,
+    public ComponentRegistry<Generator> mutationRegistry(
+            List<Generator> components,
             ApplicationContext context) {
         return new ComponentRegistry<>(components, context);
     }

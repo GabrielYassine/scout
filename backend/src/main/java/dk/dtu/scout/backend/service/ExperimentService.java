@@ -13,9 +13,9 @@ import dk.dtu.scout.backend.dto.run.RunResponse;
 import dk.dtu.scout.backend.exception.BadRequestException;
 import dk.dtu.scout.construction.ConstructionPolicy;
 import dk.dtu.scout.heuristic.HeuristicFunction;
+import dk.dtu.scout.mutation.Generator;
 import dk.dtu.scout.pheromone.PheromoneModel;
 import dk.dtu.scout.logging.RunLog;
-import dk.dtu.scout.mutation.Mutation;
 import dk.dtu.scout.observer.*;
 import dk.dtu.scout.population.PopulationModel;
 import dk.dtu.scout.problems.Problem;
@@ -42,7 +42,7 @@ import java.util.concurrent.Executors;
 public class ExperimentService {
 
     private final StatisticsService statisticsService;
-    private final ComponentRegistry<Mutation> mutationRegistry;
+    private final ComponentRegistry<Generator> mutationRegistry;
     private final ComponentRegistry<AcceptanceRule> acceptanceRegistry;
     private final ComponentRegistry<PopulationModel> populationModelRegistry;
     private final ComponentRegistry<Problem> problemRegistry;
@@ -55,7 +55,7 @@ public class ExperimentService {
 
     public ExperimentService(
             StatisticsService statisticsService,
-            ComponentRegistry<Mutation> mutationRegistry,
+            ComponentRegistry<Generator> mutationRegistry,
             ComponentRegistry<AcceptanceRule> acceptanceRegistry,
             ComponentRegistry<PopulationModel> populationModelRegistry,
             ComponentRegistry<Problem> problemRegistry,
@@ -184,10 +184,10 @@ public class ExperimentService {
      */
     private <S> Algorithm<S> createVariationAlgorithm(RunRequest request, SearchSpace<S> ss) {
         int n = ss.dimension();
-        Mutation<S> mutation = createMutation(request.mutationId(), request.mutationParams(), n, ss.id());
+        Generator<S> generator = createMutation(request.mutationId(), request.mutationParams(), n, ss.id());
         AcceptanceRule acceptance = createAcceptanceRule(request.acceptanceRuleId(), request.acceptanceRuleParams());
         PopulationModel<S> popModel = createPopulationModel(request.populationModelId(), request.populationModelParams());
-        return new VariationAlgorithm<>(mutation, acceptance, popModel);
+        return new VariationAlgorithm<>(generator, acceptance, popModel);
     }
 
     /**
@@ -315,7 +315,7 @@ public class ExperimentService {
         return problem;
     }
 
-    private <S> Mutation<S> createMutation(List<String> ids, Map<String, Object> params, int n, String searchSpaceId) {
+    private <S> Generator<S> createMutation(List<String> ids, Map<String, Object> params, int n, String searchSpaceId) {
         ConfigurationContext context = new ConfigurationContext(n);
         return createAndConfigure(mutationRegistry, ids, "Mutation", params, context);
     }

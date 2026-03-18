@@ -4,7 +4,7 @@ import dk.dtu.scout.Parameter;
 import dk.dtu.scout.acceptance.AcceptanceRule;
 import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.logging.RunState;
-import dk.dtu.scout.mutation.Mutation;
+import dk.dtu.scout.mutation.Generator;
 import dk.dtu.scout.observer.Observer;
 import dk.dtu.scout.problems.Problem;
 import dk.dtu.scout.searchSpace.SearchSpace;
@@ -75,7 +75,7 @@ public class IslandModel<S>  implements PopulationModel<S> {
 
     @Override
     public RunLog run(
-            Mutation<S> mutation,
+            Generator<S> generator,
             AcceptanceRule acceptance,
             SearchSpace<S> space,
             Problem<S> problem,
@@ -121,7 +121,7 @@ public class IslandModel<S>  implements PopulationModel<S> {
                 double bestFit = Double.NEGATIVE_INFINITY;
 
                 for (int k = 0; k < lambda; k++) {
-                    S child = mutation.mutate(isl.current, r);
+                    S child = generator.generate(isl.current, r);
                     double f = problem.fitness(child);
                     if (f > bestFit) { bestFit = f; bestChild = child; }
                     evaluations++;
