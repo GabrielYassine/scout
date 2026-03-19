@@ -2,6 +2,8 @@ package dk.dtu.scout.generator;
 
 import dk.dtu.scout.Parameter;
 import dk.dtu.scout.State;
+import dk.dtu.scout.problems.TSPProblem;
+import dk.dtu.scout.problems.TSPInstance;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -13,16 +15,25 @@ import java.util.Random;
 @Scope("prototype")
 public class PheromoneGuidedGenerator implements Generator<int[]> {
 
+    private static final double Q = 1.0;
+
     private double evaporationRate = 0.1;
-    private double alpha = 1.0;  // Pheromone influence (theory: 1.0)
-    private double beta = 2.0;   // Visibility/distance influence (theory: 2.0-5.0)
+    private double alpha = 1.0;
+    private double beta = 2.0;
     private double[][] pheromoneMatrix;
     private double[][] distanceMatrix;
     private State state;
+    private TSPInstance tspInstance;
 
     @Override
     public void init(State state) {
         this.state = state;
+        if (state != null) {
+            Object problemObj = state.get("problem");
+            if (problemObj instanceof TSPProblem tspProblem) {
+                this.tspInstance = tspProblem.getInstance();
+            }
+        }
     }
 
     @Override
@@ -129,10 +140,29 @@ public class PheromoneGuidedGenerator implements Generator<int[]> {
         pheromoneMatrix = new double[dim][dim];
         distanceMatrix = new double[dim][dim];
 
+        // Initialize pheromone matrix with uniform values
         for (int i = 0; i < dim; i++) {
             for (int j = 0; j < dim; j++) {
                 pheromoneMatrix[i][j] = 1.0;
-                distanceMatrix[i][j] = 1.0; // Default: will be overridden if TSP instance available
+            }
+        }
+
+        // load distance matrix if available
+        if (tspInstance != null) {
+            double[][] realDistances = tspInstance.getCoordinates();
+            if (realDistances != null && realDistances.length == dim) {
+                // Compute Euclidean distances
+                for (int i = 0; i < dim; i++) {
+                    for (int j = 0; j < dim; j++) {
+                        if (i == j) {
+                            distanceMatrix[i][j] = 0.0;
+                        } else {
+                            double dx = realDistances[i][0] - realDistances[j][0];
+                            double dy = realDistances[i][1] - realDistances[j][1];
+                            distanceMatrix[i][j] = Math.sqrt(dx * dx + dy * dy);
+                        }
+                    }
+                }
             }
         }
 
@@ -146,12 +176,12 @@ public class PheromoneGuidedGenerator implements Generator<int[]> {
         double[] probabilities = new double[dimension];
         double sum = 0.0;
 
-        // ACO formula: P(i,j) ∝ τ(i,j)^α * η(i,j)^β
-        // where τ is pheromone and η is visibility (1/distance)
+        // Calculate probabilities based on pheromone and visibility
         for (int i = 0; i < dimension; i++) {
             if (!visited[i]) {
-                double pheromone = Math.pow(pheromoneMatrix[current][i] + 0.01, alpha);
-                double visibility = Math.pow(1.0 / (distanceMatrix[current][i] + 1.0), beta);
+                double pheromone = Math.pow(pheromoneMatrix[current][i], alpha);
+                double distance = distanceMatrix[current][i];
+                double visibility = Math.pow(1.0 / (distance + 0.001), beta);
                 probabilities[i] = pheromone * visibility;
                 sum += probabilities[i];
             }
@@ -200,21 +230,6 @@ public class PheromoneGuidedGenerator implements Generator<int[]> {
             return;
         }
 
-        // Try to extract distance matrix from TSP instance if available
-        if (distanceMatrix != null && distanceMatrix[0][0] == 1.0) {
-            // Distance matrix not yet populated, try to get it from state
-            Object tspInstanceObj = state.get("tspInstance");
-            if (tspInstanceObj != null) {
-                try {
-                    // Try to access distance information if TSPInstance is available
-                    // This is a best-effort approach - the actual implementation depends on state structure
-                    // For now, distance matrix stays as initialized (uniform)
-                } catch (Exception e) {
-                    // Silently ignore - use default distance matrix
-                }
-            }
-        }
-
         Object solutionsObj = state.get("generationSolutions");
         Object fitnessObj = state.get("generationFitness");
 
@@ -225,8 +240,11 @@ public class PheromoneGuidedGenerator implements Generator<int[]> {
         if (solutions.isEmpty() || solutions.size() != fitnessValues.size()) {
             return;
         }
+
+        // Evaporate pheromone
         evaporate(evaporationRate);
 
+        // deposit pheromone from all generation solutions
         for (int i = 0; i < solutions.size(); i++) {
             Object solObj = solutions.get(i);
             Object fitObj = fitnessValues.get(i);
@@ -247,12 +265,9 @@ public class PheromoneGuidedGenerator implements Generator<int[]> {
     }
 
     private void depositPheromone(int[] solution, double fitness) {
-        // TSP fitness is negative (we maximize -tourLength)
-        // So we need to use the absolute value to get the actual quality measure
-        // Better solutions have higher negative fitness (closer to 0)
-        // We want to deposit MORE pheromone for BETTER (less negative) solutions
         double tourLength = -fitness;  // Convert fitness back to tour length (positive value)
-        double deposit = Math.max(0.1, 1.0 / tourLength);  // Inverse of tour length: shorter tours get more pheromone
+
+        double deposit = Q / tourLength; // from ACO theory: deltaT = Q / L, where L is the tour length
 
         for (int i = 0; i < solution.length; i++) {
             int from = solution[i];

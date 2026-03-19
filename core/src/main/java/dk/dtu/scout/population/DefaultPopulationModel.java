@@ -90,6 +90,9 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
         // Initialize components list
         List<ScoutComponent> components = initializeComponents(generator, acceptance, space, problem, stop, observer);
 
+        // Store problem in state so generators can access it
+        varState.update(Map.of("problem", problem));
+
         // Initialize all components with state
         for (ScoutComponent component : components) {
             component.init(varState);
