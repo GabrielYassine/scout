@@ -90,6 +90,11 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
         // Initialize components list
         List<ScoutComponent> components = initializeComponents(generator, acceptance, space, problem, stop, observer);
 
+        // Initialize all components with state
+        for (ScoutComponent component : components) {
+            component.init(varState);
+        }
+
         // 1) Initialize parent
         S current = space.randomSolution(rng);
         double currentFitness = problem.fitness(current);
@@ -105,17 +110,45 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
         log.tick(iteration, evaluations);
         observer.onStep(initial, log);
 
+        List<S> generationSolutions = new ArrayList<>();
+        List<Double> generationFitness = new ArrayList<>();
+
         // 2) Loop until stop condition is met
         while (!stop.shouldStop(iteration, evaluations, bestFitness, best)) {
+            // Update state variables from all components first
+            Map<String, Object> combinedStateVariables = new HashMap<>();
+            // Order of state variables in the map (for consistency and readability):
+            // 1) population model
+            // 1) generator
+            // 2) acceptance
+            // 3) space
+            // 4) problem
+            // 5) stop
+            // 6) observer
+            varState.update(Map.of(
+                    "current", current,
+                    "best", best,
+                    "bestFitness", bestFitness,
+                    "currentFitness", currentFitness,
+                    "generationSolutions", generationSolutions,
+                    "generationFitness", generationFitness
+            ));
+
+            for (ScoutComponent component : components) {
+                combinedStateVariables.putAll(component.getStateVariables(varState));
+            }
+            varState.update(combinedStateVariables);
+
             S bestChild = null;
             double bestChildFitness = Double.NEGATIVE_INFINITY;
-            List<S> generationSolutions = new ArrayList<>();
-            List<Double> generationFitness = new ArrayList<>();
+            generationSolutions.clear();
+            generationFitness.clear();
 
             // 3) Generate λ children and evaluate them, keep the best
             for (int k = 0; k < lambda; k++) {
-                S child = generator.generate(current, rng);
+                S child = generator.generate(rng);
                 double childFitness = problem.fitness(child);
+
                 evaluations++;
                 generationSolutions.add(child);
                 generationFitness.add(childFitness);
@@ -140,20 +173,6 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
                 }
             }
 
-            Map<String, Object> combinedStateVariables = new HashMap<>();
-            for (ScoutComponent component : components) {
-                combinedStateVariables.putAll(component.getStateVariables(varState));
-            }
-
-            varState.update(Map.of(
-                    "best", best,
-                    "bestFitness", bestFitness,
-                    "generationSolutions", generationSolutions,
-                    "generationFitness", generationFitness
-            ));
-            varState.update(combinedStateVariables);
-
-            // log global state
             RunState<S> stateLog = new RunState<>(iteration, evaluations, current, currentFitness, best, bestFitness, accepted);
             log.tick(stateLog.iteration(), stateLog.evaluations());
             observer.onStep(stateLog, log);

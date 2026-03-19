@@ -2,11 +2,17 @@ package dk.dtu.scout.backend.service;
 
 import dk.dtu.scout.backend.dto.RunRequest;
 import dk.dtu.scout.backend.dto.run.BatchRunResponse;
+import dk.dtu.scout.backend.util.TSPLibParser;
+import dk.dtu.scout.problems.TSPInstance;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -18,6 +24,59 @@ class ExperimentServiceTest {
     @Autowired
     private ExperimentService experimentService;
 
+    private Map<String, Object> loadBerlin52Instance() throws IOException {
+        String filePath = "src/test/resources/berlin52.tsp";
+        String content = Files.readString(Paths.get(filePath));
+        TSPInstance instance = TSPLibParser.parse(content);
+
+        List<Map<String, Object>> cities = new ArrayList<>();
+        double[][] coordinates = instance.getCoordinates();
+        for (int i = 0; i < coordinates.length; i++) {
+            Map<String, Object> city = Map.of(
+                    "x", coordinates[i][0],
+                    "y", coordinates[i][1]
+            );
+            cities.add(city);
+        }
+
+        return Map.of(
+                "name", instance.getName(),
+                "cities", cities
+        );
+    }
+
+    private void printTSPResults(BatchRunResponse response, String testName) {
+        assertNotNull(response);
+        System.out.println("\n========== " + testName + " ==========");
+        System.out.println("Response batches count: " + (response.batches() != null ? response.batches().size() : "null"));
+
+        int runIndex = 1;
+        if (response.batches() != null && !response.batches().isEmpty()) {
+            for (var batch : response.batches()) {
+                System.out.println("Batch runs: " + (batch.runs() != null ? batch.runs().size() : "null"));
+                if (batch.runs() != null) {
+                    for (var run : batch.runs()) {
+                        System.out.println("  Run has series: " + (run.series() != null));
+                        if (run.series() != null) {
+                            System.out.println("  Series keys: " + run.series().keySet());
+                        }
+                        if (run.series() != null && run.series().containsKey("bestFitness")) {
+                            @SuppressWarnings("unchecked")
+                            List<Double> bestFitnesses = (List<Double>) run.series().get("bestFitness");
+                            if (!bestFitnesses.isEmpty()) {
+                                double lastFitness = bestFitnesses.get(bestFitnesses.size() - 1);
+                                System.out.println("Run " + runIndex + " - Final best fitness: " + lastFitness + " (Tour length: " + (-lastFitness) + ")");
+                                runIndex++;
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            System.out.println("No results found in response!");
+        }
+        System.out.println("=".repeat(Math.min(testName.length() + 12, 50)) + "\n");
+    }
 
     /**
      * Helper method to run the (1+1) EA on a given problem and return the median number of evaluations to reach the optimum.
@@ -30,7 +89,6 @@ class ExperimentServiceTest {
      */
     private double runAndGetMedianFinalEvals(String problemId, int n, long seed, int runs, int maxIterations) {
         RunRequest request = new RunRequest(
-                null,
                 List.of("bitstring"),
                 Map.of("n", n),
                 List.of(problemId),
@@ -40,12 +98,6 @@ class ExperimentServiceTest {
                 List.of("default"),
                 Map.of("lambda", 1),
                 List.of("elitist"),
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
                 null,
                 List.of("fitness"),
                 List.of("optimum-reached", "max-iterations"),
@@ -104,5 +156,55 @@ class ExperimentServiceTest {
 
         assertTrue(m1 < 0.5 * 20_000_000);
         assertTrue(m2 < 0.5 * 80_000_000);
+    }
+
+    @Test
+    @DisplayName("TSP with 2-Opt generator and SA acceptance")
+    void testTSPWith2OptAndSA() throws IOException {
+        RunRequest request = new RunRequest(
+                List.of("permutation"),
+                Map.of("n", 52),
+                List.of("tsp"),
+                Map.of("tspInstance", loadBerlin52Instance()),
+                List.of("2opt"),
+                Map.of(),
+                List.of("default"),
+                Map.of("lambda", 20),
+                List.of("simulated-annealing"),
+                Map.of(),
+                List.of("fitness", "tsp-tour"),
+                List.of("max-iterations"),
+                Map.of("maxIterations", 20000),
+                12345L,
+                3
+        );
+
+        BatchRunResponse response = experimentService.run(request);
+        printTSPResults(response, "TSP with 2-Opt + SA");
+    }
+
+    @Test
+    @DisplayName("TSP with Pheromone-Guided Mutation and Elitist acceptance")
+    void testTSPWithPheromoneAndElitist() throws IOException {
+        RunRequest request = new RunRequest(
+                List.of("permutation"),
+                Map.of("n", 52),
+                List.of("tsp"),
+                Map.of("tspInstance", loadBerlin52Instance()),
+                List.of("pheromone-guided"),
+                Map.of("evaporationRate", 0.1, "alpha", 1.0, "beta", 2.0),
+                List.of("default"),
+                Map.of("lambda", 20),
+                List.of("elitist"),
+                Map.of(),
+                List.of("fitness", "tsp-tour"),
+                List.of("max-iterations"),
+                Map.of("maxIterations", 10000),
+                67890L,
+                3
+        );
+
+        BatchRunResponse response = experimentService.run(request);
+        printTSPResults(response, "TSP with Pheromone-Guided + Elitist");
     }
 }

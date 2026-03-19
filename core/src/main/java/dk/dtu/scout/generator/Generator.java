@@ -6,6 +6,6 @@ import java.util.Map;
 import java.util.Random;
 
 public interface Generator<S> extends ScoutComponent {
-    S generate(S solution, Random rng);
+    S generate(Random rng);
     default void configure(Map<String, Object> params) {}
 }

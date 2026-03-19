@@ -1,6 +1,7 @@
 package dk.dtu.scout.generator;
 
 import dk.dtu.scout.Parameter;
+import dk.dtu.scout.State;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -10,6 +11,13 @@ import java.util.Random;
 @Component
 @Scope("prototype")
 public class SwapGenerator implements Generator<int[]> {
+
+    private State state;
+
+    @Override
+    public void init(State state) {
+        this.state = state;
+    }
 
     @Override
     public String id() {
@@ -37,7 +45,8 @@ public class SwapGenerator implements Generator<int[]> {
     }
 
     @Override
-    public int[] generate(int[] solution, Random rng) {
+    public int[] generate(Random rng) {
+        int[] solution = (int[]) state.get("current");
         int[] mutated = solution.clone();
 
         if (mutated.length < 2) {

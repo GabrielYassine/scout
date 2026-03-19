@@ -121,7 +121,7 @@ public class IslandModel<S>  implements PopulationModel<S> {
                 double bestFit = Double.NEGATIVE_INFINITY;
 
                 for (int k = 0; k < lambda; k++) {
-                    S child = generator.generate(isl.current, r);
+                    S child = generator.generate(r);
                     double f = problem.fitness(child);
                     if (f > bestFit) { bestFit = f; bestChild = child; }
                     evaluations++;

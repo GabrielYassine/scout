@@ -2,6 +2,7 @@ package dk.dtu.scout.generator;
 
 import dk.dtu.scout.ConfigurationContext;
 import dk.dtu.scout.Parameter;
+import dk.dtu.scout.State;
 import dk.dtu.scout.util.FormulaEvaluator;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -14,6 +15,13 @@ import java.util.Random;
 @Scope("prototype")
 public class BitFlipGenerator implements Generator<boolean[]> {
     private double flipProbability = 0.0;
+    private State state;
+
+    @Override
+    public void init(State state) {
+        this.state = state;
+    }
+
     public String id() { return "bit-flip"; }
     @Override
     public String displayName() { return "Bit Flip (p)"; }
@@ -53,7 +61,8 @@ public class BitFlipGenerator implements Generator<boolean[]> {
     public List<String> supportedSearchSpaces() { return List.of("bitstring"); }
 
     @Override
-    public boolean[] generate(boolean[] bits, Random rng) {
+    public boolean[] generate(Random rng) {
+        boolean[] bits = (boolean[]) state.get("current");
         int n = bits.length;
         if (n == 0) return bits;
         boolean[] mutated = bits.clone();
