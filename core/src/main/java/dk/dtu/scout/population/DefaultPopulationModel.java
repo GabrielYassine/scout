@@ -18,6 +18,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.function.Supplier;
+
 @Component
 @Scope("prototype")
 public class DefaultPopulationModel<S> implements PopulationModel<S> {
@@ -76,7 +78,7 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
 
     @Override
     public RunLog run(
-            Generator<S> generator,
+            Supplier<Generator<S>> generatorFactory,
             AcceptanceRule acceptance,
             SearchSpace<S> space,
             Problem<S> problem,
@@ -86,6 +88,8 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
     ) {
         RunLog log = new RunLog();
         State varState = new State();
+
+        Generator<S> generator = generatorFactory.get();
 
         // Initialize components list
         List<ScoutComponent> components = initializeComponents(generator, acceptance, space, problem, stop, observer);

@@ -1,6 +1,8 @@
 package dk.dtu.scout.population;
 
 import dk.dtu.scout.Parameter;
+import dk.dtu.scout.ScoutComponent;
+import dk.dtu.scout.State;
 import dk.dtu.scout.acceptance.AcceptanceRule;
 import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.logging.RunState;
@@ -11,11 +13,10 @@ import dk.dtu.scout.searchSpace.SearchSpace;
 import dk.dtu.scout.stopcondition.StopCondition;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
+import java.util.function.Supplier;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+
+import java.util.*;
 
 @Component
 @Scope("prototype")
@@ -73,9 +74,27 @@ public class IslandModel<S>  implements PopulationModel<S> {
         }
     }
 
+    private List<ScoutComponent> initializeComponents(
+            Generator<S> generator,
+            AcceptanceRule acceptance,
+            SearchSpace<S> space,
+            Problem<S> problem,
+            StopCondition<S> stop,
+            Observer<S> observer
+    ) {
+        List<ScoutComponent> components = new ArrayList<>();
+        components.add(generator);
+        components.add(acceptance);
+        components.add(space);
+        components.add(problem);
+        components.add(stop);
+        components.add(observer);
+        return components;
+    }
+
     @Override
     public RunLog run(
-            Generator<S> generator,
+            Supplier<Generator<S>> generatorFactory,
             AcceptanceRule acceptance,
             SearchSpace<S> space,
             Problem<S> problem,
@@ -87,16 +106,25 @@ public class IslandModel<S>  implements PopulationModel<S> {
 
         // setup islands
         List<IslandState<S>> islands = new ArrayList<>(numIslands);
-        List<Random> islandRng = new ArrayList<>(numIslands);
-
 
         for(int i = 0; i < numIslands; i++) {
             Random r = new Random(rng.nextLong());
-            islandRng.add(r);
+
+            Generator<S> islandGenerator = generatorFactory.get();
+            State islandState = new State();
+            islandState.update(Map.of("problem", problem));
+
+            List<ScoutComponent> components = initializeComponents(
+                    islandGenerator, acceptance, space, problem, stop, observer
+            );
+
+            for (ScoutComponent component : components) {
+                component.init(islandState);
+            }
 
             S x = space.randomSolution(r);
             double fx = problem.fitness(x);
-            islands.add(new IslandState<>(x, fx));
+            islands.add(new IslandState<>(x, fx, islandGenerator, islandState, r, components));
         }
         IslandState<S> global = globalBestIsland(islands);
         int evaluations = numIslands;
@@ -108,22 +136,44 @@ public class IslandModel<S>  implements PopulationModel<S> {
         log.tick(initial.iteration(), evaluations);
         observer.onStep(initial, log);
 
-        while (true) {
-            global = globalBestIsland(islands);
-            if(stop.shouldStop(iteration, evaluations, global.bestFitness, global.best) )break;
+        while(!stop.shouldStop(iteration, evaluations, global.bestFitness, global.best)) {
             boolean anyAccepted = false;
 
             for(int i = 0; i < numIslands; i++) {
                 IslandState<S> isl = islands.get(i);
-                Random r = islandRng.get(i);
+                Random r = isl.rng;
+
+                isl.state.update(Map.of(
+                        "current", isl.current,
+                        "currentFitness", isl.currentFitness,
+                        "best", isl.best,
+                        "bestFitness", isl.bestFitness,
+                        "generationSolutions", isl.previousGenerationSolutions,
+                        "generationFitness", isl.previousGenerationFitness,
+                        "islandIndex", i
+                ));
+                Map<String, Object> combinedStateVariables = new HashMap<>();
+                for (ScoutComponent component : isl.components) {
+                    combinedStateVariables.putAll(component.getStateVariables(isl.state));
+                }
+                isl.state.update(combinedStateVariables);
 
                 S bestChild = null;
                 double bestFit = Double.NEGATIVE_INFINITY;
 
+                List<S> generationSolutions = new ArrayList<>();
+                List<Double> generationFitness = new ArrayList<>();
+
+
                 for (int k = 0; k < lambda; k++) {
-                    S child = generator.generate(r);
+                    S child = isl.generator.generate(r);
                     double f = problem.fitness(child);
-                    if (f > bestFit) { bestFit = f; bestChild = child; }
+                    generationSolutions.add(child);
+                    generationFitness.add(f);
+                    if (f > bestFit) {
+                        bestFit = f;
+                        bestChild = child;
+                    }
                     evaluations++;
                 }
                 boolean accepted = acceptance.accept(isl.currentFitness, bestFit, iteration, r);
@@ -137,8 +187,10 @@ public class IslandModel<S>  implements PopulationModel<S> {
                         isl.bestFitness = isl.currentFitness;
                     }
                 }
+                isl.previousGenerationSolutions = generationSolutions;
+                isl.previousGenerationFitness = generationFitness;
             }
-            if (numIslands > 1 && iteration % epochLength == 0) {
+            if (numIslands > 1 && (iteration + 1) % epochLength == 0) {
                 migrateRingBest(islands);
             }
             global = globalBestIsland(islands);
@@ -192,11 +244,23 @@ public class IslandModel<S>  implements PopulationModel<S> {
         S best;
         double bestFitness;
 
-        IslandState(S x, double fx) {
+        Generator<S> generator;
+        State state;
+        Random rng;
+        List<ScoutComponent> components;
+
+        List<S> previousGenerationSolutions = new ArrayList<>();
+        List<Double> previousGenerationFitness = new ArrayList<>();
+
+        IslandState(S x, double fx, Generator<S> generator, State state, Random rng, List<ScoutComponent> components) {
             this.current = x;
             this.currentFitness = fx;
             this.best = x;
             this.bestFitness = fx;
+            this.generator = generator;
+            this.state = state;
+            this.rng = rng;
+            this.components = components;
         }
     }
 

@@ -8,8 +8,8 @@
     "problemId": ["onemax", "leadingones"],
     "problemParams": {},
 
-    "mutationId": ["bit-flip"],
-    "mutationParams": { "flipProbability": "1/n" },
+    "generatorId": ["bit-flip"],
+    "generatorParams": { "flipProbability": "1/n" },
 
     "acceptanceRuleId": ["elitist"],
     "acceptanceRuleParams": {},

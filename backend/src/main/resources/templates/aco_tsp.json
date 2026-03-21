@@ -1,0 +1,32 @@
+{
+  "id": "aco-permutation-tsp",
+  "displayName": "Ant colony optimization on TSP",
+  "runRequest": {
+    "searchSpaceId": ["permutation"],
+    "searchSpaceParams": {},
+
+    "problemId": ["tsp"],
+    "problemParams": {},
+
+    "generatorId": ["pheromone-guided"],
+    "generatorParams": {
+      "evaporationRate": 0.1,
+      "alpha":  1.0,
+      "beta": 2.0
+    },
+
+    "acceptanceRuleId": ["elitist"],
+    "acceptanceRuleParams": {},
+
+    "populationModelId": ["default"],
+    "populationModelParams": { "lambda": 1 },
+
+    "stopConditionId": ["max-iterations" ],
+    "stopConditionParams": { "maxIterations": 10000 },
+
+    "observerIds": ["fitness", "acceptance-rate", "improvements","tsp-tour"],
+
+    "seed": 1,
+    "runTimes": 10
+  }
+}

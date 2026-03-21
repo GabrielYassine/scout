@@ -1,0 +1,30 @@
+{
+  "id": "tpl-ea-tsp",
+  "displayName": "(1+1) EA on TSP",
+  "runRequest": {
+    "searchSpaceId": ["permutation"],
+    "searchSpaceParams": {},
+
+    "problemId": ["tsp"],
+    "problemParams": {
+      "instance": null
+    },
+
+    "generatorId": ["2opt"],
+    "generatorParams": {},
+
+    "acceptanceRuleId": ["elitist"],
+    "acceptanceRuleParams": {},
+
+    "populationModelId": ["default"],
+    "populationModelParams": { "lambda": 1 },
+
+    "stopConditionId": ["max-iterations"],
+    "stopConditionParams": { "maxIterations": 10000 },
+
+    "observerIds": ["fitness", "acceptance-rate", "improvements","tsp-tour"],
+
+    "seed": 1,
+    "runTimes": 10
+  }
+}

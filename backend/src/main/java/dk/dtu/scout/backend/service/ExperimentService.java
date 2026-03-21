@@ -118,12 +118,11 @@ public class ExperimentService {
                     Random rng = new Random(runSeed);
                     SearchSpace<S> ss = searchSpaceFactory.get();
 
-                    Generator<S> generator = createGenerator(request.generatorId(), request.generatorParams(), ss.dimension(), ss.id());
-                    AcceptanceRule acceptance = createAcceptanceRule(request.acceptanceRuleId(), request.acceptanceRuleParams());
+                    Supplier<Generator<S>> generatorFactory = () -> createGenerator(request.generatorId(), request.generatorParams(), ss.dimension(), ss.id());                    AcceptanceRule acceptance = createAcceptanceRule(request.acceptanceRuleId(), request.acceptanceRuleParams());
                     PopulationModel<S> popModel = createPopulationModel(request.populationModelId(), request.populationModelParams());
 
                     // Run the algorithm once for each specified problem and collect the results
-                    List<RunResponse> perProblemRuns = runTypedOnce(request, rng, ss, generator, acceptance, popModel);
+                    List<RunResponse> perProblemRuns = runTypedOnce(request, rng, ss, generatorFactory, acceptance, popModel);
                     return new RunGroupResponse(runIndex, runSeed, perProblemRuns);
                 }, executor);
 
@@ -147,7 +146,6 @@ public class ExperimentService {
      * @param request
      * @param rng
      * @param ss
-     * @param generator
      * @param acceptance
      * @param popModel
      * @return
@@ -157,7 +155,7 @@ public class ExperimentService {
             RunRequest request,
             Random rng,
             SearchSpace<S> ss,
-            Generator<S> generator,
+            Supplier<Generator<S>> generatorFactory,
             AcceptanceRule acceptance,
             PopulationModel<S> popModel
     ) {
@@ -178,7 +176,7 @@ public class ExperimentService {
             long startTime = System.nanoTime();
 
             // MAIN EXECUTION
-            RunLog log = popModel.run(generator, acceptance, ss, problem, rng, stop, observer);
+            RunLog log = popModel.run(generatorFactory, acceptance, ss, problem, rng, stop, observer);
 
             long endTime = System.nanoTime();
             double runtimeMs = (endTime - startTime) / 1_000_000.0;
@@ -252,7 +250,15 @@ public class ExperimentService {
 
     private <S> Generator<S> createGenerator(List<String> ids, Map<String, Object> params, int n, String searchSpaceId) {
         ConfigurationContext context = new ConfigurationContext(n);
-        return createAndConfigure(mutationRegistry, ids, "Generator", params, context);
+        Generator<S> generator = createAndConfigure(mutationRegistry, ids, "Generator", params, context);
+
+        if (!generator.supportedSearchSpaces().isEmpty() &&
+                !generator.supportedSearchSpaces().contains(searchSpaceId)) {
+            throw new BadRequestException(
+                    "Generator '" + ids.getFirst() + "' does not support search space '" + searchSpaceId + "'"
+            );
+        }
+        return generator;
     }
 
     private AcceptanceRule createAcceptanceRule(List<String>  ids, Map<String, Object> params) {

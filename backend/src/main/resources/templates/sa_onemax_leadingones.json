@@ -8,8 +8,8 @@
     "problemId": ["onemax", "leadingones"],
     "problemParams": {},
 
-    "mutationId": ["single-bit-flip"],
-    "mutationParams": { },
+    "generatorId": ["single-bit-flip"],
+    "generatorParams": { },
 
     "acceptanceRuleId": ["simulated-annealing"],
     "acceptanceRuleParams": {

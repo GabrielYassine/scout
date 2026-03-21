@@ -110,11 +110,5 @@ public class TSPProblem implements Problem<int[]> {
         return -tourLength;
     }
 
-    @Override
-    public boolean isOptimal(double fitness) {
-        if (optimalTourLength == Double.NEGATIVE_INFINITY) {
-            return false;
-        }
-        return Math.abs(fitness - (-optimalTourLength)) < 0.001;
-    }
+
 }

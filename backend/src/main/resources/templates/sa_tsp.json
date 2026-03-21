@@ -1,0 +1,35 @@
+{
+  "id": "tpl-sa-tsp",
+  "displayName": "Simulated Annealing on TSP",
+  "runRequest": {
+    "searchSpaceId": ["permutation"],
+    "searchSpaceParams": {},
+
+    "problemId": ["tsp"],
+    "problemParams": {},
+
+    "generatorId": ["2opt"],
+    "generatorParams": {},
+
+    "acceptanceRuleId": ["simulated-annealing"],
+    "acceptanceRuleParams": {
+      "initialTemperature": 1.0,
+      "coolingRate": 0.995
+    },
+
+    "populationModelId": ["default"],
+    "populationModelParams": {
+      "lambda": 1
+    },
+
+    "stopConditionId": ["max-iterations"],
+    "stopConditionParams": {
+      "maxIterations": 10000
+    },
+
+    "observerIds": ["fitness", "acceptance-rate", "improvements","tsp-tour"],
+
+    "seed": 1,
+    "runTimes": 10
+  }
+}
