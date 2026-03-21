@@ -11,15 +11,20 @@ export default function TSPVisualization({ tspData, run, width, height, editable
   const sourceData = useMemo(() => {
     if (run?.series?.tspTour && run?.series?.tspCities) {
       const citiesData = run.series.tspCities[0];
-      const tourData = run.series.tspTour[run.series.tspTour.length - 1];
+      const tourDataEntry = run.series.tspTour[run.series.tspTour.length - 1];
+
+      // Handle both old format (array) and new format (object with tour and length)
+      const tourArray = tourDataEntry?.tour || tourDataEntry;
+      const tourLength = tourDataEntry?.length;
 
       return {
-        tour: tourData,
+        tour: tourArray,
         cities: citiesData.map((city, index) => ({
           id: index,
           x: city.x,
           y: city.y
         })),
+        observedTourLength: tourLength,
         originalTourLength: run.series?.fitness?.[run.series.fitness.length - 1] ?
           Math.abs(run.series.fitness[run.series.fitness.length - 1]) : null
       };
@@ -181,6 +186,11 @@ export default function TSPVisualization({ tspData, run, width, height, editable
 
   return (
     <div ref={containerRef} className="tsp-visualization">
+      {sourceData?.observedTourLength !== undefined && (
+        <div className="tour-info">
+          <span className="tour-length">Tour Length: {sourceData.observedTourLength.toFixed(2)}</span>
+        </div>
+      )}
       <svg
         ref={svgRef}
         width={dimensions.width}

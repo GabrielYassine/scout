@@ -102,15 +102,18 @@ public class ExperimentService {
             int runtimes,
             Supplier<SearchSpace<S>> searchSpaceFactory
     ) {
+        // Determine the number of threads to use based on available processors, but ensure at least 1 thread is used
         int threads = Math.max(1, Runtime.getRuntime().availableProcessors());
         ExecutorService executor = Executors.newFixedThreadPool(threads);
 
+        // Create a list of CompletableFutures for each run, executing them in parallel
         try {
             List<CompletableFuture<RunGroupResponse>> futures = new ArrayList<>();
             for (int i = 0; i < runtimes; i++) {
                 final int runIndex = i;
-                final long runSeed = baseSeed + i;
+                final long runSeed = baseSeed + i; // Ensure different seed for each run
 
+                // Create a CompletableFuture for each run, executing the run logic asynchronously
                 CompletableFuture<RunGroupResponse> future = CompletableFuture.supplyAsync(() -> {
                     Random rng = new Random(runSeed);
                     SearchSpace<S> ss = searchSpaceFactory.get();
@@ -119,6 +122,7 @@ public class ExperimentService {
                     AcceptanceRule acceptance = createAcceptanceRule(request.acceptanceRuleId(), request.acceptanceRuleParams());
                     PopulationModel<S> popModel = createPopulationModel(request.populationModelId(), request.populationModelParams());
 
+                    // Run the algorithm once for each specified problem and collect the results
                     List<RunResponse> perProblemRuns = runTypedOnce(request, rng, ss, generator, acceptance, popModel);
                     return new RunGroupResponse(runIndex, runSeed, perProblemRuns);
                 }, executor);
@@ -126,6 +130,7 @@ public class ExperimentService {
                 futures.add(future);
             }
 
+            // Wait for all runs to complete and collect the results, sorting them by run index
             List<RunGroupResponse> batches = futures.stream().map(CompletableFuture::join)
                     .sorted(Comparator.comparingInt(RunGroupResponse::runIndex)).toList();
 
@@ -162,6 +167,9 @@ public class ExperimentService {
         List<String> problemIds = request.problemId();
         List<RunResponse> runs = new ArrayList<>();
 
+        // For each specified problem, create the problem instance, stop condition, and observer chain.
+        // Rest of components have been created outside the loop since they are shared across problems.
+        // The reason stopcondition and observer are created inside the loop is tha they depend on problem.
         for (String pid : problemIds) {
             Problem<S> problem = createProblem(pid, ss.dimension(), request.problemParams());
             StopCondition<S> stop = createStopConditionChain(request.stopConditionId(), request.stopConditionParams(), problem);

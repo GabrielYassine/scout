@@ -22,6 +22,7 @@ public class TSPTourObserver implements Observer<int[]> {
     private final List<int[]> tourHistory = new ArrayList<>();
     private List<Map<String, Double>> cities;
     private boolean citiesLogged = false;
+    private TSPInstance instance;
 
     @Override
     public String id() {
@@ -52,7 +53,7 @@ public class TSPTourObserver implements Observer<int[]> {
             Problem<?> problem = context.getProblem();
             if (problem instanceof TSPProblem) {
                 TSPProblem tspProblem = (TSPProblem) problem;
-                TSPInstance instance = tspProblem.getInstance();
+                this.instance = tspProblem.getInstance();
                 if (instance != null) {
                     double[][] coords = instance.getCoordinates();
                     List<Map<String, Double>> cityList = new ArrayList<>();
@@ -84,11 +85,22 @@ public class TSPTourObserver implements Observer<int[]> {
 
         if (!tourHistory.isEmpty()) {
             int[] lastTour = tourHistory.getLast();
+
+            // Create tour object with metadata
+            Map<String, Object> tourData = new HashMap<>();
             List<Integer> tourList = new ArrayList<>();
             for (int city : lastTour) {
                 tourList.add(city);
             }
-            log.putSeries("tspTour", tourList);
+            tourData.put("tour", tourList);
+
+            // Calculate and include tour length if instance is available
+            if (instance != null) {
+                double tourLength = instance.getTourLength(lastTour);
+                tourData.put("length", tourLength);
+            }
+
+            log.putSeries("tspTour", tourData);
         }
     }
 }
