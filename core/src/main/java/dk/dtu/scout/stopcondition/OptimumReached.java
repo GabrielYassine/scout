@@ -40,6 +40,10 @@ public class OptimumReached<S> implements StopCondition<S> {
         return List.of();
     }
 
+    @Override
+    public List<String> supportedSearchSpaces() {
+        return List.of("bitstring");
+    }
 
     public void configure(Map<String, Object> params, ConfigurationContext context) {
         if (context.hasProblem()) {
