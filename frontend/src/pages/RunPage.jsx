@@ -13,6 +13,8 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
   const navigate = useNavigate();
 
   const batchResponse = location.state?.batch;
+  const isLoading = location.state?.loading;
+  const error = location.state?.error;
   const puzzleConfig = location.state?.puzzleConfig ?? [];
   const params = location.state?.params ?? [];
   const initialTspInstance = location.state?.tspInstance ?? DEFAULT_TSP_INSTANCE;
@@ -39,7 +41,17 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
       />
 
      <div className="run-page-content">
-       {batches.length === 0 ? (
+       {isLoading ? (
+         <div className="run-loading">
+           <div className="spinner" aria-label="Loading" />
+           <div>Preparing run...</div>
+         </div>
+       ) : error ? (
+         <div className="run-chart-panel">
+           <div className="run-chart-title">Run failed</div>
+           <div>{error}</div>
+         </div>
+       ) : batches.length === 0 ? (
          <div className="run-chart-panel">
            <div className="run-chart-title">No run data</div>
            <div>No data to plot..</div>
