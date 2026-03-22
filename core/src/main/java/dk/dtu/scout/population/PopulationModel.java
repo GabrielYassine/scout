@@ -9,13 +9,14 @@ import dk.dtu.scout.problems.Problem;
 import dk.dtu.scout.searchSpace.SearchSpace;
 import dk.dtu.scout.stopcondition.StopCondition;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.function.Supplier;
 
 public interface PopulationModel<S> extends ScoutComponent {
 
-    RunLog run(Supplier<Generator<S>> generatorFactory, AcceptanceRule acceptance, SearchSpace<S> space, Problem<S> problem, Random rng, StopCondition<S> stop, Observer<S> observer
+    RunLog run(Supplier<Generator<S>> generatorFactory, AcceptanceRule acceptance, SearchSpace<S> space, Problem<S> problem, Random rng, List<StopCondition<S>> stopConditions, Observer<S> observer
     );
     default void configure(Map<String, Object> params) {}
 }

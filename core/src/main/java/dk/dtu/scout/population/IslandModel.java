@@ -11,6 +11,7 @@ import dk.dtu.scout.observer.Observer;
 import dk.dtu.scout.problems.Problem;
 import dk.dtu.scout.searchSpace.SearchSpace;
 import dk.dtu.scout.stopcondition.StopCondition;
+import dk.dtu.scout.stopcondition.StopConditions;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import java.util.function.Supplier;
@@ -79,7 +80,7 @@ public class IslandModel<S>  implements PopulationModel<S> {
             AcceptanceRule acceptance,
             SearchSpace<S> space,
             Problem<S> problem,
-            StopCondition<S> stop,
+            List<StopCondition<S>> stopConditions,
             Observer<S> observer
     ) {
         List<ScoutComponent> components = new ArrayList<>();
@@ -87,7 +88,7 @@ public class IslandModel<S>  implements PopulationModel<S> {
         components.add(acceptance);
         components.add(space);
         components.add(problem);
-        components.add(stop);
+        components.addAll(stopConditions);
         components.add(observer);
         return components;
     }
@@ -99,7 +100,7 @@ public class IslandModel<S>  implements PopulationModel<S> {
             SearchSpace<S> space,
             Problem<S> problem,
             Random rng,
-            StopCondition<S> stop,
+            List<StopCondition<S>> stopConditions,
             Observer<S> observer
     ) {
         RunLog log = new RunLog();
@@ -115,7 +116,7 @@ public class IslandModel<S>  implements PopulationModel<S> {
             islandState.update(Map.of("problem", problem));
 
             List<ScoutComponent> components = initializeComponents(
-                    islandGenerator, acceptance, space, problem, stop, observer
+                    islandGenerator, acceptance, space, problem, stopConditions, observer
             );
 
             for (ScoutComponent component : components) {
@@ -136,7 +137,7 @@ public class IslandModel<S>  implements PopulationModel<S> {
         log.tick(initial.iteration(), evaluations);
         observer.onStep(initial, log);
 
-        while(!stop.shouldStop(iteration, evaluations, global.bestFitness, global.best)) {
+        while(!StopConditions.shouldStop(stopConditions, iteration, evaluations, global.bestFitness, global.best)) {
             boolean anyAccepted = false;
 
             for(int i = 0; i < numIslands; i++) {

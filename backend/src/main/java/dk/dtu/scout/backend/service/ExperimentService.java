@@ -14,7 +14,6 @@ import dk.dtu.scout.observer.*;
 import dk.dtu.scout.population.PopulationModel;
 import dk.dtu.scout.problems.Problem;
 import dk.dtu.scout.searchSpace.SearchSpace;
-import dk.dtu.scout.stopcondition.BroadcastStopCondition;
 import dk.dtu.scout.stopcondition.MaxIterations;
 import dk.dtu.scout.stopcondition.StopCondition;
 import org.springframework.stereotype.Service;
@@ -170,13 +169,13 @@ public class ExperimentService {
         // The reason stopcondition and observer are created inside the loop is tha they depend on problem.
         for (String pid : problemIds) {
             Problem<S> problem = createProblem(pid, ss.dimension(), request.problemParams());
-            StopCondition<S> stop = createStopConditionChain(request.stopConditionId(), request.stopConditionParams(), problem);
+            List<StopCondition<S>> stopConditions = createStopConditionChain(request.stopConditionId(), request.stopConditionParams(), problem);
             Observer<S> observer = createObserverChain(request.observerIds(), request.observerParams(), problem);
 
             long startTime = System.nanoTime();
 
             // MAIN EXECUTION
-            RunLog log = popModel.run(generatorFactory, acceptance, ss, problem, rng, stop, observer);
+            RunLog log = popModel.run(generatorFactory, acceptance, ss, problem, rng, stopConditions, observer);
 
             long endTime = System.nanoTime();
             double runtimeMs = (endTime - startTime) / 1_000_000.0;
@@ -269,11 +268,11 @@ public class ExperimentService {
         return createAndConfigure(populationModelRegistry, ids, "Population model", params, null);
     }
 
-    private<S> StopCondition<S> createStopConditionChain(List<String>  ids, Map<String, Object> params, Problem<S> problem) {
-        if (ids == null || ids.isEmpty()) return new MaxIterations<>();
+    private<S>  List<StopCondition<S>> createStopConditionChain(List<String>  ids, Map<String, Object> params, Problem<S> problem) {
+        if (ids == null || ids.isEmpty()) return List.of(new MaxIterations<>());
         final Map<String, Object> p = (params == null) ? Map.of() : params;
         List<StopCondition<S>> stops = ids.stream().map(id -> createSingleStopCondition(id, p, problem)).toList();
-        return new BroadcastStopCondition<>(stops);
+        return stops;
     }
 
     private<S> StopCondition<S>createSingleStopCondition(String id, Map<String, Object> params, Problem<S> problem) {

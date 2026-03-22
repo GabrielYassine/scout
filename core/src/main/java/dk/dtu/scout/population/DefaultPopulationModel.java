@@ -10,6 +10,7 @@ import dk.dtu.scout.observer.Observer;
 import dk.dtu.scout.problems.Problem;
 import dk.dtu.scout.searchSpace.SearchSpace;
 import dk.dtu.scout.stopcondition.StopCondition;
+import dk.dtu.scout.stopcondition.StopConditions;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -63,7 +64,7 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
             AcceptanceRule acceptance,
             SearchSpace<S> space,
             Problem<S> problem,
-            StopCondition<S> stop,
+            List<StopCondition<S>> stopConditions,
             Observer<S> observer
     ) {
         List<ScoutComponent> components = new ArrayList<>();
@@ -71,7 +72,7 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
         components.add(acceptance);
         components.add(space);
         components.add(problem);
-        components.add(stop);
+        components.addAll(stopConditions);
         components.add(observer);
         return components;
     }
@@ -83,7 +84,7 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
             SearchSpace<S> space,
             Problem<S> problem,
             Random rng,
-            StopCondition<S> stop,
+            List<StopCondition<S>> stopConditions,
             Observer<S> observer
     ) {
         RunLog log = new RunLog();
@@ -92,7 +93,7 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
         Generator<S> generator = generatorFactory.get();
 
         // Initialize components list
-        List<ScoutComponent> components = initializeComponents(generator, acceptance, space, problem, stop, observer);
+        List<ScoutComponent> components = initializeComponents(generator, acceptance, space, problem, stopConditions, observer);
 
         // Store problem in state so generators can access it
         varState.update(Map.of("problem", problem));
@@ -121,7 +122,7 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
         List<Double> generationFitness = new ArrayList<>();
 
         // 2) Loop until stop condition is met
-        while (!stop.shouldStop(iteration, evaluations, bestFitness, best)) {
+        while (!StopConditions.shouldStop(stopConditions, iteration, evaluations, bestFitness, best)) {
             // Update state variables from all components first
             Map<String, Object> combinedStateVariables = new HashMap<>();
             // Order of state variables in the map (for consistency and readability):
