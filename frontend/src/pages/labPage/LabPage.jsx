@@ -57,7 +57,7 @@ export default function LabPage({catalog, catalogLoading, catalogError, template
     }
 
     const searchSpaceParams = { ...params.searchSpace };
-    const isTSPProblem = puzzleConfig.problem?.some(p => p.id === 'tsp');
+    const isTSPProblem = puzzleConfig.problem?.some((p) => p.id === "tsp");
     if (isTSPProblem && tspInstance && tspInstance.cities && tspInstance.cities.length > 0) {
       searchSpaceParams.n = tspInstance.cities.length;
     }
@@ -88,23 +88,33 @@ export default function LabPage({catalog, catalogLoading, catalogError, template
       runTimes: runTimes,
     };
 
-    const res = await fetch("/api/run", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-
-
-    const batch = await res.json();
-    console.log(batch);
+    // Navigate immediately to show loading state while the run is being prepared
     navigate("/run", {
-      state: {
-        batch,
-        puzzleConfig,
-        params,
-        tspInstance,
-      },
+      state: { loading: true, puzzleConfig, params, tspInstance },
     });
+
+    try {
+      const res = await fetch("/api/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Run failed with status ${res.status}`);
+      }
+
+      const batch = await res.json();
+      navigate("/run", {
+        state: { batch, puzzleConfig, params, tspInstance },
+        replace: true,
+      });
+    } catch (err) {
+      navigate("/run", {
+        state: { error: err.message || "Failed to start run", puzzleConfig, params, tspInstance },
+        replace: true,
+      });
+    }
   }
   function onApplyTemplate(templateId) {
     if (!catalog || !templateId) return;
