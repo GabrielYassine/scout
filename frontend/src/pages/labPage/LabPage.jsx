@@ -83,6 +83,7 @@ export default function LabPage({catalog, catalogLoading, catalogError, template
       stopConditionParams: params.stopCondition,
 
       observerIds: puzzleConfig.observer?.map((x) => x.id) ?? [],
+      observerParams: params.observer,
       seed: seed,
       runTimes: runTimes,
     };
@@ -93,7 +94,6 @@ export default function LabPage({catalog, catalogLoading, catalogError, template
       body: JSON.stringify(body),
     });
 
-    console.log("RUN REQUEST BODY:", body);
 
     const batch = await res.json();
     console.log(batch);

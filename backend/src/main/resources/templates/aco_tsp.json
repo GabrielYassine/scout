@@ -19,14 +19,14 @@
     "acceptanceRuleParams": {},
 
     "populationModelId": ["default"],
-    "populationModelParams": { "lambda": 1 },
+    "populationModelParams": { "lambda": 3 },
 
     "stopConditionId": ["max-iterations" ],
     "stopConditionParams": { "maxIterations": 10000 },
 
-    "observerIds": ["fitness", "acceptance-rate", "improvements","tsp-tour"],
+    "observerIds": ["tsp-tour"],
 
     "seed": 1,
-    "runTimes": 10
+    "runTimes": 1
   }
 }

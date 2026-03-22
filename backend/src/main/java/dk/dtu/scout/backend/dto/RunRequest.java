@@ -20,6 +20,7 @@ public record RunRequest(
 
    // Common parameters
     List<String> observerIds,
+    Map<String, Object> observerParams,
     List<String> stopConditionId,
     Map<String, Object> stopConditionParams,
     long seed,

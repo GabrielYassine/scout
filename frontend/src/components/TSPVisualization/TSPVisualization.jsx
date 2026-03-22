@@ -1,19 +1,30 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import "./TSPVisualization.css";
 
-export default function TSPVisualization({ tspData, run, width, height, editable = false, onCitiesChange }) {
+export default function TSPVisualization({
+  tspData,
+  run,
+  width,
+  height,
+  editable = false,
+  onCitiesChange
+}) {
   const containerRef = useRef(null);
   const svgRef = useRef(null);
-  const [dimensions, setDimensions] = useState({ width: width || 800, height: height || 600 });
+
+  const [dimensions, setDimensions] = useState({
+    width: width || 800,
+    height: height || 600
+  });
   const [draggedCity, setDraggedCity] = useState(null);
   const [dragPosition, setDragPosition] = useState(null);
+  const [cities, setCities] = useState([]);
 
   const sourceData = useMemo(() => {
     if (run?.series?.tspTour && run?.series?.tspCities) {
       const citiesData = run.series.tspCities[0];
       const tourDataEntry = run.series.tspTour[run.series.tspTour.length - 1];
 
-      // Handle both old format (array) and new format (object with tour and length)
       const tourArray = tourDataEntry?.tour || tourDataEntry;
       const tourLength = tourDataEntry?.length;
 
@@ -25,8 +36,9 @@ export default function TSPVisualization({ tspData, run, width, height, editable
           y: city.y
         })),
         observedTourLength: tourLength,
-        originalTourLength: run.series?.fitness?.[run.series.fitness.length - 1] ?
-          Math.abs(run.series.fitness[run.series.fitness.length - 1]) : null
+        originalTourLength: run.series?.fitness?.[run.series.fitness.length - 1]
+          ? Math.abs(run.series.fitness[run.series.fitness.length - 1])
+          : null
       };
     } else if (tspData) {
       return {
@@ -35,10 +47,9 @@ export default function TSPVisualization({ tspData, run, width, height, editable
         originalTourLength: tspData.tourLength
       };
     }
+
     return null;
   }, [tspData, run]);
-
-  const [cities, setCities] = useState([]);
 
   useEffect(() => {
     if (sourceData?.cities) {
@@ -67,17 +78,26 @@ export default function TSPVisualization({ tspData, run, width, height, editable
     return () => resizeObserver.disconnect();
   }, [width, height]);
 
-  const { minX, maxX, minY, maxY, scale, offsetX, offsetY } = useMemo(() => {
+  const { minX, minY, scale, offsetX, offsetY } = useMemo(() => {
     if (!cities || cities.length === 0) {
-      return { minX: 0, maxX: 100, minY: 0, maxY: 100, scale: 1, offsetX: 0, offsetY: 0 };
+      return {
+        minX: 0,
+        maxX: 100,
+        minY: 0,
+        maxY: 100,
+        scale: 1,
+        offsetX: 0,
+        offsetY: 0
+      };
     }
 
     const padding = 30;
     const { width: w, height: h } = dimensions;
-    const minX = Math.min(...cities.map(c => c.x));
-    const maxX = Math.max(...cities.map(c => c.x));
-    const minY = Math.min(...cities.map(c => c.y));
-    const maxY = Math.max(...cities.map(c => c.y));
+
+    const minX = Math.min(...cities.map((c) => c.x));
+    const maxX = Math.max(...cities.map((c) => c.x));
+    const minY = Math.min(...cities.map((c) => c.y));
+    const maxY = Math.max(...cities.map((c) => c.y));
 
     const dataWidth = maxX - minX || 1;
     const dataHeight = maxY - minY || 1;
@@ -92,22 +112,29 @@ export default function TSPVisualization({ tspData, run, width, height, editable
     return { minX, maxX, minY, maxY, scale, offsetX, offsetY };
   }, [cities, dimensions]);
 
-  const toSVGCoords = useCallback((x, y) => {
-    return {
-      x: (x - minX) * scale + offsetX,
-      y: dimensions.height - ((y - minY) * scale + offsetY) // Flip Y axis
-    };
-  }, [minX, minY, scale, offsetX, offsetY, dimensions.height]);
+  const toSVGCoords = useCallback(
+    (x, y) => {
+      return {
+        x: (x - minX) * scale + offsetX,
+        y: dimensions.height - ((y - minY) * scale + offsetY)
+      };
+    },
+    [minX, minY, scale, offsetX, offsetY, dimensions.height]
+  );
 
-  const fromSVGCoords = useCallback((svgX, svgY) => {
-    return {
-      x: (svgX - offsetX) / scale + minX,
-      y: (dimensions.height - svgY - offsetY) / scale + minY
-    };
-  }, [minX, minY, scale, offsetX, offsetY, dimensions.height]);
+  const fromSVGCoords = useCallback(
+    (svgX, svgY) => {
+      return {
+        x: (svgX - offsetX) / scale + minX,
+        y: (dimensions.height - svgY - offsetY) / scale + minY
+      };
+    },
+    [minX, minY, scale, offsetX, offsetY, dimensions.height]
+  );
 
   const getSVGPoint = useCallback((clientX, clientY) => {
     if (!svgRef.current) return { x: 0, y: 0 };
+
     const rect = svgRef.current.getBoundingClientRect();
     return {
       x: clientX - rect.left,
@@ -115,28 +142,34 @@ export default function TSPVisualization({ tspData, run, width, height, editable
     };
   }, []);
 
-  const handleMouseDown = useCallback((e, cityIndex) => {
-    if (!editable) return;
-    e.preventDefault();
-    setDraggedCity(cityIndex);
-  }, [editable]);
+  const handleMouseDown = useCallback(
+    (e, cityIndex) => {
+      if (!editable) return;
+      e.preventDefault();
+      setDraggedCity(cityIndex);
+    },
+    [editable]
+  );
 
-  const handleMouseMove = useCallback((e) => {
-    if (draggedCity === null) return;
+  const handleMouseMove = useCallback(
+    (e) => {
+      if (draggedCity === null) return;
 
-    const svgPoint = getSVGPoint(e.clientX, e.clientY);
-    const dataCoords = fromSVGCoords(svgPoint.x, svgPoint.y);
+      const svgPoint = getSVGPoint(e.clientX, e.clientY);
+      const dataCoords = fromSVGCoords(svgPoint.x, svgPoint.y);
 
-    setDragPosition(dataCoords);
+      setDragPosition(dataCoords);
 
-    setCities(prevCities =>
-      prevCities.map((city, index) =>
-        index === draggedCity
-          ? { ...city, x: dataCoords.x, y: dataCoords.y }
-          : city
-      )
-    );
-  }, [draggedCity, getSVGPoint, fromSVGCoords]);
+      setCities((prevCities) =>
+        prevCities.map((city, index) =>
+          index === draggedCity
+            ? { ...city, x: dataCoords.x, y: dataCoords.y }
+            : city
+        )
+      );
+    },
+    [draggedCity, getSVGPoint, fromSVGCoords]
+  );
 
   const handleMouseUp = useCallback(() => {
     if (draggedCity !== null && editable && onCitiesChange) {
@@ -149,12 +182,14 @@ export default function TSPVisualization({ tspData, run, width, height, editable
   const tourPath = useMemo(() => {
     if (!sourceData?.tour || !cities || cities.length === 0) return "";
 
-    const pathPoints = sourceData.tour.map(cityIndex => {
-      const city = cities[cityIndex];
-      if (!city) return null;
-      const coords = toSVGCoords(city.x, city.y);
-      return `${coords.x},${coords.y}`;
-    }).filter(p => p !== null);
+    const pathPoints = sourceData.tour
+      .map((cityIndex) => {
+        const city = cities[cityIndex];
+        if (!city) return null;
+        const coords = toSVGCoords(city.x, city.y);
+        return `${coords.x},${coords.y}`;
+      })
+      .filter((p) => p !== null);
 
     if (pathPoints.length > 0) {
       const firstCity = cities[sourceData.tour[0]];
@@ -184,13 +219,86 @@ export default function TSPVisualization({ tspData, run, width, height, editable
     return totalDistance;
   }, [sourceData?.tour, cities]);
 
+  const pheromoneEdges = useMemo(() => {
+    if (!run?.series?.pheromoneHeatmap || !cities?.length) {
+      return [];
+    }
+
+    const heatmaps = run.series.pheromoneHeatmap;
+    const tours = run.series.tspTour || [];
+
+    if (!heatmaps.length) return [];
+
+    const heatmapIndex = Math.min(heatmaps.length - 1, Math.max(0, tours.length - 1));
+    const matrix = heatmaps[heatmapIndex];
+
+    if (!Array.isArray(matrix) || !Array.isArray(matrix[0])) {
+      return [];
+    }
+
+    const n = Math.min(matrix.length, cities.length);
+    if (n === 0) return [];
+
+    let maxVal = 0;
+    const allEdges = [];
+
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
+        const rawV = Math.max(
+          Number(matrix[i]?.[j] ?? 0),
+          Number(matrix[j]?.[i] ?? 0)
+        );
+
+        allEdges.push({ a: i, b: j, v: rawV });
+        if (rawV > maxVal) maxVal = rawV;
+      }
+    }
+
+    if (maxVal <= 0) return [];
+
+    return allEdges
+      .map(({ a, b, v }) => {
+        const c1 = cities[a];
+        const c2 = cities[b];
+        if (!c1 || !c2) return null;
+
+        const p1 = toSVGCoords(c1.x, c1.y);
+        const p2 = toSVGCoords(c2.x, c2.y);
+
+        const visualFloor = maxVal * 0.02;
+        const visualValue = Math.max(v, visualFloor);
+        const normalized = visualValue / maxVal;
+        const boosted = Math.pow(normalized, 0.55);
+
+        return {
+          x1: p1.x,
+          y1: p1.y,
+          x2: p2.x,
+          y2: p2.y,
+          intensity: Math.max(0.06, Math.min(1, boosted)),
+          value: v,
+          isWeak: v < maxVal * 0.05
+        };
+      })
+      .filter(Boolean);
+  }, [run?.series?.pheromoneHeatmap, run?.series?.tspTour, cities, toSVGCoords]);
+
   return (
     <div ref={containerRef} className="tsp-visualization">
-      {sourceData?.observedTourLength !== undefined && (
+      {(sourceData?.observedTourLength !== undefined || sourceData?.originalTourLength != null) && (
         <div className="tour-info">
-          <span className="tour-length">Tour Length: {sourceData.observedTourLength.toFixed(2)}</span>
+          {sourceData?.observedTourLength !== undefined ? (
+            <span className="tour-length">
+              Tour Length: {sourceData.observedTourLength.toFixed(2)}
+            </span>
+          ) : (
+            <span className="tour-length">
+              Tour Length: {currentTourLength.toFixed(2)}
+            </span>
+          )}
         </div>
       )}
+
       <svg
         ref={svgRef}
         width={dimensions.width}
@@ -200,16 +308,38 @@ export default function TSPVisualization({ tspData, run, width, height, editable
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
       >
-        {tourPath && (
-          <polyline points={tourPath} className="tour-path" />
-        )}
+        <defs>
+          <filter id="pheromone-blur-wide" x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur stdDeviation="10" />
+          </filter>
+        </defs>
+
+        {pheromoneEdges.map((e, idx) => (
+          <line
+            key={`ph-${idx}`}
+            x1={e.x1}
+            y1={e.y1}
+            x2={e.x2}
+            y2={e.y2}
+            stroke="#ff6a2a"
+            strokeOpacity={0.08 + 0.5 * e.intensity}
+            strokeWidth={0.5 + 3 * e.intensity}
+            strokeLinecap="round"
+          />
+        ))}
+
+        {tourPath && <polyline points={tourPath} className="tour-path" />}
+
         {cities.map((city, index) => {
           const isDragging = draggedCity === index;
           const displayCity = isDragging && dragPosition ? dragPosition : city;
           const coords = toSVGCoords(displayCity.x, displayCity.y);
 
           return (
-            <g key={city.id ?? index} className={`city ${isDragging ? "dragging" : ""} ${editable ? "editable" : "readonly"}`}>
+            <g
+              key={city.id ?? index}
+              className={`city ${isDragging ? "dragging" : ""} ${editable ? "editable" : "readonly"}`}
+            >
               <circle
                 className="city-dot"
                 cx={coords.x}

@@ -14,7 +14,14 @@ function RunChart({ run, runIndex, problemIndex }) {
   const hasHypercube =(series.hypercubeX?.length ?? 0) > 0 && (series.hypercubeY?.length ?? 0) > 0;
   const hasTSPTour = (series.tspTour?.length ?? 0) > 0 && (series.tspCities?.length ?? 0) > 0;
 
-  const keys = Object.keys(series).filter( (k) => k !== "hypercubeX" && k !== "hypercubeY" && k !== "tspTour" && k !== "tspCities" );
+  const keys = Object.keys(series).filter(
+    (k) =>
+      k !== "hypercubeX" &&
+      k !== "hypercubeY" &&
+      k !== "tspTour" &&
+      k !== "tspCities" &&
+      k !== "pheromoneHeatmap"
+  );
 
    const displayKeys = useMemo(() => {
     const out = [...keys];
@@ -23,7 +30,7 @@ function RunChart({ run, runIndex, problemIndex }) {
      return out;
    }, [keys, hasHypercube, hasTSPTour]);
 
-  const [selectedObserver, setSelectedObserver] = useState(displayKeys[0] || null);
+  const [selectedObserver, setSelectedObserver] = useState(displayKeys[0] || (hasTSPTour ? TSP_TOUR_KEY : null));
   const handleObserverChange = useCallback((observerKey) => {
     setSelectedObserver(observerKey);
   }, []);

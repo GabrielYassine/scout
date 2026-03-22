@@ -171,7 +171,7 @@ public class ExperimentService {
         for (String pid : problemIds) {
             Problem<S> problem = createProblem(pid, ss.dimension(), request.problemParams());
             StopCondition<S> stop = createStopConditionChain(request.stopConditionId(), request.stopConditionParams(), problem);
-            Observer<S> observer = createObserverChain(request.observerIds(), problem);
+            Observer<S> observer = createObserverChain(request.observerIds(), request.observerParams(), problem);
 
             long startTime = System.nanoTime();
 
@@ -281,14 +281,15 @@ public class ExperimentService {
         return createAndConfigure(stopConditionRegistry, List.of(id), "Stop condition", params, context);
     }
 
-    private<S> Observer<S> createObserverChain(List<String> ids, Problem<S> problem) {
+    private<S> Observer<S> createObserverChain(List<String> ids, Map<String, Object> params, Problem<S> problem) {
         if (ids == null || ids.isEmpty()) return new FitnessObserver<>();
-        List<Observer<S>> obs = ids.stream().map(id -> this.<S>createSingleObserver(id, problem)).toList();
+        final Map<String, Object> p = (params == null) ? Map.of() : params;
+        List<Observer<S>> obs = ids.stream().map(id -> this.<S>createSingleObserver(id, p, problem)).toList();
         return new BroadcastObserver<>(obs);
     }
 
-    private <S>Observer<S> createSingleObserver(String id, Problem<S> problem) {
+    private <S>Observer<S> createSingleObserver(String id, Map<String, Object> params, Problem<S> problem) {
         ConfigurationContext context = new ConfigurationContext(0, problem);
-        return createAndConfigure(observerRegistry, List.of(id), "Observer", Map.of(), context);
+        return createAndConfigure(observerRegistry, List.of(id), "Observer", params, context);
     }
 }
