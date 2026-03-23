@@ -100,9 +100,11 @@ public class IslandModel<S>  implements PopulationModel<S> {
             Problem<S> problem,
             Random rng,
             StopCondition<S> stop,
-            Observer<S> observer
+            Observer<S> observer,
+            int logEveryIterations
     ) {
         RunLog log = new RunLog();
+        int logInterval = logEveryIterations <= 0 ? 1 : logEveryIterations;
 
         // setup islands
         List<IslandState<S>> islands = new ArrayList<>(numIslands);
@@ -195,13 +197,19 @@ public class IslandModel<S>  implements PopulationModel<S> {
             }
             global = globalBestIsland(islands);
             RunState<S> state = new RunState<>(iteration, evaluations, global.current, global.currentFitness, global.best, global.bestFitness, anyAccepted);
-            log.tick(state.iteration(), state.evaluations());
-            observer.onStep(state, log);
+            if (state.iteration() % logInterval == 0) {
+                log.tick(state.iteration(), state.evaluations());
+                observer.onStep(state, log);
+            }
             iteration++;
         }
 
         global= globalBestIsland(islands);
         RunState<S> finalState = new RunState<>(iteration - 1, evaluations, global.current, global.currentFitness, global.best, global.bestFitness, false);
+        if ((finalState.iteration() % logInterval) != 0) {
+            log.tick(finalState.iteration(), finalState.evaluations());
+            observer.onStep(finalState, log);
+        }
         observer.onEnd(finalState, log);
         return log;
     }

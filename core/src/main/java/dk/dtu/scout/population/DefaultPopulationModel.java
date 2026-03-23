@@ -84,9 +84,11 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
             Problem<S> problem,
             Random rng,
             StopCondition<S> stop,
-            Observer<S> observer
+            Observer<S> observer,
+            int logEveryIterations
     ) {
         RunLog log = new RunLog();
+        int logInterval = logEveryIterations <= 0 ? 1 : logEveryIterations;
         State varState = new State();
 
         Generator<S> generator = generatorFactory.get();
@@ -181,12 +183,18 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
             }
 
             RunState<S> stateLog = new RunState<>(iteration, evaluations, current, currentFitness, best, bestFitness, accepted);
-            log.tick(stateLog.iteration(), stateLog.evaluations());
-            observer.onStep(stateLog, log);
+            if (stateLog.iteration() % logInterval == 0) {
+                log.tick(stateLog.iteration(), stateLog.evaluations());
+                observer.onStep(stateLog, log);
+            }
             iteration++;
         }
 
         RunState<S> finalState = new RunState<>(iteration - 1, evaluations, current, currentFitness, best, bestFitness, false);
+        if ((finalState.iteration() % logInterval) != 0) {
+            log.tick(finalState.iteration(), finalState.evaluations());
+            observer.onStep(finalState, log);
+        }
         observer.onEnd(finalState, log);
 
         return log;

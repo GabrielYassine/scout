@@ -72,6 +72,7 @@ public class ExperimentService {
     public BatchRunResponse run(RunRequest request) {
         long seed = request.seed();
         int runTimes = request.runTimes();
+        int logEvery = request.logEveryIterations() != 0 ? request.logEveryIterations() : 100;
         if (request.searchSpaceId() == null || request.searchSpaceId().isEmpty()) {
             throw new BadRequestException("Search space must be specified");
         }
@@ -79,7 +80,8 @@ public class ExperimentService {
 
         return switch (searchSpaceId) {
             case "bitstring", "permutation" -> runBatch(request, seed, runTimes,
-                    () -> createSearchSpace(request.searchSpaceId(), request.searchSpaceParams())
+                    () -> createSearchSpace(request.searchSpaceId(), request.searchSpaceParams()),
+                    logEvery
             );
             default -> throw new BadRequestException("Unsupported search space: " + searchSpaceId);
         };
@@ -100,7 +102,8 @@ public class ExperimentService {
             RunRequest request,
             long baseSeed,
             int runtimes,
-            Supplier<SearchSpace<S>> searchSpaceFactory
+            Supplier<SearchSpace<S>> searchSpaceFactory,
+            int logEveryIterations
     ) {
         // Determine the number of threads to use based on available processors, but ensure at least 1 thread is used
         int threads = Math.max(1, Runtime.getRuntime().availableProcessors());
@@ -122,7 +125,7 @@ public class ExperimentService {
                     PopulationModel<S> popModel = createPopulationModel(request.populationModelId(), request.populationModelParams());
 
                     // Run the algorithm once for each specified problem and collect the results
-                    List<RunResponse> perProblemRuns = runTypedOnce(request, rng, ss, generatorFactory, acceptance, popModel);
+                    List<RunResponse> perProblemRuns = runTypedOnce(request, rng, ss, generatorFactory, acceptance, popModel, logEveryIterations);
                     return new RunGroupResponse(runIndex, runSeed, perProblemRuns);
                 }, executor);
 
@@ -157,7 +160,8 @@ public class ExperimentService {
             SearchSpace<S> ss,
             Supplier<Generator<S>> generatorFactory,
             AcceptanceRule acceptance,
-            PopulationModel<S> popModel
+            PopulationModel<S> popModel,
+            int logEveryIterations
     ) {
         if (request.problemId() == null || request.problemId().isEmpty()) {
             throw new BadRequestException("Problem must be specified");
@@ -176,7 +180,7 @@ public class ExperimentService {
             long startTime = System.nanoTime();
 
             // MAIN EXECUTION
-            RunLog log = popModel.run(generatorFactory, acceptance, ss, problem, rng, stop, observer);
+            RunLog log = popModel.run(generatorFactory, acceptance, ss, problem, rng, stop, observer, logEveryIterations);
 
             long endTime = System.nanoTime();
             double runtimeMs = (endTime - startTime) / 1_000_000.0;

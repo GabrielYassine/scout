@@ -309,6 +309,7 @@ export function PuzzleConfigProvider({ children }) {
       global: {
         seed: runRequest.seed || Date.now(),
         runTimes: runRequest.runTimes || 1,
+        logEveryIterations: runRequest.logEveryIterations || 100,
       },
       searchSpace: runRequest.searchSpaceParams || {},
       problem: runRequest.problemParams || {},

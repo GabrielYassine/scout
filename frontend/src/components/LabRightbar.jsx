@@ -118,7 +118,7 @@ export default function LabRightbar({ hoverInfo, tspInstance, onTspInstanceChang
             <div className="lr-section-title">Description</div>
           </div>
 
-          <div className="lr-section-body">
+          <div className="lr-section-body lr-description-body">
             {hoverInfo ? (
               <>
                 <div className="lr-selected-piece">{hoverInfo.title}</div>

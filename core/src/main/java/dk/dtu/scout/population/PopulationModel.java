@@ -15,7 +15,15 @@ import java.util.function.Supplier;
 
 public interface PopulationModel<S> extends ScoutComponent {
 
-    RunLog run(Supplier<Generator<S>> generatorFactory, AcceptanceRule acceptance, SearchSpace<S> space, Problem<S> problem, Random rng, StopCondition<S> stop, Observer<S> observer
+    RunLog run(
+            Supplier<Generator<S>> generatorFactory,
+            AcceptanceRule acceptance,
+            SearchSpace<S> space,
+            Problem<S> problem,
+            Random rng,
+            StopCondition<S> stop,
+            Observer<S> observer,
+            int logEveryIterations
     );
     default void configure(Map<String, Object> params) {}
 }

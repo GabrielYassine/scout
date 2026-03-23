@@ -50,6 +50,7 @@ export default function LabPage({catalog, catalogLoading, catalogError, template
   async function onRun() {
     const seed = params.global?.seed ?? Date.now();
     const runTimes = params.global?.runTimes ?? 1;
+    const logEveryIterations = params.global?.logEveryIterations ?? 100;
 
     const problemParams = { ...params.problem };
     if (tspInstance && tspInstance.cities && tspInstance.cities.length > 0) {
@@ -86,6 +87,7 @@ export default function LabPage({catalog, catalogLoading, catalogError, template
       observerParams: params.observer,
       seed: seed,
       runTimes: runTimes,
+      logEveryIterations,
     };
 
     // Navigate immediately to show loading state while the run is being prepared

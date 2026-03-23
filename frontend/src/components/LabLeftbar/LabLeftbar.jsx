@@ -65,9 +65,20 @@ export default function LabLeftbar({
 
   function setParam(type, def, rawValue) {
     const currentParams = params[type] ?? {};
+    const parsedValue = parseValue(def.type, rawValue);
+    let valueToStore = parsedValue;
+
+    // clamp numeric values to respect declared min/max bounds
+    if (def.type === "int" || def.type === "long" || def.type === "double") {
+      if (parsedValue !== "" && parsedValue != null) {
+        if (def.min !== undefined) valueToStore = Math.max(parsedValue, def.min);
+        if (def.max !== undefined) valueToStore = Math.min(valueToStore, def.max);
+      }
+    }
+
     onParamChange(type, {
       ...currentParams,
-      [def.key]: parseValue(def.type, rawValue),
+      [def.key]: valueToStore,
     });
   }
 
@@ -117,11 +128,51 @@ export default function LabLeftbar({
     );
   };
 
-
   return (
     <section className="lab-leftbar">
       <div className="ll-content">
         <div className="ll-title">Configuration</div>
+
+        {/* Templates Section */}
+        <Section
+          title="Templates"
+          isOpen={open.templates ?? true}
+          onToggle={() => setOpen((o) => ({ ...o, templates: !(o.templates ?? true) }))}
+        >
+          <div className="ll-subsection">
+            <select
+              className="form-select"
+              value={selectedTemplateId}
+              onChange={(e) => setSelectedTemplateId(e.target.value)}
+              disabled={disabled || templatesLoading || templates.length === 0}
+            >
+              <option value="">Select template</option>
+              {templates.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.displayName}
+                </option>
+              ))}
+            </select>
+
+            <button
+              className="btn btn--green .ll-subsection"
+              type="button"
+              disabled={disabled || !selectedTemplateId}
+              onClick={() => {
+                onApplyTemplate?.(selectedTemplateId);
+                setSelectedTemplateId("");
+              }}
+            >
+              Apply Template
+            </button>
+
+            {templatesError && (
+              <div className="ll-subsection">
+                Failed to load templates: {templatesError}
+              </div>
+            )}
+          </div>
+        </Section>
 
         {/* Global Settings Section */}
         <Section
@@ -154,6 +205,19 @@ export default function LabLeftbar({
               value={params.global?.runTimes ?? 1}
               onValueChange={(v) => setParam("global", { key: "runTimes", type: "int" }, v)}
             />
+            <ParamField
+              def={{
+                key: "logEveryIterations",
+                label: "Log every X iterations",
+                type: "int",
+                defaultValue: 100,
+              }}
+              disabled={disabled}
+              value={params.global?.logEveryIterations ?? 100}
+              onValueChange={(v) =>
+                setParam("global", { key: "logEveryIterations", type: "int" }, v)
+              }
+            />
           </div>
         </Section>
 
@@ -165,45 +229,6 @@ export default function LabLeftbar({
         {renderPieceSection("stopCondition", "Stop Condition")}
         {renderPieceSection("observer", "Observer")}
       </div>
-      <Section
-        title="Templates"
-        isOpen={open.templates ?? true}
-        onToggle={() => setOpen((o) => ({ ...o, templates: !(o.templates ?? true) }))}
-      >
-        <div className="ll-subsection">
-          <select
-            className="form-select"
-            value={selectedTemplateId}
-            onChange={(e) => setSelectedTemplateId(e.target.value)}
-            disabled={disabled || templatesLoading || templates.length === 0}
-          >
-            <option value="">Select template</option>
-            {templates.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.displayName}
-              </option>
-            ))}
-          </select>
-
-          <button
-            className="btn btn--green .ll-subsection"
-            type="button"
-            disabled={disabled || !selectedTemplateId}
-            onClick={() => {
-              onApplyTemplate?.(selectedTemplateId);
-              setSelectedTemplateId(""); 
-            }}
-          >
-            Apply Template
-          </button>
-
-          {templatesError && (
-            <div className="ll-subsection">
-              Failed to load templates: {templatesError}
-            </div>
-          )}
-        </div>
-      </Section>
 
       <div className="ll-actions">
         <button

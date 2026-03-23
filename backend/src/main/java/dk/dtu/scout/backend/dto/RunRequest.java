@@ -24,5 +24,6 @@ public record RunRequest(
     List<String> stopConditionId,
     Map<String, Object> stopConditionParams,
     long seed,
-    int runTimes
-) {}
+    int runTimes,
+    int logEveryIterations
+ ) {}
