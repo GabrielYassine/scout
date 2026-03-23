@@ -7,6 +7,7 @@ import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.logging.RunState;
 import dk.dtu.scout.generator.Generator;
 import dk.dtu.scout.observer.Observer;
+import dk.dtu.scout.observer.Observers;
 import dk.dtu.scout.problems.Problem;
 import dk.dtu.scout.searchSpace.SearchSpace;
 import dk.dtu.scout.stopcondition.StopCondition;
@@ -65,7 +66,7 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
             SearchSpace<S> space,
             Problem<S> problem,
             List<StopCondition<S>> stopConditions,
-            Observer<S> observer
+            List<Observer<S>> observers
     ) {
         List<ScoutComponent> components = new ArrayList<>();
         components.add(generator);
@@ -73,7 +74,7 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
         components.add(space);
         components.add(problem);
         components.addAll(stopConditions);
-        components.add(observer);
+        components.addAll(observers);
         return components;
     }
 
@@ -85,7 +86,7 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
             Problem<S> problem,
             Random rng,
             List<StopCondition<S>> stopConditions,
-            Observer<S> observer,
+            List<Observer<S>> observers,
             int logEveryIterations
     ) {
         RunLog log = new RunLog();
@@ -95,7 +96,7 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
         Generator<S> generator = generatorFactory.get();
 
         // Initialize components list
-        List<ScoutComponent> components = initializeComponents(generator, acceptance, space, problem, stopConditions, observer);
+        List<ScoutComponent> components = initializeComponents(generator, acceptance, space, problem, stopConditions, observers);
 
         // Store problem in state so generators can access it
         varState.update(Map.of("problem", problem));
@@ -116,9 +117,9 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
 
         // Initial state
         RunState<S> initial = new RunState<>(iteration, evaluations, current, currentFitness, best, bestFitness, false);
-        observer.onStart(initial, log);
+        Observers.onStart(observers,initial, log);
         log.tick(iteration, evaluations);
-        observer.onStep(initial, log);
+        Observers.onStep(observers,initial, log);
 
         List<S> generationSolutions = new ArrayList<>();
         List<Double> generationFitness = new ArrayList<>();
@@ -186,7 +187,7 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
             RunState<S> stateLog = new RunState<>(iteration, evaluations, current, currentFitness, best, bestFitness, accepted);
             if (stateLog.iteration() % logInterval == 0) {
                 log.tick(stateLog.iteration(), stateLog.evaluations());
-                observer.onStep(stateLog, log);
+                Observers.onStep(observers,stateLog, log);
             }
             iteration++;
         }
@@ -194,9 +195,9 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
         RunState<S> finalState = new RunState<>(iteration - 1, evaluations, current, currentFitness, best, bestFitness, false);
         if ((finalState.iteration() % logInterval) != 0) {
             log.tick(finalState.iteration(), finalState.evaluations());
-            observer.onStep(finalState, log);
+            Observers.onStep(observers,finalState, log);
         }
-        observer.onEnd(finalState, log);
+        Observers.onEnd(observers,finalState, log);
 
         return log;
     }

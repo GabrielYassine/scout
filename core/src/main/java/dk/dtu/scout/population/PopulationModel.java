@@ -22,7 +22,7 @@ public interface PopulationModel<S> extends ScoutComponent {
             Problem<S> problem,
             Random rng,
             List<StopCondition<S>> stopConditions,
-            Observer<S> observer,
+            List<Observer<S>> observers,
             int logEveryIterations
     );
     default void configure(Map<String, Object> params) {}
