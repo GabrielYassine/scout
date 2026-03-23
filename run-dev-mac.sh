@@ -24,7 +24,7 @@ echo "Starting frontend..."
 osascript <<APPLESCRIPT
 tell application "Terminal"
   activate
-  do script "cd \"$ROOT/frontend\" && npm install && npm install echarts echarts-for-react && npm run dev"
+  do script "cd \"$ROOT/frontend\" && npm install && npm install echarts echarts-for-react && VITE_BACKEND_ORIGIN=http://localhost:8080 npm run dev"
 end tell
 APPLESCRIPT
 
