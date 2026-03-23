@@ -16,6 +16,9 @@ import dk.dtu.scout.problems.Problem;
 import dk.dtu.scout.searchSpace.SearchSpace;
 import dk.dtu.scout.stopcondition.MaxIterations;
 import dk.dtu.scout.stopcondition.StopCondition;
+import dk.dtu.scout.backend.websocket.RunWsEvent;
+import dk.dtu.scout.backend.websocket.WsSender;
+import dk.dtu.scout.backend.websocket.RunStatusService;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -28,6 +31,7 @@ import java.util.Comparator;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.UUID;
 
 
 @Service
@@ -41,6 +45,8 @@ public class ExperimentService {
     private final ComponentRegistry<SearchSpace> searchSpaceRegistry;
     private final ComponentRegistry<StopCondition> stopConditionRegistry;
     private final ComponentRegistry<Observer> observerRegistry;
+    private final WsSender wsSender;
+    private final RunStatusService runStatusService;
 
     public ExperimentService(
             StatisticsService statisticsService,
@@ -50,7 +56,9 @@ public class ExperimentService {
             ComponentRegistry<Problem> problemRegistry,
             ComponentRegistry<SearchSpace> searchSpaceRegistry,
             ComponentRegistry<StopCondition> stopConditionRegistry,
-            ComponentRegistry<Observer> observerRegistry
+            ComponentRegistry<Observer> observerRegistry,
+            WsSender wsSender,
+            RunStatusService runStatusService
     ) {
         this.statisticsService = statisticsService;
         this.mutationRegistry = mutationRegistry;
@@ -60,6 +68,8 @@ public class ExperimentService {
         this.searchSpaceRegistry = searchSpaceRegistry;
         this.stopConditionRegistry = stopConditionRegistry;
         this.observerRegistry = observerRegistry;
+        this.wsSender = wsSender;
+        this.runStatusService = runStatusService;
     }
 
     /**
@@ -77,10 +87,13 @@ public class ExperimentService {
         }
         String searchSpaceId = request.searchSpaceId().getFirst();
 
+        String runId = UUID.randomUUID().toString();
+
         return switch (searchSpaceId) {
             case "bitstring", "permutation" -> runBatch(request, seed, runTimes,
                     () -> createSearchSpace(request.searchSpaceId(), request.searchSpaceParams()),
-                    logEvery
+                    logEvery,
+                    runId
             );
             default -> throw new BadRequestException("Unsupported search space: " + searchSpaceId);
         };
@@ -102,7 +115,8 @@ public class ExperimentService {
             long baseSeed,
             int runtimes,
             Supplier<SearchSpace<S>> searchSpaceFactory,
-            int logEveryIterations
+            int logEveryIterations,
+            String runId
     ) {
         // Determine the number of threads to use based on available processors, but ensure at least 1 thread is used
         int threads = Math.max(1, Runtime.getRuntime().availableProcessors());
@@ -136,7 +150,10 @@ public class ExperimentService {
                     .sorted(Comparator.comparingInt(RunGroupResponse::runIndex)).toList();
 
             BatchSummaryResponse summary = statisticsService.calculateSummary(batches);
-            return new BatchRunResponse(batches, summary);
+            BatchRunResponse response = new BatchRunResponse(runId, batches, summary);
+            runStatusService.markFinished(runId);
+            wsSender.sendToRun(runId, RunWsEvent.finished(runId));
+            return response;
         } finally {
             executor.shutdown();
         }

@@ -6,7 +6,12 @@ export default defineConfig({
   server: {
     open: "/scout",
     proxy: {
-      "/api": "http://localhost:8080"
-    }
-  }
+      "/api": "http://localhost:8080",
+      "/ws": {
+        target: "http://localhost:8080",
+        ws: true,
+        changeOrigin: true,
+      },
+    },
+  },
 });

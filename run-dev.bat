@@ -10,6 +10,7 @@ powershell -Command "while(-not (Test-NetConnection -ComputerName 'localhost' -P
 cd frontend
 call npm install
 call npm install echarts echarts-for-react
+set VITE_BACKEND_ORIGIN=http://localhost:8080
 start "frontend" cmd /k "npm run dev"
 
 endlocal

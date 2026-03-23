@@ -108,7 +108,7 @@ export default function LabPage({catalog, catalogLoading, catalogError, template
 
       const batch = await res.json();
       navigate("/run", {
-        state: { batch, puzzleConfig, params, tspInstance },
+        state: { batch, puzzleConfig, params, tspInstance, runId: batch.runId },
         replace: true,
       });
     } catch (err) {

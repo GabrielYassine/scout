@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Client } from "@stomp/stompjs";
 import { useLocation, useNavigate } from "react-router-dom";
 import LabLeftbar from "../components/LabLeftbar/LabLeftbar.jsx";
 import LabRightbar from "../components/LabRightbar.jsx";
@@ -11,6 +12,8 @@ import "../components/LabRightbar.css";
 export default function RunPage({ catalog, catalogLoading, catalogError }) {
   const location = useLocation();
   const navigate = useNavigate();
+
+  const runId = location.state?.runId;
 
   const batchResponse = location.state?.batch;
   const isLoading = location.state?.loading;
@@ -25,6 +28,62 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
   const runs = selectedBatch?.runs ?? [];
 
   const [tspInstance] = useState(initialTspInstance);
+
+  useEffect(() => {
+    if (!runId) {
+      console.warn("No runId provided; skipping websocket connection");
+      return;
+    }
+
+    const wsUrl = `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}/ws`;
+    console.log("Connecting websocket", { runId, wsUrl });
+
+    const client = new Client({
+      brokerURL: wsUrl,
+      reconnectDelay: 0,
+    });
+
+    client.debug = (...args) => console.log("WS debug:", ...args);
+
+    client.onConnect = () => {
+      console.log("WebSocket connected", runId);
+      client.subscribe(`/topic/run/${runId}`, (message) => {
+        const data = JSON.parse(message.body);
+        console.log("Run update:", data);
+
+        if (data.type === "RUN_FINISHED" || data.type === "RUN_DISCONNECTED") {
+          client.deactivate();
+        }
+      });
+
+      client.publish({
+        destination: `/app/run/${runId}/connect`,
+        body: JSON.stringify({}),
+      });
+    };
+
+    client.onStompError = (frame) => {
+      console.error("WebSocket STOMP error", frame.headers["message"], frame.body);
+    };
+
+    client.onWebSocketError = (event) => {
+      console.error("WebSocket transport error", event);
+    };
+
+    client.activate();
+
+    return () => {
+      try {
+        client.publish({
+          destination: `/app/run/${runId}/disconnect`,
+          body: JSON.stringify({}),
+        });
+        client.deactivate();
+      } catch (e) {
+        console.error("Failed to close WebSocket", e);
+      }
+    };
+  }, [runId]);
 
   return (
     <div className="run-page">
