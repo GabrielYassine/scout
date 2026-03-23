@@ -80,6 +80,7 @@ function RunChart({ run, runIndex, problemIndex }) {
           <LineCharts
             selectedObserver={selectedObserver}
             chartPoints={data}
+            problemId={run.problemId}
           />
         )}
       </div>
