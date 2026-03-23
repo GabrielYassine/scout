@@ -107,6 +107,7 @@ export default function LabPage({catalog, catalogLoading, catalogError, template
       }
 
       const batch = await res.json();
+      console.log("Run response from backend", batch);
       navigate("/run", {
         state: { batch, puzzleConfig, params, tspInstance, runId: batch.runId },
         replace: true,

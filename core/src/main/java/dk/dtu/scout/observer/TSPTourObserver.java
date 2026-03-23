@@ -102,6 +102,11 @@ public class TSPTourObserver implements Observer<int[]> {
 
     @Override
     public void onStart(RunState<int[]> state, RunLog log) {
+        if (!citiesLogged && cities != null) {
+            log.putSeries("tspCities", cities);
+            citiesLogged = true;
+        }
+        logTourSnapshot(state, log);
         logPheromoneHeatmap(log);
     }
 
@@ -126,31 +131,34 @@ public class TSPTourObserver implements Observer<int[]> {
             citiesLogged = true;
         }
 
-        if (state.accepted() && state.currentSolution() != null) {
-            tourHistory.add(state.currentSolution().clone());
-        }
-
-        if (!tourHistory.isEmpty()) {
-            int[] lastTour = tourHistory.getLast();
-
-            // Create tour object with metadata
-            Map<String, Object> tourData = new HashMap<>();
-            List<Integer> tourList = new ArrayList<>();
-            for (int city : lastTour) {
-                tourList.add(city);
-            }
-            tourData.put("tour", tourList);
-
-            // Calculate and include tour length if instance is available
-            if (instance != null) {
-                double tourLength = instance.getTourLength(lastTour);
-                tourData.put("length", tourLength);
-            }
-
-            log.putSeries("tspTour", tourData);
-        }
+        logTourSnapshot(state, log);
 
         logPheromoneHeatmap(log);
+    }
+
+    private void logTourSnapshot(RunState<int[]> state, RunLog log) {
+        int[] tour = state.currentSolution();
+        if (tour == null) {
+            tour = state.bestSolution();
+        }
+        if (tour == null) return;
+
+        tourHistory.add(tour.clone());
+        int[] lastTour = tourHistory.getLast();
+
+        Map<String, Object> tourData = new HashMap<>();
+        List<Integer> tourList = new ArrayList<>();
+        for (int city : lastTour) {
+            tourList.add(city);
+        }
+        tourData.put("tour", tourList);
+
+        if (instance != null) {
+            double tourLength = instance.getTourLength(lastTour);
+            tourData.put("length", tourLength);
+        }
+
+        log.putSeries("tspTour", tourData);
     }
 
     private void logPheromoneHeatmap(RunLog log) {

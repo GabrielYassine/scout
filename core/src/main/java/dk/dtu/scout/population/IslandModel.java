@@ -135,7 +135,7 @@ public class IslandModel<S>  implements PopulationModel<S> {
         // Initial state
         RunState<S> initial = new RunState<>(iteration, evaluations, global.current, global.currentFitness, global.best, global.bestFitness, false);
         Observers.onStart(observers,initial, log);
-        log.tick(initial.iteration(), evaluations);
+        log.tick(initial.iteration(), evaluations - 1);
         Observers.onStep(observers,initial, log);
 
         while(!StopConditions.shouldStop(stopConditions, iteration, evaluations, global.bestFitness, global.best)) {
@@ -197,8 +197,8 @@ public class IslandModel<S>  implements PopulationModel<S> {
             }
             global = globalBestIsland(islands);
             RunState<S> state = new RunState<>(iteration, evaluations, global.current, global.currentFitness, global.best, global.bestFitness, anyAccepted);
-            if (state.iteration() % logInterval == 0) {
-                log.tick(state.iteration(), state.evaluations());
+            if ((state.iteration() + 1) % logInterval == 0) {
+                log.tick(state.iteration(), state.evaluations() - 1);
                 Observers.onStep(observers,state, log);
             }
             iteration++;
@@ -206,8 +206,8 @@ public class IslandModel<S>  implements PopulationModel<S> {
 
         global= globalBestIsland(islands);
         RunState<S> finalState = new RunState<>(iteration - 1, evaluations, global.current, global.currentFitness, global.best, global.bestFitness, false);
-        if ((finalState.iteration() % logInterval) != 0) {
-            log.tick(finalState.iteration(), finalState.evaluations());
+        if (((finalState.iteration() + 1) % logInterval) != 0) {
+            log.tick(finalState.iteration(), finalState.evaluations() - 1);
             Observers.onStep(observers,finalState, log);
         }
         Observers.onEnd(observers,finalState, log);

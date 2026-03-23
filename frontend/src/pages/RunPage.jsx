@@ -103,79 +103,83 @@ const runs = selectedRunKey === "average"? averageRuns: selectedBatch?.runs ?? [
 
   return (
     <div className="run-page">
-      <LabLeftbar
-        puzzleConfig={puzzleConfig}
-        params={params}
-        onParamChange={() => {}}
-        onReset={() => navigate("/lab")}
-        onRun={() => navigate("/lab")}
-        catalog={catalog}
-        catalogLoading={catalogLoading}
-        catalogError={catalogError}
-        readOnly
-      />
+      <div className="run-sidebar run-sidebar--disabled" aria-disabled="true">
+        <LabLeftbar
+          puzzleConfig={puzzleConfig}
+          params={params}
+          onParamChange={() => {}}
+          onReset={() => navigate("/lab")}
+          onRun={() => navigate("/lab")}
+          catalog={catalog}
+          catalogLoading={catalogLoading}
+          catalogError={catalogError}
+          readOnly
+        />
+      </div>
 
-     <div className="run-page-content">
-       {isLoading ? (
-         <div className="run-loading">
-           <div className="spinner" aria-label="Loading" />
-           <div>Preparing run...</div>
-         </div>
-       ) : error ? (
-         <div className="run-chart-panel">
-           <div className="run-chart-title">Run failed</div>
-           <div>{error}</div>
-         </div>
-       ) : batches.length === 0 ? (
-         <div className="run-chart-panel">
-           <div className="run-chart-title">No run data</div>
-           <div>No data to plot..</div>
-         </div>
-       ) : (
-         <>
-           {(averageRuns.length > 0 || batches.length > 1) && (
-             <div className="run-selector">
-               <label htmlFor="batch-select" className="form-label">
-                 Select Run:
-               </label>
-               <select
-                 id="batch-select"
-                 className="form-select"
-                 value={selectedRunKey}
-                 onChange={(e) => setSelectedRunKey(e.target.value)}
-               >
-                 {averageRuns.length > 0 && (
-                   <option value="average">Average</option>
-                 )}
+      <div className="run-page-content">
+        {isLoading ? (
+          <div className="run-loading">
+            <div className="spinner" aria-label="Loading" />
+            <div>Preparing run...</div>
+          </div>
+        ) : error ? (
+          <div className="run-chart-panel">
+            <div className="run-chart-title">Run failed</div>
+            <div>{error}</div>
+          </div>
+        ) : batches.length === 0 ? (
+          <div className="run-chart-panel">
+            <div className="run-chart-title">No run data</div>
+            <div>No data to plot..</div>
+          </div>
+        ) : (
+          <>
+            {(averageRuns.length > 0 || batches.length > 1) && (
+              <div className="run-selector">
+                <label htmlFor="batch-select" className="form-label">
+                  Select Run:
+                </label>
+                <select
+                  id="batch-select"
+                  className="form-select"
+                  value={selectedRunKey}
+                  onChange={(e) => setSelectedRunKey(e.target.value)}
+                >
+                  {averageRuns.length > 0 && (
+                    <option value="average">Average</option>
+                  )}
 
-                 {batches.map((batch, idx) => (
-                   <option key={idx} value={String(idx)}>
-                     Run {batch.runIndex} (Seed: {batch.seed})
-                   </option>
-                 ))}
-               </select>
-             </div>
-           )}
+                  {batches.map((batch, idx) => (
+                    <option key={idx} value={String(idx)}>
+                      Run {batch.runIndex} (Seed: {batch.seed})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
-           <div className="run-stack">
-             {runs.map((run, idx) => (
-               <RunChart
-                 key={`${selectedRunKey}-${idx}`}
-                 run={run}
-                 runIndex={selectedBatch?.runIndex ?? "average"}
-                 problemIndex={idx + 1}
-               />
-             ))}
-           </div>
-         </>
-       )}
-     </div>
-     <LabRightbar
-       hoverInfo={null}
-       tspInstance={tspInstance}
-       onTspInstanceChange={() => {}}
-     />
-   </div>
- );
+            <div className="run-stack">
+              {runs.map((run, idx) => (
+                <RunChart
+                  key={`${selectedRunKey}-${idx}`}
+                  run={run}
+                  runIndex={selectedBatch?.runIndex ?? "average"}
+                  problemIndex={idx + 1}
+                />
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+      <div className="run-sidebar run-sidebar--disabled" aria-disabled="true">
+        <LabRightbar
+          hoverInfo={null}
+          tspInstance={tspInstance}
+          onTspInstanceChange={() => {}}
+        />
+      </div>
+    </div>
+  );
 
 }

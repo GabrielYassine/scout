@@ -66,19 +66,10 @@ export default function LabLeftbar({
   function setParam(type, def, rawValue) {
     const currentParams = params[type] ?? {};
     const parsedValue = parseValue(def.type, rawValue);
-    let valueToStore = parsedValue;
-
-    // clamp numeric values to respect declared min/max bounds
-    if (def.type === "int" || def.type === "long" || def.type === "double") {
-      if (parsedValue !== "" && parsedValue != null) {
-        if (def.min !== undefined) valueToStore = Math.max(parsedValue, def.min);
-        if (def.max !== undefined) valueToStore = Math.min(valueToStore, def.max);
-      }
-    }
 
     onParamChange(type, {
       ...currentParams,
-      [def.key]: valueToStore,
+      [def.key]: parsedValue,
     });
   }
 

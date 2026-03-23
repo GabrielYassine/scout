@@ -118,7 +118,7 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
         // Initial state
         RunState<S> initial = new RunState<>(iteration, evaluations, current, currentFitness, best, bestFitness, false);
         Observers.onStart(observers,initial, log);
-        log.tick(iteration, evaluations);
+        log.tick(initial.iteration(), initial.evaluations() - 1);
         Observers.onStep(observers,initial, log);
 
         List<S> generationSolutions = new ArrayList<>();
@@ -185,16 +185,16 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
             }
 
             RunState<S> stateLog = new RunState<>(iteration, evaluations, current, currentFitness, best, bestFitness, accepted);
-            if (stateLog.iteration() % logInterval == 0) {
-                log.tick(stateLog.iteration(), stateLog.evaluations());
+            if ((stateLog.iteration() + 1) % logInterval == 0) {
+                log.tick(stateLog.iteration(), stateLog.evaluations() - 1);
                 Observers.onStep(observers,stateLog, log);
             }
             iteration++;
         }
 
         RunState<S> finalState = new RunState<>(iteration - 1, evaluations, current, currentFitness, best, bestFitness, false);
-        if ((finalState.iteration() % logInterval) != 0) {
-            log.tick(finalState.iteration(), finalState.evaluations());
+        if (((finalState.iteration() + 1) % logInterval) != 0) {
+            log.tick(finalState.iteration(), finalState.evaluations() - 1);
             Observers.onStep(observers,finalState, log);
         }
         Observers.onEnd(observers,finalState, log);

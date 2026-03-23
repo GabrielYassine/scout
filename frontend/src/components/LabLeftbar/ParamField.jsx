@@ -1,4 +1,5 @@
 import "./LabLeftbar.css";
+import { useState, useEffect } from "react";
 
 // parses a raw input value according to the parameter type
 // @author s235257
@@ -17,6 +18,12 @@ export function parseValue(type, raw) {
 // @author s235257
 export default function ParamField({ def, value, onValueChange, disabled }) {
   const { key, label, type, min, max } = def;
+
+  const [draft, setDraft] = useState(value ?? "");
+
+  useEffect(() => {
+    setDraft(value ?? "");
+  }, [value]);
 
   if (type === "boolean") {
     return (
@@ -38,11 +45,20 @@ export default function ParamField({ def, value, onValueChange, disabled }) {
         <span className="ll-label">{label ?? key}</span>
         <input
           type="number"
-          value={value ?? ""}
+          value={draft}
           min={min ?? undefined}
           max={max ?? undefined}
           disabled={disabled}
-          onChange={(e) => onValueChange(e.target.value)}
+          onChange={(e) => {
+            setDraft(e.target.value);
+            onValueChange(e.target.value);
+          }}
+          onBlur={() => {
+            if (draft === "" || draft == null) {
+              setDraft("0");
+              onValueChange("0");
+            }
+          }}
         />
       </label>
     );
@@ -53,9 +69,18 @@ export default function ParamField({ def, value, onValueChange, disabled }) {
       <span className="ll-label">{label ?? key}</span>
       <input
         type="text"
-        value={value ?? ""}
+        value={draft}
         disabled={disabled}
-        onChange={(e) => onValueChange(e.target.value)}
+        onChange={(e) => {
+          setDraft(e.target.value);
+          onValueChange(e.target.value);
+        }}
+        onBlur={() => {
+          if (draft === "" || draft == null) {
+            setDraft("0");
+            onValueChange("0");
+          }
+        }}
       />
     </label>
   );
