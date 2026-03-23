@@ -1,5 +1,6 @@
 package dk.dtu.scout.backend.service;
 
+import dk.dtu.scout.backend.dto.run.AverageRunResponse;
 import dk.dtu.scout.backend.dto.run.BatchSummaryResponse;
 import dk.dtu.scout.backend.dto.run.RunGroupResponse;
 import dk.dtu.scout.backend.dto.run.RunResponse;
@@ -8,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -17,11 +19,14 @@ public class StatisticsService {
     public BatchSummaryResponse calculateSummary(List<RunGroupResponse> batches) {
         Map<String, List<Double>> runtimesByProblem = new HashMap<>();
         Map<String, List<Integer>> finalEvaluationsByProblem = new HashMap<>();
+        Map<String, List<RunResponse>> runsByProblem = new HashMap<>();
 
         for (RunGroupResponse batch : batches) {
             for (RunResponse run : batch.runs()) {
                 runtimesByProblem.computeIfAbsent(run.problemId(), k -> new ArrayList<>()).add(run.runtimeMs());
                 finalEvaluationsByProblem.computeIfAbsent(run.problemId(), k -> new ArrayList<>()).add(run.finalEvaluations());
+
+                runsByProblem.computeIfAbsent(run.problemId(), k -> new ArrayList<>()).add(run);
             }
         }
 
@@ -33,8 +38,111 @@ public class StatisticsService {
             statsByProblem.put(problemId, computeStats(runtimes, finalEvals));
         }
 
-        return new BatchSummaryResponse(statsByProblem);
+        Map<String, AverageRunResponse> averageByProblem = new HashMap<>();
+        for (Map.Entry<String, List<RunResponse>> entry : runsByProblem.entrySet()) {
+            averageByProblem.put(entry.getKey(), computeAverageRun(entry.getValue()));
+        }
+
+        return new BatchSummaryResponse(statsByProblem, averageByProblem);
     }
+
+    private AverageRunResponse computeAverageRun(List<RunResponse> runs) {
+        if (runs == null || runs.isEmpty()) {
+            return new AverageRunResponse(List.of(), List.of(), Map.of());
+        }
+
+        int minIterationsLength = runs.stream()
+                .mapToInt(run -> run.iterations() != null ? run.iterations().size() : 0)
+                .min()
+                .orElse(0);
+
+        int minEvaluationsLength = runs.stream()
+                .mapToInt(run -> run.evaluations() != null ? run.evaluations().size() : 0)
+                .min()
+                .orElse(0);
+
+        List<Integer> referenceIterations =
+                minIterationsLength == 0
+                        ? List.of()
+                        : new ArrayList<>(runs.get(0).iterations().subList(0, minIterationsLength));
+
+        List<Integer> referenceEvaluations =
+                minEvaluationsLength == 0
+                        ? List.of()
+                        : new ArrayList<>(runs.get(0).evaluations().subList(0, minEvaluationsLength));
+
+        Map<String, List<Double>> averageSeries = computeAverageSeries(runs);
+
+        return new AverageRunResponse(referenceIterations, referenceEvaluations, averageSeries);
+    }
+
+    private Map<String, List<Double>> computeAverageSeries(List<RunResponse> runs) {
+        Map<String, List<Double>> result = new LinkedHashMap<>();
+        if (runs == null || runs.isEmpty()) {
+            return result;
+        }
+
+        Map<String, List<List<Double>>> seriesValuesByName = new LinkedHashMap<>();
+
+        for (RunResponse run : runs) {
+            Map<String, List<?>> series = run.series();
+            if (series == null) continue;
+
+            for (Map.Entry<String, List<?>> entry : series.entrySet()) {
+                String seriesName = entry.getKey();
+                List<?> rawValues = entry.getValue();
+
+                List<Double> numericValues = toDoubleList(rawValues);
+                if (numericValues.isEmpty()) continue;
+
+                seriesValuesByName
+                        .computeIfAbsent(seriesName, k -> new ArrayList<>())
+                        .add(numericValues);
+            }
+        }
+
+        for (Map.Entry<String, List<List<Double>>> entry : seriesValuesByName.entrySet()) {
+            String seriesName = entry.getKey();
+            List<List<Double>> allRunsForSeries = entry.getValue();
+
+            int minLength = allRunsForSeries.stream()
+                    .mapToInt(List::size)
+                    .min()
+                    .orElse(0);
+
+            if (minLength == 0) continue;
+
+            List<Double> averaged = new ArrayList<>(minLength);
+
+            for (int i = 0; i < minLength; i++) {
+                double sum = 0.0;
+                for (List<Double> runSeries : allRunsForSeries) {
+                    sum += runSeries.get(i);
+                }
+                averaged.add(sum / allRunsForSeries.size());
+            }
+
+            result.put(seriesName, averaged);
+        }
+
+        return result;
+    }
+
+    private List<Double> toDoubleList(List<?> rawValues) {
+        List<Double> result = new ArrayList<>();
+        if (rawValues == null) return result;
+
+        for (Object value : rawValues) {
+            if (!(value instanceof Number number)) {
+                return List.of();
+            }
+            result.add(number.doubleValue());
+        }
+
+        return result;
+    }
+
+
 
     public RuntimeStats computeStats(List<Double> values, List<Integer> finalEvaluations) {
         int n = values.size();

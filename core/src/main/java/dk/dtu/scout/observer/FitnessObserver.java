@@ -34,10 +34,6 @@ public class FitnessObserver<S> implements Observer<S> {
         return List.of();
     }
 
-    @Override
-    public List<String> supportedSearchSpaces() {
-        return List.of("bitstring");
-    }
 
     @Override
     public void onStep(RunState<S> state, RunLog log) {

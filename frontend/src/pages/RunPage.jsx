@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Client } from "@stomp/stompjs";
 import { useLocation, useNavigate } from "react-router-dom";
 import LabLeftbar from "../components/LabLeftbar/LabLeftbar.jsx";
@@ -22,10 +22,26 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
   const params = location.state?.params ?? [];
   const initialTspInstance = location.state?.tspInstance ?? DEFAULT_TSP_INSTANCE;
 
-  const batches = batchResponse?.batches ?? [];
-  const [selectedBatchIndex, setSelectedBatchIndex] = useState(0);
-  const selectedBatch = batches[selectedBatchIndex];
-  const runs = selectedBatch?.runs ?? [];
+const batches = batchResponse?.batches ?? [];
+const averageByProblem = batchResponse?.summary?.averageByProblem ?? {};
+const averageRuns = useMemo(
+  () =>
+    Object.entries(averageByProblem).map(([problemId, avg]) => ({
+      problemId,
+      iterations: avg.iterations ?? [],
+      evaluations: avg.evaluations ?? [],
+      series: avg.series ?? {},
+      isAverage: true,
+    })),
+  [averageByProblem]
+);
+
+const [selectedRunKey, setSelectedRunKey] = useState("average");
+
+const selectedBatch =
+  selectedRunKey === "average" ? null : batches[Number(selectedRunKey)];
+
+const runs = selectedRunKey === "average"? averageRuns: selectedBatch?.runs ?? [];
 
   const [tspInstance] = useState(initialTspInstance);
 
@@ -117,7 +133,7 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
          </div>
        ) : (
          <>
-           {batches.length > 1 && (
+           {(averageRuns.length > 0 || batches.length > 1) && (
              <div className="run-selector">
                <label htmlFor="batch-select" className="form-label">
                  Select Run:
@@ -125,11 +141,15 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
                <select
                  id="batch-select"
                  className="form-select"
-                 value={selectedBatchIndex}
-                 onChange={(e) => setSelectedBatchIndex(Number(e.target.value))}
+                 value={selectedRunKey}
+                 onChange={(e) => setSelectedRunKey(e.target.value)}
                >
+                 {averageRuns.length > 0 && (
+                   <option value="average">Average</option>
+                 )}
+
                  {batches.map((batch, idx) => (
-                   <option key={idx} value={idx}>
+                   <option key={idx} value={String(idx)}>
                      Run {batch.runIndex} (Seed: {batch.seed})
                    </option>
                  ))}
@@ -140,9 +160,9 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
            <div className="run-stack">
              {runs.map((run, idx) => (
                <RunChart
-                 key={`${selectedBatchIndex}-${idx}`}
+                 key={`${selectedRunKey}-${idx}`}
                  run={run}
-                 runIndex={selectedBatch?.runIndex ?? selectedBatchIndex + 1}
+                 runIndex={selectedBatch?.runIndex ?? "average"}
                  problemIndex={idx + 1}
                />
              ))}
