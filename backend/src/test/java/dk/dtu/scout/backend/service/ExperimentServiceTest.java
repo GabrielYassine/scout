@@ -100,10 +100,13 @@ class ExperimentServiceTest {
                 List.of("elitist"),
                 null,
                 List.of("fitness"),
+                Map.of(),
                 List.of("optimum-reached", "max-iterations"),
                 Map.of("maxIterations", maxIterations),
                 seed,
-                runs
+                runs,
+                "test-run",
+                100
         );
 
         BatchRunResponse response = experimentService.run(request);
@@ -173,10 +176,13 @@ class ExperimentServiceTest {
                 List.of("simulated-annealing"),
                 Map.of(),
                 List.of("fitness", "tsp-tour"),
+                Map.of(),
                 List.of("max-iterations"),
                 Map.of("maxIterations", 20000),
                 12345L,
-                3
+                3,
+                "test-run-tsp-1",
+                100
         );
 
         BatchRunResponse response = experimentService.run(request);
@@ -198,10 +204,13 @@ class ExperimentServiceTest {
                 List.of("elitist"),
                 Map.of(),
                 List.of("fitness", "tsp-tour"),
+                Map.of(),
                 List.of("max-iterations"),
                 Map.of("maxIterations", 10000),
                 67890L,
-                3
+                3,
+                "test-run-tsp-2",
+                100
         );
 
         BatchRunResponse response = experimentService.run(request);

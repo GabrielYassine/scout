@@ -12,4 +12,8 @@ public record RunWsEvent(String type, String runId, String message) {
     public static RunWsEvent finished(String runId) {
         return new RunWsEvent("RUN_FINISHED", runId, "Run finished");
     }
+
+    public static RunWsEvent failed(String runId, String message) {
+        return new RunWsEvent("RUN_FAILED", runId, message == null ? "Run failed" : message);
+    }
 }

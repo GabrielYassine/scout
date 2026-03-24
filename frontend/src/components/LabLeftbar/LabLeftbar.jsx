@@ -198,15 +198,16 @@ export default function LabLeftbar({
             />
             <ParamField
               def={{
-                key: "logEveryIterations",
-                label: "Log every X iterations",
+                key: "wsUpdateEveryIterations",
+                label: "WebSocket update every X iterations",
                 type: "int",
+                min: 1,
                 defaultValue: 100,
               }}
               disabled={disabled}
-              value={params.global?.logEveryIterations ?? 100}
+              value={params.global?.wsUpdateEveryIterations ?? 100}
               onValueChange={(v) =>
-                setParam("global", { key: "logEveryIterations", type: "int" }, v)
+                setParam("global", { key: "wsUpdateEveryIterations", type: "int" }, v)
               }
             />
           </div>

@@ -1,8 +1,8 @@
 package dk.dtu.scout.backend.controller;
 
 import dk.dtu.scout.backend.dto.RunRequest;
-import dk.dtu.scout.backend.dto.run.BatchRunResponse;
 import dk.dtu.scout.backend.service.ExperimentService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -17,7 +17,8 @@ public class RunController {
     }
 
     @PostMapping("/run")
-    public BatchRunResponse run(@RequestBody RunRequest request) {
-        return experimentService.run(request);
+    public ResponseEntity<Void> run(@RequestBody RunRequest request) {
+        experimentService.startRun(request);
+        return ResponseEntity.accepted().build();
     }
 }

@@ -16,32 +16,44 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
   const runId = location.state?.runId;
 
   const batchResponse = location.state?.batch;
-  const isLoading = location.state?.loading;
-  const error = location.state?.error;
+  const initialLoading = location.state?.loading;
+  const initialError = location.state?.error;
   const puzzleConfig = location.state?.puzzleConfig ?? [];
   const params = location.state?.params ?? [];
   const initialTspInstance = location.state?.tspInstance ?? DEFAULT_TSP_INSTANCE;
 
-const batches = batchResponse?.batches ?? [];
-const averageByProblem = batchResponse?.summary?.averageByProblem ?? {};
-const averageRuns = useMemo(
-  () =>
-    Object.entries(averageByProblem).map(([problemId, avg]) => ({
-      problemId,
-      iterations: avg.iterations ?? [],
-      evaluations: avg.evaluations ?? [],
-      series: avg.series ?? {},
-      isAverage: true,
-    })),
-  [averageByProblem]
-);
+  const [batch, setBatch] = useState(batchResponse ?? null);
+  const [loading, setLoading] = useState(!!initialLoading);
+  const [error, setError] = useState(initialError ?? null);
 
-const [selectedRunKey, setSelectedRunKey] = useState("average");
+  const batches = batch?.batches ?? [];
+  const averageByProblem = batch?.summary?.averageByProblem ?? {};
+  const averageRuns = useMemo(
+    () =>
+      Object.entries(averageByProblem).map(([problemId, avg]) => ({
+        problemId,
+        iterations: avg.iterations ?? [],
+        evaluations: avg.evaluations ?? [],
+        series: avg.series ?? {},
+        isAverage: true,
+      })),
+    [averageByProblem]
+  );
 
-const selectedBatch =
-  selectedRunKey === "average" ? null : batches[Number(selectedRunKey)];
+  const [selectedRunKey, setSelectedRunKey] = useState(
+    Object.keys(averageByProblem).length > 0 ? "average" : "0"
+  );
 
-const runs = selectedRunKey === "average"? averageRuns: selectedBatch?.runs ?? [];
+  useEffect(() => {
+    if (selectedRunKey === "average" && averageRuns.length === 0 && batches.length > 0) {
+      setSelectedRunKey("0");
+    }
+  }, [selectedRunKey, averageRuns.length, batches.length]);
+
+  const selectedBatch =
+    selectedRunKey === "average" ? null : batches[Number(selectedRunKey)];
+
+  const runs = selectedRunKey === "average" ? averageRuns : selectedBatch?.runs ?? [];
 
   const [tspInstance] = useState(initialTspInstance);
 
@@ -61,13 +73,86 @@ const runs = selectedRunKey === "average"? averageRuns: selectedBatch?.runs ?? [
 
     client.debug = (...args) => console.log("WS debug:", ...args);
 
+    const appendSeriesValue = (series, key, value) => {
+      if (value === undefined) return series;
+      const next = { ...series };
+      const list = Array.isArray(next[key]) ? [...next[key]] : [];
+      if (key === "tspCities") {
+        if (list.length === 0) list.push(value);
+      } else {
+        list.push(value);
+      }
+      next[key] = list;
+      return next;
+    };
+
+    const mergeProgress = (prev, update) => {
+      const base = prev ?? { runId: update.runId, batches: [], summary: null };
+      const nextBatches = [...(base.batches ?? [])];
+      const batchIndex = nextBatches.findIndex((b) => b.runIndex === update.runIndex);
+      const runGroup =
+        batchIndex >= 0
+          ? { ...nextBatches[batchIndex] }
+          : { runIndex: update.runIndex, seed: update.seed, runs: [] };
+
+      const runsList = [...(runGroup.runs ?? [])];
+      const runIndex = runsList.findIndex((r) => r.problemId === update.problemId);
+      const run =
+        runIndex >= 0
+          ? { ...runsList[runIndex] }
+          : {
+              problemId: update.problemId,
+              iterations: [],
+              evaluations: [],
+              series: {},
+              runtimeMs: 0,
+              finalEvaluations: 0,
+            };
+
+      run.iterations = [...run.iterations, update.iteration];
+      run.evaluations = [...run.evaluations, update.evaluation];
+      run.series = Object.entries(update.seriesDelta ?? {}).reduce(
+        (acc, [key, value]) => appendSeriesValue(acc, key, value),
+        run.series ?? {}
+      );
+
+      runsList[runIndex >= 0 ? runIndex : runsList.length] = run;
+      runGroup.runs = runsList;
+      if (batchIndex >= 0) {
+        nextBatches[batchIndex] = runGroup;
+      } else {
+        nextBatches.push(runGroup);
+      }
+
+      return { ...base, batches: nextBatches };
+    };
+
     client.onConnect = () => {
       console.log("WebSocket connected", runId);
       client.subscribe(`/topic/run/${runId}`, (message) => {
         const data = JSON.parse(message.body);
         console.log("Run update:", data);
 
-        if (data.type === "RUN_FINISHED" || data.type === "RUN_DISCONNECTED") {
+        if (data.type === "RUN_PROGRESS") {
+          setLoading(false);
+          setBatch((prev) => mergeProgress(prev, data));
+          return;
+        }
+
+        if (data.type === "RUN_FINISHED") {
+          setLoading(false);
+          setBatch(data.batch ?? null);
+          client.deactivate();
+          return;
+        }
+
+        if (data.type === "RUN_FAILED") {
+          setLoading(false);
+          setError(data.message || "Run failed");
+          client.deactivate();
+        }
+
+        if (data.type === "RUN_DISCONNECTED") {
           client.deactivate();
         }
       });
@@ -118,7 +203,7 @@ const runs = selectedRunKey === "average"? averageRuns: selectedBatch?.runs ?? [
       </div>
 
       <div className="run-page-content">
-        {isLoading ? (
+        {loading ? (
           <div className="run-loading">
             <div className="spinner" aria-label="Loading" />
             <div>Preparing run...</div>
@@ -181,5 +266,4 @@ const runs = selectedRunKey === "average"? averageRuns: selectedBatch?.runs ?? [
       </div>
     </div>
   );
-
 }

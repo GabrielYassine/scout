@@ -50,7 +50,8 @@ export default function LabPage({catalog, catalogLoading, catalogError, template
   async function onRun() {
     const seed = params.global?.seed ?? Date.now();
     const runTimes = params.global?.runTimes ?? 1;
-    const logEveryIterations = params.global?.logEveryIterations ?? 100;
+    const wsUpdateEveryIterations = params.global?.wsUpdateEveryIterations ?? 100;
+    const runId = window.crypto?.randomUUID ? window.crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
     const problemParams = { ...params.problem };
     if (tspInstance && tspInstance.cities && tspInstance.cities.length > 0) {
@@ -87,12 +88,13 @@ export default function LabPage({catalog, catalogLoading, catalogError, template
       observerParams: params.observer,
       seed: seed,
       runTimes: runTimes,
-      logEveryIterations,
+      runId,
+      wsUpdateEveryIterations,
     };
 
     // Navigate immediately to show loading state while the run is being prepared
     navigate("/run", {
-      state: { loading: true, puzzleConfig, params, tspInstance },
+      state: { loading: true, puzzleConfig, params, tspInstance, runId },
     });
 
     try {
@@ -105,16 +107,9 @@ export default function LabPage({catalog, catalogLoading, catalogError, template
       if (!res.ok) {
         throw new Error(`Run failed with status ${res.status}`);
       }
-
-      const batch = await res.json();
-      console.log("Run response from backend", batch);
-      navigate("/run", {
-        state: { batch, puzzleConfig, params, tspInstance, runId: batch.runId },
-        replace: true,
-      });
     } catch (err) {
       navigate("/run", {
-        state: { error: err.message || "Failed to start run", puzzleConfig, params, tspInstance },
+        state: { error: err.message || "Failed to start run", puzzleConfig, params, tspInstance, runId },
         replace: true,
       });
     }

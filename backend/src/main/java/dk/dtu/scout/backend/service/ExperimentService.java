@@ -19,6 +19,8 @@ import dk.dtu.scout.stopcondition.StopCondition;
 import dk.dtu.scout.backend.websocket.RunWsEvent;
 import dk.dtu.scout.backend.websocket.WsSender;
 import dk.dtu.scout.backend.websocket.RunStatusService;
+import dk.dtu.scout.backend.websocket.RunProgressObserver;
+import dk.dtu.scout.backend.websocket.RunWsFinal;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -31,7 +33,6 @@ import java.util.Comparator;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.UUID;
 
 
 @Service
@@ -78,21 +79,38 @@ public class ExperimentService {
      * @param request
      * @return
      */
+    public void startRun(RunRequest request) {
+        CompletableFuture.runAsync(() -> {
+            try {
+                run(request);
+            } catch (Exception ex) {
+                if (request != null && request.runId() != null) {
+                    wsSender.sendToRun(request.runId(), RunWsEvent.failed(request.runId(), ex.getMessage()));
+                }
+            }
+        });
+    }
+
     public BatchRunResponse run(RunRequest request) {
         long seed = request.seed();
         int runTimes = request.runTimes();
-        int logEvery = request.logEveryIterations() != 0 ? request.logEveryIterations() : 100;
+        int logEvery = resolveLogEveryIterations(request);
+        int wsUpdateEvery = request.wsUpdateEveryIterations() > 0 ? request.wsUpdateEveryIterations() : logEvery;
         if (request.searchSpaceId() == null || request.searchSpaceId().isEmpty()) {
             throw new BadRequestException("Search space must be specified");
         }
+        if (request.runId() == null || request.runId().isBlank()) {
+            throw new BadRequestException("runId must be specified");
+        }
         String searchSpaceId = request.searchSpaceId().getFirst();
 
-        String runId = UUID.randomUUID().toString();
+        String runId = request.runId();
 
         return switch (searchSpaceId) {
             case "bitstring", "permutation" -> runBatch(request, seed, runTimes,
                     () -> createSearchSpace(request.searchSpaceId(), request.searchSpaceParams()),
                     logEvery,
+                    wsUpdateEvery,
                     runId
             );
             default -> throw new BadRequestException("Unsupported search space: " + searchSpaceId);
@@ -116,6 +134,7 @@ public class ExperimentService {
             int runtimes,
             Supplier<SearchSpace<S>> searchSpaceFactory,
             int logEveryIterations,
+            int wsUpdateEveryIterations,
             String runId
     ) {
         // Determine the number of threads to use based on available processors, but ensure at least 1 thread is used
@@ -138,7 +157,7 @@ public class ExperimentService {
                     PopulationModel<S> popModel = createPopulationModel(request.populationModelId(), request.populationModelParams());
 
                     // Run the algorithm once for each specified problem and collect the results
-                    List<RunResponse> perProblemRuns = runTypedOnce(request, rng, ss, generatorFactory, acceptance, popModel, logEveryIterations);
+                    List<RunResponse> perProblemRuns = runTypedOnce(request, rng, ss, generatorFactory, acceptance, popModel, logEveryIterations, wsUpdateEveryIterations, runId, runIndex, runSeed);
                     return new RunGroupResponse(runIndex, runSeed, perProblemRuns);
                 }, executor);
 
@@ -151,8 +170,8 @@ public class ExperimentService {
 
             BatchSummaryResponse summary = statisticsService.calculateSummary(batches);
             BatchRunResponse response = new BatchRunResponse(runId, batches, summary);
-            runStatusService.markFinished(runId);
-            wsSender.sendToRun(runId, RunWsEvent.finished(runId));
+            runStatusService.markFinished(runId, response);
+            wsSender.sendToRun(runId, new RunWsFinal("RUN_FINISHED", runId, response));
             return response;
         } finally {
             executor.shutdown();
@@ -177,7 +196,11 @@ public class ExperimentService {
             Supplier<Generator<S>> generatorFactory,
             AcceptanceRule acceptance,
             PopulationModel<S> popModel,
-            int logEveryIterations
+            int logEveryIterations,
+            int wsUpdateEveryIterations,
+            String runId,
+            int runIndex,
+            long runSeed
     ) {
         if (request.problemId() == null || request.problemId().isEmpty()) {
             throw new BadRequestException("Problem must be specified");
@@ -191,7 +214,8 @@ public class ExperimentService {
         for (String pid : problemIds) {
             Problem<S> problem = createProblem(pid, ss.dimension(), request.problemParams());
             List<StopCondition<S>> stopConditions = createStopConditionChain(request.stopConditionId(), request.stopConditionParams(), problem);
-            List<Observer<S>> observer = createObservers(request.observerIds(), request.observerParams(), problem);
+            List<Observer<S>> observer = new ArrayList<>(createObservers(request.observerIds(), request.observerParams(), problem));
+            observer.add(new RunProgressObserver<>(wsSender, runId, runIndex, runSeed, pid, wsUpdateEveryIterations));
 
             long startTime = System.nanoTime();
 
@@ -311,5 +335,18 @@ public class ExperimentService {
     private <S>Observer<S> createSingleObserver(String id, Map<String, Object> params, Problem<S> problem) {
         ConfigurationContext context = new ConfigurationContext(0, problem);
         return createAndConfigure(observerRegistry, List.of(id), "Observer", params, context);
+    }
+
+    private int resolveLogEveryIterations(RunRequest request) {
+        int maxIterations = 0;
+        if (request != null && request.stopConditionParams() != null) {
+            Object value = request.stopConditionParams().get("maxIterations");
+            if (value instanceof Number n) {
+                maxIterations = n.intValue();
+            }
+        }
+        if (maxIterations <= 0) return 1; // default
+        int interval = (int) Math.round(maxIterations * 0.001);
+        return Math.max(1, interval);
     }
 }

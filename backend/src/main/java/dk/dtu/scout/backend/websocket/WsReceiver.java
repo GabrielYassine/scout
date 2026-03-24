@@ -18,7 +18,10 @@ public class WsReceiver {
     @MessageMapping("/run/{runId}/connect")
     public void connect(@DestinationVariable String runId) {
         wsSender.sendToRun(runId, RunWsEvent.connected(runId));
-        if (runStatusService.isFinished(runId)) {
+        var finished = runStatusService.getFinishedResponse(runId);
+        if (finished != null) {
+            wsSender.sendToRun(runId, new RunWsFinal("RUN_FINISHED", runId, finished));
+        } else if (runStatusService.isFinished(runId)) {
             wsSender.sendToRun(runId, RunWsEvent.finished(runId));
         }
     }
