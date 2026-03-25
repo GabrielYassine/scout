@@ -27,7 +27,6 @@ public class StatisticsService {
             for (RunResponse run : batch.runs()) {
                 runtimesByProblem.computeIfAbsent(run.problemId(), k -> new ArrayList<>()).add(run.runtimeMs());
                 finalEvaluationsByProblem.computeIfAbsent(run.problemId(), k -> new ArrayList<>()).add(run.finalEvaluations());
-
                 runsByProblem.computeIfAbsent(run.problemId(), k -> new ArrayList<>()).add(run);
             }
         }
@@ -53,25 +52,16 @@ public class StatisticsService {
             return ViewMapper.toAverageRunResponse(List.of(), List.of(), Map.of());
         }
 
-        int minIterationsLength = runs.stream()
-                .mapToInt(run -> run.iterations() != null ? run.iterations().size() : 0)
-                .min()
-                .orElse(0);
+        RunResponse referenceRun = runs.stream()
+                .max((a, b) -> Integer.compare(
+                        a.evaluations() != null ? a.evaluations().size() : 0,
+                        b.evaluations() != null ? b.evaluations().size() : 0
+                ))
+                .orElse(runs.get(0));
 
-        int minEvaluationsLength = runs.stream()
-                .mapToInt(run -> run.evaluations() != null ? run.evaluations().size() : 0)
-                .min()
-                .orElse(0);
+        List<Integer> referenceIterations = referenceRun.iterations() != null ? new ArrayList<>(referenceRun.iterations()) : List.of();
 
-        List<Integer> referenceIterations =
-                minIterationsLength == 0
-                        ? List.of()
-                        : new ArrayList<>(runs.get(0).iterations().subList(0, minIterationsLength));
-
-        List<Integer> referenceEvaluations =
-                minEvaluationsLength == 0
-                        ? List.of()
-                        : new ArrayList<>(runs.get(0).evaluations().subList(0, minEvaluationsLength));
+        List<Integer> referenceEvaluations = referenceRun.evaluations() != null ? new ArrayList<>(referenceRun.evaluations()) : List.of();
 
         Map<String, List<Double>> averageSeries = computeAverageSeries(runs);
 
@@ -109,20 +99,28 @@ public class StatisticsService {
             String seriesName = entry.getKey();
             List<List<Double>> allRunsForSeries = entry.getValue();
 
-            int minLength = allRunsForSeries.stream()
+            int maxLength = allRunsForSeries.stream()
                     .mapToInt(List::size)
-                    .min()
+                    .max()
                     .orElse(0);
 
-            if (minLength == 0) continue;
+            if (maxLength == 0) continue;
 
-            List<Double> averaged = new ArrayList<>(minLength);
+            List<Double> averaged = new ArrayList<>(maxLength);
 
-            for (int i = 0; i < minLength; i++) {
+            for (int i = 0; i < maxLength; i++) {
                 double sum = 0.0;
+
                 for (List<Double> runSeries : allRunsForSeries) {
-                    sum += runSeries.get(i);
+                    double value;
+                    if (i < runSeries.size()) {
+                        value = runSeries.get(i);
+                    } else {
+                        value = runSeries.get(runSeries.size() - 1);
+                    }
+                    sum += value;
                 }
+
                 averaged.add(sum / allRunsForSeries.size());
             }
 

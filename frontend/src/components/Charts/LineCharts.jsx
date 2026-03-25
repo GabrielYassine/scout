@@ -5,8 +5,7 @@ function LineCharts({ selectedObserver, chartPoints, problemId }) {
   const option = useMemo(() => {
     if (!selectedObserver || !chartPoints?.length) return null;
 
-    const isTspFitness =
-      problemId === "tsp" && selectedObserver === "fitness";
+    const isTspFitness =problemId === "tsp" && (selectedObserver === "fitness" || selectedObserver === "bestFitness");
 
     const displayObserverName = isTspFitness ? "tourLength" : selectedObserver;
 
