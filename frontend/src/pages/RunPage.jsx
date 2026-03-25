@@ -22,7 +22,34 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
   const params = location.state?.params ?? [];
   const initialTspInstance = location.state?.tspInstance ?? DEFAULT_TSP_INSTANCE;
 
-  const [batch, setBatch] = useState(batchResponse ?? null);
+  const normalizeSeriesMap = (series) => {
+    if (!series) return {};
+    return Object.fromEntries(
+      Object.entries(series).map(([key, value]) => {
+        if (value && typeof value === "object" && Array.isArray(value.values)) {
+          return [key, value.values];
+        }
+        if (Array.isArray(value)) {
+          return [key, value];
+        }
+        return [key, []];
+      })
+    );
+  };
+
+  const normalizeBatch = (incoming) => {
+    if (!incoming) return incoming;
+    const batches = (incoming.batches ?? []).map((batchItem) => ({
+      ...batchItem,
+      runs: (batchItem.runs ?? []).map((run) => ({
+        ...run,
+        series: normalizeSeriesMap(run.series),
+      })),
+    }));
+    return { ...incoming, batches };
+  };
+
+  const [batch, setBatch] = useState(() => normalizeBatch(batchResponse ?? null));
   const [loading, setLoading] = useState(!!initialLoading);
   const [error, setError] = useState(initialError ?? null);
 
@@ -59,19 +86,17 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
 
   useEffect(() => {
     if (!runId) {
-      console.warn("No runId provided; skipping websocket connection");
+      console.log("No runId provided, skipping WebSocket connection");
       return;
     }
 
     const wsUrl = `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}/ws`;
-    console.log("Connecting websocket", { runId, wsUrl });
+    console.log("Connecting to WebSocket at", wsUrl, "for runId", runId);
 
     const client = new Client({
       brokerURL: wsUrl,
       reconnectDelay: 0,
     });
-
-    client.debug = (...args) => console.log("WS debug:", ...args);
 
     const appendSeriesValue = (series, key, value) => {
       if (value === undefined) return series;
@@ -131,7 +156,6 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
       console.log("WebSocket connected", runId);
       client.subscribe(`/topic/run/${runId}`, (message) => {
         const data = JSON.parse(message.body);
-        console.log("Run update:", data);
 
         if (data.type === "RUN_PROGRESS") {
           setLoading(false);
@@ -141,7 +165,7 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
 
         if (data.type === "RUN_FINISHED") {
           setLoading(false);
-          setBatch(data.batch ?? null);
+          setBatch(normalizeBatch(data.batch ?? null));
           client.deactivate();
           return;
         }
@@ -175,10 +199,12 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
 
     return () => {
       try {
-        client.publish({
-          destination: `/app/run/${runId}/disconnect`,
-          body: JSON.stringify({}),
-        });
+        if (client.connected) {
+          client.publish({
+            destination: `/app/run/${runId}/disconnect`,
+            body: JSON.stringify({}),
+          });
+        }
         client.deactivate();
       } catch (e) {
         console.error("Failed to close WebSocket", e);

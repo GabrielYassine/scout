@@ -17,17 +17,17 @@ public class WsReceiver {
 
     @MessageMapping("/run/{runId}/connect")
     public void connect(@DestinationVariable String runId) {
-        wsSender.sendToRun(runId, RunWsEvent.connected(runId));
+        wsSender.sendToRun(runId, RunWsPayload.connected(runId));
         var finished = runStatusService.getFinishedResponse(runId);
         if (finished != null) {
-            wsSender.sendToRun(runId, new RunWsFinal("RUN_FINISHED", runId, finished));
+            wsSender.sendToRun(runId, RunWsPayload.finished(runId, finished));
         } else if (runStatusService.isFinished(runId)) {
-            wsSender.sendToRun(runId, RunWsEvent.finished(runId));
+            wsSender.sendToRun(runId, RunWsPayload.finished(runId, null));
         }
     }
 
     @MessageMapping("/run/{runId}/disconnect")
     public void disconnect(@DestinationVariable String runId) {
-        wsSender.sendToRun(runId, RunWsEvent.disconnected(runId));
+        wsSender.sendToRun(runId, RunWsPayload.disconnected(runId));
     }
 }

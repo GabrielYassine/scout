@@ -22,12 +22,12 @@ public class RunProgressObserver<S> implements Observer<S> {
     private int lastSentLogIndex = -1;
 
     public RunProgressObserver(
-            WsSender wsSender,
-            String runId,
-            int runIndex,
-            long seed,
-            String problemId,
-            int wsUpdateEveryIterations
+        WsSender wsSender,
+        String runId,
+        int runIndex,
+        long seed,
+        String problemId,
+        int wsUpdateEveryIterations
     ) {
         this.wsSender = wsSender;
         this.runId = runId;
@@ -80,8 +80,7 @@ public class RunProgressObserver<S> implements Observer<S> {
 
         wsSender.sendToRun(
             runId,
-            new RunWsUpdate(
-                "RUN_PROGRESS",
+            RunWsPayload.progress(
                 runId,
                 runIndex,
                 seed,
@@ -89,7 +88,7 @@ public class RunProgressObserver<S> implements Observer<S> {
                 iteration,
                 evaluation,
                 seriesDelta
-            )
+        )
         );
     }
 }

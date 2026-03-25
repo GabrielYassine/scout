@@ -16,11 +16,10 @@ import dk.dtu.scout.problems.Problem;
 import dk.dtu.scout.searchSpace.SearchSpace;
 import dk.dtu.scout.stopcondition.MaxIterations;
 import dk.dtu.scout.stopcondition.StopCondition;
-import dk.dtu.scout.backend.websocket.RunWsEvent;
+import dk.dtu.scout.backend.websocket.RunWsPayload;
 import dk.dtu.scout.backend.websocket.WsSender;
 import dk.dtu.scout.backend.websocket.RunStatusService;
 import dk.dtu.scout.backend.websocket.RunProgressObserver;
-import dk.dtu.scout.backend.websocket.RunWsFinal;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -86,7 +85,7 @@ public class ExperimentService {
                 run(request);
             } catch (Exception ex) {
                 if (request != null && request.runId() != null) {
-                    wsSender.sendToRun(request.runId(), RunWsEvent.failed(request.runId(), ex.getMessage()));
+                    wsSender.sendToRun(request.runId(), RunWsPayload.failed(request.runId(), ex.getMessage()));
                 }
             }
         });
@@ -174,7 +173,7 @@ public class ExperimentService {
             BatchSummaryResponse summary = statisticsService.calculateSummary(batches);
             BatchRunResponse response = ViewMapper.toBatchRunResponse(runId, batches, summary);
             runStatusService.markFinished(runId, response);
-            wsSender.sendToRun(runId, new RunWsFinal("RUN_FINISHED", runId, response));
+            wsSender.sendToRun(runId, RunWsPayload.finished(runId, response));
             return response;
         } finally {
             executor.shutdown();

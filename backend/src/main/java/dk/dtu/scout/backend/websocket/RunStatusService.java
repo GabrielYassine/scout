@@ -22,10 +22,6 @@ public class RunStatusService {
         }
     }
 
-    public void markFinished(String runId) {
-        markFinished(runId, null);
-    }
-
     public boolean isFinished(String runId) {
         return runId != null && finishedRuns.contains(runId);
     }
