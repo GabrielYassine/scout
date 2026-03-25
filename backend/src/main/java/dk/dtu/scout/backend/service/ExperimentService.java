@@ -97,22 +97,24 @@ public class ExperimentService {
         int runTimes = request.runTimes();
         int logEvery = resolveLogEveryIterations(request);
         int wsUpdateEvery = request.wsUpdateEveryIterations() > 0 ? request.wsUpdateEveryIterations() : logEvery;
+
         if (request.searchSpaceId() == null || request.searchSpaceId().isEmpty()) {
             throw new BadRequestException("Search space must be specified");
         }
         if (request.runId() == null || request.runId().isBlank()) {
             throw new BadRequestException("runId must be specified");
         }
-        String searchSpaceId = request.searchSpaceId().getFirst();
 
+        String searchSpaceId = request.searchSpaceId().getFirst();
         String runId = request.runId();
 
+        // THIS IS KIND OF HARDCODED, SO LETS CHANGE IT LATER
         return switch (searchSpaceId) {
             case "bitstring", "permutation" -> runBatch(request, seed, runTimes,
-                    () -> createSearchSpace(request.searchSpaceId(), request.searchSpaceParams()),
-                    logEvery,
-                    wsUpdateEvery,
-                    runId
+                () -> createSearchSpace(request.searchSpaceId(), request.searchSpaceParams()),
+                logEvery,
+                wsUpdateEvery,
+                runId
             );
             default -> throw new BadRequestException("Unsupported search space: " + searchSpaceId);
         };
@@ -230,12 +232,12 @@ public class ExperimentService {
             int finalEvaluations = evaluations.isEmpty() ? 0 : evaluations.getLast();
 
             runs.add(ViewMapper.toRunResponse(
-                    pid,
-                    log.getIterations(),
-                    evaluations,
-                    log.getSeries(),
-                    runtimeMs,
-                    finalEvaluations
+                pid,
+                log.getIterations(),
+                evaluations,
+                log.getSeries(),
+                runtimeMs,
+                finalEvaluations
             ));
         }
         return runs;

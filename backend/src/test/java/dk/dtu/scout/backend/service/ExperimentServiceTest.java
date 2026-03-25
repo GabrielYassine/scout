@@ -3,6 +3,7 @@ package dk.dtu.scout.backend.service;
 import dk.dtu.scout.backend.dto.RunRequest;
 import dk.dtu.scout.backend.dto.run.BatchRunResponse;
 import dk.dtu.scout.backend.util.TSPLibParser;
+import dk.dtu.scout.backend.util.ViewMapper;
 import dk.dtu.scout.problems.TSPInstance;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
@@ -55,7 +56,7 @@ class ExperimentServiceTest {
      * @return the median number of evaluations to reach the optimum across the runs
      */
     private double runAndGetMedianFinalEvals(String problemId, int n, long seed, int runs, int maxIterations) {
-        RunRequest request = new RunRequest(
+        RunRequest request = ViewMapper.toRunRequest(
                 List.of("bitstring"),
                 Map.of("n", n),
                 List.of(problemId),
@@ -131,26 +132,26 @@ class ExperimentServiceTest {
     @Test
     @DisplayName("TSP with 2-Opt generator and SA acceptance")
     void testTSPWith2OptAndSA() throws IOException {
-        RunRequest request = new RunRequest(
-                List.of("permutation"),
-                Map.of("n", 52),
-                List.of("tsp"),
-                Map.of("tspInstance", loadBerlin52Instance()),
-                List.of("2opt"),
-                Map.of(),
-                List.of("default"),
-                Map.of("lambda", 20),
-                List.of("simulated-annealing"),
-                Map.of(),
-                List.of("fitness", "tsp-tour"),
-                Map.of(),
-                List.of("max-iterations"),
-                Map.of("maxIterations", 20000),
-                12345L,
-                3,
-                "test-run-tsp-1",
-                100
-        );
+        RunRequest request = ViewMapper.toRunRequest(
+                 List.of("permutation"),
+                 Map.of("n", 52),
+                 List.of("tsp"),
+                 Map.of("tspInstance", loadBerlin52Instance()),
+                 List.of("2opt"),
+                 Map.of(),
+                 List.of("default"),
+                 Map.of("lambda", 20),
+                 List.of("simulated-annealing"),
+                 Map.of(),
+                 List.of("fitness", "tsp-tour"),
+                 Map.of(),
+                 List.of("max-iterations"),
+                 Map.of("maxIterations", 20000),
+                 12345L,
+                 3,
+                 "test-run-tsp-1",
+                 100
+         );
 
         BatchRunResponse response = experimentService.run(request);
     }
@@ -158,26 +159,26 @@ class ExperimentServiceTest {
     @Test
     @DisplayName("TSP with Pheromone-Guided Mutation and Elitist acceptance")
     void testTSPWithPheromoneAndElitist() throws IOException {
-        RunRequest request = new RunRequest(
-                List.of("permutation"),
-                Map.of("n", 52),
-                List.of("tsp"),
-                Map.of("tspInstance", loadBerlin52Instance()),
-                List.of("pheromone-guided"),
-                Map.of("evaporationRate", 0.1, "alpha", 1.0, "beta", 2.0),
-                List.of("default"),
-                Map.of("lambda", 20),
-                List.of("elitist"),
-                Map.of(),
-                List.of("fitness", "tsp-tour"),
-                Map.of(),
-                List.of("max-iterations"),
-                Map.of("maxIterations", 10000),
-                67890L,
-                3,
-                "test-run-tsp-2",
-                100
-        );
+        RunRequest request = ViewMapper.toRunRequest(
+                 List.of("permutation"),
+                 Map.of("n", 52),
+                 List.of("tsp"),
+                 Map.of("tspInstance", loadBerlin52Instance()),
+                 List.of("pheromone-guided"),
+                 Map.of("evaporationRate", 0.1, "alpha", 1.0, "beta", 2.0),
+                 List.of("default"),
+                 Map.of("lambda", 20),
+                 List.of("elitist"),
+                 Map.of(),
+                 List.of("fitness", "tsp-tour"),
+                 Map.of(),
+                 List.of("max-iterations"),
+                 Map.of("maxIterations", 10000),
+                 67890L,
+                 3,
+                 "test-run-tsp-2",
+                 100
+         );
 
         BatchRunResponse response = experimentService.run(request);
     }

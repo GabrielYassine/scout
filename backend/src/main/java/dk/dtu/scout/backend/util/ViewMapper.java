@@ -3,7 +3,6 @@ package dk.dtu.scout.backend.util;
 import dk.dtu.scout.ScoutComponent;
 import dk.dtu.scout.Parameter;
 import dk.dtu.scout.backend.dto.RunRequest;
-import dk.dtu.scout.backend.dto.catalog.AlgorithmDef;
 import dk.dtu.scout.backend.dto.catalog.CatalogResponse;
 import dk.dtu.scout.backend.dto.catalog.ComponentDef;
 import dk.dtu.scout.backend.dto.catalog.ParamDef;
@@ -191,15 +190,6 @@ public final class ViewMapper {
             out.put(entry.getKey(), response);
         }
         return out;
-    }
-
-    public static AlgorithmDef toAlgorithmDef(
-        String id,
-        String displayName,
-        String description,
-        List<String> componentTypes
-    ) {
-        return new AlgorithmDef(id, displayName, description, componentTypes);
     }
 
     public static ExperimentTemplateDto toExperimentTemplateDto(
