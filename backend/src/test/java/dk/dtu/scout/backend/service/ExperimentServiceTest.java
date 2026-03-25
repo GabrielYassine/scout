@@ -31,10 +31,10 @@ class ExperimentServiceTest {
 
         List<Map<String, Object>> cities = new ArrayList<>();
         double[][] coordinates = instance.getCoordinates();
-        for (int i = 0; i < coordinates.length; i++) {
+        for (double[] coordinate : coordinates) {
             Map<String, Object> city = Map.of(
-                    "x", coordinates[i][0],
-                    "y", coordinates[i][1]
+                    "x", coordinate[0],
+                    "y", coordinate[1]
             );
             cities.add(city);
         }
@@ -43,39 +43,6 @@ class ExperimentServiceTest {
                 "name", instance.getName(),
                 "cities", cities
         );
-    }
-
-    private void printTSPResults(BatchRunResponse response, String testName) {
-        assertNotNull(response);
-        System.out.println("\n========== " + testName + " ==========");
-        System.out.println("Response batches count: " + (response.batches() != null ? response.batches().size() : "null"));
-
-        int runIndex = 1;
-        if (response.batches() != null && !response.batches().isEmpty()) {
-            for (var batch : response.batches()) {
-                System.out.println("Batch runs: " + (batch.runs() != null ? batch.runs().size() : "null"));
-                if (batch.runs() != null) {
-                    for (var run : batch.runs()) {
-                        System.out.println("  Run has series: " + (run.series() != null));
-                        if (run.series() != null) {
-                            System.out.println("  Series keys: " + run.series().keySet());
-                        }
-                        if (run.series() != null && run.series().containsKey("bestFitness")) {
-                            @SuppressWarnings("unchecked")
-                            List<Double> bestFitnesses = (List<Double>) run.series().get("bestFitness");
-                            if (!bestFitnesses.isEmpty()) {
-                                double lastFitness = bestFitnesses.get(bestFitnesses.size() - 1);
-                                System.out.println("Run " + runIndex + " - Final best fitness: " + lastFitness + " (Tour length: " + (-lastFitness) + ")");
-                                runIndex++;
-                            }
-                        }
-                    }
-                }
-            }
-        } else {
-            System.out.println("No results found in response!");
-        }
-        System.out.println("=".repeat(Math.min(testName.length() + 12, 50)) + "\n");
     }
 
     /**
@@ -186,7 +153,6 @@ class ExperimentServiceTest {
         );
 
         BatchRunResponse response = experimentService.run(request);
-        printTSPResults(response, "TSP with 2-Opt + SA");
     }
 
     @Test
@@ -214,6 +180,5 @@ class ExperimentServiceTest {
         );
 
         BatchRunResponse response = experimentService.run(request);
-        printTSPResults(response, "TSP with Pheromone-Guided + Elitist");
     }
 }

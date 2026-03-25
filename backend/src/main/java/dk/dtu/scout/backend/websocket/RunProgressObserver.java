@@ -4,6 +4,7 @@ import dk.dtu.scout.Parameter;
 import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.logging.RunState;
 import dk.dtu.scout.observer.Observer;
+import dk.dtu.scout.logging.LoggedSeries;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -69,24 +70,26 @@ public class RunProgressObserver<S> implements Observer<S> {
         int evaluation = log.getEvaluations().get(logIndex);
 
         Map<String, Object> seriesDelta = new LinkedHashMap<>();
-        for (Map.Entry<String, List<?>> entry : log.getSeries().entrySet()) {
-            List<?> values = entry.getValue();
+        for (Map.Entry<String, LoggedSeries<?>> entry : log.getSeries().entrySet()) {
+            LoggedSeries<?> loggedSeries = entry.getValue();
+            if (loggedSeries == null) continue;
+            List<?> values = loggedSeries.getValues();
             if (values == null || values.isEmpty()) continue;
-            seriesDelta.put(entry.getKey(), values.get(values.size() - 1));
+            seriesDelta.put(entry.getKey(), values.getLast());
         }
 
         wsSender.sendToRun(
+            runId,
+            new RunWsUpdate(
+                "RUN_PROGRESS",
                 runId,
-                new RunWsUpdate(
-                        "RUN_PROGRESS",
-                        runId,
-                        runIndex,
-                        seed,
-                        problemId,
-                        iteration,
-                        evaluation,
-                        seriesDelta
-                )
+                runIndex,
+                seed,
+                problemId,
+                iteration,
+                evaluation,
+                seriesDelta
+            )
         );
     }
 }

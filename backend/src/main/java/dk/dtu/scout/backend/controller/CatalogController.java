@@ -2,6 +2,7 @@ package dk.dtu.scout.backend.controller;
 
 import dk.dtu.scout.backend.dto.catalog.CatalogResponse;
 import dk.dtu.scout.backend.service.CatalogService;
+import dk.dtu.scout.backend.util.ViewMapper;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,15 +21,14 @@ public class CatalogController {
 
     @GetMapping("/catalog")
     public CatalogResponse catalog() {
-        return new CatalogResponse(
-            catalog.searchSpaces(),
-            catalog.problems(),
-            catalog.generators(),
-            catalog.acceptanceRules(),
-            catalog.populationModels(),
-            catalog.stopConditions(),
-            catalog.observers()
+        return ViewMapper.toCatalogResponse(
+                catalog.searchSpaces(),
+                catalog.problems(),
+                catalog.generators(),
+                catalog.acceptanceRules(),
+                catalog.populationModels(),
+                catalog.stopConditions(),
+                catalog.observers()
         );
     }
 }
-

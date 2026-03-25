@@ -37,7 +37,7 @@ public class FitnessObserver<S> implements Observer<S> {
 
     @Override
     public void onStep(RunState<S> state, RunLog log) {
-        log.put("fitness", state.currentFitness());
-        log.put("bestFitness", state.bestFitness());
+        log.putSeries("fitness", state.currentFitness());
+        log.putSeries("bestFitness", state.bestFitness());
     }
 }

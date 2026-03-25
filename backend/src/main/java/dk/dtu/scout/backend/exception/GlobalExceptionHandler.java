@@ -2,12 +2,11 @@ package dk.dtu.scout.backend.exception;
 
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import dk.dtu.scout.backend.dto.error.ErrorResponse;
-import dk.dtu.scout.backend.exception.BadRequestException;
+import dk.dtu.scout.backend.util.ViewMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -16,7 +15,7 @@ public class GlobalExceptionHandler {
             BadRequestException e,
             HttpServletRequest request
     ) {
-        ErrorResponse error = new ErrorResponse(
+        ErrorResponse error = ViewMapper.toErrorResponse(
                 HttpStatus.BAD_REQUEST.value(),
                 "Bad Request",
                 e.getMessage(),
@@ -30,7 +29,7 @@ public class GlobalExceptionHandler {
             TemplateLoadException e,
             HttpServletRequest request
     ) {
-        ErrorResponse error = new ErrorResponse(
+        ErrorResponse error = ViewMapper.toErrorResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 "Internal Server Error",
                 e.getMessage(),

@@ -5,6 +5,8 @@ import dk.dtu.scout.backend.dto.run.BatchSummaryResponse;
 import dk.dtu.scout.backend.dto.run.RunGroupResponse;
 import dk.dtu.scout.backend.dto.run.RunResponse;
 import dk.dtu.scout.backend.dto.run.RuntimeStats;
+import dk.dtu.scout.backend.dto.series.SeriesResponse;
+import dk.dtu.scout.backend.util.ViewMapper;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -43,12 +45,12 @@ public class StatisticsService {
             averageByProblem.put(entry.getKey(), computeAverageRun(entry.getValue()));
         }
 
-        return new BatchSummaryResponse(statsByProblem, averageByProblem);
+        return ViewMapper.toBatchSummaryResponse(statsByProblem, averageByProblem);
     }
 
     private AverageRunResponse computeAverageRun(List<RunResponse> runs) {
         if (runs == null || runs.isEmpty()) {
-            return new AverageRunResponse(List.of(), List.of(), Map.of());
+            return ViewMapper.toAverageRunResponse(List.of(), List.of(), Map.of());
         }
 
         int minIterationsLength = runs.stream()
@@ -73,7 +75,7 @@ public class StatisticsService {
 
         Map<String, List<Double>> averageSeries = computeAverageSeries(runs);
 
-        return new AverageRunResponse(referenceIterations, referenceEvaluations, averageSeries);
+        return ViewMapper.toAverageRunResponse(referenceIterations, referenceEvaluations, averageSeries);
     }
 
     private Map<String, List<Double>> computeAverageSeries(List<RunResponse> runs) {
@@ -85,12 +87,14 @@ public class StatisticsService {
         Map<String, List<List<Double>>> seriesValuesByName = new LinkedHashMap<>();
 
         for (RunResponse run : runs) {
-            Map<String, List<?>> series = run.series();
+            Map<String, SeriesResponse<?>> series = run.series();
             if (series == null) continue;
 
-            for (Map.Entry<String, List<?>> entry : series.entrySet()) {
+            for (Map.Entry<String, SeriesResponse<?>> entry : series.entrySet()) {
                 String seriesName = entry.getKey();
-                List<?> rawValues = entry.getValue();
+                SeriesResponse<?> response = entry.getValue();
+                if (response == null) continue;
+                List<?> rawValues = response.values();
 
                 List<Double> numericValues = toDoubleList(rawValues);
                 if (numericValues.isEmpty()) continue;
@@ -147,10 +151,10 @@ public class StatisticsService {
     public RuntimeStats computeStats(List<Double> values, List<Integer> finalEvaluations) {
         int n = values.size();
         if (n == 0) {
-            return new RuntimeStats(0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+            return ViewMapper.toRuntimeStats(0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
         }
         double finalEvaluationsMedian = calculateMedian(finalEvaluations);
-        return new RuntimeStats(n, 0.0, 0.0, 0.0, 0.0, 0.0, finalEvaluationsMedian);
+        return ViewMapper.toRuntimeStats(n, 0.0, 0.0, 0.0, 0.0, 0.0, finalEvaluationsMedian);
     }
 
     private double calculateMedian(List<Integer> values) {

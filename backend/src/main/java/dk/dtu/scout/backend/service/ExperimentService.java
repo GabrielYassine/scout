@@ -33,6 +33,7 @@ import java.util.Comparator;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import dk.dtu.scout.backend.util.ViewMapper;
 
 
 @Service
@@ -158,7 +159,7 @@ public class ExperimentService {
 
                     // Run the algorithm once for each specified problem and collect the results
                     List<RunResponse> perProblemRuns = runTypedOnce(request, rng, ss, generatorFactory, acceptance, popModel, logEveryIterations, wsUpdateEveryIterations, runId, runIndex, runSeed);
-                    return new RunGroupResponse(runIndex, runSeed, perProblemRuns);
+                    return ViewMapper.toRunGroupResponse(runIndex, runSeed, perProblemRuns);
                 }, executor);
 
                 futures.add(future);
@@ -169,7 +170,7 @@ public class ExperimentService {
                     .sorted(Comparator.comparingInt(RunGroupResponse::runIndex)).toList();
 
             BatchSummaryResponse summary = statisticsService.calculateSummary(batches);
-            BatchRunResponse response = new BatchRunResponse(runId, batches, summary);
+            BatchRunResponse response = ViewMapper.toBatchRunResponse(runId, batches, summary);
             runStatusService.markFinished(runId, response);
             wsSender.sendToRun(runId, new RunWsFinal("RUN_FINISHED", runId, response));
             return response;
@@ -228,7 +229,7 @@ public class ExperimentService {
             List<Integer> evaluations = log.getEvaluations();
             int finalEvaluations = evaluations.isEmpty() ? 0 : evaluations.getLast();
 
-            runs.add(new RunResponse(
+            runs.add(ViewMapper.toRunResponse(
                     pid,
                     log.getIterations(),
                     evaluations,

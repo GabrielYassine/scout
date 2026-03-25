@@ -45,6 +45,6 @@ public class ImprovementObserver<S> implements Observer<S> {
             improvement = state.bestFitness() - previousBestFitness;
             previousBestFitness = state.bestFitness();
         }
-        log.put("improvement", improvement);
+        log.putSeries("improvement", improvement);
     }
 }

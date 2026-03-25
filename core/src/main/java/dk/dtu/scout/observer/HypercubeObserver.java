@@ -32,8 +32,8 @@ public class HypercubeObserver implements Observer<boolean[]> {
     @Override
     public void onStep(RunState<boolean[]> state, RunLog log) {
         Point2D p = map(state.currentSolution());
-        log.put("hypercubeX", p.x());
-        log.put("hypercubeY", p.y());
+        log.putSeries("hypercubeX", p.x());
+        log.putSeries("hypercubeY", p.y());
     }
 
     public record Point2D(double x, double y) {}

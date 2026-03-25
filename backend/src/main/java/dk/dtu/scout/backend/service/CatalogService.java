@@ -2,10 +2,8 @@ package dk.dtu.scout.backend.service;
 
 import java.util.List;
 
-import dk.dtu.scout.backend.dto.catalog.*;
-
-import dk.dtu.scout.ScoutComponent;
-import dk.dtu.scout.Parameter;
+import dk.dtu.scout.backend.dto.catalog.ComponentDef;
+import dk.dtu.scout.backend.util.ViewMapper;
 
 import dk.dtu.scout.acceptance.AcceptanceRule;
 import dk.dtu.scout.generator.Generator;
@@ -47,46 +45,31 @@ public class CatalogService {
         this.observers = observers;
     }
 
-    private static ComponentDef toComponentDef(String kind, ScoutComponent c) {
-        return new ComponentDef(
-            kind,
-            c.id(),
-            c.displayName(),
-            c.description(),
-            c.params().stream().map(CatalogService::toParamDef).toList(),
-            c.supportedSearchSpaces()
-        );
-    }
-
-    private static ParamDef toParamDef(Parameter p) {
-        return new ParamDef(p.key(), p.label(), p.type(), p.defaultValue(), p.min(), p.max());
-    }
-
     public List<ComponentDef> searchSpaces() {
-        return searchSpaces.stream().map(c -> toComponentDef("searchSpace", c)).toList();
+        return searchSpaces.stream().map(c -> ViewMapper.toComponentDef("searchSpace", c)).toList();
     }
 
     public List<ComponentDef> problems() {
-        return problems.stream().map(c -> toComponentDef("problem", c)).toList();
+        return problems.stream().map(c -> ViewMapper.toComponentDef("problem", c)).toList();
     }
 
     public List<ComponentDef> generators() {
-        return generators.stream().map(c -> toComponentDef("generator", c)).toList();
+        return generators.stream().map(c -> ViewMapper.toComponentDef("generator", c)).toList();
     }
 
     public List<ComponentDef> acceptanceRules() {
-        return acceptanceRules.stream().map(c -> toComponentDef("acceptanceRule", c)).toList();
+        return acceptanceRules.stream().map(c -> ViewMapper.toComponentDef("acceptanceRule", c)).toList();
     }
 
     public List<ComponentDef> populationModels() {
-        return populationModels.stream().map(c -> toComponentDef("populationModel", c)).toList();
+        return populationModels.stream().map(c -> ViewMapper.toComponentDef("populationModel", c)).toList();
     }
 
     public List<ComponentDef> stopConditions() {
-        return stopConditions.stream().map(c -> toComponentDef("stopCondition", c)).toList();
+        return stopConditions.stream().map(c -> ViewMapper.toComponentDef("stopCondition", c)).toList();
     }
 
     public List<ComponentDef> observers() {
-        return observers.stream().map(c -> toComponentDef("observer", c)).toList();
+        return observers.stream().map(c -> ViewMapper.toComponentDef("observer", c)).toList();
     }
 }

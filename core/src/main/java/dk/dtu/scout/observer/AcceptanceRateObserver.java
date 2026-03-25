@@ -43,6 +43,6 @@ public class AcceptanceRateObserver<S> implements Observer<S> {
             acceptedCount++;
         }
         double rate = totalCount > 0 ? (double) acceptedCount / totalCount : 0.0;
-        log.put("acceptanceRate", rate);
+        log.putSeries("acceptanceRate", rate);
     }
 }
