@@ -3,6 +3,7 @@ package dk.dtu.scout.observer;
 import dk.dtu.scout.Parameter;
 import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.logging.RunState;
+import dk.dtu.scout.logging.SeriesMode;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -43,6 +44,6 @@ public class AcceptanceRateObserver<S> implements Observer<S> {
             acceptedCount++;
         }
         double rate = totalCount > 0 ? (double) acceptedCount / totalCount : 0.0;
-        log.putSeries("acceptanceRate", rate);
+        log.putSeries("acceptanceRate", rate, SeriesMode.ALL);
     }
 }

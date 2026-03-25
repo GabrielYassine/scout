@@ -2,6 +2,7 @@ package dk.dtu.scout.backend.websocket;
 
 import dk.dtu.scout.backend.dto.run.BatchRunResponse;
 
+import java.util.List;
 import java.util.Map;
 
 public record RunWsPayload(
@@ -13,6 +14,8 @@ public record RunWsPayload(
     String problemId,
     Integer iteration,
     Integer evaluation,
+    List<Integer> iterations,
+    List<Integer> evaluations,
     Map<String, Object> seriesDelta,
     BatchRunResponse batch
 ) {
@@ -35,6 +38,8 @@ public record RunWsPayload(
             null,
             null,
             null,
+            null,
+            null,
             batch
         );
     }
@@ -50,6 +55,8 @@ public record RunWsPayload(
         String problemId,
         int iteration,
         int evaluation,
+        List<Integer> iterations,
+        List<Integer> evaluations,
         Map<String, Object> seriesDelta
     ) {
         return new RunWsPayload(
@@ -61,6 +68,8 @@ public record RunWsPayload(
             problemId,
             iteration,
             evaluation,
+            iterations,
+            evaluations,
             seriesDelta,
             null
         );
@@ -71,6 +80,8 @@ public record RunWsPayload(
             type,
             runId,
             message,
+            null,
+            null,
             null,
             null,
             null,

@@ -87,8 +87,10 @@ public class RunProgressObserver<S> implements Observer<S> {
                 problemId,
                 iteration,
                 evaluation,
+                null,
+                null,
                 seriesDelta
-        )
+            )
         );
     }
 }

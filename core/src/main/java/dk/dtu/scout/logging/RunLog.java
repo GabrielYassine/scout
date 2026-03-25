@@ -15,14 +15,9 @@ public class RunLog {
         evaluations.add(evaluation);
     }
 
-    public <T> void putSeries(String key, T value) {
-        putSeries(key, value, SeriesMode.ALL);
-    }
-
     public <T> void putSeries(String key, T value, SeriesMode mode) {
         @SuppressWarnings("unchecked")
-        LoggedSeries<T> loggedSeries =
-                (LoggedSeries<T>) series.computeIfAbsent(key, k -> new LoggedSeries<>(mode));
+        LoggedSeries<T> loggedSeries = (LoggedSeries<T>) series.computeIfAbsent(key, k -> new LoggedSeries<>(mode));
         loggedSeries.add(value);
     }
 

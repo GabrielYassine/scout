@@ -1,4 +1,4 @@
-import { useState, useMemo, memo, useCallback } from "react";
+import { useState, useMemo, memo, useCallback, useEffect } from "react";
 import "./RunChart.css";
 import HypercubePlot from "./HypercubePlot.jsx";
 import TSPVisualization from "../TSPVisualization/TSPVisualization.jsx";
@@ -35,6 +35,31 @@ function RunChart({ run, runIndex, problemIndex }) {
     setSelectedObserver(observerKey);
   }, []);
 
+  useEffect(() => {
+    if (!selectedObserver || !displayKeys.includes(selectedObserver)) {
+      setSelectedObserver(displayKeys[0] || (hasTSPTour ? TSP_TOUR_KEY : null));
+    }
+  }, [displayKeys, hasTSPTour, selectedObserver]);
+
+  const data = useMemo(() => {
+    if (
+      !selectedObserver ||
+      selectedObserver === HYPERCUBE_KEY ||
+      selectedObserver === TSP_TOUR_KEY ||
+      !series[selectedObserver]
+    ) {
+      return [];
+    }
+
+    const observerData = series[selectedObserver];
+    const minLen = Math.min(evaluations.length, observerData.length);
+
+    return Array.from({ length: minLen }, (_, i) => [
+      Number(evaluations[i]),
+      Number(observerData[i]),
+    ]).filter(([x, y]) => Number.isFinite(x) && Number.isFinite(y));
+  }, [selectedObserver, evaluations, series]);
+
   if (!evaluations.length || displayKeys.length === 0) {
     return (
       <div className="run-chart-panel">
@@ -45,25 +70,6 @@ function RunChart({ run, runIndex, problemIndex }) {
       </div>
     );
   }
-
- const data = useMemo(() => {
-   if (
-     !selectedObserver ||
-     selectedObserver === HYPERCUBE_KEY ||
-     selectedObserver === TSP_TOUR_KEY ||
-     !series[selectedObserver]
-   ) {
-     return [];
-   }
-
-   const observerData = series[selectedObserver];
-   const minLen = Math.min(evaluations.length, observerData.length);
-
-   return Array.from({ length: minLen }, (_, i) => [
-     Number(evaluations[i]),
-     Number(observerData[i]),
-   ]).filter(([x, y]) => Number.isFinite(x) && Number.isFinite(y));
- }, [selectedObserver, evaluations, series]);
 
   return (
     <div className="chart-panel">

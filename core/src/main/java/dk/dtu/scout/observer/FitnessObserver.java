@@ -3,6 +3,7 @@ package dk.dtu.scout.observer;
 import dk.dtu.scout.Parameter;
 import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.logging.RunState;
+import dk.dtu.scout.logging.SeriesMode;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -37,7 +38,7 @@ public class FitnessObserver<S> implements Observer<S> {
 
     @Override
     public void onStep(RunState<S> state, RunLog log) {
-        log.putSeries("fitness", state.currentFitness());
-        log.putSeries("bestFitness", state.bestFitness());
+        log.putSeries("fitness", state.currentFitness(), SeriesMode.ALL);
+        log.putSeries("bestFitness", state.bestFitness(), SeriesMode.ALL);
     }
 }

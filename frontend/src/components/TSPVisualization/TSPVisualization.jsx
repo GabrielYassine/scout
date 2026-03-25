@@ -22,19 +22,28 @@ export default function TSPVisualization({
 
   const sourceData = useMemo(() => {
     if (run?.series?.tspTour && run?.series?.tspCities) {
-      const citiesData = run.series.tspCities[0];
-      const tourDataEntry = run.series.tspTour[run.series.tspTour.length - 1];
+      const tspCitiesSeries = run.series.tspCities;
+      const citiesData = Array.isArray(tspCitiesSeries)
+        ? (Array.isArray(tspCitiesSeries[0]) ? tspCitiesSeries[0] : tspCitiesSeries)
+        : null;
+
+      const tspTourSeries = run.series.tspTour;
+      const tourDataEntry = Array.isArray(tspTourSeries)
+        ? tspTourSeries[tspTourSeries.length - 1]
+        : tspTourSeries;
 
       const tourArray = tourDataEntry?.tour || tourDataEntry;
       const tourLength = tourDataEntry?.length;
 
       return {
         tour: tourArray,
-        cities: citiesData.map((city, index) => ({
-          id: index,
-          x: city.x,
-          y: city.y
-        })),
+        cities: Array.isArray(citiesData)
+          ? citiesData.map((city, index) => ({
+              id: index,
+              x: city.x,
+              y: city.y
+            }))
+          : [],
         observedTourLength: tourLength,
         originalTourLength: run.series?.fitness?.[run.series.fitness.length - 1]
           ? Math.abs(run.series.fitness[run.series.fitness.length - 1])

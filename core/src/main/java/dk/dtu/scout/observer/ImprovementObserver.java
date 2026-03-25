@@ -3,6 +3,7 @@ package dk.dtu.scout.observer;
 import dk.dtu.scout.Parameter;
 import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.logging.RunState;
+import dk.dtu.scout.logging.SeriesMode;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -45,6 +46,6 @@ public class ImprovementObserver<S> implements Observer<S> {
             improvement = state.bestFitness() - previousBestFitness;
             previousBestFitness = state.bestFitness();
         }
-        log.putSeries("improvement", improvement);
+        log.putSeries("improvement", improvement, SeriesMode.ALL);
     }
 }

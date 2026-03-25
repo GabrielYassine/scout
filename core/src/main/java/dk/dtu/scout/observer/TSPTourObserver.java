@@ -5,6 +5,7 @@ import dk.dtu.scout.Parameter;
 import dk.dtu.scout.State;
 import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.logging.RunState;
+import dk.dtu.scout.logging.SeriesMode;
 import dk.dtu.scout.problems.Problem;
 import dk.dtu.scout.problems.TSPInstance;
 import dk.dtu.scout.problems.TSPProblem;
@@ -103,7 +104,7 @@ public class TSPTourObserver implements Observer<int[]> {
     @Override
     public void onStart(RunState<int[]> state, RunLog log) {
         if (!citiesLogged && cities != null) {
-            log.putSeries("tspCities", cities);
+            log.putSeries("tspCities", cities, SeriesMode.LATEST_ONLY);
             citiesLogged = true;
         }
         logTourSnapshot(state, log);
@@ -126,13 +127,7 @@ public class TSPTourObserver implements Observer<int[]> {
             System.out.println("[TSPTourObserver debug] " + debugSnapshot);
         }
 
-        if (!citiesLogged && cities != null) {
-            log.putSeries("tspCities", cities);
-            citiesLogged = true;
-        }
-
         logTourSnapshot(state, log);
-
         logPheromoneHeatmap(log);
     }
 
@@ -158,7 +153,7 @@ public class TSPTourObserver implements Observer<int[]> {
             tourData.put("length", tourLength);
         }
 
-        log.putSeries("tspTour", tourData);
+        log.putSeries("tspTour", tourData, SeriesMode.LATEST_ONLY);
     }
 
     private void logPheromoneHeatmap(RunLog log) {
@@ -204,7 +199,7 @@ public class TSPTourObserver implements Observer<int[]> {
         }
 
         if (matrixList != null && !matrixList.isEmpty()) {
-            log.putSeries("pheromoneHeatmap", matrixList);
+            log.putSeries("pheromoneHeatmap", matrixList, SeriesMode.LATEST_ONLY);
         }
     }
 }

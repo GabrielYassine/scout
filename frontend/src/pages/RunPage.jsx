@@ -101,6 +101,21 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
     const appendSeriesValue = (series, key, value) => {
       if (value === undefined) return series;
       const next = { ...series };
+      if (Array.isArray(value)) {
+        const list = Array.isArray(next[key]) ? [...next[key]] : [];
+        if (key === "tspCities") {
+          if (list.length === 0) list.push(value);
+          next[key] = list;
+          return next;
+        }
+        if (key === "pheromoneHeatmap") {
+          list.push(value);
+          next[key] = list;
+          return next;
+        }
+        next[key] = [...value];
+        return next;
+      }
       const list = Array.isArray(next[key]) ? [...next[key]] : [];
       if (key === "tspCities") {
         if (list.length === 0) list.push(value);
@@ -134,12 +149,28 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
               finalEvaluations: 0,
             };
 
-      run.iterations = [...run.iterations, update.iteration];
-      run.evaluations = [...run.evaluations, update.evaluation];
-      run.series = Object.entries(update.seriesDelta ?? {}).reduce(
-        (acc, [key, value]) => appendSeriesValue(acc, key, value),
-        run.series ?? {}
-      );
+      if (Array.isArray(update.iterations)) {
+        run.iterations = [...update.iterations];
+      } else {
+        run.iterations = [...run.iterations, update.iteration];
+      }
+
+      if (Array.isArray(update.evaluations)) {
+        run.evaluations = [...update.evaluations];
+      } else {
+        run.evaluations = [...run.evaluations, update.evaluation];
+      }
+      const seriesDelta = update.seriesDelta ?? {};
+      const seriesValues = Object.values(seriesDelta);
+      const hasSeriesSnapshot = seriesValues.length > 0 && seriesValues.every(Array.isArray);
+      if (hasSeriesSnapshot) {
+        run.series = normalizeSeriesMap(seriesDelta);
+      } else {
+        run.series = Object.entries(seriesDelta).reduce(
+          (acc, [key, value]) => appendSeriesValue(acc, key, value),
+          run.series ?? {}
+        );
+      };
 
       runsList[runIndex >= 0 ? runIndex : runsList.length] = run;
       runGroup.runs = runsList;
