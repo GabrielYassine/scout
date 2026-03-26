@@ -1,7 +1,7 @@
 import { useMemo, memo } from "react";
 import ReactECharts from "echarts-for-react";
 
-function LineCharts({ selectedObserver, chartPoints, searchSpaceId }) {
+function LineCharts({ selectedObserver, chartPoints, searchSpaceId, phaseRanges = [] }) {
   const option = useMemo(() => {
     if (!selectedObserver || !chartPoints?.length) return null;
 
@@ -12,6 +12,25 @@ function LineCharts({ selectedObserver, chartPoints, searchSpaceId }) {
     const displayChartPoints = isTspFitness
       ? chartPoints.map(([x, y]) => [x, -y])
       : chartPoints;
+
+    const phaseColors = {
+      IMPROVING: "rgba(46, 204, 113, 0.18)",
+      WORSENING: "rgba(231, 76, 60, 0.18)",
+      STAGNANT: "rgba(241, 196, 15, 0.18)",
+    };
+
+    const markAreaData = (phaseRanges ?? [])
+      .map((range) => {
+        const start = Number(range?.start);
+        const end = Number(range?.end);
+        if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
+        const color = phaseColors[range?.phase] ?? phaseColors.STAGNANT;
+        return [
+          { xAxis: Math.min(start, end), itemStyle: { color } },
+          { xAxis: Math.max(start, end) },
+        ];
+      })
+      .filter(Boolean);
 
     return {
       animation: false,
@@ -71,10 +90,19 @@ function LineCharts({ selectedObserver, chartPoints, searchSpaceId }) {
           sampling: "lttb",
           progressive: 2000,
           progressiveThreshold: 3000,
+          ...(markAreaData.length
+            ? {
+                markArea: {
+                  silent: true,
+                  label: { show: false },
+                  data: markAreaData,
+                },
+              }
+            : {}),
         },
       ],
     };
-  }, [selectedObserver, chartPoints, searchSpaceId]);
+  }, [selectedObserver, chartPoints, searchSpaceId, phaseRanges]);
 
   if (!option) {
     return <div>No chart data.</div>;

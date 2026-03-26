@@ -105,29 +105,31 @@ public class FitnessPhaseObserver<S> implements Observer<S> {
 
         int windowStart = iteration - windowSize + 1;
 
+        // If we haven't detected a phase yet, start one
         if (currentPhase == null) {
             currentPhase = detected;
             intervals.add(newInterval(windowStart, iteration, currentPhase));
-            log.putSeries("fitnessPhaseIntervals", new ArrayList<>(intervals), SeriesMode.LATEST_ONLY);
+
             return;
         }
 
+        // If the detected phase is the same as the current one, just update the end iteration
         if (detected == currentPhase) {
             updateIntervalEnd(iteration);
-            log.putSeries("fitnessPhaseIntervals", new ArrayList<>(intervals), SeriesMode.LATEST_ONLY);
             return;
         }
 
+        // Phase changed: emit the finalized interval and start a new one
+        emitInterval(log, intervals.getLast());
         currentPhase = detected;
         intervals.add(newInterval(windowStart, iteration, currentPhase));
-        log.putSeries("fitnessPhaseIntervals", new ArrayList<>(intervals), SeriesMode.LATEST_ONLY);
     }
 
     @Override
     public void onEnd(RunState<S> state, RunLog log) {
         if (!intervals.isEmpty()) {
             updateIntervalEnd(state.iteration());
-            log.putSeries("fitnessPhaseIntervals", new ArrayList<>(intervals), SeriesMode.LATEST_ONLY);
+            emitInterval(log, intervals.getLast());
         }
     }
 
@@ -154,4 +156,10 @@ public class FitnessPhaseObserver<S> implements Observer<S> {
         Map<String, Object> last = intervals.getLast();
         last.put("endIteration", end);
     }
+
+    private void emitInterval(RunLog log, Map<String, Object> interval) {
+        if (interval == null) return;
+        log.putSeries("fitnessPhaseIntervals", new LinkedHashMap<>(interval), SeriesMode.ALL);
+    }
 }
+

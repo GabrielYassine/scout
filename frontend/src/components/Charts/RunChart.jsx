@@ -9,6 +9,7 @@ const TSP_TOUR_KEY = "__tsp-tour__";
 
 function RunChart({ run, runIndex, problemIndex, playbackSpeed = 50 }) {
   const evaluations = run?.evaluations ?? [];
+  const iterations = run?.iterations ?? [];
   const series = run?.series ?? {};
   const hasHypercube =(series.hypercubeX?.length ?? 0) > 0 && (series.hypercubeY?.length ?? 0) > 0;
   const hasTSPTour = (series.tspTour?.length ?? 0) > 0 && (series.tspCities?.length ?? 0) > 0;
@@ -19,7 +20,8 @@ function RunChart({ run, runIndex, problemIndex, playbackSpeed = 50 }) {
       k !== "hypercubeY" &&
       k !== "tspTour" &&
       k !== "tspCities" &&
-      k !== "pheromoneHeatmap"
+      k !== "pheromoneHeatmap" &&
+      k !== "fitnessPhaseIntervals"
   );
 
    const displayKeys = useMemo(() => {
@@ -100,6 +102,46 @@ function RunChart({ run, runIndex, problemIndex, playbackSpeed = 50 }) {
     return data.slice(0, visibleCount);
   }, [data, visibleCount]);
 
+  const phaseRanges = useMemo(() => {
+    const intervals = series.fitnessPhaseIntervals ?? [];
+    if (!intervals.length || !iterations.length || !evaluations.length) return [];
+
+    const iterationToEvaluation = new Map();
+    for (let i = 0; i < iterations.length; i += 1) {
+      iterationToEvaluation.set(iterations[i], evaluations[i]);
+    }
+
+    const lookupEvaluation = (iteration) => {
+      const direct = iterationToEvaluation.get(iteration);
+      if (direct != null) return direct;
+      let bestIndex = -1;
+      let bestDelta = Number.POSITIVE_INFINITY;
+      for (let i = 0; i < iterations.length; i += 1) {
+        const delta = Math.abs(iterations[i] - iteration);
+        if (delta < bestDelta) {
+          bestDelta = delta;
+          bestIndex = i;
+        }
+      }
+      return bestIndex >= 0 ? evaluations[bestIndex] : null;
+    };
+
+    return intervals
+      .map((interval) => {
+        const startIteration = Number(interval?.startIteration);
+        const endIteration = Number(interval?.endIteration);
+        if (!Number.isFinite(startIteration) || !Number.isFinite(endIteration)) return null;
+        const startEval = lookupEvaluation(startIteration);
+        const endEval = lookupEvaluation(endIteration);
+        if (!Number.isFinite(startEval) || !Number.isFinite(endEval)) return null;
+        const start = Math.min(startEval, endEval);
+        const end = Math.max(startEval, endEval);
+        const phase = typeof interval?.phase === "string" ? interval.phase : "STAGNANT";
+        return { start, end, phase };
+      })
+      .filter(Boolean);
+  }, [series.fitnessPhaseIntervals, iterations, evaluations]);
+
   if (!evaluations.length || displayKeys.length === 0) {
     return (
       <div className="run-chart-panel">
@@ -127,6 +169,7 @@ function RunChart({ run, runIndex, problemIndex, playbackSpeed = 50 }) {
             selectedObserver={selectedObserver}
             chartPoints={visibleData}
             searchSpaceId={run?.searchSpaceId}
+            phaseRanges={phaseRanges}
           />
         )}
       </div>
@@ -157,3 +200,4 @@ function RunChart({ run, runIndex, problemIndex, playbackSpeed = 50 }) {
 }
 
 export default memo(RunChart);
+
