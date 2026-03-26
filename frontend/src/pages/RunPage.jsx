@@ -52,6 +52,7 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
   const [batch, setBatch] = useState(() => normalizeBatch(batchResponse ?? null));
   const [loading, setLoading] = useState(!!initialLoading);
   const [error, setError] = useState(initialError ?? null);
+  const [playbackSpeed, setPlaybackSpeed] = useState(50);
 
   const batches = batch?.batches ?? [];
   const averageByProblem = batch?.summary?.averageByProblem ?? {};
@@ -151,13 +152,13 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
 
       if (Array.isArray(update.iterations)) {
         run.iterations = [...update.iterations];
-      } else {
+      } else if (update.iteration != null) {
         run.iterations = [...run.iterations, update.iteration];
       }
 
       if (Array.isArray(update.evaluations)) {
         run.evaluations = [...update.evaluations];
-      } else {
+      } else if (update.evaluation != null) {
         run.evaluations = [...run.evaluations, update.evaluation];
       }
       const seriesDelta = update.seriesDelta ?? {};
@@ -170,7 +171,7 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
           (acc, [key, value]) => appendSeriesValue(acc, key, value),
           run.series ?? {}
         );
-      };
+      }
 
       runsList[runIndex >= 0 ? runIndex : runsList.length] = run;
       runGroup.runs = runsList;
@@ -205,6 +206,7 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
           setLoading(false);
           setError(data.message || "Run failed");
           client.deactivate();
+          return;
         }
 
         if (data.type === "RUN_DISCONNECTED") {
@@ -301,6 +303,21 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
               </div>
             )}
 
+            <div className="run-speed-control">
+              <label htmlFor="playback-speed" className="form-label">
+                Graph speed:
+              </label>
+              <input
+                id="playback-speed"
+                type="range"
+                min="1"
+                max="200"
+                value={playbackSpeed}
+                onChange={(e) => setPlaybackSpeed(Number(e.target.value))}
+              />
+              <span>{playbackSpeed}</span>
+            </div>
+
             <div className="run-stack">
               {runs.map((run, idx) => (
                 <RunChart
@@ -308,6 +325,7 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
                   run={run}
                   runIndex={selectedBatch?.runIndex ?? "average"}
                   problemIndex={idx + 1}
+                  playbackSpeed={playbackSpeed}
                 />
               ))}
             </div>

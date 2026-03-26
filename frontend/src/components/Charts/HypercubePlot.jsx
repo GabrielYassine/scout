@@ -35,7 +35,7 @@ function HypercubePlot({
   padding = 20,
   gaussianScale = 7.0,
   eyeSteps = 250,
-  showPoints = true,
+  visibleCount = null,
 }) {
   const xs = run?.series?.hypercubeX ?? [];
   const ys = run?.series?.hypercubeY ?? [];
@@ -62,14 +62,14 @@ function HypercubePlot({
     const { leftD, rightD } = buildEyePaths(width, height, padding, gaussianScale,  eyeSteps);
     return { pts, leftD, rightD };
   }, [xs, ys, width, height, padding, gaussianScale,  eyeSteps]);
+  const visiblePts = visibleCount == null ? pts : pts.slice(0, visibleCount);
 
-  if (!pts.length) return <div>No hypercube data.</div>;
-
-  const d = pts
+  if (!visiblePts.length) return <div>No hypercube data.</div>;
+  const d = visiblePts
     .map((p, idx) => `${idx === 0 ? "M" : "L"} ${p.px.toFixed(2)} ${p.py.toFixed(2)}`)
     .join(" ");
 
-  const last = pts[pts.length - 1];
+  const last = visiblePts[visiblePts.length - 1];
 
   return (
       <svg
@@ -82,8 +82,7 @@ function HypercubePlot({
 
       <path d={d} fill="none" stroke="#999" strokeWidth="2" />
 
-      {showPoints &&
-        pts.map((p) => <circle key={p.i} cx={p.px} cy={p.py} r="2" fill="#3b82f6" />)}
+      {visiblePts.map((p) => <circle key={p.i} cx={p.px} cy={p.py} r="2" fill="#3b82f6" />)}
 
       <circle cx={last.px} cy={last.py} r="5" fill="#ef4444" />
     </svg>

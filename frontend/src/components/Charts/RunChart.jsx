@@ -4,11 +4,10 @@ import HypercubePlot from "./HypercubePlot.jsx";
 import TSPVisualization from "../TSPVisualization/TSPVisualization.jsx";
 import LineCharts from "./LineCharts.jsx";
 
-
 const HYPERCUBE_KEY = "__hypercube__";
 const TSP_TOUR_KEY = "__tsp-tour__";
 
-function RunChart({ run, runIndex, problemIndex }) {
+function RunChart({ run, runIndex, problemIndex, playbackSpeed = 50 }) {
   const evaluations = run?.evaluations ?? [];
   const series = run?.series ?? {};
   const hasHypercube =(series.hypercubeX?.length ?? 0) > 0 && (series.hypercubeY?.length ?? 0) > 0;
@@ -30,7 +29,10 @@ function RunChart({ run, runIndex, problemIndex }) {
      return out;
    }, [keys, hasHypercube, hasTSPTour]);
 
-  const [selectedObserver, setSelectedObserver] = useState(displayKeys[0] || (hasTSPTour ? TSP_TOUR_KEY : null));
+  const [selectedObserver, setSelectedObserver] = useState(displayKeys[0] || (hasTSPTour ? TSP_TOUR_KEY : null) );
+
+  const [visibleCount, setVisibleCount] = useState(1);
+
   const handleObserverChange = useCallback((observerKey) => {
     setSelectedObserver(observerKey);
   }, []);
@@ -60,6 +62,44 @@ function RunChart({ run, runIndex, problemIndex }) {
     ]).filter(([x, y]) => Number.isFinite(x) && Number.isFinite(y));
   }, [selectedObserver, evaluations, series]);
 
+  const animationLength = useMemo(() => {
+    if (selectedObserver === HYPERCUBE_KEY) {
+      return Math.min(
+        series.hypercubeX?.length ?? 0,
+        series.hypercubeY?.length ?? 0
+      );
+    }
+
+    if (selectedObserver === TSP_TOUR_KEY) {
+      return series.tspTour?.length ?? 0;
+    }
+
+    return data.length;
+  }, [selectedObserver, series, data.length]);
+
+  useEffect(() => {
+    setVisibleCount(1);
+  }, [run, selectedObserver]);
+
+  useEffect(() => {
+    if (!selectedObserver || !animationLength) return;
+
+    const stepSize = Math.max(1, Math.floor(playbackSpeed / 15));
+
+    const interval = setInterval(() => {
+      setVisibleCount((prev) => {
+        if (prev >= animationLength) return prev;
+        return Math.min(prev + stepSize, animationLength);
+      });
+    }, 30);
+
+    return () => clearInterval(interval);
+  }, [animationLength, playbackSpeed, selectedObserver]);
+
+  const visibleData = useMemo(() => {
+    return data.slice(0, visibleCount);
+  }, [data, visibleCount]);
+
   if (!evaluations.length || displayKeys.length === 0) {
     return (
       <div className="run-chart-panel">
@@ -79,13 +119,13 @@ function RunChart({ run, runIndex, problemIndex }) {
 
       <div className="run-chart-inner">
         {selectedObserver === HYPERCUBE_KEY ? (
-          <HypercubePlot run={run} />
+          <HypercubePlot run={run} visibleCount={visibleCount} />
         ) : selectedObserver === TSP_TOUR_KEY ? (
           <TSPVisualization run={run} />
         ) :  (
           <LineCharts
             selectedObserver={selectedObserver}
-            chartPoints={data}
+            chartPoints={visibleData}
             searchSpaceId={run?.searchSpaceId}
           />
         )}
@@ -117,4 +157,3 @@ function RunChart({ run, runIndex, problemIndex }) {
 }
 
 export default memo(RunChart);
-
