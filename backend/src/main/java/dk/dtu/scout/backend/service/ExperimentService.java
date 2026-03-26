@@ -155,11 +155,10 @@ public class ExperimentService {
                     Random rng = new Random(runSeed);
                     SearchSpace<S> ss = searchSpaceFactory.get();
 
-                    Supplier<Generator<S>> generatorFactory = () -> createGenerator(request.generatorId(), request.generatorParams(), ss.dimension(), ss.id());                    AcceptanceRule acceptance = createAcceptanceRule(request.acceptanceRuleId(), request.acceptanceRuleParams());
-                    PopulationModel<S> popModel = createPopulationModel(request.populationModelId(), request.populationModelParams());
+                    Supplier<Generator<S>> generatorFactory = () -> createGenerator(request.generatorId(), request.generatorParams(), ss.dimension(), ss.id());
 
                     // Run the algorithm once for each specified problem and collect the results
-                    List<RunResponse> perProblemRuns = runTypedOnce(request, rng, ss, generatorFactory, acceptance, popModel, logEveryIterations, wsUpdateEveryIterations, runId, runIndex, runSeed);
+                    List<RunResponse> perProblemRuns = runTypedOnce(request, rng, ss, generatorFactory, logEveryIterations, wsUpdateEveryIterations, runId, runIndex, runSeed);
                     return ViewMapper.toRunGroupResponse(runIndex, runSeed, perProblemRuns);
                 }, executor);
 
@@ -186,8 +185,6 @@ public class ExperimentService {
      * @param request
      * @param rng
      * @param ss
-     * @param acceptance
-     * @param popModel
      * @return
      * @param <S>
      */
@@ -196,8 +193,6 @@ public class ExperimentService {
             Random rng,
             SearchSpace<S> ss,
             Supplier<Generator<S>> generatorFactory,
-            AcceptanceRule acceptance,
-            PopulationModel<S> popModel,
             int logEveryIterations,
             int wsUpdateEveryIterations,
             String runId,
@@ -215,8 +210,10 @@ public class ExperimentService {
         // The reason stopcondition and observer are created inside the loop is tha they depend on problem.
         for (String pid : problemIds) {
             Problem<S> problem = createProblem(pid, ss.dimension(), request.problemParams());
+            AcceptanceRule acceptance = createAcceptanceRule(request.acceptanceRuleId(), request.acceptanceRuleParams());
             List<StopCondition<S>> stopConditions = createStopConditionChain(request.stopConditionId(), request.stopConditionParams(), problem);
             List<Observer<S>> observer = new ArrayList<>(createObservers(request.observerIds(), request.observerParams(), problem));
+            PopulationModel<S> popModel = createPopulationModel(request.populationModelId(), request.populationModelParams());
             observer.add(new RunProgressObserver<>(wsSender, runId, runIndex, runSeed, pid, wsUpdateEveryIterations));
 
             long startTime = System.nanoTime();
