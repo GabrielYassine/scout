@@ -27,7 +27,7 @@
       "maxIterations": 10000
     },
 
-    "observerIds": ["fitness", "acceptance-rate", "improvements","tsp-tour"],
+    "observerIds": ["fitness", "fitness-phase","acceptance-rate", "improvements","tsp-tour"],
 
     "seed": 1,
     "runTimes": 10

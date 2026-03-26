@@ -23,7 +23,7 @@
     "stopConditionId": ["max-iterations","optimum-reached" ],
     "stopConditionParams": { "maxIterations": 10000 },
 
-    "observerIds": ["fitness", "acceptance-rate", "improvements", "hypercube"],
+    "observerIds": ["fitness", "fitness-phase", "acceptance-rate", "improvements", "hypercube"],
 
     "seed": 1,
     "runTimes": 10
