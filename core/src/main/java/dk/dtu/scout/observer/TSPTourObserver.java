@@ -113,20 +113,6 @@ public class TSPTourObserver implements Observer<int[]> {
 
     @Override
     public void onStep(RunState<int[]> state, RunLog log) {
-        if (!debugLogged) {
-            debugLogged = true;
-            Map<String, Object> debugSnapshot = new HashMap<>();
-            if (this.state != null) {
-                Object ph = this.state.get("pheromoneMatrix");
-                debugSnapshot.put("pheromoneMatrixType", ph == null ? "null" : ph.getClass().getName());
-                Object dimObj = this.state.get("dimension");
-                debugSnapshot.put("dimension", dimObj);
-            } else {
-                debugSnapshot.put("state", "null");
-            }
-            System.out.println("[TSPTourObserver debug] " + debugSnapshot);
-        }
-
         logTourSnapshot(state, log);
         logPheromoneHeatmap(log);
     }

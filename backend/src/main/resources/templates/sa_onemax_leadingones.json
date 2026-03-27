@@ -13,7 +13,7 @@
 
     "selectionRuleId": ["annealed-selection"],
     "selectionRuleParams": {
-      "initialTemperature": 1000.0,
+      "initialTemperature": 5.0,
       "coolingRate": 0.999,
       "minTemperature": 0.000001
     },
@@ -24,7 +24,7 @@
     "stopConditionId": ["max-iterations","optimum-reached" ],
     "stopConditionParams": { "maxIterations": 10000 },
 
-    "observerIds": ["fitness", "fitness-phase", "acceptance-rate", "improvements", "hypercube"],
+    "observerIds": ["fitness", "fitness-phase", "acceptance-rate", "hypercube"],
 
     "seed": 1,
     "runTimes": 10

@@ -70,6 +70,17 @@ public class AnnealedSelection<S> implements SelectionRule<S> {
             int iteration,
             Random rng
     ) {
+        if (mu == 1 && parents.size() == 1 && children.size() == 1) {
+            EvaluatedSolution<S> current = parents.getFirst();
+            EvaluatedSolution<S> candidate = children.getFirst();
+
+            double temperature = temperatureAt(iteration);
+            double delta = candidate.fitness() - current.fitness();
+            boolean accept = delta >= 0 || rng.nextDouble() < Math.exp(delta / temperature);
+
+            return List.of(accept ? candidate : current);
+        }
+
         List<EvaluatedSolution<S>> pool = new ArrayList<>(parents.size() + children.size());
         pool.addAll(parents);
         pool.addAll(children);
@@ -78,27 +89,26 @@ public class AnnealedSelection<S> implements SelectionRule<S> {
             return List.of();
         }
 
-        // Sort best-to-worst so we have a reference best candidate
         pool.sort(Comparator.comparingDouble(EvaluatedSolution<S>::fitness).reversed());
 
         List<EvaluatedSolution<S>> selected = new ArrayList<>(mu);
         double temperature = temperatureAt(iteration);
 
         while (selected.size() < mu && !pool.isEmpty()) {
-            EvaluatedSolution<S> bestCandidate = pool.getFirst();
+            EvaluatedSolution<S> reference = pool.getFirst();
             boolean picked = false;
 
             for (int i = 0; i < pool.size(); i++) {
                 EvaluatedSolution<S> candidate = pool.get(i);
 
-                if (candidate.fitness() >= bestCandidate.fitness()) {
+                if (candidate.fitness() >= reference.fitness()) {
                     selected.add(candidate);
                     pool.remove(i);
                     picked = true;
                     break;
                 }
 
-                double delta = candidate.fitness() - bestCandidate.fitness();
+                double delta = candidate.fitness() - reference.fitness();
                 double probability = Math.exp(delta / temperature);
 
                 if (rng.nextDouble() < probability) {
@@ -109,13 +119,11 @@ public class AnnealedSelection<S> implements SelectionRule<S> {
                 }
             }
 
-            // fallback: if nothing was accepted, take the current best
             if (!picked) {
                 selected.add(pool.removeFirst());
             }
         }
 
-        // keep result sorted best-to-worst for consistency
         selected.sort(Comparator.comparingDouble(EvaluatedSolution<S>::fitness).reversed());
         return selected;
     }

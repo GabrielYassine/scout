@@ -45,8 +45,7 @@ public class BitFlipGenerator implements Generator<boolean[]> {
             params = Map.of();
         }
         Object flipProbValue = params.get("flipProbability");
-        if (flipProbValue instanceof String) {
-            String formula = (String) flipProbValue;
+        if (flipProbValue instanceof String formula) {
             double p = FormulaEvaluator.eval(formula, context.getDimension());
             p = Math.max(0.0, Math.min(1.0, p));
             this.flipProbability = p;

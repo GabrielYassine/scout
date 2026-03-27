@@ -1,4 +1,5 @@
 package dk.dtu.scout.population;
+
 import dk.dtu.scout.EvaluatedSolution;
 import dk.dtu.scout.Parameter;
 import dk.dtu.scout.ScoutComponent;
@@ -27,8 +28,10 @@ import java.util.function.Supplier;
 @Scope("prototype")
 public class MuLambdaPopulationModel<S> implements PopulationModel<S> {
 
-    private int mu = 1; // parents, default 1
-    private int lambda = 1; // children, default 1
+    // mu = number of parents maintained between generations
+    // lambda = number of offspring generated from the current state each iteration
+    private int mu = 1;
+    private int lambda = 1;
 
     @Override
     public String id() {
@@ -56,6 +59,7 @@ public class MuLambdaPopulationModel<S> implements PopulationModel<S> {
     @Override
     public void configure(Map<String, Object> params) {
         if (params == null) return;
+
         if (params.containsKey("mu")) {
             int value = ((Number) params.get("mu")).intValue();
             if (value <= 0) {
@@ -63,6 +67,7 @@ public class MuLambdaPopulationModel<S> implements PopulationModel<S> {
             }
             this.mu = value;
         }
+
         if (params.containsKey("lambda")) {
             int value = ((Number) params.get("lambda")).intValue();
             if (value <= 0) {
@@ -74,7 +79,7 @@ public class MuLambdaPopulationModel<S> implements PopulationModel<S> {
 
     private List<ScoutComponent> initializeComponents(
             Generator<S> generator,
-            SelectionRule<S> acceptance,
+            SelectionRule<S> selection,
             SearchSpace<S> space,
             Problem<S> problem,
             List<StopCondition<S>> stopConditions,
@@ -82,7 +87,7 @@ public class MuLambdaPopulationModel<S> implements PopulationModel<S> {
     ) {
         List<ScoutComponent> components = new ArrayList<>();
         components.add(generator);
-        components.add(acceptance);
+        components.add(selection);
         components.add(space);
         components.add(problem);
         components.addAll(stopConditions);
@@ -95,7 +100,9 @@ public class MuLambdaPopulationModel<S> implements PopulationModel<S> {
             throw new IllegalStateException("No evaluated solutions available");
         }
 
-        EvaluatedSolution<S> best = evaluatedSolutions.get(0);
+        // The population model does not assume the selection rule returns solutions sorted.
+        // This keeps the contract for SelectionRule simpler and avoids hidden coupling.
+        EvaluatedSolution<S> best = evaluatedSolutions.getFirst();
         for (int i = 1; i < evaluatedSolutions.size(); i++) {
             EvaluatedSolution<S> candidate = evaluatedSolutions.get(i);
             if (candidate.fitness() > best.fitness()) {
@@ -103,6 +110,35 @@ public class MuLambdaPopulationModel<S> implements PopulationModel<S> {
             }
         }
         return best;
+    }
+
+    private Map<String, Object> getPopulationStateVariables(
+            S current,
+            S best,
+            double bestFitness,
+            double currentFitness,
+            List<EvaluatedSolution<S>> parentsEvaluated,
+            List<EvaluatedSolution<S>> generationEvaluated
+    ) {
+        // current = representative of the current parent population
+        // best = best solution ever seen during the whole run
+        // These can differ for non-elitist or probabilistic selection rules.
+        return Map.of(
+                "current", current,
+                "best", best,
+                "bestFitness", bestFitness,
+                "currentFitness", currentFitness,
+                "parentsEvaluated", parentsEvaluated,
+                "generationEvaluated", generationEvaluated
+        );
+    }
+
+    private void updateComponentStateVariables(State varState, List<ScoutComponent> components) {
+        Map<String, Object> combinedStateVariables = new HashMap<>();
+        for (ScoutComponent component : components) {
+            combinedStateVariables.putAll(component.getStateVariables(varState));
+        }
+        varState.update(combinedStateVariables);
     }
 
     @Override
@@ -116,96 +152,79 @@ public class MuLambdaPopulationModel<S> implements PopulationModel<S> {
             List<Observer<S>> observers,
             int logEveryIterations
     ) {
-        // Initialize log and state
         RunLog log = new RunLog();
         State varState = new State();
 
-        // Validate logEveryIterations
         if (logEveryIterations <= 0) {
             throw new IllegalArgumentException("logEveryIterations must be positive");
         }
 
-        // Island model needs a factory for each island
+        // A factory is used so population models that need multiple generators
+        // later on (e.g. island models) can reuse the same run signature.
         Generator<S> generator = generatorFactory.get();
 
-        // Initialize components list (MOVE OUTSIDE)
         List<ScoutComponent> components = initializeComponents(generator, selection, space, problem, stopConditions, observers);
 
-        // Store problem in state so generators can access it
+        // Problem is exposed in the shared state before init() so dependent components
+        // such as generators can inspect it during initialization.
         varState.update(Map.of("problem", problem));
-
-        // Initialize all components with state (MOVE OUTSIDE)
         for (ScoutComponent component : components) {
             component.init(varState);
         }
 
-        // 1) Initialize parents
+        // Initial parents are sampled directly from the search space.
+        // This makes the search space responsible for initialization,
+        // while the generator is responsible for producing offspring afterwards.
         List<EvaluatedSolution<S>> parentsEvaluated = new ArrayList<>(mu);
 
-        // Set default values for current
         S current = null;
         double currentFitness = Double.NEGATIVE_INFINITY;
 
-        // Generate initial parents and evaluate them
         for (int i = 0; i < mu; i++) {
             S parent = space.randomSolution(rng);
             double parentFitness = problem.fitness(parent);
             parentsEvaluated.add(new EvaluatedSolution<>(parent, parentFitness));
 
-            // Find best among initial parents to set as current
+            // current starts as the best representative among the initial parents.
             if (parentFitness > currentFitness) {
                 currentFitness = parentFitness;
                 current = parent;
             }
         }
 
-        // Set the best solution as the best among initial parents
+        // best tracks best-so-far globally, not just the current representative.
+        // This matters for non-elitist selection, where the population may later lose
+        // its currently best-known solution.
         S best = current;
         double bestFitness = currentFitness;
 
-        int evaluations = mu; // We have evaluated mu parents so far
+        int evaluations = mu; // Starts at mu because the initial parents are evaluated before the first iteration.
         int iteration = 0;
 
-        // Initial state
         RunState<S> initial = new RunState<>(iteration, evaluations, current, currentFitness, best, bestFitness, false);
-        Observers.onStart(observers,initial, log);
+        Observers.onStart(observers, initial, log);
         log.tick(initial.iteration(), initial.evaluations() - 1);
-        Observers.onStep(observers,initial, log);
+        Observers.onStep(observers, initial, log);
 
-        // Temporary lists to hold generation solutions and fitness for state variables
         List<EvaluatedSolution<S>> generationEvaluated = new ArrayList<>();
 
-        // 2) Loop until stop condition is met
         while (!StopConditions.shouldStop(stopConditions, iteration, evaluations, bestFitness, best)) {
-            // Update state variables from all components first
-            Map<String, Object> combinedStateVariables = new HashMap<>();
-            // Order of state variables in the map (for consistency and readability):
-            // 1) population model
-            // 1) generator
-            // 2) selection
-            // 3) space
-            // 4) problem
-            // 5) stop
-            // 6) observer
-            varState.update(Map.of(
-                    "current", current,
-                    "best", best,
-                    "bestFitness", bestFitness,
-                    "currentFitness", currentFitness,
-                    "parentsEvaluated", parentsEvaluated,
-                    "generationEvaluated", generationEvaluated
-            ));
-
-            // Should make sure that all vars have been initialized before calling getStateVariables (FIX)
-            for (ScoutComponent component : components) {
-                combinedStateVariables.putAll(component.getStateVariables(varState));
-            }
-            varState.update(combinedStateVariables);
-
-            // Clear generation lists for the new generation
+            // Reuse the same list object to avoid unnecessary allocations each iteration.
             generationEvaluated.clear();
 
-            // 3) Generate lambda children and evaluate them
+            // Pre-generation view: parents + empty current generation.
+            varState.update(getPopulationStateVariables(
+                    current,
+                    best,
+                    bestFitness,
+                    currentFitness,
+                    parentsEvaluated,
+                    generationEvaluated
+            ));
+            updateComponentStateVariables(varState, components);
+
+            // Generate and evaluate lambda offspring.
+            // Evaluation count increases for each child, since fitness is computed here.
             for (int k = 0; k < lambda; k++) {
                 S child = generator.generate(rng);
                 double childFitness = problem.fitness(child);
@@ -215,41 +234,63 @@ public class MuLambdaPopulationModel<S> implements PopulationModel<S> {
 
             double previousCurrentFitness = currentFitness;
 
+            // The selection rule is responsible for survivor selection only.
+            // It decides which evaluated solutions become the next parent population.
             List<EvaluatedSolution<S>> nextParentsEvaluated = selection.select(
-                parentsEvaluated,
-                generationEvaluated,
-                mu,
-                iteration,
-                rng
+                    parentsEvaluated,
+                    generationEvaluated,
+                    mu,
+                    iteration,
+                    rng
             );
 
             if (nextParentsEvaluated == null || nextParentsEvaluated.isEmpty()) {
                 throw new IllegalStateException("Selection rule returned no parents");
             }
 
-            if (nextParentsEvaluated.size() > mu) {
-                throw new IllegalStateException("Selection rule returned more parents than mu: " + nextParentsEvaluated.size());
+            // Returning more than mu would violate the fixed-size population model.
+            if (nextParentsEvaluated.size() != mu) {
+                throw new IllegalStateException("Selection rule returned " + nextParentsEvaluated.size() + " parents, expected " + mu);
             }
 
             parentsEvaluated = nextParentsEvaluated;
 
+            // The representative shown to generic observers is the best individual
+            // in the selected parent population. This is a framework choice; it is not
+            // necessarily the only meaningful representative.
             EvaluatedSolution<S> representative = bestOf(parentsEvaluated);
             current = representative.value();
             currentFitness = representative.fitness();
 
-            boolean accepted = currentFitness >= previousCurrentFitness;
+            // accepted here no longer means pairwise accept/reject as in classical SA.
+            // It now simply indicates whether the representative became no worse.
+            boolean nonWorsening = currentFitness >= previousCurrentFitness;
 
+            // Global best-so-far must be updated separately from current,
+            // because current may worsen under non-elitist selection.
             if (currentFitness > bestFitness) {
                 best = current;
                 bestFitness = currentFitness;
             }
 
-            RunState<S> stateLog = new RunState<>(iteration, evaluations, current, currentFitness, best, bestFitness, accepted);
+            // Post-selection view: new parents + current generation.
+            varState.update(getPopulationStateVariables(
+                    current,
+                    best,
+                    bestFitness,
+                    currentFitness,
+                    parentsEvaluated,
+                    generationEvaluated
+            ));
+            updateComponentStateVariables(varState, components);
+
+            RunState<S> stateLog = new RunState<>(iteration, evaluations, current, currentFitness, best, bestFitness, nonWorsening);
 
             if ((stateLog.iteration() + 1) % logEveryIterations == 0) {
                 log.tick(stateLog.iteration(), stateLog.evaluations() - 1);
                 Observers.onStep(observers, stateLog, log);
             }
+
             iteration++;
         }
 
