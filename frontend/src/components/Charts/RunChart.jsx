@@ -106,13 +106,21 @@ function RunChart({ run, runIndex, problemIndex, playbackSpeed = 50, visibleCoun
       return bestIndex >= 0 ? evaluations[bestIndex] : null;
     };
 
-    return intervals
+    const rawRanges = intervals
       .map((interval) => {
+        const startEvaluation = Number(interval?.startEvaluation);
+        const endEvaluation = Number(interval?.endEvaluation);
         const startIteration = Number(interval?.startIteration);
         const endIteration = Number(interval?.endIteration);
-        if (!Number.isFinite(startIteration) || !Number.isFinite(endIteration)) return null;
-        const startEval = lookupEvaluation(startIteration);
-        const endEval = lookupEvaluation(endIteration);
+
+        let startEval = startEvaluation;
+        let endEval = endEvaluation;
+        if (!Number.isFinite(startEval) || !Number.isFinite(endEval)) {
+          if (!Number.isFinite(startIteration) || !Number.isFinite(endIteration)) return null;
+          startEval = lookupEvaluation(startIteration);
+          endEval = lookupEvaluation(endIteration);
+        }
+
         if (!Number.isFinite(startEval) || !Number.isFinite(endEval)) return null;
         const start = Math.min(startEval, endEval);
         const end = Math.max(startEval, endEval);
@@ -120,7 +128,40 @@ function RunChart({ run, runIndex, problemIndex, playbackSpeed = 50, visibleCoun
         return { start, end, phase };
       })
       .filter(Boolean);
+
+    const sorted = rawRanges.slice().sort((a, b) => a.start - b.start);
+    const filled = [];
+    for (const range of sorted) {
+      const prev = filled[filled.length - 1];
+      const start = range.start;
+      const end = range.end;
+
+      if (prev && start > prev.end) {
+        // Fill the gap with the previous phase so the band stays continuous.
+        filled.push({ start: prev.end, end: start, phase: prev.phase });
+      }
+
+      if (prev && start < prev.end) {
+        // Clip overlaps to avoid color blending.
+        if (end <= prev.end) continue;
+        filled.push({ ...range, start: prev.end, end });
+        continue;
+      }
+
+      if (end > start) {
+        filled.push(range);
+      }
+    }
+
+    return filled;
   }, [series.fitnessPhaseIntervals, iterations, evaluations]);
+
+  useEffect(() => {
+    const intervals = series.fitnessPhaseIntervals ?? [];
+    if (!intervals.length) return;
+    const label = run?.problemId ?? `run-${runIndex}`;
+    console.log(`[FitnessPhaseObserver] ${label}`, intervals);
+  }, [series.fitnessPhaseIntervals, run?.problemId, runIndex]);
 
   if (!evaluations.length || displayKeys.length === 0) {
     return (

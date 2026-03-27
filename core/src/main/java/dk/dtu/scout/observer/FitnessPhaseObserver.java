@@ -8,7 +8,6 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -24,9 +23,9 @@ public class FitnessPhaseObserver<S> implements Observer<S> {
     private int windowSize = DEFAULT_WINDOW_SIZE;
     private double epsilon = DEFAULT_EPSILON;
 
-    private final Deque<Double> window = new ArrayDeque<>();
-    private final List<Map<String, Object>> intervals = new ArrayList<>();
-    private Phase currentPhase = null;
+    private final Deque<Double> fitnessBlock = new ArrayDeque<>();
+    private final Deque<Integer> iterationBlock = new ArrayDeque<>();
+    private final Deque<Integer> evaluationBlock = new ArrayDeque<>();
 
     private enum Phase {
         IMPROVING,
@@ -46,7 +45,7 @@ public class FitnessPhaseObserver<S> implements Observer<S> {
 
     @Override
     public String description() {
-        return "Classifies fitness phases using a rolling window of current fitness values";
+        return "Classifies fitness phases in completed non-overlapping blocks of fitness values";
     }
 
     @Override
@@ -80,57 +79,55 @@ public class FitnessPhaseObserver<S> implements Observer<S> {
 
     @Override
     public void onStart(RunState<S> state, RunLog log) {
-        window.clear();
-        intervals.clear();
-        currentPhase = null;
+        fitnessBlock.clear();
+        iterationBlock.clear();
+        evaluationBlock.clear();
     }
 
     @Override
     public void onStep(RunState<S> state, RunLog log) {
         double fitness = state.currentFitness();
         int iteration = state.iteration();
+        int evaluation = Math.max(0, state.evaluations() - 1);
 
-        window.addLast(fitness);
-        if (window.size() > windowSize) {
-            window.removeFirst();
-        }
+        fitnessBlock.addLast(fitness);
+        iterationBlock.addLast(iteration);
+        evaluationBlock.addLast(evaluation);
 
-        if (window.size() < windowSize) {
+        // Wait until the whole block is complete before classifying/coloring it
+        if (fitnessBlock.size() < windowSize) {
             return;
         }
 
-        double first = window.getFirst();
-        double last = window.getLast();
-        Phase detected = classify(last - first);
+        double firstFitness = fitnessBlock.getFirst();
+        double lastFitness = fitnessBlock.getLast();
+        Phase phase = classify(lastFitness - firstFitness);
 
-        int windowStart = iteration - windowSize + 1;
+        int startIteration = iterationBlock.getFirst();
+        int endIteration = iterationBlock.getLast();
+        int startEvaluation = evaluationBlock.getFirst();
+        int endEvaluation = evaluationBlock.getLast();
 
-        // If we haven't detected a phase yet, start one
-        if (currentPhase == null) {
-            currentPhase = detected;
-            intervals.add(newInterval(windowStart, iteration, currentPhase));
+        Map<String, Object> interval = newInterval(
+                startIteration,
+                endIteration,
+                startEvaluation,
+                endEvaluation,
+                phase
+        );
 
-            return;
-        }
+        emitInterval(log, interval);
 
-        // If the detected phase is the same as the current one, just update the end iteration
-        if (detected == currentPhase) {
-            updateIntervalEnd(iteration);
-            return;
-        }
-
-        // Phase changed: emit the finalized interval and start a new one
-        emitInterval(log, intervals.getLast());
-        currentPhase = detected;
-        intervals.add(newInterval(windowStart, iteration, currentPhase));
+        // Start a fresh new block after emitting this one
+        fitnessBlock.clear();
+        iterationBlock.clear();
+        evaluationBlock.clear();
     }
 
     @Override
     public void onEnd(RunState<S> state, RunLog log) {
-        if (!intervals.isEmpty()) {
-            updateIntervalEnd(state.iteration());
-            emitInterval(log, intervals.getLast());
-        }
+        // Do nothing with partial leftover block.
+        // This matches your idea: only completed x-sized blocks get colored.
     }
 
     private Phase classify(double delta) {
@@ -143,18 +140,18 @@ public class FitnessPhaseObserver<S> implements Observer<S> {
         return Phase.STAGNANT;
     }
 
-    private Map<String, Object> newInterval(int start, int end, Phase phase) {
+    private Map<String, Object> newInterval(int startIteration,
+                                            int endIteration,
+                                            int startEvaluation,
+                                            int endEvaluation,
+                                            Phase phase) {
         Map<String, Object> interval = new LinkedHashMap<>();
-        interval.put("startIteration", start);
-        interval.put("endIteration", end);
+        interval.put("startIteration", startIteration);
+        interval.put("endIteration", endIteration);
+        interval.put("startEvaluation", startEvaluation);
+        interval.put("endEvaluation", endEvaluation);
         interval.put("phase", phase.name());
         return interval;
-    }
-
-    private void updateIntervalEnd(int end) {
-        if (intervals.isEmpty()) return;
-        Map<String, Object> last = intervals.getLast();
-        last.put("endIteration", end);
     }
 
     private void emitInterval(RunLog log, Map<String, Object> interval) {
@@ -162,4 +159,3 @@ public class FitnessPhaseObserver<S> implements Observer<S> {
         log.putSeries("fitnessPhaseIntervals", new LinkedHashMap<>(interval), SeriesMode.ALL);
     }
 }
-
