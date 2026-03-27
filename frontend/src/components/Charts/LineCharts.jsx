@@ -1,11 +1,11 @@
 import { useMemo, memo } from "react";
 import ReactECharts from "echarts-for-react";
 
-function LineCharts({ selectedObserver, chartPoints, searchSpaceId, phaseRanges = [] }) {
+function LineCharts({ selectedObserver, chartPoints, SearchSpaceId, phaseRanges = [] }) {
   const option = useMemo(() => {
     if (!selectedObserver || !chartPoints?.length) return null;
 
-    const isTspFitness =searchSpaceId === "permutation" && (selectedObserver === "fitness" || selectedObserver === "bestFitness");
+    const isTspFitness =SearchSpaceId === "permutation" && (selectedObserver === "fitness" || selectedObserver === "bestFitness");
 
     const displayObserverName = isTspFitness ? "tourLength" : selectedObserver;
 
@@ -102,7 +102,7 @@ function LineCharts({ selectedObserver, chartPoints, searchSpaceId, phaseRanges 
         },
       ],
     };
-  }, [selectedObserver, chartPoints, searchSpaceId, phaseRanges]);
+  }, [selectedObserver, chartPoints, SearchSpaceId, phaseRanges]);
 
   if (!option) {
     return <div>No chart data.</div>;

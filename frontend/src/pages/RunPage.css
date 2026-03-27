@@ -48,6 +48,26 @@
 .run-chart-title {
   font-weight: 700;
 }
+.run-speed-control {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+.reset-playback-button {
+  padding: 8px 12px;
+  border: 1px solid #b91c1c;
+  background: #dc2626;
+  color: white;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-weight: 600;
+}
+
 
 .run-loading {
   display: flex;

@@ -228,6 +228,7 @@ public class ExperimentService {
             int finalEvaluations = evaluations.isEmpty() ? 0 : evaluations.getLast();
 
             runs.add(ViewMapper.toRunResponse(
+                ss.id(),
                 pid,
                 log.getIterations(),
                 evaluations,

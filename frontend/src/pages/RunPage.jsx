@@ -85,6 +85,47 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
 
   const [tspInstance] = useState(initialTspInstance);
 
+   const [visibleCount, setVisibleCount] = useState(1);
+   const currentAnimationLength = useMemo(() => {
+     if (!runs.length) return 0;
+
+     return Math.max(
+       ...runs.map((run) => {
+         const series = run?.series ?? {};
+
+         const hypercubeLen = Math.min(
+           series.hypercubeX?.length ?? 0,
+           series.hypercubeY?.length ?? 0
+         );
+
+         const tspLen = series.tspTour?.length ?? 0;
+
+         const normalLens = Object.values(series)
+           .filter(Array.isArray)
+           .map((arr) => arr.length);
+
+         return Math.max(hypercubeLen, tspLen, ...normalLens, run.evaluations?.length ?? 0);
+       })
+     );
+   }, [runs]);
+   useEffect(() => {
+     if (!currentAnimationLength) return;
+
+     const stepSize = Math.max(1, Math.floor(playbackSpeed / 15));
+
+     const interval = setInterval(() => {
+       setVisibleCount((prev) => {
+         if (prev >= currentAnimationLength) return prev;
+         return Math.min(prev + stepSize, currentAnimationLength);
+       });
+     }, 30);
+
+     return () => clearInterval(interval);
+   }, [currentAnimationLength, playbackSpeed]);
+function handleResetPlayback() {
+  setVisibleCount(1);
+}
+
   useEffect(() => {
     if (!runId) {
       console.log("No runId provided, skipping WebSocket connection");
@@ -316,6 +357,13 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
                 onChange={(e) => setPlaybackSpeed(Number(e.target.value))}
               />
               <span>{playbackSpeed}</span>
+              <button
+                type="button"
+                className="reset-playback-button"
+                onClick={handleResetPlayback}
+              >
+                Reset
+              </button>
             </div>
 
             <div className="run-stack">
@@ -326,6 +374,7 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
                   runIndex={selectedBatch?.runIndex ?? "average"}
                   problemIndex={idx + 1}
                   playbackSpeed={playbackSpeed}
+                  visibleCount={visibleCount}
                 />
               ))}
             </div>

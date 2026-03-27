@@ -7,7 +7,7 @@ import LineCharts from "./LineCharts.jsx";
 const HYPERCUBE_KEY = "__hypercube__";
 const TSP_TOUR_KEY = "__tsp-tour__";
 
-function RunChart({ run, runIndex, problemIndex, playbackSpeed = 50 }) {
+function RunChart({ run, runIndex, problemIndex, playbackSpeed = 50, visibleCount }) {
   const evaluations = run?.evaluations ?? [];
   const iterations = run?.iterations ?? [];
   const series = run?.series ?? {};
@@ -33,7 +33,6 @@ function RunChart({ run, runIndex, problemIndex, playbackSpeed = 50 }) {
 
   const [selectedObserver, setSelectedObserver] = useState(displayKeys[0] || (hasTSPTour ? TSP_TOUR_KEY : null) );
 
-  const [visibleCount, setVisibleCount] = useState(1);
 
   const handleObserverChange = useCallback((observerKey) => {
     setSelectedObserver(observerKey);
@@ -78,25 +77,6 @@ function RunChart({ run, runIndex, problemIndex, playbackSpeed = 50 }) {
 
     return data.length;
   }, [selectedObserver, series, data.length]);
-
-  useEffect(() => {
-    setVisibleCount(1);
-  }, [run, selectedObserver]);
-
-  useEffect(() => {
-    if (!selectedObserver || !animationLength) return;
-
-    const stepSize = Math.max(1, Math.floor(playbackSpeed / 15));
-
-    const interval = setInterval(() => {
-      setVisibleCount((prev) => {
-        if (prev >= animationLength) return prev;
-        return Math.min(prev + stepSize, animationLength);
-      });
-    }, 30);
-
-    return () => clearInterval(interval);
-  }, [animationLength, playbackSpeed, selectedObserver]);
 
   const visibleData = useMemo(() => {
     return data.slice(0, visibleCount);
@@ -168,7 +148,7 @@ function RunChart({ run, runIndex, problemIndex, playbackSpeed = 50 }) {
           <LineCharts
             selectedObserver={selectedObserver}
             chartPoints={visibleData}
-            searchSpaceId={run?.searchSpaceId}
+            SearchSpaceId={run?.SearchSpaceId}
             phaseRanges={phaseRanges}
           />
         )}
@@ -178,8 +158,7 @@ function RunChart({ run, runIndex, problemIndex, playbackSpeed = 50 }) {
         <div className="observer-checkboxes">
           {displayKeys.map((key) => {
             // Display friendly names for special keys
-            const displayName = key === HYPERCUBE_KEY ? "Hypercube" :
-                               key === TSP_TOUR_KEY ? "TSP Tour" : key;
+            const displayName = key === HYPERCUBE_KEY ? "Hypercube" :  key === TSP_TOUR_KEY ? "TSP Tour" : key;
 
             return (
               <label key={key} className="observer-checkbox-label">

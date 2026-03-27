@@ -116,6 +116,7 @@ public final class ViewMapper {
     }
 
     public static RunResponse toRunResponse(
+        String searchSpaceId,
         String problemId,
         List<Integer> iterations,
         List<Integer> evaluations,
@@ -124,6 +125,7 @@ public final class ViewMapper {
         int finalEvaluations
     ) {
         return new RunResponse(
+            searchSpaceId,
             problemId,
             iterations,
             evaluations,
