@@ -26,7 +26,8 @@ import java.util.function.Supplier;
 @Scope("prototype")
 public class DefaultPopulationModel<S> implements PopulationModel<S> {
 
-    private int lambda = 1; // (1+1) by default
+    private int mu = 1; // parents, default 1
+    private int lambda = 1; // children, default 1
 
     @Override
     public String id() {
@@ -45,12 +46,22 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
 
     @Override
     public List<Parameter> params() {
-        return List.of(new Parameter("lambda", "lambda (Children Amount)", "int", lambda, 1.0, null));
+        return List.of(
+                new Parameter("mu", "mu (Parents Amount)", "int", mu, 1.0, null),
+                new Parameter("lambda", "lambda (Children Amount)", "int", lambda, 1.0, null)
+        );
     }
 
     @Override
     public void configure(Map<String, Object> params) {
         if (params == null) return;
+        if (params.containsKey("mu")) {
+            int value = ((Number) params.get("mu")).intValue();
+            if (value <= 0) {
+                throw new IllegalArgumentException("Mu must be positive");
+            }
+            this.mu = value;
+        }
         if (params.containsKey("lambda")) {
             int value = ((Number) params.get("lambda")).intValue();
             if (value <= 0) {
@@ -106,13 +117,25 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
             component.init(varState);
         }
 
-        // 1) Initialize parent
-        S current = space.randomSolution(rng);
-        double currentFitness = problem.fitness(current);
+        // 1) Initialize parents
+        List<S> parents = new ArrayList<>(mu);
+        List<Double> parentsFitness = new ArrayList<>(mu);
+        S current = null;
+        double currentFitness = Double.NEGATIVE_INFINITY;
+        for (int i = 0; i < mu; i++) {
+            S parent = space.randomSolution(rng);
+            double parentFitness = problem.fitness(parent);
+            parents.add(parent);
+            parentsFitness.add(parentFitness);
+            if (parentFitness > currentFitness) {
+                currentFitness = parentFitness;
+                current = parent;
+            }
+        }
         S best = current;
         double bestFitness = currentFitness;
 
-        int evaluations = 1;
+        int evaluations = mu;
         int iteration = 0;
 
         // Initial state
@@ -141,6 +164,8 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
                     "best", best,
                     "bestFitness", bestFitness,
                     "currentFitness", currentFitness,
+                    "parents", parents,
+                    "parentsFitness", parentsFitness,
                     "generationSolutions", generationSolutions,
                     "generationFitness", generationFitness
             ));
@@ -150,12 +175,10 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
             }
             varState.update(combinedStateVariables);
 
-            S bestChild = null;
-            double bestChildFitness = Double.NEGATIVE_INFINITY;
             generationSolutions.clear();
             generationFitness.clear();
 
-            // 3) Generate λ children and evaluate them, keep the best
+            // 3) Generate lambda children and evaluate them
             for (int k = 0; k < lambda; k++) {
                 S child = generator.generate(rng);
                 double childFitness = problem.fitness(child);
@@ -163,25 +186,42 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
                 evaluations++;
                 generationSolutions.add(child);
                 generationFitness.add(childFitness);
-
-                if (childFitness > bestChildFitness) {
-                    bestChildFitness = childFitness;
-                    bestChild = child;
-                }
             }
 
-            // 4) decide whether to accept the best child as the new current solution
-            boolean accepted = acceptance.accept(currentFitness, bestChildFitness, iteration, rng);
+            List<S> combinedSolutions = new ArrayList<>(parents.size() + generationSolutions.size());
+            List<Double> combinedFitness = new ArrayList<>(parentsFitness.size() + generationFitness.size());
+            combinedSolutions.addAll(parents);
+            combinedSolutions.addAll(generationSolutions);
+            combinedFitness.addAll(parentsFitness);
+            combinedFitness.addAll(generationFitness);
 
-            // If accepted, update current solution and fitness
-            if (accepted) {
-                current = bestChild;
-                currentFitness = bestChildFitness;
+            List<Integer> order = new ArrayList<>(combinedSolutions.size());
+            for (int i = 0; i < combinedSolutions.size(); i++) {
+                order.add(i);
+            }
+            order.sort((a, b) -> Double.compare(combinedFitness.get(b), combinedFitness.get(a)));
 
-                if (currentFitness > bestFitness) {
-                    best = current;
-                    bestFitness = currentFitness;
-                }
+            List<S> nextParents = new ArrayList<>(mu);
+            List<Double> nextParentsFitness = new ArrayList<>(mu);
+            for (int i = 0; i < mu && i < order.size(); i++) {
+                int idx = order.get(i);
+                nextParents.add(combinedSolutions.get(idx));
+                nextParentsFitness.add(combinedFitness.get(idx));
+            }
+
+            S bestOverall = nextParents.getFirst();
+            double bestOverallFitness = nextParentsFitness.getFirst();
+
+            boolean accepted = acceptance.accept(currentFitness, bestOverallFitness, iteration, rng);
+
+            parents = nextParents;
+            parentsFitness = nextParentsFitness;
+            current = bestOverall;
+            currentFitness = bestOverallFitness;
+
+            if (currentFitness > bestFitness) {
+                best = current;
+                bestFitness = currentFitness;
             }
 
             RunState<S> stateLog = new RunState<>(iteration, evaluations, current, currentFitness, best, bestFitness, accepted);

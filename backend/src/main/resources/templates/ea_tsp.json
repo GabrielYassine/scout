@@ -1,6 +1,6 @@
 {
   "id": "tpl-ea-tsp",
-  "displayName": "(1+1) EA on TSP",
+  "displayName": "(mu+lambda) EA on TSP",
   "runRequest": {
     "searchSpaceId": ["permutation"],
     "searchSpaceParams": {},
@@ -17,7 +17,7 @@
     "acceptanceRuleParams": {},
 
     "populationModelId": ["default"],
-    "populationModelParams": { "lambda": 1 },
+    "populationModelParams": { "mu": 1, "lambda": 1 },
 
     "stopConditionId": ["max-iterations"],
     "stopConditionParams": { "maxIterations": 10000 },

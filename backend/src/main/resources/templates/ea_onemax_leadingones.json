@@ -1,6 +1,6 @@
 {
   "id": "tpl-ea-bitstring-onemax-leadingones",
-  "displayName": "(1+1) EA on OneMax + LeadingOnes",
+  "displayName": "(mu+lambda) EA on OneMax + LeadingOnes",
   "runRequest": {
     "searchSpaceId": ["bitstring"],
     "searchSpaceParams": {},
@@ -15,7 +15,7 @@
     "acceptanceRuleParams": {},
 
     "populationModelId": ["default"],
-    "populationModelParams": { "lambda": 1 },
+    "populationModelParams": { "mu": 1, "lambda": 1 },
 
     "stopConditionId": ["max-iterations","optimum-reached" ],
     "stopConditionParams": { "maxIterations": 10000 },
