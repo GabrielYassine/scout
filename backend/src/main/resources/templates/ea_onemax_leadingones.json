@@ -11,10 +11,10 @@
     "generatorId": ["bit-flip"],
     "generatorParams": { "flipProbability": "1/n" },
 
-    "selectionRuleId": ["elitist"],
+    "selectionRuleId": ["mu-plus-lambda"],
     "selectionRuleParams": {},
 
-    "populationModelId": ["default"],
+    "populationModelId": ["mu-lambda"],
     "populationModelParams": { "mu": 1, "lambda": 1 },
 
     "stopConditionId": ["max-iterations","optimum-reached" ],

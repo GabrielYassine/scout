@@ -15,10 +15,10 @@
       "beta": 2.0
     },
 
-    "selectionRuleId": ["elitist"],
+    "selectionRuleId": ["mu-plus-lambda"],
     "selectionRuleParams": {},
 
-    "populationModelId": ["default"],
+    "populationModelId": ["mu-lambda"],
     "populationModelParams": { "lambda": 3 },
 
     "stopConditionId": ["max-iterations" ],

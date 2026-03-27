@@ -25,24 +25,24 @@ import java.util.function.Supplier;
 
 @Component
 @Scope("prototype")
-public class DefaultPopulationModel<S> implements PopulationModel<S> {
+public class MuLambdaPopulationModel<S> implements PopulationModel<S> {
 
     private int mu = 1; // parents, default 1
     private int lambda = 1; // children, default 1
 
     @Override
     public String id() {
-        return "default";
+        return "mu-lambda";
     }
 
     @Override
     public String displayName() {
-        return "Default Population Model";
+        return "Mu-Lambda Population Model";
     }
 
     @Override
     public String description() {
-        return "Single run with a single algorithm instance";
+        return "Population model that evolves mu parents with lambda offspring";
     }
 
     @Override

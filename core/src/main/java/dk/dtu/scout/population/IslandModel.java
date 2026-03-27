@@ -25,7 +25,7 @@ import java.util.*;
 @Scope("prototype")
 public class IslandModel<S>  implements PopulationModel<S> {
     private int numIslands = 4;
-    private int lambda = 1;        // per island (1+λ)
+    private int lambda = 1; // per island (1+λ)
     private int epochLength = 50;
 
     @Override
@@ -46,9 +46,9 @@ public class IslandModel<S>  implements PopulationModel<S> {
     @Override
     public List<Parameter> params() {
         return List.of(
-                new Parameter("numIslands", "Number of islands", "int", numIslands, 1.0, null),
-                new Parameter("lambda", "λ (offspring per island)", "int", lambda, 1.0, null),
-                new Parameter("epochLength", "Epoch length (iterations)", "int", epochLength, 1.0, null)
+            new Parameter("numIslands", "Number of islands", "int", numIslands, 1.0, null),
+            new Parameter("lambda", "λ (offspring per island)", "int", lambda, 1.0, null),
+            new Parameter("epochLength", "Epoch length (iterations)", "int", epochLength, 1.0, null)
         );
     }
     @Override

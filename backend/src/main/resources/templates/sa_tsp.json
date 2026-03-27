@@ -11,13 +11,14 @@
     "generatorId": ["2opt"],
     "generatorParams": {},
 
-    "selectionRuleId": ["simulated-annealing"],
+    "selectionRuleId": ["annealed-selection"],
     "selectionRuleParams": {
-      "startTemp": 1000.0,
-      "alpha": 0.999
+      "initialTemperature": 1000.0,
+      "coolingRate": 0.999,
+      "minTemperature": 0.000001
     },
 
-    "populationModelId": ["default"],
+    "populationModelId": ["mu-lambda"],
     "populationModelParams": {
       "lambda": 1
     },

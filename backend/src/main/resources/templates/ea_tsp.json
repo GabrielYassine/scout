@@ -13,10 +13,10 @@
     "generatorId": ["2opt"],
     "generatorParams": {},
 
-    "selectionRuleId": ["elitist"],
+    "selectionRuleId": ["mu-plus-lambda"],
     "selectionRuleParams": {},
 
-    "populationModelId": ["default"],
+    "populationModelId": ["mu-lambda"],
     "populationModelParams": { "mu": 1, "lambda": 1 },
 
     "stopConditionId": ["max-iterations"],

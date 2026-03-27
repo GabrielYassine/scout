@@ -25,17 +25,17 @@ public class AnnealedSelection<S> implements SelectionRule<S> {
 
     @Override
     public String id() {
-        return "simulated-annealing";
+        return "annealed-selection";
     }
 
     @Override
     public String displayName() {
-        return "Simulated Annealing Acceptance";
+        return "Annealed Selection";
     }
 
     @Override
     public String description() {
-        return "Accepts worse solutions with a probability that decreases over time";
+        return "Selects candidates using an annealing schedule to occasionally accept worse fitness";
     }
 
     @Override

@@ -12,21 +12,21 @@ import java.util.Random;
 
 @Component
 @Scope("prototype")
-public class ElitistSelection<S> implements SelectionRule<S> {
+public class MuCommaLambdaSelection<S> implements SelectionRule<S> {
 
     @Override
     public String id() {
-        return "elitist";
+        return "mu-comma-lambda";
     }
 
     @Override
     public String displayName() {
-        return "Elitist Selection";
+        return "(mu,lambda) Selection";
     }
 
     @Override
     public String description() {
-        return "Selects the best mu solutions from parents and children combined";
+        return "Selects the best mu solutions from the children only";
     }
 
     @Override
@@ -42,12 +42,10 @@ public class ElitistSelection<S> implements SelectionRule<S> {
             int iteration,
             Random rng
     ) {
-        List<EvaluatedSolution<S>> combined = new ArrayList<>(parents.size() + children.size());
-        combined.addAll(parents);
-        combined.addAll(children);
-        combined.sort(Comparator.comparingDouble(EvaluatedSolution<S>::fitness).reversed());
+        List<EvaluatedSolution<S>> sortedChildren = new ArrayList<>(children);
+        sortedChildren.sort(Comparator.comparingDouble(EvaluatedSolution<S>::fitness).reversed());
 
-        int limit = Math.min(mu, combined.size());
-        return new ArrayList<>(combined.subList(0, limit));
+        int limit = Math.min(mu, sortedChildren.size());
+        return new ArrayList<>(sortedChildren.subList(0, limit));
     }
 }
