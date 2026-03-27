@@ -1,8 +1,9 @@
 package dk.dtu.scout.population;
+import dk.dtu.scout.EvaluatedSolution;
 import dk.dtu.scout.Parameter;
 import dk.dtu.scout.ScoutComponent;
 import dk.dtu.scout.State;
-import dk.dtu.scout.acceptance.AcceptanceRule;
+import dk.dtu.scout.acceptance.SelectionRule;
 import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.logging.RunState;
 import dk.dtu.scout.generator.Generator;
@@ -73,7 +74,7 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
 
     private List<ScoutComponent> initializeComponents(
             Generator<S> generator,
-            AcceptanceRule acceptance,
+            SelectionRule<S> acceptance,
             SearchSpace<S> space,
             Problem<S> problem,
             List<StopCondition<S>> stopConditions,
@@ -89,10 +90,25 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
         return components;
     }
 
+    private EvaluatedSolution<S> bestOf(List<EvaluatedSolution<S>> evaluatedSolutions) {
+        if (evaluatedSolutions == null || evaluatedSolutions.isEmpty()) {
+            throw new IllegalStateException("No evaluated solutions available");
+        }
+
+        EvaluatedSolution<S> best = evaluatedSolutions.get(0);
+        for (int i = 1; i < evaluatedSolutions.size(); i++) {
+            EvaluatedSolution<S> candidate = evaluatedSolutions.get(i);
+            if (candidate.fitness() > best.fitness()) {
+                best = candidate;
+            }
+        }
+        return best;
+    }
+
     @Override
     public RunLog run(
             Supplier<Generator<S>> generatorFactory,
-            AcceptanceRule acceptance,
+            SelectionRule<S> selection,
             SearchSpace<S> space,
             Problem<S> problem,
             Random rng,
@@ -100,42 +116,54 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
             List<Observer<S>> observers,
             int logEveryIterations
     ) {
+        // Initialize log and state
         RunLog log = new RunLog();
-        int logInterval = logEveryIterations <= 0 ? 1 : logEveryIterations;
         State varState = new State();
 
+        // Validate logEveryIterations
+        if (logEveryIterations <= 0) {
+            throw new IllegalArgumentException("logEveryIterations must be positive");
+        }
+
+        // Island model needs a factory for each island
         Generator<S> generator = generatorFactory.get();
 
-        // Initialize components list
-        List<ScoutComponent> components = initializeComponents(generator, acceptance, space, problem, stopConditions, observers);
+        // Initialize components list (MOVE OUTSIDE)
+        List<ScoutComponent> components = initializeComponents(generator, selection, space, problem, stopConditions, observers);
 
         // Store problem in state so generators can access it
         varState.update(Map.of("problem", problem));
 
-        // Initialize all components with state
+        // Initialize all components with state (MOVE OUTSIDE)
         for (ScoutComponent component : components) {
             component.init(varState);
         }
 
         // 1) Initialize parents
-        List<S> parents = new ArrayList<>(mu);
-        List<Double> parentsFitness = new ArrayList<>(mu);
+        List<EvaluatedSolution<S>> parentsEvaluated = new ArrayList<>(mu);
+
+        // Set default values for current
         S current = null;
         double currentFitness = Double.NEGATIVE_INFINITY;
+
+        // Generate initial parents and evaluate them
         for (int i = 0; i < mu; i++) {
             S parent = space.randomSolution(rng);
             double parentFitness = problem.fitness(parent);
-            parents.add(parent);
-            parentsFitness.add(parentFitness);
+            parentsEvaluated.add(new EvaluatedSolution<>(parent, parentFitness));
+
+            // Find best among initial parents to set as current
             if (parentFitness > currentFitness) {
                 currentFitness = parentFitness;
                 current = parent;
             }
         }
+
+        // Set the best solution as the best among initial parents
         S best = current;
         double bestFitness = currentFitness;
 
-        int evaluations = mu;
+        int evaluations = mu; // We have evaluated mu parents so far
         int iteration = 0;
 
         // Initial state
@@ -144,8 +172,8 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
         log.tick(initial.iteration(), initial.evaluations() - 1);
         Observers.onStep(observers,initial, log);
 
-        List<S> generationSolutions = new ArrayList<>();
-        List<Double> generationFitness = new ArrayList<>();
+        // Temporary lists to hold generation solutions and fitness for state variables
+        List<EvaluatedSolution<S>> generationEvaluated = new ArrayList<>();
 
         // 2) Loop until stop condition is met
         while (!StopConditions.shouldStop(stopConditions, iteration, evaluations, bestFitness, best)) {
@@ -154,7 +182,7 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
             // Order of state variables in the map (for consistency and readability):
             // 1) population model
             // 1) generator
-            // 2) acceptance
+            // 2) selection
             // 3) space
             // 4) problem
             // 5) stop
@@ -164,60 +192,52 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
                     "best", best,
                     "bestFitness", bestFitness,
                     "currentFitness", currentFitness,
-                    "parents", parents,
-                    "parentsFitness", parentsFitness,
-                    "generationSolutions", generationSolutions,
-                    "generationFitness", generationFitness
+                    "parentsEvaluated", parentsEvaluated,
+                    "generationEvaluated", generationEvaluated
             ));
 
+            // Should make sure that all vars have been initialized before calling getStateVariables (FIX)
             for (ScoutComponent component : components) {
                 combinedStateVariables.putAll(component.getStateVariables(varState));
             }
             varState.update(combinedStateVariables);
 
-            generationSolutions.clear();
-            generationFitness.clear();
+            // Clear generation lists for the new generation
+            generationEvaluated.clear();
 
             // 3) Generate lambda children and evaluate them
             for (int k = 0; k < lambda; k++) {
                 S child = generator.generate(rng);
                 double childFitness = problem.fitness(child);
-
                 evaluations++;
-                generationSolutions.add(child);
-                generationFitness.add(childFitness);
+                generationEvaluated.add(new EvaluatedSolution<>(child, childFitness));
             }
 
-            List<S> combinedSolutions = new ArrayList<>(parents.size() + generationSolutions.size());
-            List<Double> combinedFitness = new ArrayList<>(parentsFitness.size() + generationFitness.size());
-            combinedSolutions.addAll(parents);
-            combinedSolutions.addAll(generationSolutions);
-            combinedFitness.addAll(parentsFitness);
-            combinedFitness.addAll(generationFitness);
+            double previousCurrentFitness = currentFitness;
 
-            List<Integer> order = new ArrayList<>(combinedSolutions.size());
-            for (int i = 0; i < combinedSolutions.size(); i++) {
-                order.add(i);
-            }
-            order.sort((a, b) -> Double.compare(combinedFitness.get(b), combinedFitness.get(a)));
+            List<EvaluatedSolution<S>> nextParentsEvaluated = selection.select(
+                parentsEvaluated,
+                generationEvaluated,
+                mu,
+                iteration,
+                rng
+            );
 
-            List<S> nextParents = new ArrayList<>(mu);
-            List<Double> nextParentsFitness = new ArrayList<>(mu);
-            for (int i = 0; i < mu && i < order.size(); i++) {
-                int idx = order.get(i);
-                nextParents.add(combinedSolutions.get(idx));
-                nextParentsFitness.add(combinedFitness.get(idx));
+            if (nextParentsEvaluated == null || nextParentsEvaluated.isEmpty()) {
+                throw new IllegalStateException("Selection rule returned no parents");
             }
 
-            S bestOverall = nextParents.getFirst();
-            double bestOverallFitness = nextParentsFitness.getFirst();
+            if (nextParentsEvaluated.size() > mu) {
+                throw new IllegalStateException("Selection rule returned more parents than mu: " + nextParentsEvaluated.size());
+            }
 
-            boolean accepted = acceptance.accept(currentFitness, bestOverallFitness, iteration, rng);
+            parentsEvaluated = nextParentsEvaluated;
 
-            parents = nextParents;
-            parentsFitness = nextParentsFitness;
-            current = bestOverall;
-            currentFitness = bestOverallFitness;
+            EvaluatedSolution<S> representative = bestOf(parentsEvaluated);
+            current = representative.value();
+            currentFitness = representative.fitness();
+
+            boolean accepted = currentFitness >= previousCurrentFitness;
 
             if (currentFitness > bestFitness) {
                 best = current;
@@ -225,20 +245,22 @@ public class DefaultPopulationModel<S> implements PopulationModel<S> {
             }
 
             RunState<S> stateLog = new RunState<>(iteration, evaluations, current, currentFitness, best, bestFitness, accepted);
-            if ((stateLog.iteration() + 1) % logInterval == 0) {
+
+            if ((stateLog.iteration() + 1) % logEveryIterations == 0) {
                 log.tick(stateLog.iteration(), stateLog.evaluations() - 1);
-                Observers.onStep(observers,stateLog, log);
+                Observers.onStep(observers, stateLog, log);
             }
             iteration++;
         }
 
         RunState<S> finalState = new RunState<>(iteration - 1, evaluations, current, currentFitness, best, bestFitness, false);
-        if (((finalState.iteration() + 1) % logInterval) != 0) {
-            log.tick(finalState.iteration(), finalState.evaluations() - 1);
-            Observers.onStep(observers,finalState, log);
-        }
-        Observers.onEnd(observers,finalState, log);
 
+        if (((finalState.iteration() + 1) % logEveryIterations) != 0) {
+            log.tick(finalState.iteration(), finalState.evaluations() - 1);
+            Observers.onStep(observers, finalState, log);
+        }
+
+        Observers.onEnd(observers, finalState, log);
         return log;
     }
 }

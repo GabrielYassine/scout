@@ -1,7 +1,7 @@
 package dk.dtu.scout.backend.service;
 
 import dk.dtu.scout.ConfigurationContext;
-import dk.dtu.scout.acceptance.AcceptanceRule;
+import dk.dtu.scout.acceptance.SelectionRule;
 import dk.dtu.scout.backend.dto.RunRequest;
 import dk.dtu.scout.backend.dto.run.BatchRunResponse;
 import dk.dtu.scout.backend.dto.run.BatchSummaryResponse;
@@ -40,7 +40,7 @@ public class ExperimentService {
 
     private final StatisticsService statisticsService;
     private final ComponentRegistry<Generator> mutationRegistry;
-    private final ComponentRegistry<AcceptanceRule> acceptanceRegistry;
+    private final ComponentRegistry<SelectionRule> selectionRegistry;
     private final ComponentRegistry<PopulationModel> populationModelRegistry;
     private final ComponentRegistry<Problem> problemRegistry;
     private final ComponentRegistry<SearchSpace> searchSpaceRegistry;
@@ -52,7 +52,7 @@ public class ExperimentService {
     public ExperimentService(
             StatisticsService statisticsService,
             ComponentRegistry<Generator> mutationRegistry,
-            ComponentRegistry<AcceptanceRule> acceptanceRegistry,
+            ComponentRegistry<SelectionRule> selectionRegistry,
             ComponentRegistry<PopulationModel> populationModelRegistry,
             ComponentRegistry<Problem> problemRegistry,
             ComponentRegistry<SearchSpace> searchSpaceRegistry,
@@ -63,7 +63,7 @@ public class ExperimentService {
     ) {
         this.statisticsService = statisticsService;
         this.mutationRegistry = mutationRegistry;
-        this.acceptanceRegistry = acceptanceRegistry;
+        this.selectionRegistry = selectionRegistry;
         this.populationModelRegistry = populationModelRegistry;
         this.problemRegistry = problemRegistry;
         this.searchSpaceRegistry = searchSpaceRegistry;
@@ -210,7 +210,7 @@ public class ExperimentService {
         // The reason stopcondition and observer are created inside the loop is tha they depend on problem.
         for (String pid : problemIds) {
             Problem<S> problem = createProblem(pid, ss.dimension(), request.problemParams());
-            AcceptanceRule acceptance = createAcceptanceRule(request.acceptanceRuleId(), request.acceptanceRuleParams());
+            SelectionRule acceptance = createSelectionRule(request.selectionRuleId(), request.selectionRuleParams());
             List<StopCondition<S>> stopConditions = createStopConditionChain(request.stopConditionId(), request.stopConditionParams(), problem);
             List<Observer<S>> observer = new ArrayList<>(createObservers(request.observerIds(), request.observerParams(), problem));
             PopulationModel<S> popModel = createPopulationModel(request.populationModelId(), request.populationModelParams());
@@ -305,8 +305,8 @@ public class ExperimentService {
         return generator;
     }
 
-    private AcceptanceRule createAcceptanceRule(List<String>  ids, Map<String, Object> params) {
-        return createAndConfigure(acceptanceRegistry, ids, "Acceptance rule", params, null);
+    private SelectionRule createSelectionRule(List<String> ids, Map<String, Object> params) {
+        return createAndConfigure(selectionRegistry, ids, "Selection rule", params, null);
     }
 
     private<S>  PopulationModel<S> createPopulationModel(List<String>  ids, Map<String, Object> params) {

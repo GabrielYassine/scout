@@ -5,7 +5,7 @@ import java.util.List;
 import dk.dtu.scout.backend.dto.catalog.ComponentDef;
 import dk.dtu.scout.backend.util.ViewMapper;
 
-import dk.dtu.scout.acceptance.AcceptanceRule;
+import dk.dtu.scout.acceptance.SelectionRule;
 import dk.dtu.scout.generator.Generator;
 import dk.dtu.scout.observer.Observer;
 import dk.dtu.scout.population.PopulationModel;
@@ -22,7 +22,7 @@ public class CatalogService {
     private final List<Problem<?>> problems;
 
     private final List<Generator<?>> generators;
-    private final List<AcceptanceRule> acceptanceRules;
+    private final List<SelectionRule> selectionRules;
     private final List<PopulationModel<?>> populationModels;
     private final List<StopCondition<?>> stopConditions;
     private final List<Observer<?>> observers;
@@ -31,7 +31,7 @@ public class CatalogService {
         List<SearchSpace<?>> searchSpaces,
         List<Problem<?>> problems,
         List<Generator<?>> generators,
-        List<AcceptanceRule> acceptanceRules,
+        List<SelectionRule> selectionRules,
         List<PopulationModel<?>> populationModels,
         List<StopCondition<?>> stopConditions,
         List<Observer<?>> observers
@@ -39,7 +39,7 @@ public class CatalogService {
         this.searchSpaces = searchSpaces;
         this.problems = problems;
         this.generators = generators;
-        this.acceptanceRules = acceptanceRules;
+        this.selectionRules = selectionRules;
         this.populationModels = populationModels;
         this.stopConditions = stopConditions;
         this.observers = observers;
@@ -57,8 +57,8 @@ public class CatalogService {
         return generators.stream().map(c -> ViewMapper.toComponentDef("generator", c)).toList();
     }
 
-    public List<ComponentDef> acceptanceRules() {
-        return acceptanceRules.stream().map(c -> ViewMapper.toComponentDef("acceptanceRule", c)).toList();
+    public List<ComponentDef> selectionRules() {
+        return selectionRules.stream().map(c -> ViewMapper.toComponentDef("selectionRule", c)).toList();
     }
 
     public List<ComponentDef> populationModels() {

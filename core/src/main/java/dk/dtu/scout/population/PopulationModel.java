@@ -1,7 +1,7 @@
 package dk.dtu.scout.population;
 
 import dk.dtu.scout.ScoutComponent;
-import dk.dtu.scout.acceptance.AcceptanceRule;
+import dk.dtu.scout.acceptance.SelectionRule;
 import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.generator.Generator;
 import dk.dtu.scout.observer.Observer;
@@ -17,7 +17,7 @@ import java.util.function.Supplier;
 public interface PopulationModel<S> extends ScoutComponent {
     RunLog run(
             Supplier<Generator<S>> generatorFactory,
-            AcceptanceRule acceptance,
+            SelectionRule<S> acceptance,
             SearchSpace<S> space,
             Problem<S> problem,
             Random rng,

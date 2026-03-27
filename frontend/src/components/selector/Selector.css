@@ -88,8 +88,8 @@
     background-color: var(--color-generator);
 }
 
-.count-badge-acceptance {
-    background-color: var(--color-acceptance);
+.count-badge-selection {
+    background-color: var(--color-selection);
 }
 
 .count-badge-populationModel {
@@ -103,7 +103,3 @@
 .count-badge-observer {
     background-color: var(--color-observer);
 }
-
-
-
-

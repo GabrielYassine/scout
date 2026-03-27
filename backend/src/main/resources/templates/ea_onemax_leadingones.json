@@ -11,8 +11,8 @@
     "generatorId": ["bit-flip"],
     "generatorParams": { "flipProbability": "1/n" },
 
-    "acceptanceRuleId": ["elitist"],
-    "acceptanceRuleParams": {},
+    "selectionRuleId": ["elitist"],
+    "selectionRuleParams": {},
 
     "populationModelId": ["default"],
     "populationModelParams": { "mu": 1, "lambda": 1 },

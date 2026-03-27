@@ -11,10 +11,10 @@
     "generatorId": ["single-bit-flip"],
     "generatorParams": { },
 
-    "acceptanceRuleId": ["simulated-annealing"],
-    "acceptanceRuleParams": {
-      "initialTemperature": 1.0,
-      "coolingRate": 0.995
+    "selectionRuleId": ["simulated-annealing"],
+    "selectionRuleParams": {
+      "startTemp": 1000.0,
+      "alpha": 0.999
     },
 
     "populationModelId": ["default"],

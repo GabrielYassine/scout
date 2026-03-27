@@ -15,8 +15,8 @@
       "beta": 2.0
     },
 
-    "acceptanceRuleId": ["elitist"],
-    "acceptanceRuleParams": {},
+    "selectionRuleId": ["elitist"],
+    "selectionRuleParams": {},
 
     "populationModelId": ["default"],
     "populationModelParams": { "lambda": 3 },

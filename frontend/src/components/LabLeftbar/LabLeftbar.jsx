@@ -25,7 +25,7 @@ export default function LabLeftbar({
     searchSpace: true,
     problem: true,
     generator: true,
-    acceptance: true,
+    selection: true,
     populationModel: true,
     stopCondition: true,
     observer: true,
@@ -40,7 +40,7 @@ export default function LabLeftbar({
       searchSpace: catalog.searchSpaces,
       problem: catalog.problems,
       generator: catalog.generators,
-      acceptance: catalog.acceptanceRules,
+      selection: catalog.selectionRules,
       populationModel: catalog.populationModels,
       stopCondition: catalog.stopConditions,
       observer: catalog.observers,
@@ -57,7 +57,7 @@ export default function LabLeftbar({
       puzzleConfig.problem &&
       puzzleConfig.generator &&
       puzzleConfig.populationModel &&
-      puzzleConfig.acceptance &&
+      puzzleConfig.selection &&
       puzzleConfig.stopCondition &&
       puzzleConfig.observer
     );
@@ -216,7 +216,7 @@ export default function LabLeftbar({
         {renderPieceSection("searchSpace", "Search Space")}
         {renderPieceSection("problem", "Problem")}
         {renderPieceSection("generator", "Mutation")}
-        {renderPieceSection("acceptance", "Acceptance Rule")}
+        {renderPieceSection("selection", "Selection Rule")}
         {renderPieceSection("populationModel", "Population Model")}
         {renderPieceSection("stopCondition", "Stop Condition")}
         {renderPieceSection("observer", "Observer")}

@@ -8,7 +8,7 @@ const componentTypesAll = [
     { key: "searchSpace", label: "Search Space" },
     { key: "problem", label: "Problem" },
     { key: "generator", label: "Generator" },
-    { key: "acceptance", label: "Acceptance Rule" },
+    { key: "selection", label: "Selection Rule" },
     { key: "populationModel", label: "Population Model" },
     { key: "stopCondition", label: "Stop Condition" },
     { key: "observer", label: "Observer" },

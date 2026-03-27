@@ -6,7 +6,7 @@ const componentTypesAll = [
     { key: "searchSpace", label: "Search Space", catalogKey: "searchSpaces" },
     { key: "problem", label: "Problem", catalogKey: "problems" },
     { key: "generator", label: "Generator", catalogKey: "generators" },
-    { key: "acceptance", label: "Acceptance Rule", catalogKey: "acceptanceRules" },
+    { key: "selection", label: "Selection Rule", catalogKey: "selectionRules" },
     { key: "populationModel", label: "Population Model", catalogKey: "populationModels" },
     { key: "stopCondition", label: "Stop Condition", catalogKey: "stopConditions" },
     { key: "observer", label: "Observer", catalogKey: "observers" },

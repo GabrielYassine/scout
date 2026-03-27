@@ -1,5 +1,6 @@
 package dk.dtu.scout.generator;
 
+import dk.dtu.scout.EvaluatedSolution;
 import dk.dtu.scout.Parameter;
 import dk.dtu.scout.State;
 import dk.dtu.scout.problems.TSPProblem;
@@ -230,14 +231,13 @@ public class PheromoneGuidedGenerator implements Generator<int[]> {
             return;
         }
 
-        Object solutionsObj = state.get("generationSolutions");
-        Object fitnessObj = state.get("generationFitness");
+        Object evaluatedObj = state.get("generationEvaluated");
 
-        if (!(solutionsObj instanceof List<?> solutions) || !(fitnessObj instanceof List<?> fitnessValues)) {
+        if (!(evaluatedObj instanceof List<?> evaluated)) {
             return;
         }
 
-        if (solutions.isEmpty() || solutions.size() != fitnessValues.size()) {
+        if (evaluated.isEmpty()) {
             return;
         }
 
@@ -245,12 +245,8 @@ public class PheromoneGuidedGenerator implements Generator<int[]> {
         evaporate(evaporationRate);
 
         // deposit pheromone from all generation solutions
-        for (int i = 0; i < solutions.size(); i++) {
-            Object solObj = solutions.get(i);
-            Object fitObj = fitnessValues.get(i);
-
-            if (solObj instanceof int[] solution && fitObj instanceof Double) {
-                double fitness = (Double) fitObj;
+        for (Object entry : evaluated) {
+            if (entry instanceof EvaluatedSolution<?>(Object value, double fitness) && value instanceof int[] solution) {
                 depositPheromone(solution, fitness);
             }
         }

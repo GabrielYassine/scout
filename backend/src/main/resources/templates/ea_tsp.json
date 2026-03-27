@@ -13,8 +13,8 @@
     "generatorId": ["2opt"],
     "generatorParams": {},
 
-    "acceptanceRuleId": ["elitist"],
-    "acceptanceRuleParams": {},
+    "selectionRuleId": ["elitist"],
+    "selectionRuleParams": {},
 
     "populationModelId": ["default"],
     "populationModelParams": { "mu": 1, "lambda": 1 },

@@ -25,7 +25,7 @@ public class CatalogController {
                 catalog.searchSpaces(),
                 catalog.problems(),
                 catalog.generators(),
-                catalog.acceptanceRules(),
+                catalog.selectionRules(),
                 catalog.populationModels(),
                 catalog.stopConditions(),
                 catalog.observers()

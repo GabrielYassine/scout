@@ -1,6 +1,6 @@
 package dk.dtu.scout.backend.config;
 
-import dk.dtu.scout.acceptance.AcceptanceRule;
+import dk.dtu.scout.acceptance.SelectionRule;
 import dk.dtu.scout.backend.service.ComponentRegistry;
 import dk.dtu.scout.generator.Generator;
 import dk.dtu.scout.observer.Observer;
@@ -22,8 +22,8 @@ import java.util.List;
 public class ComponentRegistryConfig {
 
     @Bean
-    public ComponentRegistry<AcceptanceRule> acceptanceRuleRegistry(
-            List<AcceptanceRule> components,
+    public ComponentRegistry<SelectionRule> selectionRuleRegistry(
+            List<SelectionRule> components,
             ApplicationContext context) {
         return new ComponentRegistry<>(components, context);
     }

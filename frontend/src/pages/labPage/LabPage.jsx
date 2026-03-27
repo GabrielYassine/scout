@@ -1,4 +1,5 @@
 import "./LabPage.css";
+
 import LabLeftbar from "../../components/LabLeftbar/LabLeftbar.jsx";
 import LabRightbar from "../../components/LabRightbar.jsx";
 import RunConfigPuzzle from "../../components/runConfigPuzzle/RunConfigPuzzle.jsx";
@@ -28,7 +29,7 @@ export default function LabPage({catalog, catalogLoading, catalogError, template
         searchSpace: catalog.searchSpaces,
         problem: catalog.problems,
         generator: catalog.generators,
-        acceptance: catalog.acceptanceRules,
+        selection: catalog.selectionRules,
         populationModel: catalog.populationModels,
         stopCondition: catalog.stopConditions,
         observer: catalog.observers,
@@ -75,8 +76,8 @@ export default function LabPage({catalog, catalogLoading, catalogError, template
       generatorId: puzzleConfig.generator?.map((x) => x.id) ?? [],
       generatorParams: params.generator,
 
-      acceptanceRuleId: puzzleConfig.acceptance?.map((x) => x.id) ?? [],
-      acceptanceRuleParams: params.acceptance,
+      selectionRuleId: puzzleConfig.selection?.map((x) => x.id) ?? [],
+      selectionRuleParams: params.selection,
 
       populationModelId: puzzleConfig.populationModel?.map((x) => x.id) ?? [],
       populationModelParams: params.populationModel,
