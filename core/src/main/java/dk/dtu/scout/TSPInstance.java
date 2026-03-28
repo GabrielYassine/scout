@@ -1,4 +1,4 @@
-package dk.dtu.scout.problems;
+package dk.dtu.scout;
 
 public class TSPInstance {
     private final String name;

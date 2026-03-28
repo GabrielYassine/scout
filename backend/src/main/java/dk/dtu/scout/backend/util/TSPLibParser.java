@@ -1,6 +1,6 @@
 package dk.dtu.scout.backend.util;
 
-import dk.dtu.scout.problems.TSPInstance;
+import dk.dtu.scout.TSPInstance;
 
 import java.io.BufferedReader;
 import java.io.IOException;

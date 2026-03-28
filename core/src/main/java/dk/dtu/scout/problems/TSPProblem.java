@@ -1,6 +1,7 @@
 package dk.dtu.scout.problems;
 
 import dk.dtu.scout.Parameter;
+import dk.dtu.scout.TSPInstance;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 

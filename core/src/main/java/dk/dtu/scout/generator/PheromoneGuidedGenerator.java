@@ -4,7 +4,7 @@ import dk.dtu.scout.EvaluatedSolution;
 import dk.dtu.scout.Parameter;
 import dk.dtu.scout.State;
 import dk.dtu.scout.problems.TSPProblem;
-import dk.dtu.scout.problems.TSPInstance;
+import dk.dtu.scout.TSPInstance;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 

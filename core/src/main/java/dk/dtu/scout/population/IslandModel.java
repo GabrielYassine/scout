@@ -4,26 +4,20 @@ import dk.dtu.scout.EvaluatedSolution;
 import dk.dtu.scout.Parameter;
 import dk.dtu.scout.ScoutComponent;
 import dk.dtu.scout.State;
-import dk.dtu.scout.acceptance.SelectionRule;
-import dk.dtu.scout.logging.RunLog;
-import dk.dtu.scout.logging.RunState;
 import dk.dtu.scout.generator.Generator;
-import dk.dtu.scout.observer.Observer;
-import dk.dtu.scout.observer.Observers;
-import dk.dtu.scout.problems.Problem;
-import dk.dtu.scout.searchSpace.SearchSpace;
-import dk.dtu.scout.stopcondition.StopCondition;
-import dk.dtu.scout.stopcondition.StopConditions;
+import dk.dtu.scout.logging.RunState;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
-import java.util.function.Supplier;
 
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 
 @Component
 @Scope("prototype")
-public class IslandModel<S>  implements PopulationModel<S> {
+public class IslandModel<S> implements PopulationModel<S> {
     private int numIslands = 4;
     private int lambda = 1; // per island (1+λ)
     private int epochLength = 50;
@@ -77,24 +71,6 @@ public class IslandModel<S>  implements PopulationModel<S> {
         }
     }
 
-    private List<ScoutComponent> initializeComponents(
-            Generator<S> generator,
-            SelectionRule<S> selection,
-            SearchSpace<S> space,
-            Problem<S> problem,
-            List<StopCondition<S>> stopConditions,
-            List<Observer<S>> observers
-    ) {
-        List<ScoutComponent> components = new ArrayList<>();
-        components.add(generator);
-        components.add(selection);
-        components.add(space);
-        components.add(problem);
-        components.addAll(stopConditions);
-        components.addAll(observers);
-        return components;
-    }
-
     private EvaluatedSolution<S> bestOf(List<EvaluatedSolution<S>> evaluatedSolutions) {
         if (evaluatedSolutions == null || evaluatedSolutions.isEmpty()) {
             throw new IllegalStateException("No evaluated solutions available");
@@ -110,136 +86,154 @@ public class IslandModel<S>  implements PopulationModel<S> {
         return best;
     }
 
-    @Override
-    public RunLog run(
-            Supplier<Generator<S>> generatorFactory,
-            SelectionRule<S> selection,
-            SearchSpace<S> space,
-            Problem<S> problem,
-            Random rng,
-            List<StopCondition<S>> stopConditions,
-            List<Observer<S>> observers,
-            int logEveryIterations
-    ) {
-        RunLog log = new RunLog();
-        int logInterval = logEveryIterations <= 0 ? 1 : logEveryIterations;
+    private static final class IslandModelState<S> implements PopulationState<S> {
+        private final List<IslandState<S>> islands;
 
-        // setup islands
+        private IslandModelState(List<IslandState<S>> islands) {
+            this.islands = islands;
+        }
+    }
+
+    private void updateComponentStateVariables(State state, List<ScoutComponent> components) {
+        Map<String, Object> combinedStateVariables = new HashMap<>();
+        for (ScoutComponent component : components) {
+            combinedStateVariables.putAll(component.getStateVariables(state));
+        }
+        state.update(combinedStateVariables);
+    }
+
+    @Override
+    public PopulationInitialization<S> initialize(PopulationModelContext<S> context) {
         List<IslandState<S>> islands = new ArrayList<>(numIslands);
 
-        for(int i = 0; i < numIslands; i++) {
-            Random r = new Random(rng.nextLong());
+        for (int i = 0; i < numIslands; i++) {
+            Random r = new Random(context.rng().nextLong());
 
-            Generator<S> islandGenerator = generatorFactory.get();
+            Generator<S> islandGenerator = context.generatorFactory().get();
             State islandState = new State();
-            islandState.update(Map.of("problem", problem));
+            islandState.update(Map.of("problem", context.problem()));
+            islandGenerator.init(islandState);
 
-            List<ScoutComponent> components = initializeComponents(islandGenerator, selection, space, problem, stopConditions, observers);
+            List<ScoutComponent> components = List.of(islandGenerator);
 
-            for (ScoutComponent component : components) {
-                component.init(islandState);
-            }
-
-            S x = space.randomSolution(r);
-            double fx = problem.fitness(x);
+            S x = context.space().randomSolution(r);
+            double fx = context.problem().fitness(x);
             islands.add(new IslandState<>(x, fx, islandGenerator, islandState, r, components));
         }
+
         IslandState<S> global = globalBestIsland(islands);
         int evaluations = numIslands;
         int iteration = 0;
 
-        // Initial state
         RunState<S> initial = new RunState<>(iteration, evaluations, global.current, global.currentFitness, global.best, global.bestFitness, false);
-        Observers.onStart(observers,initial, log);
-        log.tick(initial.iteration(), evaluations - 1);
-        Observers.onStep(observers,initial, log);
+        Map<String, Object> stateVariables = Map.of(
+                "current", global.current,
+                "currentFitness", global.currentFitness,
+                "best", global.best,
+                "bestFitness", global.bestFitness
+        );
 
-        while(!StopConditions.shouldStop(stopConditions, iteration, evaluations, global.bestFitness, global.best)) {
-            boolean anyAccepted = false;
+        return new PopulationInitialization<>(new IslandModelState<>(islands), initial, evaluations, stateVariables, List.of());
+    }
 
-            for(int i = 0; i < numIslands; i++) {
-                IslandState<S> isl = islands.get(i);
-                Random r = isl.rng;
+    @Override
+    public PopulationStepResult<S> step(
+            PopulationModelContext<S> context,
+            PopulationState<S> state,
+            int iteration,
+            int evaluations
+    ) {
+        IslandModelState<S> modelState = (IslandModelState<S>) state;
+        List<IslandState<S>> islands = modelState.islands;
 
-                isl.state.update(Map.of(
-                        "current", isl.current,
-                        "currentFitness", isl.currentFitness,
-                        "best", isl.best,
-                        "bestFitness", isl.bestFitness,
-                        "generationEvaluated", isl.previousGenerationEvaluated,
-                        "islandIndex", i
-                ));
-                Map<String, Object> combinedStateVariables = new HashMap<>();
-                for (ScoutComponent component : isl.components) {
-                    combinedStateVariables.putAll(component.getStateVariables(isl.state));
-                }
-                isl.state.update(combinedStateVariables);
+        boolean anyAccepted = false;
+        int evaluationsDelta = 0;
 
-                List<EvaluatedSolution<S>> generationEvaluated = new ArrayList<>();
+        for (int i = 0; i < numIslands; i++) {
+            IslandState<S> isl = islands.get(i);
+            Random r = isl.rng;
 
-                for (int k = 0; k < lambda; k++) {
-                    S child = isl.generator.generate(r);
-                    double f = problem.fitness(child);
-                    generationEvaluated.add(new EvaluatedSolution<>(child, f));
-                    evaluations++;
-                }
+            isl.state.update(Map.of(
+                    "current", isl.current,
+                    "currentFitness", isl.currentFitness,
+                    "best", isl.best,
+                    "bestFitness", isl.bestFitness,
+                    "generationEvaluated", isl.previousGenerationEvaluated,
+                    "islandIndex", i
+            ));
+            updateComponentStateVariables(isl.state, isl.components);
 
-                double previousCurrentFitness = isl.currentFitness;
+            List<EvaluatedSolution<S>> generationEvaluated = new ArrayList<>();
 
-                List<EvaluatedSolution<S>> parentsEvaluated = List.of(
+            for (int k = 0; k < lambda; k++) {
+                S child = isl.generator.generate(r);
+                double f = context.problem().fitness(child);
+                generationEvaluated.add(new EvaluatedSolution<>(child, f));
+                evaluationsDelta++;
+            }
+
+            double previousCurrentFitness = isl.currentFitness;
+
+            List<EvaluatedSolution<S>> parentsEvaluated = List.of(
                     new EvaluatedSolution<>(isl.current, isl.currentFitness)
-                );
+            );
 
-                List<EvaluatedSolution<S>> nextParentsEvaluated = selection.select(
+            List<EvaluatedSolution<S>> nextParentsEvaluated = context.selection().select(
                     parentsEvaluated,
                     generationEvaluated,
                     1,
                     iteration,
                     r
-                );
+            );
 
-                if (nextParentsEvaluated == null || nextParentsEvaluated.isEmpty()) {
-                    throw new IllegalStateException("Selection rule returned no parents");
-                }
-
-                if (nextParentsEvaluated.size() > 1) {
-                    throw new IllegalStateException("Selection rule returned more parents than 1: " + nextParentsEvaluated.size());
-                }
-
-                EvaluatedSolution<S> representative = bestOf(nextParentsEvaluated);
-                isl.current = representative.value();
-                isl.currentFitness = representative.fitness();
-
-                boolean accepted = isl.currentFitness >= previousCurrentFitness;
-                anyAccepted |= accepted;
-
-                if (isl.currentFitness > isl.bestFitness) {
-                    isl.best = isl.current;
-                    isl.bestFitness = isl.currentFitness;
-                }
-
-                isl.previousGenerationEvaluated = generationEvaluated;
+            if (nextParentsEvaluated == null || nextParentsEvaluated.isEmpty()) {
+                throw new IllegalStateException("Selection rule returned no parents");
             }
-            if (numIslands > 1 && (iteration + 1) % epochLength == 0) {
-                migrateRingBest(islands);
+
+            if (nextParentsEvaluated.size() > 1) {
+                throw new IllegalStateException("Selection rule returned more parents than 1: " + nextParentsEvaluated.size());
             }
-            global = globalBestIsland(islands);
-            RunState<S> state = new RunState<>(iteration, evaluations, global.current, global.currentFitness, global.best, global.bestFitness, anyAccepted);
-            if ((state.iteration() + 1) % logInterval == 0) {
-                log.tick(state.iteration(), state.evaluations() - 1);
-                Observers.onStep(observers,state, log);
+
+            EvaluatedSolution<S> representative = bestOf(nextParentsEvaluated);
+            isl.current = representative.value();
+            isl.currentFitness = representative.fitness();
+
+            boolean accepted = isl.currentFitness >= previousCurrentFitness;
+            anyAccepted |= accepted;
+
+            if (isl.currentFitness > isl.bestFitness) {
+                isl.best = isl.current;
+                isl.bestFitness = isl.currentFitness;
             }
-            iteration++;
+
+            isl.previousGenerationEvaluated = generationEvaluated;
         }
 
-        global= globalBestIsland(islands);
-        RunState<S> finalState = new RunState<>(iteration - 1, evaluations, global.current, global.currentFitness, global.best, global.bestFitness, false);
-        if (((finalState.iteration() + 1) % logInterval) != 0) {
-            log.tick(finalState.iteration(), finalState.evaluations() - 1);
-            Observers.onStep(observers,finalState, log);
+        if (numIslands > 1 && (iteration + 1) % epochLength == 0) {
+            migrateRingBest(islands);
         }
-        Observers.onEnd(observers,finalState, log);
-        return log;
+
+        IslandState<S> global = globalBestIsland(islands);
+        int newEvaluations = evaluations + evaluationsDelta;
+
+        RunState<S> runState = new RunState<>(
+                iteration,
+                newEvaluations,
+                global.current,
+                global.currentFitness,
+                global.best,
+                global.bestFitness,
+                anyAccepted
+        );
+
+        Map<String, Object> stateVariables = Map.of(
+                "current", global.current,
+                "currentFitness", global.currentFitness,
+                "best", global.best,
+                "bestFitness", global.bestFitness
+        );
+
+        return new PopulationStepResult<>(runState, evaluationsDelta, stateVariables);
     }
 
     /**
@@ -270,8 +264,6 @@ public class IslandModel<S>  implements PopulationModel<S> {
             }
         }
     }
-
-
 
     private static final class IslandState<S> {
         S current;
@@ -306,5 +298,4 @@ public class IslandModel<S>  implements PopulationModel<S> {
         }
         return best;
     }
-
 }

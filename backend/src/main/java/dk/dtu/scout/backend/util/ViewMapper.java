@@ -18,7 +18,7 @@ import dk.dtu.scout.backend.dto.permutation.CityDto;
 import dk.dtu.scout.backend.dto.permutation.TSPDto;
 import dk.dtu.scout.backend.dto.series.SeriesResponse;
 import dk.dtu.scout.logging.LoggedSeries;
-import dk.dtu.scout.problems.TSPInstance;
+import dk.dtu.scout.TSPInstance;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;

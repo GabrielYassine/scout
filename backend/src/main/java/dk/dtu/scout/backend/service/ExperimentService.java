@@ -33,6 +33,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import dk.dtu.scout.backend.util.ViewMapper;
+import dk.dtu.scout.SimulationRunner;
 
 
 @Service
@@ -219,7 +220,8 @@ public class ExperimentService {
             long startTime = System.nanoTime();
 
             // MAIN EXECUTION
-            RunLog log = popModel.run(generatorFactory, acceptance, ss, problem, rng, stopConditions, observer, logEveryIterations);
+            SimulationRunner runner = new SimulationRunner();
+            RunLog log = runner.run(popModel, generatorFactory, acceptance, ss, problem, rng, stopConditions, observer, logEveryIterations);
 
             long endTime = System.nanoTime();
             double runtimeMs = (endTime - startTime) / 1_000_000.0;

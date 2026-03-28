@@ -4,7 +4,7 @@ import dk.dtu.scout.backend.dto.RunRequest;
 import dk.dtu.scout.backend.dto.run.BatchRunResponse;
 import dk.dtu.scout.backend.util.TSPLibParser;
 import dk.dtu.scout.backend.util.ViewMapper;
-import dk.dtu.scout.problems.TSPInstance;
+import dk.dtu.scout.TSPInstance;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.springframework.beans.factory.annotation.Autowired;
