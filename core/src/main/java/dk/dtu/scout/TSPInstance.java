@@ -20,17 +20,11 @@ public class TSPInstance {
                 if (i == j) {
                     matrix[i][j] = 0.0;
                 } else {
-                    matrix[i][j] = euclideanDistance(coordinates[i], coordinates[j]);
+                    matrix[i][j] = DistanceUtils.euclideanRounded(coordinates[i], coordinates[j]);
                 }
             }
         }
         return matrix;
-    }
-
-    private double euclideanDistance(double[] p1, double[] p2) {
-        double dx = p1[0] - p2[0];
-        double dy = p1[1] - p2[1];
-        return Math.round(Math.sqrt(dx * dx + dy * dy));
     }
 
     public double getDistance(int cityA, int cityB) {
