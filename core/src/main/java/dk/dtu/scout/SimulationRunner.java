@@ -40,7 +40,11 @@ public class SimulationRunner {
 
         RunLog log = new RunLog();
         State sharedState = new State();
-        sharedState.update(Map.of("problem", problem));
+        sharedState.update(Map.of(
+                "problem", problem,
+                "dimension", space.dimension(),
+                "searchSpaceId", space.id()
+        ));
 
         List<ScoutComponent> sharedComponents = new ArrayList<>();
         sharedComponents.add(selection);

@@ -1,7 +1,7 @@
 package dk.dtu.scout.stopcondition;
 
-import dk.dtu.scout.ConfigurationContext;
 import dk.dtu.scout.Parameter;
+import dk.dtu.scout.State;
 import dk.dtu.scout.problems.Problem;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -45,12 +45,14 @@ public class OptimumReached<S> implements StopCondition<S> {
         return List.of("bitstring");
     }
 
-    public void configure(Map<String, Object> params, ConfigurationContext context) {
-        if (context.hasProblem()) {
-            this.problem = context.getProblem();
+    @Override
+    public void init(State state) {
+        if (state == null) {
+            return;
         }
-        if (params != null && !params.isEmpty()) {
-            configure(params);
+        Object problemObj = state.get("problem");
+        if (problemObj instanceof Problem<?> p) {
+            this.problem = p;
         }
     }
 

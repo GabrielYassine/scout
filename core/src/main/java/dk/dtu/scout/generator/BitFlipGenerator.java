@@ -1,6 +1,5 @@
 package dk.dtu.scout.generator;
 
-import dk.dtu.scout.ConfigurationContext;
 import dk.dtu.scout.Parameter;
 import dk.dtu.scout.State;
 import dk.dtu.scout.util.FormulaEvaluator;
@@ -15,11 +14,13 @@ import java.util.Random;
 @Scope("prototype")
 public class BitFlipGenerator implements Generator<boolean[]> {
     private double flipProbability = 0.0;
+    private Object flipProbabilityParam;
     private State state;
 
     @Override
     public void init(State state) {
         this.state = state;
+        resolveFlipProbability(state);
     }
 
     public String id() { return "bit-flip"; }
@@ -36,24 +37,35 @@ public class BitFlipGenerator implements Generator<boolean[]> {
     public void configure(Map<String, Object> params) {
         if (params == null) return;
         if (params.containsKey("flipProbability")) {
-            this.flipProbability = ((Number) params.get("flipProbability")).doubleValue();
+            this.flipProbabilityParam = params.get("flipProbability");
         }
     }
 
-    public void configure(Map<String, Object> params, ConfigurationContext context) {
-        if (params == null) {
-            params = Map.of();
+    private void resolveFlipProbability(State state) {
+        int dimension = 0;
+        if (state != null) {
+            Object dimObj = state.get("dimension");
+            if (dimObj instanceof Number n) {
+                dimension = n.intValue();
+            }
         }
-        Object flipProbValue = params.get("flipProbability");
-        if (flipProbValue instanceof String formula) {
-            double p = FormulaEvaluator.eval(formula, context.getDimension());
-            p = Math.max(0.0, Math.min(1.0, p));
-            this.flipProbability = p;
-        } else if (flipProbValue instanceof Number) {
-            this.flipProbability = ((Number) flipProbValue).doubleValue();
+
+        Object value = flipProbabilityParam;
+        double p;
+        if (value instanceof String formula) {
+            if (dimension > 0) {
+                p = FormulaEvaluator.eval(formula, dimension);
+            } else {
+                p = 0.0;
+            }
+        } else if (value instanceof Number n) {
+            p = n.doubleValue();
         } else {
-            this.flipProbability = 1.0 / context.getDimension();
+            p = dimension > 0 ? (1.0 / dimension) : 0.0;
         }
+
+        p = Math.max(0.0, Math.min(1.0, p));
+        this.flipProbability = p;
     }
 
     @Override

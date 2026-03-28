@@ -1,12 +1,10 @@
 package dk.dtu.scout.observer;
 
-import dk.dtu.scout.ConfigurationContext;
 import dk.dtu.scout.Parameter;
 import dk.dtu.scout.State;
 import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.logging.RunState;
 import dk.dtu.scout.logging.SeriesMode;
-import dk.dtu.scout.problems.Problem;
 import dk.dtu.scout.TSPInstance;
 import dk.dtu.scout.problems.TSPProblem;
 import org.springframework.context.annotation.Scope;
@@ -37,6 +35,7 @@ public class TSPTourObserver implements Observer<int[]> {
     @Override
     public void init(State state) {
         this.state = state;
+        loadCitiesFromState(state);
     }
 
     @Override
@@ -67,27 +66,24 @@ public class TSPTourObserver implements Observer<int[]> {
         this.cities = cities;
     }
 
-    public void configure(Map<String, Object> params, ConfigurationContext context) {
-        if (context.hasProblem()) {
-            Problem<?> problem = context.getProblem();
-            if (problem instanceof TSPProblem) {
-                TSPProblem tspProblem = (TSPProblem) problem;
-                this.instance = tspProblem.getInstance();
-                if (instance != null) {
-                    double[][] coords = instance.getCoordinates();
-                    List<Map<String, Double>> cityList = new ArrayList<>();
-                    for (double[] coord : coords) {
-                        Map<String, Double> city = new HashMap<>();
-                        city.put("x", coord[0]);
-                        city.put("y", coord[1]);
-                        cityList.add(city);
-                    }
-                    this.cities = cityList;
-                }
-            }
+    private void loadCitiesFromState(State state) {
+        if (state == null) {
+            return;
         }
-        if (params != null && !params.isEmpty()) {
-            configure(params);
+        Object problemObj = state.get("problem");
+        if (problemObj instanceof TSPProblem tspProblem) {
+            this.instance = tspProblem.getInstance();
+            if (instance != null) {
+                double[][] coords = instance.getCoordinates();
+                List<Map<String, Double>> cityList = new ArrayList<>();
+                for (double[] coord : coords) {
+                    Map<String, Double> city = new HashMap<>();
+                    city.put("x", coord[0]);
+                    city.put("y", coord[1]);
+                    cityList.add(city);
+                }
+                this.cities = cityList;
+            }
         }
     }
 

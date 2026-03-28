@@ -111,7 +111,11 @@ public class IslandModel<S> implements PopulationModel<S> {
 
             Generator<S> islandGenerator = context.generatorFactory().get();
             State islandState = new State();
-            islandState.update(Map.of("problem", context.problem()));
+            islandState.update(Map.of(
+                    "problem", context.problem(),
+                    "dimension", context.space().dimension(),
+                    "searchSpaceId", context.space().id()
+            ));
             islandGenerator.init(islandState);
 
             List<ScoutComponent> components = List.of(islandGenerator);

@@ -1,6 +1,5 @@
 package dk.dtu.scout.backend.service;
 
-import dk.dtu.scout.ConfigurationContext;
 import dk.dtu.scout.acceptance.SelectionRule;
 import dk.dtu.scout.backend.dto.RunRequest;
 import dk.dtu.scout.backend.dto.run.BatchRunResponse;
@@ -248,8 +247,7 @@ public class ExperimentService {
             ComponentRegistry<?> registry,
             List<String> ids,
             String componentType,
-            Map<String, Object> params,
-            ConfigurationContext context
+            Map<String, Object> params
     ) {
         if (ids == null || ids.isEmpty()) {
             throw new BadRequestException(componentType + " must be specified");
@@ -259,16 +257,6 @@ public class ExperimentService {
         Object component = registry.create(id);
 
         try {
-            if (context != null) {
-                try {
-                    component.getClass()
-                        .getMethod("configure", Map.class, ConfigurationContext.class)
-                        .invoke(component, params != null ? params : Map.of(), context);
-                    return (T) component;
-                } catch (NoSuchMethodException e) {
-                }
-            }
-
             component.getClass()
                 .getMethod("configure", Map.class)
                 .invoke(component, params != null ? params : Map.of());
@@ -279,7 +267,7 @@ public class ExperimentService {
     }
 
     private <S> SearchSpace<S> createSearchSpace(List<String> ids, Map<String, Object> params) {
-        return createAndConfigure(searchSpaceRegistry, ids, "Search space", params, null);
+        return createAndConfigure(searchSpaceRegistry, ids, "Search space", params);
     }
 
     private <S> Problem<S> createProblem(String id, int n, Map<String, Object> problemParams) {
@@ -295,8 +283,7 @@ public class ExperimentService {
     }
 
     private <S> Generator<S> createGenerator(List<String> ids, Map<String, Object> params, int n, String searchSpaceId) {
-        ConfigurationContext context = new ConfigurationContext(n);
-        Generator<S> generator = createAndConfigure(mutationRegistry, ids, "Generator", params, context);
+        Generator<S> generator = createAndConfigure(mutationRegistry, ids, "Generator", params);
 
         if (!generator.supportedSearchSpaces().isEmpty() &&
                 !generator.supportedSearchSpaces().contains(searchSpaceId)) {
@@ -308,11 +295,11 @@ public class ExperimentService {
     }
 
     private SelectionRule createSelectionRule(List<String> ids, Map<String, Object> params) {
-        return createAndConfigure(selectionRegistry, ids, "Selection rule", params, null);
+        return createAndConfigure(selectionRegistry, ids, "Selection rule", params);
     }
 
     private<S>  PopulationModel<S> createPopulationModel(List<String>  ids, Map<String, Object> params) {
-        return createAndConfigure(populationModelRegistry, ids, "Population model", params, null);
+        return createAndConfigure(populationModelRegistry, ids, "Population model", params);
     }
 
     private<S>  List<StopCondition<S>> createStopConditionChain(List<String>  ids, Map<String, Object> params, Problem<S> problem) {
@@ -323,8 +310,7 @@ public class ExperimentService {
     }
 
     private<S> StopCondition<S>createSingleStopCondition(String id, Map<String, Object> params, Problem<S> problem) {
-        ConfigurationContext context = new ConfigurationContext(0, problem);
-        return createAndConfigure(stopConditionRegistry, List.of(id), "Stop condition", params, context);
+        return createAndConfigure(stopConditionRegistry, List.of(id), "Stop condition", params);
     }
 
     private<S> List<Observer<S>> createObservers(List<String> ids, Map<String, Object> params, Problem<S> problem) {
@@ -335,8 +321,7 @@ public class ExperimentService {
     }
 
     private <S>Observer<S> createSingleObserver(String id, Map<String, Object> params, Problem<S> problem) {
-        ConfigurationContext context = new ConfigurationContext(0, problem);
-        return createAndConfigure(observerRegistry, List.of(id), "Observer", params, context);
+        return createAndConfigure(observerRegistry, List.of(id), "Observer", params);
     }
 
     private int resolveLogEveryIterations(RunRequest request) {
@@ -352,3 +337,4 @@ public class ExperimentService {
         return Math.max(1, interval);
     }
 }
+
