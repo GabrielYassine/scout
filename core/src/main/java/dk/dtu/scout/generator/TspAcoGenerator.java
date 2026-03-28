@@ -3,8 +3,8 @@ package dk.dtu.scout.generator;
 import dk.dtu.scout.EvaluatedSolution;
 import dk.dtu.scout.Parameter;
 import dk.dtu.scout.State;
-import dk.dtu.scout.problems.TSPProblem;
 import dk.dtu.scout.TSPInstance;
+import dk.dtu.scout.problems.TSPProblem;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -14,13 +14,10 @@ import java.util.Random;
 
 @Component
 @Scope("prototype")
-public class PheromoneGuidedGenerator implements Generator<int[]> {
+public class TspAcoGenerator extends AbstractAcoGenerator<int[]> {
 
     private static final double Q = 1.0;
 
-    private double evaporationRate = 0.1;
-    private double alpha = 1.0;
-    private double beta = 2.0;
     private double[][] pheromoneMatrix;
     private double[][] distanceMatrix;
     private State state;
@@ -39,52 +36,22 @@ public class PheromoneGuidedGenerator implements Generator<int[]> {
 
     @Override
     public String id() {
-        return "pheromone-guided";
+        return "tsp-aco";
     }
 
     @Override
     public String displayName() {
-        return "Pheromone-Guided Mutation";
+        return "TSP ACO Generator";
     }
 
     @Override
     public String description() {
-        return "Generate a new solution guided by pheromone information";
+        return "Ant colony generator for TSP that constructs tours using edge pheromones";
     }
 
     @Override
     public List<Parameter> params() {
-        return List.of(
-            new Parameter("evaporationRate", "Pheromone Evaporation Rate", "double", evaporationRate, 0.0, 1.0),
-            new Parameter("alpha", "Pheromone Influence", "double", alpha, 0.1, 5.0),
-            new Parameter("beta", "Visibility/Distance Influence", "double", beta, 0.1, 10.0)
-        );
-    }
-
-    @Override
-    public void configure(Map<String, Object> params) {
-        if (params == null) return;
-        if (params.containsKey("evaporationRate")) {
-            double value = ((Number) params.get("evaporationRate")).doubleValue();
-            if (value < 0.0 || value > 1.0) {
-                throw new IllegalArgumentException("Evaporation rate must be between 0 and 1");
-            }
-            this.evaporationRate = value;
-        }
-        if (params.containsKey("alpha")) {
-            double value = ((Number) params.get("alpha")).doubleValue();
-            if (value < 0.1 || value > 5.0) {
-                throw new IllegalArgumentException("Alpha must be between 0.1 and 5.0");
-            }
-            this.alpha = value;
-        }
-        if (params.containsKey("beta")) {
-            double value = ((Number) params.get("beta")).doubleValue();
-            if (value < 0.1 || value > 10.0) {
-                throw new IllegalArgumentException("Beta must be between 0.1 and 10.0");
-            }
-            this.beta = value;
-        }
+        return acoParams();
     }
 
     @Override
@@ -94,7 +61,7 @@ public class PheromoneGuidedGenerator implements Generator<int[]> {
         }
 
         if (pheromoneMatrix == null || pheromoneMatrix.length == 0) {
-            throw new IllegalStateException("PheromoneGuidedGenerator not properly initialized. Pheromone matrix is empty or null.");
+            throw new IllegalStateException("TspAcoGenerator not properly initialized. Pheromone matrix is empty or null.");
         }
 
         int dim = pheromoneMatrix.length;
@@ -135,7 +102,7 @@ public class PheromoneGuidedGenerator implements Generator<int[]> {
         }
 
         if (dim <= 0) {
-            throw new IllegalStateException("Cannot initialize PheromoneGuidedGenerator: dimension must be positive. Got dimension=" + dim + " from state=" + state);
+            throw new IllegalStateException("Cannot initialize TspAcoGenerator: dimension must be positive. Got dimension=" + dim + " from state=" + state);
         }
 
         pheromoneMatrix = new double[dim][dim];
@@ -224,7 +191,6 @@ public class PheromoneGuidedGenerator implements Generator<int[]> {
         updatePheromoneMatrix(state);
         return Map.of("pheromoneMatrix", pheromoneMatrix);
     }
-
 
     private void updatePheromoneMatrix(State state) {
         if (state == null || pheromoneMatrix == null || pheromoneMatrix.length == 0) {

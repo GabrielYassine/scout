@@ -8,10 +8,10 @@
     "problemId": ["tsp"],
     "problemParams": {},
 
-    "generatorId": ["pheromone-guided"],
+    "generatorId": ["tsp-aco"],
     "generatorParams": {
       "evaporationRate": 0.1,
-      "alpha":  1.0,
+      "alpha": 1.0,
       "beta": 2.0
     },
 

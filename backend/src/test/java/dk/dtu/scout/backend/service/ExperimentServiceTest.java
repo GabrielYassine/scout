@@ -157,14 +157,14 @@ class ExperimentServiceTest {
     }
 
     @Test
-    @DisplayName("TSP with Pheromone-Guided Mutation and Elitist acceptance")
+    @DisplayName("TSP with TSP ACO generator and Elitist acceptance")
     void testTSPWithPheromoneAndElitist() throws IOException {
         RunRequest request = ViewMapper.toRunRequest(
                  List.of("permutation"),
                  Map.of("n", 52),
                  List.of("tsp"),
                  Map.of("tspInstance", loadBerlin52Instance()),
-                 List.of("pheromone-guided"),
+                 List.of("tsp-aco"),
                  Map.of("evaporationRate", 0.1, "alpha", 1.0, "beta", 2.0),
                  List.of("mu-lambda"),
                  Map.of("lambda", 20),
