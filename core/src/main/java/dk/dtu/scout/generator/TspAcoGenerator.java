@@ -18,6 +18,9 @@ public class TspAcoGenerator extends AbstractAcoGenerator<int[]> {
 
     private static final double Q = 1.0;
 
+    private double alpha = 1.0;
+    private double beta = 2.0;
+
     private double[][] pheromoneMatrix;
     private double[][] distanceMatrix;
     private State state;
@@ -51,7 +54,32 @@ public class TspAcoGenerator extends AbstractAcoGenerator<int[]> {
 
     @Override
     public List<Parameter> params() {
-        return acoParams();
+        List<Parameter> params = new java.util.ArrayList<>(evaporationParams());
+        params.add(new Parameter("alpha", "Pheromone Influence", "double", alpha, 0.1, 5.0));
+        params.add(new Parameter("beta", "Heuristic Influence", "double", beta, 0.1, 10.0));
+        return params;
+    }
+
+    @Override
+    public void configure(Map<String, Object> params) {
+        super.configure(params);
+        if (params == null) {
+            return;
+        }
+        if (params.containsKey("alpha")) {
+            double value = ((Number) params.get("alpha")).doubleValue();
+            if (value < 0.1 || value > 5.0) {
+                throw new IllegalArgumentException("Alpha must be between 0.1 and 5.0");
+            }
+            this.alpha = value;
+        }
+        if (params.containsKey("beta")) {
+            double value = ((Number) params.get("beta")).doubleValue();
+            if (value < 0.1 || value > 10.0) {
+                throw new IllegalArgumentException("Beta must be between 0.1 and 10.0");
+            }
+            this.beta = value;
+        }
     }
 
     @Override

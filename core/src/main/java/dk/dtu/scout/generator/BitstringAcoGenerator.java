@@ -14,9 +14,10 @@ import java.util.Random;
 @Scope("prototype")
 public class BitstringAcoGenerator extends AbstractAcoGenerator<boolean[]> {
 
-    private static final double Q = 0.1;
     private static final double MIN_PHEROMONE = 0.01;
     private static final double MAX_PHEROMONE = 0.99;
+
+    private double reinforcementRate = 0.1;
 
     private double[] pheromoneVector;
     private State state;
@@ -43,7 +44,31 @@ public class BitstringAcoGenerator extends AbstractAcoGenerator<boolean[]> {
 
     @Override
     public List<Parameter> params() {
-        return acoParams();
+        return List.of(
+                new Parameter("evaporationRate", "Pheromone Evaporation Rate", "double", evaporationRate, 0.0, 1.0),
+                new Parameter("reinforcementRate", "Reinforcement Rate", "double", reinforcementRate, 0.0, 1.0)
+        );
+    }
+
+    @Override
+    public void configure(Map<String, Object> params) {
+        if (params == null) {
+            return;
+        }
+        if (params.containsKey("evaporationRate")) {
+            double value = ((Number) params.get("evaporationRate")).doubleValue();
+            if (value < 0.0 || value > 1.0) {
+                throw new IllegalArgumentException("Evaporation rate must be between 0 and 1");
+            }
+            this.evaporationRate = value;
+        }
+        if (params.containsKey("reinforcementRate")) {
+            double value = ((Number) params.get("reinforcementRate")).doubleValue();
+            if (value < 0.0 || value > 1.0) {
+                throw new IllegalArgumentException("Reinforcement rate must be between 0 and 1");
+            }
+            this.reinforcementRate = value;
+        }
     }
 
     @Override
@@ -56,10 +81,7 @@ public class BitstringAcoGenerator extends AbstractAcoGenerator<boolean[]> {
         boolean[] result = new boolean[n];
 
         for (int i = 0; i < n; i++) {
-            double p1 = Math.pow(pheromoneVector[i], alpha);
-            double p0 = Math.pow(1.0 - pheromoneVector[i], beta);
-            double probabilityOfOne = p1 / (p1 + p0);
-            result[i] = rng.nextDouble() < probabilityOfOne;
+            result[i] = rng.nextDouble() < pheromoneVector[i];
         }
 
         return result;
@@ -134,7 +156,7 @@ public class BitstringAcoGenerator extends AbstractAcoGenerator<boolean[]> {
     private void deposit(boolean[] solution) {
         for (int i = 0; i < pheromoneVector.length; i++) {
             double target = solution[i] ? 1.0 : 0.0;
-            pheromoneVector[i] = clamp(pheromoneVector[i] + Q * (target - pheromoneVector[i]));
+            pheromoneVector[i] = clamp(pheromoneVector[i] + reinforcementRate * (target - pheromoneVector[i]));
         }
     }
 
