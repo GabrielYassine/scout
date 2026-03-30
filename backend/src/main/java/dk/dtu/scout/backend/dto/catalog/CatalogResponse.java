@@ -7,6 +7,7 @@ public record CatalogResponse(
     List<ComponentDef> problems,
     List<ComponentDef> generators,
     List<ComponentDef> selectionRules,
+    List<ComponentDef> parentSelectionRules,
     List<ComponentDef> populationModels,
     List<ComponentDef> stopConditions,
     List<ComponentDef> observers

@@ -198,7 +198,7 @@ public class IslandModel<S> implements PopulationModel<S> {
                 throw new IllegalStateException("Selection rule returned more parents than 1: " + nextParentsEvaluated.size());
             }
 
-            EvaluatedSolution<S> representative = bestOf(nextParentsEvaluated);
+            EvaluatedSolution<S> representative = context.parentSelection().select(nextParentsEvaluated, r);
             isl.current = representative.value();
             isl.currentFitness = representative.fitness();
 

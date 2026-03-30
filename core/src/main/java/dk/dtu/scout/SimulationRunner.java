@@ -5,6 +5,7 @@ import dk.dtu.scout.generator.Generator;
 import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.logging.RunState;
 import dk.dtu.scout.observer.Observer;
+import dk.dtu.scout.parentSelectionRule.ParentSelectionRule;
 import dk.dtu.scout.population.PopulationInitialization;
 import dk.dtu.scout.population.PopulationModel;
 import dk.dtu.scout.population.PopulationModelContext;
@@ -27,6 +28,7 @@ public class SimulationRunner {
             PopulationModel<S> populationModel,
             Supplier<Generator<S>> generatorFactory,
             SelectionRule<S> selection,
+            ParentSelectionRule<S> parentSelection,
             SearchSpace<S> space,
             Problem<S> problem,
             Random rng,
@@ -48,6 +50,7 @@ public class SimulationRunner {
 
         List<ScoutComponent> sharedComponents = new ArrayList<>();
         sharedComponents.add(selection);
+        sharedComponents.add(parentSelection);
         sharedComponents.add(space);
         sharedComponents.add(problem);
         if (stopConditions != null) {
@@ -64,6 +67,7 @@ public class SimulationRunner {
         PopulationModelContext<S> context = new PopulationModelContext<>(
                 generatorFactory,
                 selection,
+                parentSelection,
                 space,
                 problem,
                 rng,
