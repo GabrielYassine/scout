@@ -98,6 +98,10 @@ public class TSPProblem implements Problem<int[]> {
         return instance;
     }
 
+    public double getOptimalTourLength() {
+        return optimalTourLength;
+    }
+
     @Override
     public double fitness(int[] tour) {
         if (instance == null) {
