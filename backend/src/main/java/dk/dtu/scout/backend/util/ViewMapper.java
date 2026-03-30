@@ -96,6 +96,7 @@ public final class ViewMapper {
         List<ComponentDef> problems,
         List<ComponentDef> generators,
         List<ComponentDef> selectionRules,
+        List<ComponentDef> parentSelectionRules,
         List<ComponentDef> populationModels,
         List<ComponentDef> stopConditions,
         List<ComponentDef> observers
@@ -105,6 +106,7 @@ public final class ViewMapper {
             problems,
             generators,
             selectionRules,
+            parentSelectionRules,
             populationModels,
             stopConditions,
             observers
@@ -214,6 +216,8 @@ public final class ViewMapper {
         Map<String, Object> populationModelParams,
         List<String> selectionRuleId,
         Map<String, Object> selectionRuleParams,
+        List<String> parentSelectionRuleId,
+        Map<String, Object> parentSelectionRuleParams,
         List<String> observerIds,
         Map<String, Object> observerParams,
         List<String> stopConditionId,
@@ -234,6 +238,8 @@ public final class ViewMapper {
             populationModelParams,
             selectionRuleId,
             selectionRuleParams,
+            parentSelectionRuleId,
+            parentSelectionRuleParams,
             observerIds,
             observerParams,
             stopConditionId,

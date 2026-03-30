@@ -223,10 +223,9 @@ public class MuLambdaPopulationModel<S> implements PopulationModel<S> {
 
         muState.parentsEvaluated = nextParentsEvaluated;
 
-        // The representative shown to generic observers is the best individual
-        // in the selected parent population. This is a framework choice; it is not
-        // necessarily the only meaningful representative.
-        EvaluatedSolution<S> representative = bestOf(muState.parentsEvaluated);
+        // Use the parent selection rule to choose the representative from the parent population.
+        // This representative is used as the base individual for offspring generation.
+        EvaluatedSolution<S> representative = context.parentSelection().select(muState.parentsEvaluated, context.rng());
         muState.current = representative.value();
         muState.currentFitness = representative.fitness();
 

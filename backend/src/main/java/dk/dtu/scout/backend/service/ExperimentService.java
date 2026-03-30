@@ -10,6 +10,7 @@ import dk.dtu.scout.backend.exception.BadRequestException;
 import dk.dtu.scout.generator.Generator;
 import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.observer.*;
+import dk.dtu.scout.parentSelectionRule.ParentSelectionRule;
 import dk.dtu.scout.population.PopulationModel;
 import dk.dtu.scout.problems.Problem;
 import dk.dtu.scout.searchSpace.SearchSpace;
@@ -41,6 +42,7 @@ public class ExperimentService {
     private final StatisticsService statisticsService;
     private final ComponentRegistry<Generator> mutationRegistry;
     private final ComponentRegistry<SelectionRule> selectionRegistry;
+    private final ComponentRegistry<ParentSelectionRule> parentSelectionRuleRegistry;
     private final ComponentRegistry<PopulationModel> populationModelRegistry;
     private final ComponentRegistry<Problem> problemRegistry;
     private final ComponentRegistry<SearchSpace> searchSpaceRegistry;
@@ -53,6 +55,7 @@ public class ExperimentService {
             StatisticsService statisticsService,
             ComponentRegistry<Generator> mutationRegistry,
             ComponentRegistry<SelectionRule> selectionRegistry,
+            ComponentRegistry<ParentSelectionRule> parentSelectionRuleRegistry,
             ComponentRegistry<PopulationModel> populationModelRegistry,
             ComponentRegistry<Problem> problemRegistry,
             ComponentRegistry<SearchSpace> searchSpaceRegistry,
@@ -64,6 +67,7 @@ public class ExperimentService {
         this.statisticsService = statisticsService;
         this.mutationRegistry = mutationRegistry;
         this.selectionRegistry = selectionRegistry;
+        this.parentSelectionRuleRegistry = parentSelectionRuleRegistry;
         this.populationModelRegistry = populationModelRegistry;
         this.problemRegistry = problemRegistry;
         this.searchSpaceRegistry = searchSpaceRegistry;
@@ -211,6 +215,7 @@ public class ExperimentService {
         for (String pid : problemIds) {
             Problem<S> problem = createProblem(pid, ss.dimension(), request.problemParams());
             SelectionRule acceptance = createSelectionRule(request.selectionRuleId(), request.selectionRuleParams());
+            ParentSelectionRule parentSelection = createParentSelectionRule(request.parentSelectionRuleId(), request.parentSelectionRuleParams());
             List<StopCondition<S>> stopConditions = createStopConditionChain(request.stopConditionId(), request.stopConditionParams(), problem);
             List<Observer<S>> observer = new ArrayList<>(createObservers(request.observerIds(), request.observerParams(), problem));
             PopulationModel<S> popModel = createPopulationModel(request.populationModelId(), request.populationModelParams());
@@ -220,7 +225,7 @@ public class ExperimentService {
 
             // MAIN EXECUTION
             SimulationRunner runner = new SimulationRunner();
-            RunLog log = runner.run(popModel, generatorFactory, acceptance, ss, problem, rng, stopConditions, observer, logEveryIterations);
+            RunLog log = runner.run(popModel, generatorFactory, acceptance, parentSelection, ss, problem, rng, stopConditions, observer, logEveryIterations);
 
             long endTime = System.nanoTime();
             double runtimeMs = (endTime - startTime) / 1_000_000.0;
@@ -296,6 +301,13 @@ public class ExperimentService {
 
     private SelectionRule createSelectionRule(List<String> ids, Map<String, Object> params) {
         return createAndConfigure(selectionRegistry, ids, "Selection rule", params);
+    }
+
+    private ParentSelectionRule createParentSelectionRule(List<String> ids, Map<String, Object> params) {
+        if (ids == null || ids.isEmpty()) {
+            return createAndConfigure(parentSelectionRuleRegistry, List.of("best-parent"), "Parent selection rule", params);
+        }
+        return createAndConfigure(parentSelectionRuleRegistry, ids, "Parent selection rule", params);
     }
 
     private<S>  PopulationModel<S> createPopulationModel(List<String>  ids, Map<String, Object> params) {
