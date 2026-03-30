@@ -7,15 +7,20 @@ public class VRPInstance {
     private final double[] customerDemands;
     private final double[] depotCoordinates;
     private final double capacity;
+    private final int numberOfVehicles;
     private final double[][] distanceMatrix;
 
-    public VRPInstance(String name, double[] depotCoordinates, double[][] customerCoordinates, double[] customerDemands, double capacity) {
+    public VRPInstance(String name, double[] depotCoordinates, double[][] customerCoordinates, double[] customerDemands, double capacity, int numberOfVehicles) {
         this.name = name;
         this.customerCoordinates = customerCoordinates;
         this.customerDemands = customerDemands;
         this.customerCount = customerCoordinates.length;
         this.depotCoordinates = depotCoordinates;
         this.capacity = capacity;
+        if (numberOfVehicles <= 0) {
+            throw new IllegalArgumentException("Number of vehicles must be positive");
+        }
+        this.numberOfVehicles = numberOfVehicles;
         this.distanceMatrix = computeDistanceMatrix();
     }
 
@@ -64,5 +69,9 @@ public class VRPInstance {
 
     public double[] getDepotCoordinates() {
         return depotCoordinates;
+    }
+
+    public int getNumberOfVehicles() {
+        return numberOfVehicles;
     }
 }
