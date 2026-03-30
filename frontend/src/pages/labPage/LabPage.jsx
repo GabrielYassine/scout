@@ -30,6 +30,8 @@ export default function LabPage({catalog, catalogLoading, catalogError, template
         problem: catalog.problems,
         generator: catalog.generators,
         selection: catalog.selectionRules,
+        parentSelectionRule: catalog.parentSelectionRules,
+        crossover: catalog.crossovers,
         populationModel: catalog.populationModels,
         stopCondition: catalog.stopConditions,
         observer: catalog.observers,
@@ -81,6 +83,12 @@ export default function LabPage({catalog, catalogLoading, catalogError, template
 
       populationModelId: puzzleConfig.populationModel?.map((x) => x.id) ?? [],
       populationModelParams: params.populationModel,
+
+       parentSelectionRuleId: puzzleConfig.parentSelectionRule?.map((x) => x.id) ?? [],
+       parentSelectionRuleParams: params.parentSelectionRule,
+
+       crossoverId: puzzleConfig.crossover?.map((x) => x.id) ?? [],
+       crossoverParams: params.crossover,
 
       stopConditionId: puzzleConfig.stopCondition?.map((x) => x.id) ?? [],
       stopConditionParams: params.stopCondition,

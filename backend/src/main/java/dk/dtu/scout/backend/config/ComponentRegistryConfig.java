@@ -2,8 +2,10 @@ package dk.dtu.scout.backend.config;
 
 import dk.dtu.scout.acceptance.SelectionRule;
 import dk.dtu.scout.backend.service.ComponentRegistry;
+import dk.dtu.scout.crossover.Crossover;
 import dk.dtu.scout.generator.Generator;
 import dk.dtu.scout.observer.Observer;
+import dk.dtu.scout.parentSelectionRule.ParentSelectionRule;
 import dk.dtu.scout.population.PopulationModel;
 import dk.dtu.scout.problems.Problem;
 import dk.dtu.scout.searchSpace.SearchSpace;
@@ -66,6 +68,20 @@ public class ComponentRegistryConfig {
     @Bean
     public ComponentRegistry<Generator> mutationRegistry(
             List<Generator> components,
+            ApplicationContext context) {
+        return new ComponentRegistry<>(components, context);
+    }
+
+    @Bean
+    public ComponentRegistry<ParentSelectionRule> parentSelectionRuleRegistry(
+            List<ParentSelectionRule> components,
+            ApplicationContext context) {
+        return new ComponentRegistry<>(components, context);
+    }
+
+    @Bean
+    public ComponentRegistry<Crossover> crossoverRegistry(
+            List<Crossover> components,
             ApplicationContext context) {
         return new ComponentRegistry<>(components, context);
     }

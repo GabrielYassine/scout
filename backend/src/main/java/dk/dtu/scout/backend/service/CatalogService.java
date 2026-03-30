@@ -6,8 +6,10 @@ import dk.dtu.scout.backend.dto.catalog.ComponentDef;
 import dk.dtu.scout.backend.util.ViewMapper;
 
 import dk.dtu.scout.acceptance.SelectionRule;
+import dk.dtu.scout.crossover.Crossover;
 import dk.dtu.scout.generator.Generator;
 import dk.dtu.scout.observer.Observer;
+import dk.dtu.scout.parentSelectionRule.ParentSelectionRule;
 import dk.dtu.scout.population.PopulationModel;
 import dk.dtu.scout.problems.Problem;
 import dk.dtu.scout.searchSpace.SearchSpace;
@@ -24,6 +26,8 @@ public class CatalogService {
     private final List<Generator<?>> generators;
     private final List<SelectionRule> selectionRules;
     private final List<PopulationModel<?>> populationModels;
+    private final List<ParentSelectionRule> parentSelectionRules;
+    private final List<Crossover> crossovers;
     private final List<StopCondition<?>> stopConditions;
     private final List<Observer<?>> observers;
 
@@ -33,6 +37,8 @@ public class CatalogService {
         List<Generator<?>> generators,
         List<SelectionRule> selectionRules,
         List<PopulationModel<?>> populationModels,
+        List<ParentSelectionRule> parentSelectionRules,
+        List<Crossover> crossovers,
         List<StopCondition<?>> stopConditions,
         List<Observer<?>> observers
         ) {
@@ -41,6 +47,8 @@ public class CatalogService {
         this.generators = generators;
         this.selectionRules = selectionRules;
         this.populationModels = populationModels;
+        this.parentSelectionRules = parentSelectionRules;
+        this.crossovers = crossovers;
         this.stopConditions = stopConditions;
         this.observers = observers;
     }
@@ -63,6 +71,12 @@ public class CatalogService {
 
     public List<ComponentDef> populationModels() {
         return populationModels.stream().map(c -> ViewMapper.toComponentDef("populationModel", c)).toList();
+    }
+    public List<ComponentDef> parentSelectionRules() {
+        return parentSelectionRules.stream().map(c -> ViewMapper.toComponentDef("parentSelectionRule", c)).toList();
+    }
+    public List<ComponentDef> crossovers() {
+        return crossovers.stream().map(c -> ViewMapper.toComponentDef("crossover", c)).toList();
     }
 
     public List<ComponentDef> stopConditions() {

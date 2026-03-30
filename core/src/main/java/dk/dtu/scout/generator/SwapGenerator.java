@@ -46,7 +46,10 @@ public class SwapGenerator implements Generator<int[]> {
 
     @Override
     public int[] generate(Random rng) {
-        int[] solution = (int[]) state.get("current");
+        Object baseObj = state.get("offspringBase");
+        if (!(baseObj instanceof  int[] solution )) {
+            throw new IllegalStateException("BitFlipGenerator requires 'crossoverChild' or 'selectedParent' in state");
+        }
         int[] mutated = solution.clone();
 
         if (mutated.length < 2) {

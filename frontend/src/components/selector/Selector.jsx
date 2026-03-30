@@ -8,6 +8,8 @@ const componentTypesAll = [
     { key: "generator", label: "Generator", catalogKey: "generators" },
     { key: "selection", label: "Selection Rule", catalogKey: "selectionRules" },
     { key: "populationModel", label: "Population Model", catalogKey: "populationModels" },
+    { key: "parentSelectionRule", label: "Parent Selection", catalogKey: "parentSelectionRules" },
+    { key: "crossover", label: "Crossover", catalogKey: "crossovers" },
     { key: "stopCondition", label: "Stop Condition", catalogKey: "stopConditions" },
     { key: "observer", label: "Observer", catalogKey: "observers" },
 ];

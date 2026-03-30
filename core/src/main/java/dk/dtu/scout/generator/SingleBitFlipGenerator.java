@@ -32,7 +32,11 @@ public class SingleBitFlipGenerator implements Generator<boolean[]> {
 
     @Override
     public boolean[] generate(Random rng) {
-        boolean[] bits = (boolean[]) state.get("current");
+        Object baseObj = state.get("offspringBase");
+
+        if (!(baseObj instanceof boolean[] bits)) {
+            throw new IllegalStateException("BitFlipGenerator requires 'crossoverChild' or 'selectedParent' in state");
+        }
         int n = bits.length;
         if (n == 0) return bits;
         boolean[] mutated = bits.clone();

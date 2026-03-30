@@ -27,6 +27,8 @@ public class CatalogController {
                 catalog.generators(),
                 catalog.selectionRules(),
                 catalog.populationModels(),
+                catalog.parentSelectionRules(),
+                catalog.crossovers(),
                 catalog.stopConditions(),
                 catalog.observers()
         );

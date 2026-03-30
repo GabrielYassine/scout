@@ -7,9 +7,11 @@ import dk.dtu.scout.backend.dto.run.BatchSummaryResponse;
 import dk.dtu.scout.backend.dto.run.RunGroupResponse;
 import dk.dtu.scout.backend.dto.run.RunResponse;
 import dk.dtu.scout.backend.exception.BadRequestException;
+import dk.dtu.scout.crossover.Crossover;
 import dk.dtu.scout.generator.Generator;
 import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.observer.*;
+import dk.dtu.scout.parentSelectionRule.ParentSelectionRule;
 import dk.dtu.scout.population.PopulationModel;
 import dk.dtu.scout.problems.Problem;
 import dk.dtu.scout.searchSpace.SearchSpace;
@@ -44,6 +46,8 @@ public class ExperimentService {
     private final ComponentRegistry<PopulationModel> populationModelRegistry;
     private final ComponentRegistry<Problem> problemRegistry;
     private final ComponentRegistry<SearchSpace> searchSpaceRegistry;
+    private final ComponentRegistry<ParentSelectionRule> parentSelectionRegistry;
+    private final ComponentRegistry<Crossover> crossoverRegistry;
     private final ComponentRegistry<StopCondition> stopConditionRegistry;
     private final ComponentRegistry<Observer> observerRegistry;
     private final WsSender wsSender;
@@ -56,6 +60,8 @@ public class ExperimentService {
             ComponentRegistry<PopulationModel> populationModelRegistry,
             ComponentRegistry<Problem> problemRegistry,
             ComponentRegistry<SearchSpace> searchSpaceRegistry,
+            ComponentRegistry<ParentSelectionRule> parentSelectionRuleRegistry,
+            ComponentRegistry<Crossover> crossoverRegistry,
             ComponentRegistry<StopCondition> stopConditionRegistry,
             ComponentRegistry<Observer> observerRegistry,
             WsSender wsSender,
@@ -67,6 +73,8 @@ public class ExperimentService {
         this.populationModelRegistry = populationModelRegistry;
         this.problemRegistry = problemRegistry;
         this.searchSpaceRegistry = searchSpaceRegistry;
+        this.parentSelectionRegistry = parentSelectionRuleRegistry;
+        this.crossoverRegistry = crossoverRegistry;
         this.stopConditionRegistry = stopConditionRegistry;
         this.observerRegistry = observerRegistry;
         this.wsSender = wsSender;
@@ -210,17 +218,19 @@ public class ExperimentService {
         // The reason stopcondition and observer are created inside the loop is tha they depend on problem.
         for (String pid : problemIds) {
             Problem<S> problem = createProblem(pid, ss.dimension(), request.problemParams());
-            SelectionRule acceptance = createSelectionRule(request.selectionRuleId(), request.selectionRuleParams());
+            SelectionRule selection = createSelectionRule(request.selectionRuleId(), request.selectionRuleParams());
             List<StopCondition<S>> stopConditions = createStopConditionChain(request.stopConditionId(), request.stopConditionParams(), problem);
             List<Observer<S>> observer = new ArrayList<>(createObservers(request.observerIds(), request.observerParams(), problem));
             PopulationModel<S> popModel = createPopulationModel(request.populationModelId(), request.populationModelParams());
+            Crossover<S> crossover = createOptionalCrossover(request.crossoverId(), request.crossoverParams(), ss.id());
+            ParentSelectionRule<S> parentSelection = createParentSelectionRule(request.parentSelectionRuleId(), request.parentSelectionRuleParams());
             observer.add(new RunProgressObserver<>(wsSender, runId, runIndex, runSeed, pid, wsUpdateEveryIterations));
 
             long startTime = System.nanoTime();
 
             // MAIN EXECUTION
             SimulationRunner runner = new SimulationRunner();
-            RunLog log = runner.run(popModel, generatorFactory, acceptance, ss, problem, rng, stopConditions, observer, logEveryIterations);
+            RunLog log = runner.run(popModel, generatorFactory, crossover, parentSelection, selection, ss, problem, rng, stopConditions, observer, logEveryIterations);
 
             long endTime = System.nanoTime();
             double runtimeMs = (endTime - startTime) / 1_000_000.0;
@@ -322,6 +332,25 @@ public class ExperimentService {
 
     private <S>Observer<S> createSingleObserver(String id, Map<String, Object> params, Problem<S> problem) {
         return createAndConfigure(observerRegistry, List.of(id), "Observer", params);
+    }
+    private <S> Crossover<S> createOptionalCrossover(List<String> ids, Map<String, Object> params, String searchSpaceId) {
+        if (ids == null || ids.isEmpty()) {
+            return null;
+        }
+        return createAndConfigure(crossoverRegistry, ids, "Crossover", params);
+    }
+
+    private <S> ParentSelectionRule<S> createParentSelectionRule(List<String> ids, Map<String, Object> params) {
+        if (ids == null || ids.isEmpty()) {
+            return createAndConfigure(
+                    parentSelectionRegistry,
+                    List.of("random-parents"),
+                    "Parent selection rule",
+                    Map.of()
+            );
+        }
+
+        return createAndConfigure(parentSelectionRegistry, ids, "Parent selection rule", params);
     }
 
     private int resolveLogEveryIterations(RunRequest request) {

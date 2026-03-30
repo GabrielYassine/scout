@@ -46,8 +46,13 @@ public class TwoOptGenerator implements Generator<int[]> {
 
     @Override
     public int[] generate(Random rng) {
-        int[] solution = (int[]) state.get("current");
-        int[] mutated = solution.clone();
+        Object baseObj = state.get("crossoverChild");
+        if (baseObj == null) {
+            baseObj = state.get("selectedParent1");
+        }
+        if (!(baseObj instanceof  int[] solution )) {
+            throw new IllegalStateException("BitFlipGenerator requires 'crossoverChild' or 'selectedParent' in state");
+        }        int[] mutated = solution.clone();
 
         if (mutated.length < 2) {
             return mutated;

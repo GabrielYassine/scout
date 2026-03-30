@@ -1,10 +1,12 @@
 package dk.dtu.scout;
 
 import dk.dtu.scout.acceptance.SelectionRule;
+import dk.dtu.scout.crossover.Crossover;
 import dk.dtu.scout.generator.Generator;
 import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.logging.RunState;
 import dk.dtu.scout.observer.Observer;
+import dk.dtu.scout.parentSelectionRule.ParentSelectionRule;
 import dk.dtu.scout.population.PopulationInitialization;
 import dk.dtu.scout.population.PopulationModel;
 import dk.dtu.scout.population.PopulationModelContext;
@@ -26,6 +28,8 @@ public class SimulationRunner {
     public <S> RunLog run(
             PopulationModel<S> populationModel,
             Supplier<Generator<S>> generatorFactory,
+            Crossover<S> crossover,
+            ParentSelectionRule<S> parentSelection,
             SelectionRule<S> selection,
             SearchSpace<S> space,
             Problem<S> problem,
@@ -50,6 +54,12 @@ public class SimulationRunner {
         sharedComponents.add(selection);
         sharedComponents.add(space);
         sharedComponents.add(problem);
+        if(crossover != null) {
+            sharedComponents.add(crossover);
+        }
+        if (parentSelection != null) {
+            sharedComponents.add(parentSelection);
+        }
         if (stopConditions != null) {
             sharedComponents.addAll(stopConditions);
         }
@@ -63,6 +73,8 @@ public class SimulationRunner {
 
         PopulationModelContext<S> context = new PopulationModelContext<>(
                 generatorFactory,
+                parentSelection,
+                crossover,
                 selection,
                 space,
                 problem,

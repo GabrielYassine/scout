@@ -27,6 +27,8 @@ export default function LabLeftbar({
     generator: true,
     selection: true,
     populationModel: true,
+    parentSelectionRule: true,
+    crossover: true,
     stopCondition: true,
     observer: true,
   });
@@ -42,6 +44,8 @@ export default function LabLeftbar({
       generator: catalog.generators,
       selection: catalog.selectionRules,
       populationModel: catalog.populationModels,
+      parentSelectionRule: catalog.parentSelectionRules,
+      crossover: catalog.crossovers,
       stopCondition: catalog.stopConditions,
       observer: catalog.observers,
     };
@@ -56,8 +60,10 @@ export default function LabLeftbar({
       puzzleConfig.searchSpace &&
       puzzleConfig.problem &&
       puzzleConfig.generator &&
-      puzzleConfig.populationModel &&
       puzzleConfig.selection &&
+      puzzleConfig.populationModel &&
+      puzzleConfig.parentSelectionRule &&
+      puzzleConfig.crossover &&
       puzzleConfig.stopCondition &&
       puzzleConfig.observer
     );
@@ -218,6 +224,8 @@ export default function LabLeftbar({
         {renderPieceSection("generator", "Mutation")}
         {renderPieceSection("selection", "Selection Rule")}
         {renderPieceSection("populationModel", "Population Model")}
+        {renderPieceSection("parentSelectionRule", "Parent Selection")}
+        {renderPieceSection("crossover", "Crossover")}
         {renderPieceSection("stopCondition", "Stop Condition")}
         {renderPieceSection("observer", "Observer")}
       </div>

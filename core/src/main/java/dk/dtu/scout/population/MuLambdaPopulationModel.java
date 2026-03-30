@@ -2,6 +2,7 @@ package dk.dtu.scout.population;
 
 import dk.dtu.scout.EvaluatedSolution;
 import dk.dtu.scout.Parameter;
+import dk.dtu.scout.crossover.Crossover;
 import dk.dtu.scout.generator.Generator;
 import dk.dtu.scout.logging.RunState;
 import org.springframework.context.annotation.Scope;
@@ -197,7 +198,28 @@ public class MuLambdaPopulationModel<S> implements PopulationModel<S> {
 
         int evaluationsDelta = 0;
         for (int k = 0; k < lambda; k++) {
+            List<EvaluatedSolution<S>> chosen = context.parentSelection().selectParents(muState.parentsEvaluated,  context.rng());
+            if (chosen == null || chosen.size() < 2) {
+                throw new IllegalStateException("Parent selection returned fewer than 2 parents");
+            }
+            S parent1 = chosen.get(0).value();
+            S parent2 = chosen.get(1).value();
+            context.sharedState().update(Map.of(
+                    "selectedParent1", parent1,
+                    "selectedParent2", parent2,
+                    "parentsEvaluated", muState.parentsEvaluated
+            ));
+            S offspringBase;
+            if (context.crossover() != null) {
+                offspringBase = context.crossover().crossover(context.rng());
+            } else {
+                offspringBase = parent1;
+            }
+            context.sharedState().update(Map.of(
+                    "offspringBase", offspringBase
+            ));
             S child = muState.generator.generate(context.rng());
+
             double childFitness = context.problem().fitness(child);
             evaluationsDelta++;
             muState.generationEvaluated.add(new EvaluatedSolution<>(child, childFitness));

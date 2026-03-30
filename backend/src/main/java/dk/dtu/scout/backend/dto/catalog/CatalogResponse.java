@@ -8,6 +8,8 @@ public record CatalogResponse(
     List<ComponentDef> generators,
     List<ComponentDef> selectionRules,
     List<ComponentDef> populationModels,
+    List<ComponentDef> parentSelectionRules,
+    List<ComponentDef> crossovers,
     List<ComponentDef> stopConditions,
     List<ComponentDef> observers
 ) {}

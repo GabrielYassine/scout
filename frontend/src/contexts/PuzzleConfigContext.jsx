@@ -19,10 +19,11 @@ const componentTypes = [
   "generator",
   "selection",
   "populationModel",
+  "crossover",
+  "parentSelectionRule",
   "stopCondition",
   "observer",
 ];
-
 export const DEFAULT_TSP_INSTANCE = {
   name: "Default Instance",
   cities: [
@@ -44,6 +45,8 @@ const createEmptyPuzzleConfig = () => ({
   generator: [],
   selection: [],
   populationModel: [],
+  parentSelectionRule: [],
+  crossover: [],
   stopCondition: [],
   observer: [],
 });
@@ -55,6 +58,8 @@ const createEmptyParams = () => ({
   generator: {},
   selection: {},
   populationModel: {},
+  parentSelectionRule: {},
+  crossover: {},
   stopCondition: {},
   observer: {},
 });
@@ -288,6 +293,8 @@ export function PuzzleConfigProvider({ children }) {
       { type: "generator", catalogKey: "generators", requestKey: "generatorId" },
       { type: "selection", catalogKey: "selectionRules", requestKey: "selectionRuleId" },
       { type: "populationModel", catalogKey: "populationModels", requestKey: "populationModelId" },
+      { type: "parentSelectionRule", catalogKey: "parentSelectionRules", requestKey: "parentSelectionRuleId" },
+      { type: "crossover", catalogKey: "crossovers", requestKey: "crossoverId" },
       { type: "stopCondition", catalogKey: "stopConditions", requestKey: "stopConditionId" },
       { type: "observer", catalogKey: "observers", requestKey: "observerIds" },
     ];
@@ -316,6 +323,8 @@ export function PuzzleConfigProvider({ children }) {
       generator: runRequest.generatorParams || {},
       selection: runRequest.selectionRuleParams || {},
       populationModel: runRequest.populationModelParams || {},
+      parentSelectionRule: runRequest.parentSelectionRuleParams || {},
+      crossover: runRequest.crossoverParams || {},
       stopCondition: runRequest.stopConditionParams || {},
       observer: {},
     });
