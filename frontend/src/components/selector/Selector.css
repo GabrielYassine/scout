@@ -103,3 +103,11 @@
 .count-badge-observer {
     background-color: var(--color-observer);
 }
+
+.count-badge-parentSelectionRule {
+  background: var(--color-parentSelectionRule);
+}
+
+.count-badge-crossover {
+  background: var(--color-crossover);
+}

@@ -19,8 +19,8 @@ const componentTypes = [
   "generator",
   "selection",
   "populationModel",
-  "crossover",
   "parentSelectionRule",
+   "crossover",
   "stopCondition",
   "observer",
 ];
