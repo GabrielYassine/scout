@@ -2,6 +2,9 @@
     position: relative;
     width: var(--puzzle-piece-size);
     height: var(--puzzle-piece-size);
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
     cursor: grab;
     user-select: none;
 }

@@ -6,6 +6,7 @@ import { maskStyle } from "../util/puzzleMasks.js";
 import "../components/puzzlePiece/PuzzlePiece.css";
 
 const PuzzleConfigContext = createContext(null);
+const GRID_COLUMNS = 6;
 
 export const usePuzzleConfig = () => {
   const context = useContext(PuzzleConfigContext);
@@ -20,10 +21,11 @@ const componentTypes = [
   "selection",
   "populationModel",
   "parentSelectionRule",
-   "crossover",
+  "crossover",
   "stopCondition",
   "observer",
 ];
+
 export const DEFAULT_TSP_INSTANCE = {
   name: "Default Instance",
   cities: [
@@ -67,15 +69,152 @@ const createEmptyParams = () => ({
 const createDefaultConfig = (id, name) => ({
   id,
   name,
-  puzzleConfig: createEmptyPuzzleConfig(),
+  placedPieces: [],
   params: createEmptyParams(),
   tspInstance: cloneTspInstance(DEFAULT_TSP_INSTANCE),
 });
+
+function flattenGroupedPuzzleConfig(groupedConfig) {
+  const grouped = groupedConfig ?? createEmptyPuzzleConfig();
+  return componentTypes.flatMap((type) =>
+    (Array.isArray(grouped[type]) ? grouped[type] : []).map((piece) => ({
+      id: piece.id,
+      label: piece.label,
+      type: piece.type ?? type,
+      puzzleData: piece.puzzleData,
+    }))
+  );
+}
+
+function normalizeStoredConfig(config, fallbackIndex = 0) {
+  const base = {
+    id: config?.id ?? `config-${fallbackIndex + 1}`,
+    name: config?.name ?? `Config ${fallbackIndex + 1}`,
+    params: config?.params ?? createEmptyParams(),
+    tspInstance: config?.tspInstance
+      ? cloneTspInstance(config.tspInstance)
+      : cloneTspInstance(DEFAULT_TSP_INSTANCE),
+  };
+
+  if (Array.isArray(config?.placedPieces)) {
+    return {
+      ...base,
+      placedPieces: config.placedPieces.map((piece) => ({
+        id: piece.id,
+        label: piece.label,
+        type: piece.type,
+        puzzleData: piece.puzzleData,
+      })),
+    };
+  }
+
+  return {
+    ...base,
+    placedPieces: flattenGroupedPuzzleConfig(config?.puzzleConfig),
+  };
+}
+
+function getEdge(piece, direction) {
+  const key = piece?.puzzleData?.logicalKey;
+  if (!key) return null;
+
+  switch (direction) {
+    case "N":
+      return parseInt(key[0], 10);
+    case "E":
+      return parseInt(key[1], 10);
+    case "S":
+      return parseInt(key[2], 10);
+    case "W":
+      return parseInt(key[3], 10);
+    default:
+      return null;
+  }
+}
+
+function buildGridNeighbors(pieces, index, totalCols = GRID_COLUMNS) {
+  const col = index % totalCols;
+  const row = Math.floor(index / totalCols);
+
+  const leftIndex = col > 0 ? index - 1 : null;
+  const rightIndex = col < totalCols - 1 ? index + 1 : null;
+  const topIndex = row > 0 ? index - totalCols : null;
+  const bottomIndex = index + totalCols < pieces.length ? index + totalCols : null;
+
+  return {
+    left:
+      leftIndex === null
+        ? { kind: "wall" }
+        : pieces[leftIndex]
+        ? { kind: "piece", edge: getEdge(pieces[leftIndex], "E") }
+        : { kind: "empty" },
+
+    right:
+      rightIndex === null
+        ? { kind: "wall" }
+        : pieces[rightIndex]
+        ? { kind: "piece", edge: getEdge(pieces[rightIndex], "W") }
+        : { kind: "empty" },
+
+    top:
+      topIndex === null
+        ? { kind: "wall" }
+        : pieces[topIndex]
+        ? { kind: "piece", edge: getEdge(pieces[topIndex], "S") }
+        : { kind: "empty" },
+
+    bottom:
+      bottomIndex === null
+        ? { kind: "empty" }
+        : pieces[bottomIndex]
+        ? { kind: "piece", edge: getEdge(pieces[bottomIndex], "N") }
+        : { kind: "empty" },
+  };
+}
+
+function rekeyGrid(pieces, startIndex = 0, totalCols = GRID_COLUMNS) {
+  const next = Array.isArray(pieces) ? [...pieces] : [];
+
+  for (let i = Math.max(0, startIndex); i < next.length; i++) {
+    const col = i % totalCols;
+    const row = Math.floor(i / totalCols);
+    const neighbors = buildGridNeighbors(next, i, totalCols);
+
+    next[i] = {
+      ...next[i],
+      puzzleData: generatePuzzleKey({
+        col,
+        row,
+        totalCols,
+        neighbors,
+      }),
+    };
+  }
+
+  return next;
+}
+
+function deriveGroupedPuzzleConfig(placedPieces) {
+  const grouped = createEmptyPuzzleConfig();
+  const pieces = Array.isArray(placedPieces) ? placedPieces : [];
+
+  for (const piece of pieces) {
+    if (!piece?.type || !grouped[piece.type]) continue;
+    grouped[piece.type].push(piece);
+  }
+
+  return grouped;
+}
 
 export function PuzzleConfigProvider({ children }) {
   const [configs, setConfigs] = useSessionStorageState("scout:runConfigs", [
     createDefaultConfig("config-1", "Config 1"),
   ]);
+
+  const normalizedConfigs = useMemo(
+    () => (Array.isArray(configs) ? configs.map(normalizeStoredConfig) : [createDefaultConfig("config-1", "Config 1")]),
+    [configs]
+  );
 
   const [activeConfigId, setActiveConfigId] = useSessionStorageState(
     "scout:activeConfigId",
@@ -85,134 +224,58 @@ export function PuzzleConfigProvider({ children }) {
   const [activeDrag, setActiveDrag] = useState(null);
 
   const activeConfig = useMemo(
-    () => configs.find((c) => c.id === activeConfigId) || configs[0],
-    [configs, activeConfigId]
+    () => normalizedConfigs.find((c) => c.id === activeConfigId) || normalizedConfigs[0],
+    [normalizedConfigs, activeConfigId]
   );
 
-  const puzzleConfig = activeConfig?.puzzleConfig ?? createEmptyPuzzleConfig();
+  const placedPieces = activeConfig?.placedPieces ?? [];
+  const puzzleConfig = useMemo(() => deriveGroupedPuzzleConfig(placedPieces), [placedPieces]);
   const params = activeConfig?.params ?? createEmptyParams();
   const tspInstance = activeConfig?.tspInstance
     ? cloneTspInstance(activeConfig.tspInstance)
     : cloneTspInstance(DEFAULT_TSP_INSTANCE);
 
   const updateActiveConfig = (key, updater) => {
-    setConfigs((prev) =>
-      prev.map((config) =>
+    setConfigs((prev) => {
+      const safePrev = Array.isArray(prev) ? prev.map(normalizeStoredConfig) : [createDefaultConfig("config-1", "Config 1")];
+      return safePrev.map((config) =>
         config.id === activeConfigId
           ? { ...config, [key]: typeof updater === "function" ? updater(config[key]) : updater }
           : config
-      )
-    );
+      );
+    });
   };
 
-  const setPuzzleConfig = (updater) => updateActiveConfig("puzzleConfig", updater);
+  const setPlacedPieces = (updater) => updateActiveConfig("placedPieces", updater);
   const setParams = (updater) => updateActiveConfig("params", updater);
   const setTspInstance = (updater) => updateActiveConfig("tspInstance", updater);
 
   const addNewConfig = () => {
     const newId = `config-${Date.now()}`;
-    const newConfig = createDefaultConfig(newId, `Config ${configs.length + 1}`);
-    setConfigs((prev) => [...prev, newConfig]);
+    const newConfig = createDefaultConfig(newId, `Config ${normalizedConfigs.length + 1}`);
+    setConfigs((prev) => [...(Array.isArray(prev) ? prev.map(normalizeStoredConfig) : []), newConfig]);
     setActiveConfigId(newId);
   };
 
   const deleteConfig = (configId) => {
     setConfigs((prev) => {
-      if (prev.length === 1) return prev;
+      const safePrev = Array.isArray(prev) ? prev.map(normalizeStoredConfig) : [];
+      if (safePrev.length === 1) return safePrev;
 
-      const next = prev.filter((c) => c.id !== configId);
-
+      const next = safePrev.filter((c) => c.id !== configId);
       if (activeConfigId === configId) {
         setActiveConfigId(next[0]?.id ?? "config-1");
       }
-
       return next;
     });
   };
 
   const renameConfig = (configId, newName) => {
-    setConfigs((prev) => prev.map((c) => (c.id === configId ? { ...c, name: newName } : c)));
+    setConfigs((prev) => {
+      const safePrev = Array.isArray(prev) ? prev.map(normalizeStoredConfig) : [];
+      return safePrev.map((c) => (c.id === configId ? { ...c, name: newName } : c));
+    });
   };
-
-  function getColIndex(type) {
-    return componentTypes.indexOf(type);
-  }
-
-  function buildNeighbors(config, type, rowIndex) {
-    const colIndex = getColIndex(type);
-    const totalCols = componentTypes.length;
-
-    const leftType = colIndex > 0 ? componentTypes[colIndex - 1] : null;
-    const rightType = colIndex < totalCols - 1 ? componentTypes[colIndex + 1] : null;
-
-    const leftArr = leftType ? config[leftType] ?? [] : null;
-    const rightArr = rightType ? config[rightType] ?? [] : null;
-    const curArr = config[type] ?? [];
-
-    const getEdge = (piece, direction) => {
-      if (!piece?.puzzleData?.logicalKey) return null;
-      const key = piece.puzzleData.logicalKey;
-      switch (direction) {
-        case "N":
-          return parseInt(key[0], 10);
-        case "E":
-          return parseInt(key[1], 10);
-        case "S":
-          return parseInt(key[2], 10);
-        case "W":
-          return parseInt(key[3], 10);
-        default:
-          return null;
-      }
-    };
-
-    return {
-      left:
-        colIndex === 0
-          ? { kind: "wall" }
-          : leftArr?.[rowIndex]
-          ? { kind: "piece", edge: getEdge(leftArr[rowIndex], "E") }
-          : { kind: "empty" },
-
-      right:
-        colIndex === totalCols - 1
-          ? { kind: "wall" }
-          : rightArr?.[rowIndex]
-          ? { kind: "piece", edge: getEdge(rightArr[rowIndex], "W") }
-          : { kind: "empty" },
-
-      top:
-        rowIndex === 0
-          ? { kind: "wall" }
-          : curArr?.[rowIndex - 1]
-          ? { kind: "piece", edge: getEdge(curArr[rowIndex - 1], "S") }
-          : { kind: "empty" },
-
-      bottom: curArr?.[rowIndex + 1]
-        ? { kind: "piece", edge: getEdge(curArr[rowIndex + 1], "N") }
-        : { kind: "empty" },
-    };
-  }
-
-  function rekeyColumn(config, type, startIndex = 0) {
-    const colIndex = getColIndex(type);
-    const totalCols = componentTypes.length;
-
-    const arr = Array.isArray(config[type]) ? [...config[type]] : [];
-    for (let i = startIndex; i < arr.length; i++) {
-      const neighbors = buildNeighbors({ ...config, [type]: arr }, type, i);
-      arr[i] = {
-        ...arr[i],
-        puzzleData: generatePuzzleKey({
-          col: colIndex,
-          row: i,
-          totalCols,
-          neighbors,
-        }),
-      };
-    }
-    return { ...config, [type]: arr };
-  }
 
   function handleDragStart({ active }) {
     setActiveDrag({
@@ -222,22 +285,24 @@ export function PuzzleConfigProvider({ children }) {
     });
   }
 
-  function handleRemovePiece(type, index) {
-    setPuzzleConfig((prev) => {
-      const currentArray = Array.isArray(prev[type]) ? prev[type] : [];
-      const nextArray = currentArray.filter((_, i) => i !== index);
-      const nextConfig = { ...prev, [type]: nextArray };
-      return rekeyColumn(nextConfig, type, index);
+  function handleRemovePiece(typeOrIndex, maybeIndex) {
+    const index = typeof maybeIndex === "number" ? maybeIndex : typeOrIndex;
+    if (typeof index !== "number") return;
+
+    setPlacedPieces((prev) => {
+      const next = (Array.isArray(prev) ? prev : []).filter((_, i) => i !== index);
+      return rekeyGrid(next, Math.max(0, index - GRID_COLUMNS));
     });
   }
 
   function handleDragEnd({ active, over }) {
     setActiveDrag(null);
+
     if (!over) {
       if (active.id.toString().startsWith("dropped-")) {
-        const { fromType, fromIndex } = active.data?.current ?? {};
-        if (fromType != null && fromIndex != null) {
-          handleRemovePiece(fromType, fromIndex);
+        const { fromIndex } = active.data?.current ?? {};
+        if (fromIndex != null) {
+          handleRemovePiece(fromIndex);
         }
       }
       return;
@@ -247,23 +312,19 @@ export function PuzzleConfigProvider({ children }) {
 
     const pieceType = active.data?.current?.type;
     if (!pieceType) return;
-
     if (active.id.toString().startsWith("dropped-")) return;
 
-    setPuzzleConfig((prev) => {
-      const currentArray = Array.isArray(prev[pieceType]) ? prev[pieceType] : [];
-      const nextArray = [
-        ...currentArray,
+    setPlacedPieces((prev) => {
+      const currentPieces = Array.isArray(prev) ? prev : [];
+      const nextPieces = [
+        ...currentPieces,
         {
           id: active.id,
           label: active.data?.current?.label || active.id,
           type: pieceType,
         },
       ];
-
-      let nextConfig = { ...prev, [pieceType]: nextArray };
-      nextConfig = rekeyColumn(nextConfig, pieceType, nextArray.length - 1);
-      return nextConfig;
+      return rekeyGrid(nextPieces, nextPieces.length - 1);
     });
   }
 
@@ -272,18 +333,18 @@ export function PuzzleConfigProvider({ children }) {
   }
 
   function handleReset() {
-    setPuzzleConfig(createEmptyPuzzleConfig());
+    setPlacedPieces([]);
     setParams(createEmptyParams());
   }
 
   function applyTemplateRunRequest(runRequest, catalog) {
     if (!runRequest || !catalog) return;
 
-    const mapIdsToPieces = (ids, catalogItems, colType) =>
+    const mapIdsToPieces = (ids, catalogItems, pieceType) =>
       (ids || [])
         .map((id) => {
           const item = catalogItems.find((x) => x.id === id);
-          return item ? { id: item.id, label: item.displayName, type: colType } : null;
+          return item ? { id: item.id, label: item.displayName, type: pieceType } : null;
         })
         .filter(Boolean);
 
@@ -299,18 +360,11 @@ export function PuzzleConfigProvider({ children }) {
       { type: "observer", catalogKey: "observers", requestKey: "observerIds" },
     ];
 
-    const newPuzzleConfig = createEmptyPuzzleConfig();
-    componentMapping.forEach(({ type, catalogKey, requestKey }) => {
-      if (catalog[catalogKey]) {
-        newPuzzleConfig[type] = mapIdsToPieces(runRequest[requestKey], catalog[catalogKey], type);
-      }
-    });
+    const flattenedPieces = componentMapping.flatMap(({ type, catalogKey, requestKey }) =>
+      catalog[catalogKey] ? mapIdsToPieces(runRequest[requestKey], catalog[catalogKey], type) : []
+    );
 
-    const finalConfig = componentTypes.reduce((cfg, type) => {
-      return cfg[type]?.length > 0 ? rekeyColumn(cfg, type, 0) : cfg;
-    }, newPuzzleConfig);
-
-    setPuzzleConfig(finalConfig);
+    setPlacedPieces(rekeyGrid(flattenedPieces, 0));
 
     setParams({
       global: {
@@ -331,10 +385,11 @@ export function PuzzleConfigProvider({ children }) {
   }
 
   const value = {
-    configs,
+    configs: normalizedConfigs,
     activeConfigId,
     activeConfig,
     puzzleConfig,
+    placedPieces,
     params,
     tspInstance,
 

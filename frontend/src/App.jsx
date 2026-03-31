@@ -5,7 +5,6 @@ import { PuzzleConfigProvider } from "./contexts/PuzzleConfigContext.jsx";
 
 import HomePage from "./pages/HomePage.jsx";
 import LabPage from "./pages/labPage/LabPage.jsx";
-import HistoryPage from "./pages/HistoryPage.jsx";
 import RunPage from "./pages/RunPage.jsx";
 
 export default function App() {
@@ -86,16 +85,6 @@ export default function App() {
                 templates={templates}
                 templatesLoading={templatesLoading}
                 templatesError={templatesError}
-              />
-            }
-          />
-          <Route
-            path="/history"
-            element={
-              <HistoryPage
-                catalog={catalog}
-                catalogLoading={catalogLoading}
-                catalogError={catalogError}
               />
             }
           />
