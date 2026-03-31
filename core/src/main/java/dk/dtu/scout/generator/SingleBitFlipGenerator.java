@@ -35,7 +35,7 @@ public class SingleBitFlipGenerator implements Generator<boolean[]> {
         Object baseObj = state.get("offspringBase");
 
         if (!(baseObj instanceof boolean[] bits)) {
-            throw new IllegalStateException("BitFlipGenerator requires 'crossoverChild' or 'selectedParent' in state");
+            throw new IllegalStateException("SingleBitFlipGenerator requires 'crossoverChild' or 'selectedParent' in state");
         }
         int n = bits.length;
         if (n == 0) return bits;
