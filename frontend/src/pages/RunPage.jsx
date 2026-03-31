@@ -1,13 +1,13 @@
 import { useState, useEffect, useMemo } from "react";
 import { Client } from "@stomp/stompjs";
 import { useLocation, useNavigate } from "react-router-dom";
-import LabLeftbar from "../components/LabLeftbar/LabLeftbar.jsx";
-import LabRightbar from "../components/LabRightbar.jsx";
+import LabLeftbar from "../components/SideBars/LabLeftbar.jsx";
+import LabRightbar from "../components/SideBars/LabRightbar.jsx";
 import RunChart from "../components/charts/RunChart.jsx";
 import { DEFAULT_TSP_INSTANCE } from "../contexts/PuzzleConfigContext.jsx";
 import "./RunPage.css";
-import "../components/LabLeftbar/LabLeftbar.css";
-import "../components/LabRightbar.css";
+import "../components/SideBars/LabLeftbar.css";
+import "../components/SideBars/LabRightbar.css";
 
 export default function RunPage({ catalog, catalogLoading, catalogError }) {
   const location = useLocation();

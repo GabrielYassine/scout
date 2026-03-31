@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import "./LabRightbar.css";
-import TSPGraphModal from "./TSPGraphModal.jsx";
+import TSPGraphModal from "../Charts/TSPGraphModal.jsx";
 
 export default function LabRightbar({ hoverInfo, tspInstance, onTspInstanceChange }) {
   const [uploading, setUploading] = useState(false);

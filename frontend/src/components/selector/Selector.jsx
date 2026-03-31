@@ -1,5 +1,5 @@
 import "./Selector.css";
-import PuzzlePiece from "../puzzlePiece/PuzzlePiece";
+import PuzzlePiece from "./PuzzlePiece";
 import { useSessionStorageState } from "../../hooks/useSessionStorageState.js";
 
 const componentTypesAll = [
@@ -14,76 +14,152 @@ const componentTypesAll = [
     { key: "observer", label: "Observer", catalogKey: "observers" },
 ];
 
-export default function Selector({ catalog, catalogLoading, catalogError ,onPieceHover, onPieceLeave, puzzleConfig}) {
+const singleSelectTypes = new Set([
+    "searchSpace",
+    "populationModel",
+    "generator",
+    "selection",
+    "parentSelectionRule",
+    "crossover",
+]);
+
+export default function Selector({
+    catalog,
+    catalogLoading,
+    catalogError,
+    onPieceHover,
+    onPieceLeave,
+    puzzleConfig,
+}) {
     const [activeTab, setActiveTab] = useSessionStorageState("scout:activeSelector", "searchSpace");
 
-    const componentTypes = componentTypesAll;
+    const validTabKeys = componentTypesAll.map((t) => t.key);
+    const currentActiveTab = validTabKeys.includes(activeTab)
+        ? activeTab
+        : (validTabKeys[0] || "searchSpace");
 
-    const validTabKeys = componentTypes.map(t => t.key);
-    const currentActiveTab = validTabKeys.includes(activeTab) ? activeTab : (validTabKeys[0] || "searchSpace");
     if (currentActiveTab !== activeTab) {
         setActiveTab(currentActiveTab);
     }
 
-    const activeType = componentTypes.find(type => type.key === currentActiveTab);
+    const activeType = componentTypesAll.find((type) => type.key === currentActiveTab);
     const items = activeType ? (catalog?.[activeType.catalogKey] ?? []) : [];
+
     const getCount = (key) => {
         if (!puzzleConfig || !puzzleConfig[key]) return 0;
         return Array.isArray(puzzleConfig[key]) ? puzzleConfig[key].length : 0;
     };
 
     const getSelectedSearchSpaceId = () => {
-        if (!puzzleConfig || !puzzleConfig.searchSpace || puzzleConfig.searchSpace.length === 0) {
+        if (!puzzleConfig || !Array.isArray(puzzleConfig.searchSpace) || puzzleConfig.searchSpace.length === 0) {
             return null;
         }
         return puzzleConfig.searchSpace[0].id;
     };
 
     const isItemCompatible = (item) => {
-        if (currentActiveTab === 'searchSpace') {
+        if (currentActiveTab === "searchSpace") {
             return true;
         }
+
         const selectedSearchSpaceId = getSelectedSearchSpaceId();
         if (!selectedSearchSpaceId) {
             return true;
         }
+
         if (!item.supportedSearchSpaces || item.supportedSearchSpaces.length === 0) {
             return true;
         }
+
         return item.supportedSearchSpaces.includes(selectedSearchSpaceId);
     };
 
+    const isIdAlreadyInConfig = (itemId) => {
+        if (!puzzleConfig) return false;
+
+        return Object.values(puzzleConfig).some(
+            (group) => Array.isArray(group) && group.some((piece) => piece.id === itemId)
+        );
+    };
+
+    const isDisabledBySingleSelectRule = (item) => {
+        if (!singleSelectTypes.has(currentActiveTab)) {
+            return false;
+        }
+
+        const currentGroup = puzzleConfig?.[currentActiveTab];
+        if (!Array.isArray(currentGroup) || currentGroup.length === 0) {
+            return false;
+        }
+
+        const alreadySelectedThisType = currentGroup.some((piece) => piece.id === item.id);
+        if (alreadySelectedThisType) {
+            return false;
+        }
+
+        return true;
+    };
+
+    const getSingleSelectLabel = () => {
+        const type = componentTypesAll.find((t) => t.key === currentActiveTab);
+        return type?.label?.toLowerCase() ?? currentActiveTab;
+    };
+
+    const getDisableReason = (item) => {
+        if (!isItemCompatible(item)) {
+            return "Not compatible with the selected search space";
+        }
+
+        if (isIdAlreadyInConfig(item.id)) {
+            return "This item is already added to the configuration";
+        }
+
+        if (isDisabledBySingleSelectRule(item)) {
+            return `Only one ${getSingleSelectLabel()} can be selected`;
+        }
+
+        return null;
+    };
 
     return (
         <div className="selector-container">
             <div className="tab-buttons-row">
-                {componentTypes.map(({ key, label }) => {
+                {componentTypesAll.map(({ key, label }) => {
                     const count = getCount(key);
+
                     return (
-                        <button key={key} className={`tab-button ${currentActiveTab === key ? "active" : ""}`} onClick={() => setActiveTab(key)}>
+                        <button
+                            key={key}
+                            className={`tab-button ${currentActiveTab === key ? "active" : ""}`}
+                            onClick={() => setActiveTab(key)}
+                        >
                             <span className={`count-badge count-badge-${key}`}>{count}</span>
                             {label}
                         </button>
                     );
                 })}
             </div>
-            <div className="option-list">
-                {catalogLoading && <div style={{ padding: '20px', textAlign: 'center' }}>Loading catalog...</div>}
-                {catalogError && <div style={{ padding: '20px', color: 'red', textAlign: 'center' }}>Error: {catalogError}</div>}
-                {!catalogLoading && !catalogError && items.length === 0 && (
-                    <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>No items available</div>
-                )}
-                {!catalogLoading && !catalogError && items.map((item) => (
-                    <PuzzlePiece
-                        key={item.id}
-                        id={item.id}
-                        label={item.displayName}
-                        type={currentActiveTab}
-                        onHover={onPieceHover}
-                        onLeave={onPieceLeave}
-                        isDisabled={!isItemCompatible(item)}
-                    />
-                ))}
+
+            <div className="option-list-outer">
+                <div className="option-list">
+                    {items.map((item) => {
+                        const disabledReason = getDisableReason(item);
+                        const isDisabled = disabledReason !== null;
+
+                        return (
+                            <PuzzlePiece
+                                key={item.id}
+                                id={item.id}
+                                label={item.displayName}
+                                type={currentActiveTab}
+                                onHover={onPieceHover}
+                                onLeave={onPieceLeave}
+                                isDisabled={isDisabled}
+                                disabledReason={disabledReason}
+                            />
+                        );
+                    })}
+                </div>
             </div>
         </div>
     );

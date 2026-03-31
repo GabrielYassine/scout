@@ -44,15 +44,20 @@
     border-bottom: none;
 }
 
-.option-list {
-    display: flex;
-    flex-direction: row;
-    flex: 1;
-    min-height: 0;
-    overflow: auto;
+.option-list-outer {
     border: 3px solid var(--color-border);
     border-top: none;
     background: var(--color-panel);
+    position: relative;
+    overflow: visible;
+}
+
+.option-list {
+    display: flex;
+    flex-direction: row;
+    min-height: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
 }
 
 .option-list > * {

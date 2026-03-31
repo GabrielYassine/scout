@@ -1,3 +1,29 @@
+.selector-item-wrapper {
+    width: var(--puzzle-piece-size);
+    height: var(--puzzle-piece-size);
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    user-select: none;
+    position: relative;
+    overflow: visible;
+}
+
+.selector-item-wrapper:hover .selector-item {
+    transform: scale(1.05);
+    transition: transform 0.15s ease;
+}
+
+.selector-item-wrapper.dragging .selector-item {
+    opacity: 0.3;
+    cursor: grabbing;
+}
+
+.selector-item-wrapper.disabled {
+    cursor: not-allowed;
+}
+
 .selector-item {
     display: flex;
     justify-content: center;
@@ -5,32 +31,7 @@
     text-align: center;
     width: var(--puzzle-piece-size);
     height: var(--puzzle-piece-size);
-    cursor: grab;
-    user-select: none;
-    transition: box-shadow 0.15s ease, background 0.15s ease, opacity 0.15s ease;
-}
-
-.selector-item:hover {
-    transform: scale(1.05);
-    transition: transform 0.15s ease;
-}
-
-.selector-item:active {
-    cursor: grabbing;
-}
-
-.selector-item.dragging {
-    opacity: 0.3;
-    cursor: grabbing;
-}
-
-.selector-item.disabled {
-    cursor: not-allowed;
-    pointer-events: none;
-}
-
-.selector-item.disabled:hover {
-    transform: none;
+    transition: box-shadow 0.15s ease, background 0.15s ease, opacity 0.15s ease, transform 0.15s ease;
 }
 
 .selector-item-title {
@@ -42,4 +43,32 @@
     font-size: var(--font-sm);
     height: 60%;
     width: 50%;
+}
+
+.selector-item-wrapper.disabled::after {
+    content: attr(data-disabled-reason);
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 0.5rem);
+    transform: translateX(-50%);
+    background: #111;
+    color: white;
+    border: 1px solid var(--color-border);
+    border-radius: 0.4rem;
+    padding: 0.5rem 0.7rem;
+    font-size: 0.85rem;
+    line-height: 1.2;
+    white-space: normal;
+    width: max-content;
+    max-width: 16rem;
+    text-align: center;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 9000;
+    transition: opacity 0.15s ease;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.selector-item-wrapper.disabled:hover::after {
+    opacity: 1;
 }

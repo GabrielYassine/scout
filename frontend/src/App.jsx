@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
-import TopNavbar from "./components/TopNavbar.jsx";
+import TopNavbar from "./components/SideBars/TopNavbar.jsx";
 import { PuzzleConfigProvider } from "./contexts/PuzzleConfigContext.jsx";
 
 import HomePage from "./pages/HomePage.jsx";
-import LabPage from "./pages/labPage/LabPage.jsx";
+import LabPage from "./pages/LabPage.jsx";
 import RunPage from "./pages/RunPage.jsx";
 
 export default function App() {

@@ -1,7 +1,7 @@
 import { useState, useMemo, memo, useCallback, useEffect } from "react";
 import "./RunChart.css";
 import HypercubePlot from "./HypercubePlot.jsx";
-import TSPVisualization from "../TSPVisualization/TSPVisualization.jsx";
+import TSPVisualization from "./TSPVisualization/TSPVisualization.jsx";
 import LineCharts from "./LineCharts.jsx";
 
 const HYPERCUBE_KEY = "__hypercube__";
