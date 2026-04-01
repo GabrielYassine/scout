@@ -340,8 +340,14 @@ export function PuzzleConfigProvider({ children }) {
   function applyTemplateRunRequest(runRequest, catalog) {
     if (!runRequest || !catalog) return;
 
-    const mapIdsToPieces = (ids, catalogItems, pieceType) =>
-      (ids || [])
+    const normalizeIds = (value, single) => {
+      if (value == null) return [];
+      const ids = Array.isArray(value) ? value : [value];
+      return single ? ids.slice(0, 1) : ids;
+    };
+
+    const mapIdsToPieces = (ids, catalogItems, pieceType, single = false) =>
+      normalizeIds(ids, single)
         .map((id) => {
           const item = catalogItems.find((x) => x.id === id);
           return item ? { id: item.id, label: item.displayName, type: pieceType } : null;
@@ -349,19 +355,19 @@ export function PuzzleConfigProvider({ children }) {
         .filter(Boolean);
 
     const componentMapping = [
-      { type: "searchSpace", catalogKey: "searchSpaces", requestKey: "searchSpaceId" },
+      { type: "searchSpace", catalogKey: "searchSpaces", requestKey: "searchSpaceId", single: true },
       { type: "problem", catalogKey: "problems", requestKey: "problemId" },
-      { type: "generator", catalogKey: "generators", requestKey: "generatorId" },
-      { type: "selection", catalogKey: "selectionRules", requestKey: "selectionRuleId" },
-      { type: "populationModel", catalogKey: "populationModels", requestKey: "populationModelId" },
-      { type: "parentSelectionRule", catalogKey: "parentSelectionRules", requestKey: "parentSelectionRuleId" },
-      { type: "crossover", catalogKey: "crossovers", requestKey: "crossoverId" },
+      { type: "generator", catalogKey: "generators", requestKey: "generatorId", single: true },
+      { type: "selection", catalogKey: "selectionRules", requestKey: "selectionRuleId", single: true },
+      { type: "populationModel", catalogKey: "populationModels", requestKey: "populationModelId", single: true },
+      { type: "parentSelectionRule", catalogKey: "parentSelectionRules", requestKey: "parentSelectionRuleId", single: true },
+      { type: "crossover", catalogKey: "crossovers", requestKey: "crossoverId", single: true },
       { type: "stopCondition", catalogKey: "stopConditions", requestKey: "stopConditionId" },
       { type: "observer", catalogKey: "observers", requestKey: "observerIds" },
     ];
 
-    const flattenedPieces = componentMapping.flatMap(({ type, catalogKey, requestKey }) =>
-      catalog[catalogKey] ? mapIdsToPieces(runRequest[requestKey], catalog[catalogKey], type) : []
+    const flattenedPieces = componentMapping.flatMap(({ type, catalogKey, requestKey, single }) =>
+      catalog[catalogKey] ? mapIdsToPieces(runRequest[requestKey], catalog[catalogKey], type, single) : []
     );
 
     setPlacedPieces(rekeyGrid(flattenedPieces, 0));
@@ -440,3 +446,5 @@ export function PuzzleConfigProvider({ children }) {
     </PuzzleConfigContext.Provider>
   );
 }
+
+

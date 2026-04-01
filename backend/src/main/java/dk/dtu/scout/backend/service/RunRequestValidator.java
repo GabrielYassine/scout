@@ -14,22 +14,22 @@ public class RunRequestValidator {
         if (request == null) {
             throw new BadRequestException("Request must be provided");
         }
-        if (request.searchSpaceId() == null || request.searchSpaceId().isEmpty()) {
+        if (request.searchSpaceId() == null || request.searchSpaceId().isBlank()) {
             throw new BadRequestException("Search space must be specified");
         }
         if (request.problemId() == null || request.problemId().isEmpty()) {
             throw new BadRequestException("Problem must be specified");
         }
-        if (request.generatorId() == null || request.generatorId().isEmpty()) {
+        if (request.generatorId() == null || request.generatorId().isBlank()) {
             throw new BadRequestException("Generator must be specified");
         }
-        if (request.populationModelId() == null || request.populationModelId().isEmpty()) {
+        if (request.populationModelId() == null || request.populationModelId().isBlank()) {
             throw new BadRequestException("Population model must be specified");
         }
-        if (request.selectionRuleId() == null || request.selectionRuleId().isEmpty()) {
+        if (request.selectionRuleId() == null || request.selectionRuleId().isBlank()) {
             throw new BadRequestException("Selection rule must be specified");
         }
-        if (request.parentSelectionRuleId() == null || request.parentSelectionRuleId().isEmpty()) {
+        if (request.parentSelectionRuleId() == null || request.parentSelectionRuleId().isBlank()) {
             throw new BadRequestException("Parent selection rule must be specified");
         }
         if (request.stopConditionId() == null || request.stopConditionId().isEmpty()) {

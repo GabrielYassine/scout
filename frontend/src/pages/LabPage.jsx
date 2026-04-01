@@ -68,26 +68,26 @@ export default function LabPage({catalog, catalogLoading, catalogError, template
     }
 
     const body = {
-      searchSpaceId: puzzleConfig.searchSpace?.map((x) => x.id) ?? [],
+      searchSpaceId: puzzleConfig.searchSpace?.[0]?.id ?? null,
       searchSpaceParams: searchSpaceParams,
 
       problemId: puzzleConfig.problem?.map((x) => x.id) ?? [],
       problemParams: problemParams,
 
 
-      generatorId: puzzleConfig.generator?.map((x) => x.id) ?? [],
+      generatorId: puzzleConfig.generator?.[0]?.id ?? null,
       generatorParams: params.generator,
 
-      selectionRuleId: puzzleConfig.selection?.map((x) => x.id) ?? [],
+      selectionRuleId: puzzleConfig.selection?.[0]?.id ?? null,
       selectionRuleParams: params.selection,
 
-      populationModelId: puzzleConfig.populationModel?.map((x) => x.id) ?? [],
+      populationModelId: puzzleConfig.populationModel?.[0]?.id ?? null,
       populationModelParams: params.populationModel,
 
-       parentSelectionRuleId: puzzleConfig.parentSelectionRule?.map((x) => x.id) ?? [],
+       parentSelectionRuleId: puzzleConfig.parentSelectionRule?.[0]?.id ?? null,
        parentSelectionRuleParams: params.parentSelectionRule,
 
-       crossoverId: puzzleConfig.crossover?.map((x) => x.id) ?? [],
+       crossoverId: puzzleConfig.crossover?.[0]?.id ?? null,
        crossoverParams: params.crossover,
 
       stopConditionId: puzzleConfig.stopCondition?.map((x) => x.id) ?? [],

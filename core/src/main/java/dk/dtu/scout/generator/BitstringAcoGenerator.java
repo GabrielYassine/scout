@@ -3,6 +3,7 @@ package dk.dtu.scout.generator;
 import dk.dtu.scout.EvaluatedSolution;
 import dk.dtu.scout.Parameter;
 import dk.dtu.scout.State;
+import dk.dtu.scout.StateKeys;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -93,13 +94,13 @@ public class BitstringAcoGenerator extends AbstractAcoGenerator<boolean[]> {
             initializePheromones();
         }
         updatePheromones(state);
-        return Map.of("pheromoneVector", pheromoneVector);
+        return Map.of(StateKeys.PHEROMONE_VECTOR, pheromoneVector);
     }
 
     private void initializePheromones() {
         int n = 0;
         if (state != null) {
-            Object dimObj = state.get("dimension");
+            Object dimObj = state.get(StateKeys.DIMENSION);
             if (dimObj instanceof Integer) {
                 n = (Integer) dimObj;
             }
@@ -121,7 +122,7 @@ public class BitstringAcoGenerator extends AbstractAcoGenerator<boolean[]> {
         }
 
         if (state != null) {
-            state.update(Map.of("pheromoneVector", pheromoneVector));
+            state.update(Map.of(StateKeys.PHEROMONE_VECTOR, pheromoneVector));
         }
     }
 
@@ -130,7 +131,7 @@ public class BitstringAcoGenerator extends AbstractAcoGenerator<boolean[]> {
             return;
         }
 
-        Object evaluatedObj = state.get("generationEvaluated");
+        Object evaluatedObj = state.get(StateKeys.GENERATION_EVALUATED);
         if (!(evaluatedObj instanceof List<?> evaluated)) {
             return;
         }

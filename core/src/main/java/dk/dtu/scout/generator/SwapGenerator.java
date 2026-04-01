@@ -2,6 +2,7 @@ package dk.dtu.scout.generator;
 
 import dk.dtu.scout.Parameter;
 import dk.dtu.scout.State;
+import dk.dtu.scout.StateKeys;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -46,7 +47,10 @@ public class SwapGenerator implements Generator<int[]> {
 
     @Override
     public int[] generate(Random rng) {
-        Object baseObj = state.get("offspringBase");
+        Object baseObj = state.get(StateKeys.OFFSPRING_BASE);
+        if (baseObj == null) {
+            baseObj = state.get(StateKeys.SELECTED_PARENT_1);
+        }
         if (!(baseObj instanceof  int[] solution )) {
             throw new IllegalStateException("SwapGenerator requires 'crossoverChild' or 'selectedParent' in state");
         }

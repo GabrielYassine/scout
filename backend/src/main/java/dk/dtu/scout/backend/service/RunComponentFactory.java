@@ -58,6 +58,21 @@ public class RunComponentFactory {
 
     private <T extends ScoutComponent> T createAndConfigure(
             ComponentRegistry<T> registry,
+            String id,
+            String componentType,
+            Map<String, Object> params
+    ) {
+        if (id == null || id.isBlank()) {
+            throw new BadRequestException(componentType + " must be specified");
+        }
+
+        T component = registry.create(id);
+        component.configure(params != null ? params : Map.of());
+        return component;
+    }
+
+    private <T extends ScoutComponent> T createAndConfigure(
+            ComponentRegistry<T> registry,
             List<String> ids,
             String componentType,
             Map<String, Object> params
@@ -71,8 +86,8 @@ public class RunComponentFactory {
         return component;
     }
 
-    public <S> SearchSpace<S> createSearchSpace(List<String> ids, Map<String, Object> params) {
-        return createAndConfigure(searchSpaceRegistry, ids, "Search space", params);
+    public <S> SearchSpace<S> createSearchSpace(String id, Map<String, Object> params) {
+        return createAndConfigure(searchSpaceRegistry, id, "Search space", params);
     }
 
     public <S> Problem<S> createProblem(String id, int n, Map<String, Object> problemParams) {
@@ -87,24 +102,24 @@ public class RunComponentFactory {
         return problem;
     }
 
-    public <S> Generator<S> createGenerator(List<String> ids, Map<String, Object> params, String searchSpaceId) {
-        Generator<S> generator = createAndConfigure(mutationRegistry, ids, "Generator", params);
+    public <S> Generator<S> createGenerator(String id, Map<String, Object> params, String searchSpaceId) {
+        Generator<S> generator = createAndConfigure(mutationRegistry, id, "Generator", params);
 
         if (!generator.supportedSearchSpaces().isEmpty() &&
                 !generator.supportedSearchSpaces().contains(searchSpaceId)) {
             throw new BadRequestException(
-                    "Generator '" + ids.getFirst() + "' does not support search space '" + searchSpaceId + "'"
+                    "Generator '" + id + "' does not support search space '" + searchSpaceId + "'"
             );
         }
         return generator;
     }
 
-    public SelectionRule createSelectionRule(List<String> ids, Map<String, Object> params) {
-        return createAndConfigure(selectionRegistry, ids, "Selection rule", params);
+    public SelectionRule createSelectionRule(String id, Map<String, Object> params) {
+        return createAndConfigure(selectionRegistry, id, "Selection rule", params);
     }
 
-    public <S> PopulationModel<S> createPopulationModel(List<String> ids, Map<String, Object> params) {
-        return createAndConfigure(populationModelRegistry, ids, "Population model", params);
+    public <S> PopulationModel<S> createPopulationModel(String id, Map<String, Object> params) {
+        return createAndConfigure(populationModelRegistry, id, "Population model", params);
     }
 
     public <S> List<StopCondition<S>> createStopConditionChain(List<String> ids, Map<String, Object> params) {
@@ -125,19 +140,19 @@ public class RunComponentFactory {
                 .toList();
     }
 
-    public <S> Crossover<S> createOptionalCrossover(List<String> ids, Map<String, Object> params) {
-        if (ids == null || ids.isEmpty()) {
+    public <S> Crossover<S> createOptionalCrossover(String id, Map<String, Object> params) {
+        if (id == null || id.isBlank()) {
             return null;
         }
-        return createAndConfigure(crossoverRegistry, ids, "Crossover", params);
+        return createAndConfigure(crossoverRegistry, id, "Crossover", params);
     }
 
-    public <S> ParentSelectionRule<S> createParentSelectionRule(List<String> ids, Map<String, Object> params) {
-        if (ids == null || ids.isEmpty()) {
+    public <S> ParentSelectionRule<S> createParentSelectionRule(String id, Map<String, Object> params) {
+        if (id == null || id.isBlank()) {
             throw new BadRequestException("Parent selection rule must be specified");
         }
 
-        return createAndConfigure(parentSelectionRegistry, ids, "Parent selection rule", params);
+        return createAndConfigure(parentSelectionRegistry, id, "Parent selection rule", params);
     }
 
     public <S> void validateProblemSearchSpaceCompatibility(Problem<S> problem, String problemId, String searchSpaceId) {

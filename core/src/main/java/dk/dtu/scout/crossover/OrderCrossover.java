@@ -2,6 +2,7 @@ package dk.dtu.scout.crossover;
 
 import dk.dtu.scout.Parameter;
 import dk.dtu.scout.State;
+import dk.dtu.scout.StateKeys;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -52,8 +53,8 @@ public class OrderCrossover implements Crossover<int[]> {
 
     @Override
     public int[] crossover(Random rng) {
-        Object p1Obj = state.get("selectedParent1");
-        Object p2Obj = state.get("selectedParent2");
+        Object p1Obj = state.get(StateKeys.SELECTED_PARENT_1);
+        Object p2Obj = state.get(StateKeys.SELECTED_PARENT_2);
 
         if (!(p1Obj instanceof int[] parent1) || !(p2Obj instanceof int[] parent2)) {
             throw new IllegalStateException("OrderCrossover requires 'selectedParent1' and 'selectedParent2' in state");

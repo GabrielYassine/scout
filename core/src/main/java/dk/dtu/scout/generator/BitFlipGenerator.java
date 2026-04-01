@@ -2,6 +2,7 @@ package dk.dtu.scout.generator;
 
 import dk.dtu.scout.Parameter;
 import dk.dtu.scout.State;
+import dk.dtu.scout.StateKeys;
 import dk.dtu.scout.util.FormulaEvaluator;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -44,7 +45,7 @@ public class BitFlipGenerator implements Generator<boolean[]> {
     private void resolveFlipProbability(State state) {
         int dimension = 0;
         if (state != null) {
-            Object dimObj = state.get("dimension");
+            Object dimObj = state.get(StateKeys.DIMENSION);
             if (dimObj instanceof Number n) {
                 dimension = n.intValue();
             }
@@ -73,7 +74,7 @@ public class BitFlipGenerator implements Generator<boolean[]> {
 
     @Override
     public boolean[] generate(Random rng) {
-        Object baseObj = state.get("offspringBase");
+        Object baseObj = state.get(StateKeys.OFFSPRING_BASE);
 
         if (!(baseObj instanceof boolean[] bits)) {
             throw new IllegalStateException("BitFlipGenerator requires 'offspringBase' in state");

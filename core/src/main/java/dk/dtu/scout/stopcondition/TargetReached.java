@@ -5,12 +5,14 @@ import dk.dtu.scout.State;
 import dk.dtu.scout.StateKeys;
 import dk.dtu.scout.problems.Problem;
 import dk.dtu.scout.problems.TSPProblem;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
 
 @Component
+@Scope("prototype")
 public class TargetReached<S> implements StopCondition<S> {
     private double targetFitness = 0.0;
     private static final double EPSILON = 1e-9;

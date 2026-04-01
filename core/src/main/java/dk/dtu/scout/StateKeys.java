@@ -23,5 +23,12 @@ public final class StateKeys {
     public static final String PARENTS_EVALUATED = "parentsEvaluated";
     public static final String GENERATION_EVALUATED = "generationEvaluated";
 
+    public static final String OFFSPRING_BASE = "offspringBase";
+    public static final String SELECTED_PARENT_1 = "selectedParent1";
+    public static final String SELECTED_PARENT_2 = "selectedParent2";
+
     public static final String ISLAND_INDEX = "islandIndex";
+
+    public static final String PHEROMONE_MATRIX = "pheromoneMatrix";
+    public static final String PHEROMONE_VECTOR = "pheromoneVector";
 }

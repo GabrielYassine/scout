@@ -206,9 +206,8 @@ public class MuLambdaPopulationModel<S> implements PopulationModel<S> {
             S parent1 = chosen.get(0).value();
             S parent2 = chosen.get(1).value();
             context.sharedState().update(Map.of(
-                    "selectedParent1", parent1,
-                    "selectedParent2", parent2,
-                    StateKeys.PARENTS_EVALUATED, muState.parentsEvaluated
+                    StateKeys.SELECTED_PARENT_1, parent1,
+                    StateKeys.SELECTED_PARENT_2, parent2
             ));
             S offspringBase;
             if (context.crossover() != null) {
@@ -217,7 +216,7 @@ public class MuLambdaPopulationModel<S> implements PopulationModel<S> {
                 offspringBase = parent1;
             }
             context.sharedState().update(Map.of(
-                    "offspringBase", offspringBase
+                    StateKeys.OFFSPRING_BASE, offspringBase
             ));
             S child = muState.generator.generate(context.rng());
 

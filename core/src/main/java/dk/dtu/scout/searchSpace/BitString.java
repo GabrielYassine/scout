@@ -3,6 +3,7 @@ package dk.dtu.scout.searchSpace;
 import dk.dtu.scout.Parameter;
 import dk.dtu.scout.State;
 import dk.dtu.scout.StateKeys;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -15,6 +16,7 @@ import java.util.Random;
  */
 
 @Component
+@Scope("prototype")
 public class BitString implements SearchSpace<boolean[]> {
 
     private int n = 100;

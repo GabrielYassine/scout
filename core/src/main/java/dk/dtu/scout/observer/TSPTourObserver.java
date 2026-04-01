@@ -143,7 +143,7 @@ public class TSPTourObserver implements Observer<int[]> {
         if (!includePheromone) return;
         if (this.state == null) return;
 
-        Object pheromoneObj = this.state.get("pheromoneMatrix");
+        Object pheromoneObj = this.state.get(StateKeys.PHEROMONE_MATRIX);
         List<List<Double>> matrixList = null;
 
         if (pheromoneObj instanceof double[][] pheromoneMatrix) {

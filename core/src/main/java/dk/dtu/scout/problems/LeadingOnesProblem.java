@@ -1,6 +1,7 @@
 package dk.dtu.scout.problems;
 
 import dk.dtu.scout.Parameter;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -12,6 +13,7 @@ import java.util.Map;
  */
 
 @Component
+@Scope("prototype")
 public class LeadingOnesProblem implements Problem<boolean[]>{
 
     private int n = 100;

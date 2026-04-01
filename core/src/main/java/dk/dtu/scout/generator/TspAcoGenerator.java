@@ -164,7 +164,7 @@ public class TspAcoGenerator extends AbstractAcoGenerator<int[]> {
         }
 
         if (state != null) {
-            state.update(Map.of("pheromoneMatrix", pheromoneMatrix));
+            state.update(Map.of(StateKeys.PHEROMONE_MATRIX, pheromoneMatrix));
         }
     }
 
@@ -218,7 +218,7 @@ public class TspAcoGenerator extends AbstractAcoGenerator<int[]> {
             initializePheromoneMatrix();
         }
         updatePheromoneMatrix(state);
-        return Map.of("pheromoneMatrix", pheromoneMatrix);
+        return Map.of(StateKeys.PHEROMONE_MATRIX, pheromoneMatrix);
     }
 
     private void updatePheromoneMatrix(State state) {

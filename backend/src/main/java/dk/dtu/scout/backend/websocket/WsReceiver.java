@@ -23,6 +23,8 @@ public class WsReceiver {
             wsSender.sendToRun(runId, RunWsPayload.finished(runId, finished));
         } else if (runStatusService.isFinished(runId)) {
             wsSender.sendToRun(runId, RunWsPayload.finished(runId, null));
+        } else if (runStatusService.isFailed(runId)) {
+            wsSender.sendToRun(runId, RunWsPayload.failed(runId, runStatusService.getFailedMessage(runId)));
         }
     }
 

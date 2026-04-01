@@ -3,6 +3,7 @@ package dk.dtu.scout.searchSpace;
 import dk.dtu.scout.Parameter;
 import dk.dtu.scout.State;
 import dk.dtu.scout.StateKeys;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -17,6 +18,7 @@ import java.util.Random;
  */
 
 @Component
+@Scope("prototype")
 public class Permutation implements SearchSpace<int[]> {
 
     private int n = 10;
