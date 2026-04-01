@@ -1,16 +1,15 @@
 package dk.dtu.scout.backend.service;
 
+import dk.dtu.scout.ScoutComponent;
 import dk.dtu.scout.acceptance.SelectionRule;
 import dk.dtu.scout.backend.exception.BadRequestException;
 import dk.dtu.scout.crossover.Crossover;
 import dk.dtu.scout.generator.Generator;
-import dk.dtu.scout.observer.FitnessObserver;
 import dk.dtu.scout.observer.Observer;
 import dk.dtu.scout.parentSelectionRule.ParentSelectionRule;
 import dk.dtu.scout.population.PopulationModel;
 import dk.dtu.scout.problems.Problem;
 import dk.dtu.scout.searchSpace.SearchSpace;
-import dk.dtu.scout.stopcondition.MaxIterations;
 import dk.dtu.scout.stopcondition.StopCondition;
 import org.springframework.stereotype.Service;
 
@@ -57,8 +56,8 @@ public class RunComponentFactory {
         this.observerRegistry = observerRegistry;
     }
 
-    private <T> T createAndConfigure(
-            ComponentRegistry<?> registry,
+    private <T extends ScoutComponent> T createAndConfigure(
+            ComponentRegistry<T> registry,
             List<String> ids,
             String componentType,
             Map<String, Object> params
@@ -67,16 +66,9 @@ public class RunComponentFactory {
             throw new BadRequestException(componentType + " must be specified");
         }
 
-        Object component = registry.create(ids.getFirst());
-
-        try {
-            component.getClass()
-                .getMethod("configure", Map.class)
-                .invoke(component, params != null ? params : Map.of());
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to configure component: " + component.getClass().getSimpleName(), e);
-        }
-        return (T) component;
+        T component = registry.create(ids.getFirst());
+        component.configure(params != null ? params : Map.of());
+        return component;
     }
 
     public <S> SearchSpace<S> createSearchSpace(List<String> ids, Map<String, Object> params) {
@@ -116,15 +108,21 @@ public class RunComponentFactory {
     }
 
     public <S> List<StopCondition<S>> createStopConditionChain(List<String> ids, Map<String, Object> params) {
-        if (ids == null || ids.isEmpty()) return List.of(new MaxIterations<>());
+        if (ids == null || ids.isEmpty()) {
+            throw new BadRequestException("Stop condition must be specified");
+        }
         final Map<String, Object> p = (params == null) ? Map.of() : params;
-        return ids.stream().map(id -> (StopCondition<S>) createAndConfigure(stopConditionRegistry, List.of(id), "Stop condition", p)).toList();
+        return ids.stream()
+                .map(id -> (StopCondition<S>) createAndConfigure(stopConditionRegistry, List.of(id), "Stop condition", p))
+                .toList();
     }
 
     public <S> List<Observer<S>> createObservers(List<String> ids, Map<String, Object> params) {
-        if (ids == null || ids.isEmpty()) return List.of(new FitnessObserver<>());
+        if (ids == null || ids.isEmpty()) return List.of();
         final Map<String, Object> p = (params == null) ? Map.of() : params;
-        return ids.stream().map(id -> (Observer<S>) createAndConfigure(observerRegistry, List.of(id), "Observer", p)).toList();
+        return ids.stream()
+                .map(id -> (Observer<S>) createAndConfigure(observerRegistry, List.of(id), "Observer", p))
+                .toList();
     }
 
     public <S> Crossover<S> createOptionalCrossover(List<String> ids, Map<String, Object> params) {
@@ -136,12 +134,7 @@ public class RunComponentFactory {
 
     public <S> ParentSelectionRule<S> createParentSelectionRule(List<String> ids, Map<String, Object> params) {
         if (ids == null || ids.isEmpty()) {
-            return createAndConfigure(
-                    parentSelectionRegistry,
-                    List.of("random-parents"),
-                    "Parent selection rule",
-                    Map.of()
-            );
+            throw new BadRequestException("Parent selection rule must be specified");
         }
 
         return createAndConfigure(parentSelectionRegistry, ids, "Parent selection rule", params);

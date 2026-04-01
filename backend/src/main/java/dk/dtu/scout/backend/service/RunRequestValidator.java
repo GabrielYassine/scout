@@ -20,6 +20,21 @@ public class RunRequestValidator {
         if (request.problemId() == null || request.problemId().isEmpty()) {
             throw new BadRequestException("Problem must be specified");
         }
+        if (request.generatorId() == null || request.generatorId().isEmpty()) {
+            throw new BadRequestException("Generator must be specified");
+        }
+        if (request.populationModelId() == null || request.populationModelId().isEmpty()) {
+            throw new BadRequestException("Population model must be specified");
+        }
+        if (request.selectionRuleId() == null || request.selectionRuleId().isEmpty()) {
+            throw new BadRequestException("Selection rule must be specified");
+        }
+        if (request.parentSelectionRuleId() == null || request.parentSelectionRuleId().isEmpty()) {
+            throw new BadRequestException("Parent selection rule must be specified");
+        }
+        if (request.stopConditionId() == null || request.stopConditionId().isEmpty()) {
+            throw new BadRequestException("Stop condition must be specified");
+        }
         if (request.runId() == null || request.runId().isBlank()) {
             throw new BadRequestException("runId must be specified");
         }

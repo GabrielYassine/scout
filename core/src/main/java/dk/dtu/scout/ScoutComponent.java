@@ -16,4 +16,5 @@ public interface ScoutComponent {
     default List<String> supportedSearchSpaces() { return List.of(); }
     default Map<String, Object> getStateVariables(State state) { return Map.of(); }
     default void init(State state) {}
+    default void configure(Map<String, Object> params) {}
 }
