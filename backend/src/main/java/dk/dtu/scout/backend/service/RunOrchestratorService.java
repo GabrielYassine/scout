@@ -39,8 +39,8 @@ public class RunOrchestratorService {
     }
 
     public void startRun(RunRequest request) {
-        CompletableFuture.runAsync(() -> run(request), requestExecutor)
-                .exceptionally(ex -> null);
+        validator.validate(request);
+        CompletableFuture.runAsync(() -> run(request), requestExecutor).exceptionally(ex -> null);
     }
 
     public BatchRunResponse run(RunRequest request) {
@@ -50,7 +50,7 @@ public class RunOrchestratorService {
         try {
             return runExecutor.executeBatch(request, logEvery, wsUpdateEvery);
         } catch (Exception ex) {
-            if (request != null && request.runId() != null) {
+            if (request.runId() != null) {
                 runStatusService.markFailed(request.runId(), ex.getMessage());
                 wsSender.sendToRun(request.runId(), RunWsPayload.failed(request.runId(), ex.getMessage()));
             }

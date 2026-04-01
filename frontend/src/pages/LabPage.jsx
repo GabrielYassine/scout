@@ -4,7 +4,7 @@ import LabLeftbar from "../components/SideBars/LabLeftbar.jsx";
 import LabRightbar from "../components/SideBars/LabRightbar.jsx";
 import RunConfigPuzzle from "../components/runConfigPuzzle/RunConfigPuzzle.jsx";
 import Selector from "../components/selector/Selector.jsx";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePuzzleConfig } from "../contexts/PuzzleConfigContext.jsx";
 
@@ -20,7 +20,30 @@ export default function LabPage({catalog, catalogLoading, catalogError, template
   } = usePuzzleConfig();
 
   const [hoverInfo, setHoverInfo] = useState(null);
+  const [toastMessage, setToastMessage] = useState("");
+  const [toastVisible, setToastVisible] = useState(false);
+  const toastTimeoutRef = useRef(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  function showToast(message) {
+    if (toastVisible) return;
+    setToastMessage(message);
+    setToastVisible(true);
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
+    toastTimeoutRef.current = setTimeout(() => {
+      setToastVisible(false);
+    }, 3500);
+  }
 
   function getCatalogItem(type, id) {
       if (!catalog || !id) return null;
@@ -101,11 +124,6 @@ export default function LabPage({catalog, catalogLoading, catalogError, template
       wsUpdateEveryIterations,
     };
 
-    // Navigate immediately to show loading state while the run is being prepared
-    navigate("/run", {
-      state: { loading: true, puzzleConfig, params, tspInstance, runId },
-    });
-
     try {
       const res = await fetch("/api/run", {
         method: "POST",
@@ -114,13 +132,23 @@ export default function LabPage({catalog, catalogLoading, catalogError, template
       });
 
       if (!res.ok) {
-        throw new Error(`Run failed with status ${res.status}`);
+        let message = `Run failed with status ${res.status}`;
+        try {
+          const data = await res.json();
+          if (data?.message) {
+            message = data.message;
+          }
+        } catch (e) {
+          // ignore parse errors
+        }
+        throw new Error(message);
       }
-    } catch (err) {
+
       navigate("/run", {
-        state: { error: err.message || "Failed to start run", puzzleConfig, params, tspInstance, runId },
-        replace: true,
+        state: { loading: true, puzzleConfig, params, tspInstance, runId },
       });
+    } catch (err) {
+      showToast(err.message || "Failed to start run");
     }
   }
   function onApplyTemplate(templateId) {
@@ -132,6 +160,11 @@ export default function LabPage({catalog, catalogLoading, catalogError, template
 
   return (
     <div className="lab-page">
+      {toastVisible && (
+        <div className="lab-toast" role="status" aria-live="polite">
+          {toastMessage}
+        </div>
+      )}
       <LabLeftbar
           puzzleConfig={puzzleConfig}
           params={params}
