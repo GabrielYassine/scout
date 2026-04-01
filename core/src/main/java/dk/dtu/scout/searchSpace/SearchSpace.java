@@ -6,9 +6,7 @@ import java.util.Map;
 import java.util.Random;
 
 /**
- * Represents a search space for optimization algorithms.
- * Defines the structure and operations available for solutions in this space.
- * @param <S> The solution type (e.g., boolean[] for bitstrings)
+ * Defines solution representation and random sampling for a search space.
  */
 
 public interface SearchSpace<S> extends ScoutComponent {

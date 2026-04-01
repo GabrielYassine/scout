@@ -6,6 +6,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * REST endpoint for run templates.
+ */
 @RestController
 @RequestMapping("/api")
 @CrossOrigin

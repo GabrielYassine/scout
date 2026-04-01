@@ -4,6 +4,7 @@ import dk.dtu.scout.EvaluatedSolution;
 import dk.dtu.scout.Parameter;
 import dk.dtu.scout.ScoutComponent;
 import dk.dtu.scout.State;
+import dk.dtu.scout.StateKeys;
 import dk.dtu.scout.generator.Generator;
 import dk.dtu.scout.logging.RunState;
 import org.springframework.context.annotation.Scope;
@@ -112,9 +113,9 @@ public class IslandModel<S> implements PopulationModel<S> {
             Generator<S> islandGenerator = context.generatorFactory().get();
             State islandState = new State();
             islandState.update(Map.of(
-                    "problem", context.problem(),
-                    "dimension", context.space().dimension(),
-                    "searchSpaceId", context.space().id()
+                    StateKeys.PROBLEM, context.problem(),
+                    StateKeys.DIMENSION, context.space().dimension(),
+                    StateKeys.SEARCH_SPACE_ID, context.space().id()
             ));
             islandGenerator.init(islandState);
 
@@ -131,10 +132,10 @@ public class IslandModel<S> implements PopulationModel<S> {
 
         RunState<S> initial = new RunState<>(iteration, evaluations, global.current, global.currentFitness, global.best, global.bestFitness, false);
         Map<String, Object> stateVariables = Map.of(
-                "current", global.current,
-                "currentFitness", global.currentFitness,
-                "best", global.best,
-                "bestFitness", global.bestFitness
+                StateKeys.CURRENT, global.current,
+                StateKeys.CURRENT_FITNESS, global.currentFitness,
+                StateKeys.BEST, global.best,
+                StateKeys.BEST_FITNESS, global.bestFitness
         );
 
         return new PopulationInitialization<>(new IslandModelState<>(islands), initial, evaluations, stateVariables, List.of());
@@ -158,12 +159,12 @@ public class IslandModel<S> implements PopulationModel<S> {
             Random r = isl.rng;
 
             isl.state.update(Map.of(
-                    "current", isl.current,
-                    "currentFitness", isl.currentFitness,
-                    "best", isl.best,
-                    "bestFitness", isl.bestFitness,
-                    "generationEvaluated", isl.previousGenerationEvaluated,
-                    "islandIndex", i
+                    StateKeys.CURRENT, isl.current,
+                    StateKeys.CURRENT_FITNESS, isl.currentFitness,
+                    StateKeys.BEST, isl.best,
+                    StateKeys.BEST_FITNESS, isl.bestFitness,
+                    StateKeys.GENERATION_EVALUATED, isl.previousGenerationEvaluated,
+                    StateKeys.ISLAND_INDEX, i
             ));
             updateComponentStateVariables(isl.state, isl.components);
 
@@ -231,10 +232,10 @@ public class IslandModel<S> implements PopulationModel<S> {
         );
 
         Map<String, Object> stateVariables = Map.of(
-                "current", global.current,
-                "currentFitness", global.currentFitness,
-                "best", global.best,
-                "bestFitness", global.bestFitness
+                StateKeys.CURRENT, global.current,
+                StateKeys.CURRENT_FITNESS, global.currentFitness,
+                StateKeys.BEST, global.best,
+                StateKeys.BEST_FITNESS, global.bestFitness
         );
 
         return new PopulationStepResult<>(runState, evaluationsDelta, stateVariables);

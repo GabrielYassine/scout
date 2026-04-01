@@ -1,24 +1,27 @@
 package dk.dtu.scout.backend.controller;
 
 import dk.dtu.scout.backend.dto.RunRequest;
-import dk.dtu.scout.backend.service.ExperimentService;
+import dk.dtu.scout.backend.service.RunOrchestratorService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * REST endpoint for launching runs.
+ */
 @RestController
 @RequestMapping("/api")
 @CrossOrigin
 public class RunController {
 
-    private final ExperimentService experimentService;
+    private final RunOrchestratorService runOrchestratorService;
 
-    public RunController(ExperimentService experimentService) {
-        this.experimentService = experimentService;
+    public RunController(RunOrchestratorService runOrchestratorService) {
+        this.runOrchestratorService = runOrchestratorService;
     }
 
     @PostMapping("/run")
     public ResponseEntity<Void> run(@RequestBody RunRequest request) {
-        experimentService.startRun(request);
+        runOrchestratorService.startRun(request);
         return ResponseEntity.accepted().build();
     }
 }

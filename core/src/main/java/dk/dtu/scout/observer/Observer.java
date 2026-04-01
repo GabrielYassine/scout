@@ -6,6 +6,9 @@ import dk.dtu.scout.logging.RunState;
 
 import java.util.Map;
 
+/**
+ * Observer hook for monitoring runs and emitting metrics into {@link RunLog}.
+ */
 public interface Observer<S> extends ScoutComponent {
     String id();
     String displayName();

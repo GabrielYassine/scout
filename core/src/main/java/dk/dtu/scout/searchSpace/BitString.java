@@ -2,6 +2,7 @@ package dk.dtu.scout.searchSpace;
 
 import dk.dtu.scout.Parameter;
 import dk.dtu.scout.State;
+import dk.dtu.scout.StateKeys;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -23,7 +24,7 @@ public class BitString implements SearchSpace<boolean[]> {
     @Override
     public void init(State state) {
         if (state != null) {
-            state.update(Map.of("dimension", n));
+            state.update(Map.of(StateKeys.DIMENSION, n));
         }
     }
 

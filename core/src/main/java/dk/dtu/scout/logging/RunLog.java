@@ -5,6 +5,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Aggregated time-series output for a run, populated by observers.
+ */
 public class RunLog {
     private final List<Integer> iterations = new ArrayList<>();
     private final List<Integer> evaluations = new ArrayList<>();
@@ -25,4 +28,3 @@ public class RunLog {
     public List<Integer> getEvaluations() { return evaluations; }
     public Map<String, LoggedSeries<?>> getSeries() { return series; }
 }
-

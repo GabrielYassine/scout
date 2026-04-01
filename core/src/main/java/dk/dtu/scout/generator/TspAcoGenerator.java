@@ -3,6 +3,7 @@ package dk.dtu.scout.generator;
 import dk.dtu.scout.EvaluatedSolution;
 import dk.dtu.scout.Parameter;
 import dk.dtu.scout.State;
+import dk.dtu.scout.StateKeys;
 import dk.dtu.scout.TSPInstance;
 import dk.dtu.scout.problems.TSPProblem;
 import org.springframework.context.annotation.Scope;
@@ -30,7 +31,7 @@ public class TspAcoGenerator extends AbstractAcoGenerator<int[]> {
     public void init(State state) {
         this.state = state;
         if (state != null) {
-            Object problemObj = state.get("problem");
+            Object problemObj = state.get(StateKeys.PROBLEM);
             if (problemObj instanceof TSPProblem tspProblem) {
                 this.tspInstance = tspProblem.getInstance();
             }
@@ -117,7 +118,7 @@ public class TspAcoGenerator extends AbstractAcoGenerator<int[]> {
         int dim = 0;
 
         if (state != null) {
-            Object dimObj = state.get("dimension");
+            Object dimObj = state.get(StateKeys.DIMENSION);
             if (dimObj instanceof Integer) {
                 dim = (Integer) dimObj;
             }
@@ -225,7 +226,7 @@ public class TspAcoGenerator extends AbstractAcoGenerator<int[]> {
             return;
         }
 
-        Object evaluatedObj = state.get("generationEvaluated");
+        Object evaluatedObj = state.get(StateKeys.GENERATION_EVALUATED);
 
         if (!(evaluatedObj instanceof List<?> evaluated)) {
             return;

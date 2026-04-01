@@ -4,6 +4,11 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Shared per-run blackboard for cross-component communication.
+ *
+ * <p>Values are keyed by strings; prefer {@link StateKeys} for canonical keys.
+ */
 public class State {
 
     private final Map<String, Object> variables = Collections.synchronizedMap(new HashMap<>());

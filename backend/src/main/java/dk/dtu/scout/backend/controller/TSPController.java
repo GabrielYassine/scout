@@ -8,6 +8,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 
+/**
+ * REST endpoint for TSP instance utilities.
+ */
 @RestController
 @RequestMapping("/api/tsp")
 @CrossOrigin

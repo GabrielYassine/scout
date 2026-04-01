@@ -2,6 +2,7 @@ package dk.dtu.scout.population;
 
 import dk.dtu.scout.EvaluatedSolution;
 import dk.dtu.scout.Parameter;
+import dk.dtu.scout.StateKeys;
 import dk.dtu.scout.crossover.Crossover;
 import dk.dtu.scout.generator.Generator;
 import dk.dtu.scout.logging.RunState;
@@ -122,12 +123,12 @@ public class MuLambdaPopulationModel<S> implements PopulationModel<S> {
         // best = best solution ever seen during the whole run
         // These can differ for non-elitist or probabilistic selection rules.
         return Map.of(
-                "current", current,
-                "best", best,
-                "bestFitness", bestFitness,
-                "currentFitness", currentFitness,
-                "parentsEvaluated", parentsEvaluated,
-                "generationEvaluated", generationEvaluated
+                StateKeys.CURRENT, current,
+                StateKeys.BEST, best,
+                StateKeys.BEST_FITNESS, bestFitness,
+                StateKeys.CURRENT_FITNESS, currentFitness,
+                StateKeys.PARENTS_EVALUATED, parentsEvaluated,
+                StateKeys.GENERATION_EVALUATED, generationEvaluated
         );
     }
 
@@ -207,7 +208,7 @@ public class MuLambdaPopulationModel<S> implements PopulationModel<S> {
             context.sharedState().update(Map.of(
                     "selectedParent1", parent1,
                     "selectedParent2", parent2,
-                    "parentsEvaluated", muState.parentsEvaluated
+                    StateKeys.PARENTS_EVALUATED, muState.parentsEvaluated
             ));
             S offspringBase;
             if (context.crossover() != null) {

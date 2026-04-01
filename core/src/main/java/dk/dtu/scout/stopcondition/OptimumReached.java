@@ -2,6 +2,7 @@ package dk.dtu.scout.stopcondition;
 
 import dk.dtu.scout.Parameter;
 import dk.dtu.scout.State;
+import dk.dtu.scout.StateKeys;
 import dk.dtu.scout.problems.Problem;
 import dk.dtu.scout.problems.TSPProblem;
 import org.springframework.context.annotation.Scope;
@@ -59,7 +60,7 @@ public class OptimumReached<S> implements StopCondition<S> {
         if (state == null) {
             return;
         }
-        Object problemObj = state.get("problem");
+        Object problemObj = state.get(StateKeys.PROBLEM);
         if (problemObj instanceof Problem<?> p) {
             this.problem = p;
         }

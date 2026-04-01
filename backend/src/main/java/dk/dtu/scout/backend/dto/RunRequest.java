@@ -3,6 +3,9 @@ package dk.dtu.scout.backend.dto;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Full run configuration submitted by the client.
+ */
 public record RunRequest(
    List<String> searchSpaceId,
     Map<String, Object> searchSpaceParams,

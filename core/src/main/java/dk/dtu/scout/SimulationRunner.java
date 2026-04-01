@@ -23,8 +23,17 @@ import java.util.Map;
 import java.util.Random;
 import java.util.function.Supplier;
 
+/**
+ * Orchestrates a full optimization run by coordinating population model, stop conditions,
+ * observers, and shared state updates.
+ */
 public class SimulationRunner {
 
+    /**
+     * Execute a full run with the provided components and return the aggregated log.
+     *
+     * @param logEveryIterations tick interval for observer/log updates (must be positive)
+     */
     public <S> RunLog run(
             PopulationModel<S> populationModel,
             Supplier<Generator<S>> generatorFactory,
@@ -45,9 +54,9 @@ public class SimulationRunner {
         RunLog log = new RunLog();
         State sharedState = new State();
         sharedState.update(Map.of(
-                "problem", problem,
-                "dimension", space.dimension(),
-                "searchSpaceId", space.id()
+                StateKeys.PROBLEM, problem,
+                StateKeys.DIMENSION, space.dimension(),
+                StateKeys.SEARCH_SPACE_ID, space.id()
         ));
 
         List<ScoutComponent> sharedComponents = new ArrayList<>();

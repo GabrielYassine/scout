@@ -20,10 +20,10 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
-class ExperimentServiceTest {
+class RunTest {
 
     @Autowired
-    private ExperimentService experimentService;
+    private RunOrchestratorService runOrchestratorService;
 
     private Map<String, Object> loadBerlin52Instance() throws IOException {
         String filePath = "src/test/resources/berlin52.tsp";
@@ -67,6 +67,10 @@ class ExperimentServiceTest {
                 Map.of("lambda", 1),
                 List.of("mu-plus-lambda"),
                 null,
+                List.of("random-parents"),
+                null,
+                null,
+                null,
                 List.of("fitness"),
                 Map.of(),
                 List.of("optimum-reached", "max-iterations"),
@@ -77,7 +81,7 @@ class ExperimentServiceTest {
                 100
         );
 
-        BatchRunResponse response = experimentService.run(request);
+        BatchRunResponse response = runOrchestratorService.run(request);
         var stats = response.summary().runtimeByProblem().get(problemId);
         assertNotNull(stats);
         return stats.finalEvaluationsMedian();
@@ -133,53 +137,61 @@ class ExperimentServiceTest {
     @DisplayName("TSP with 2-Opt generator and SA acceptance")
     void testTSPWith2OptAndSA() throws IOException {
         RunRequest request = ViewMapper.toRunRequest(
-                 List.of("permutation"),
-                 Map.of("n", 52),
-                 List.of("tsp"),
-                 Map.of("tspInstance", loadBerlin52Instance()),
-                 List.of("2opt"),
-                 Map.of(),
-                 List.of("mu-lambda"),
-                 Map.of("lambda", 20),
-                 List.of("annealed-selection"),
-                 Map.of(),
-                 List.of("fitness", "tsp-tour"),
-                 Map.of(),
-                 List.of("max-iterations"),
-                 Map.of("maxIterations", 20000),
-                 12345L,
-                 3,
-                 "test-run-tsp-1",
-                 100
-         );
+                List.of("permutation"),
+                Map.of("n", 52),
+                List.of("tsp"),
+                Map.of("tspInstance", loadBerlin52Instance()),
+                List.of("2opt"),
+                Map.of(),
+                List.of("mu-lambda"),
+                Map.of("lambda", 20),
+                List.of("annealed-selection"),
+                Map.of(),
+                List.of("random-parents"),
+                null,
+                null,
+                null,
+                List.of("fitness", "tsp-tour"),
+                Map.of(),
+                List.of("max-iterations"),
+                Map.of("maxIterations", 20000),
+                12345L,
+                3,
+                "test-run-tsp-1",
+                100
+        );
 
-        BatchRunResponse response = experimentService.run(request);
+        BatchRunResponse response = runOrchestratorService.run(request);
     }
 
     @Test
     @DisplayName("TSP with TSP ACO generator and Elitist acceptance")
     void testTSPWithPheromoneAndElitist() throws IOException {
         RunRequest request = ViewMapper.toRunRequest(
-                 List.of("permutation"),
-                 Map.of("n", 52),
-                 List.of("tsp"),
-                 Map.of("tspInstance", loadBerlin52Instance()),
-                 List.of("tsp-aco"),
-                 Map.of("evaporationRate", 0.1, "alpha", 1.0, "beta", 2.0),
-                 List.of("mu-lambda"),
-                 Map.of("lambda", 20),
-                 List.of("annealed-selection"),
-                 Map.of(),
-                 List.of("fitness", "tsp-tour"),
-                 Map.of(),
-                 List.of("max-iterations"),
-                 Map.of("maxIterations", 10000),
-                 67890L,
-                 3,
-                 "test-run-tsp-2",
-                 100
-         );
+                List.of("permutation"),
+                Map.of("n", 52),
+                List.of("tsp"),
+                Map.of("tspInstance", loadBerlin52Instance()),
+                List.of("tsp-aco"),
+                Map.of("evaporationRate", 0.1, "alpha", 1.0, "beta", 2.0),
+                List.of("mu-lambda"),
+                Map.of("lambda", 20),
+                List.of("annealed-selection"),
+                Map.of(),
+                List.of("random-parents"),
+                null,
+                null,
+                null,
+                List.of("fitness", "tsp-tour"),
+                Map.of(),
+                List.of("max-iterations"),
+                Map.of("maxIterations", 10000),
+                67890L,
+                3,
+                "test-run-tsp-2",
+                100
+        );
 
-        BatchRunResponse response = experimentService.run(request);
+        BatchRunResponse response = runOrchestratorService.run(request);
     }
 }

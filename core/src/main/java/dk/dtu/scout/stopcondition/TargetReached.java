@@ -2,6 +2,7 @@ package dk.dtu.scout.stopcondition;
 
 import dk.dtu.scout.Parameter;
 import dk.dtu.scout.State;
+import dk.dtu.scout.StateKeys;
 import dk.dtu.scout.problems.Problem;
 import dk.dtu.scout.problems.TSPProblem;
 import org.springframework.stereotype.Component;
@@ -58,7 +59,7 @@ public class TargetReached<S> implements StopCondition<S> {
     @Override
     public void init(State state) {
         if (state == null) return;
-        Object problemObj = state.get("problem");
+        Object problemObj = state.get(StateKeys.PROBLEM);
         if (problemObj instanceof Problem<?> p) {
             this.problem = p;
         }

@@ -2,6 +2,7 @@ package dk.dtu.scout.observer;
 
 import dk.dtu.scout.Parameter;
 import dk.dtu.scout.State;
+import dk.dtu.scout.StateKeys;
 import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.logging.RunState;
 import dk.dtu.scout.logging.SeriesMode;
@@ -70,7 +71,7 @@ public class TSPTourObserver implements Observer<int[]> {
         if (state == null) {
             return;
         }
-        Object problemObj = state.get("problem");
+        Object problemObj = state.get(StateKeys.PROBLEM);
         if (problemObj instanceof TSPProblem tspProblem) {
             this.instance = tspProblem.getInstance();
             if (instance != null) {
@@ -167,7 +168,7 @@ public class TSPTourObserver implements Observer<int[]> {
             int dim = 0;
             if (instance != null) dim = instance.getDimension();
             if (dim <= 0) {
-                Object dimObj = this.state.get("dimension");
+                Object dimObj = this.state.get(StateKeys.DIMENSION);
                 if (dimObj instanceof Number n) dim = n.intValue();
             }
             if (dim > 0) {
