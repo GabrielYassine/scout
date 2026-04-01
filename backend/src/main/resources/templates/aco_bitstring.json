@@ -5,7 +5,7 @@
     "searchSpaceId": ["bitstring"],
     "searchSpaceParams": { "n": 100 },
 
-    "problemId": ["onemax"],
+    "problemIds": ["onemax"],
     "problemParams": {},
 
     "generatorId": ["bitstring-aco"],
@@ -18,10 +18,13 @@
     "selectionRuleId": ["mu-plus-lambda"],
     "selectionRuleParams": {},
 
+    "parentSelectionRuleId": ["random-parents"],
+    "parentSelectionRuleParams": {},
+
     "populationModelId": ["mu-lambda"],
     "populationModelParams": { "lambda": 10 },
 
-    "stopConditionId": ["max-iterations", "optimum-reached"],
+    "stopConditionIds": ["max-iterations", "optimum-reached"],
     "stopConditionParams": { "maxIterations": 10000 },
 
     "observerIds": ["fitness"],

@@ -5,7 +5,7 @@
     "searchSpaceId": ["permutation"],
     "searchSpaceParams": {},
 
-    "problemId": ["tsp"],
+    "problemIds": ["tsp"],
     "problemParams": {},
 
     "generatorId": ["2opt"],
@@ -18,12 +18,15 @@
       "minTemperature": 0.000001
     },
 
+    "parentSelectionRuleId": ["random-parents"],
+    "parentSelectionRuleParams": {},
+
     "populationModelId": ["mu-lambda"],
     "populationModelParams": {
       "lambda": 1
     },
 
-    "stopConditionId": ["max-iterations"],
+    "stopConditionIds": ["max-iterations"],
     "stopConditionParams": {
       "maxIterations": 10000
     },

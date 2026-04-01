@@ -9,7 +9,7 @@ import java.util.Map;
 public record RunRequest(
    String searchSpaceId,
     Map<String, Object> searchSpaceParams,
-   List<String>  problemId,
+   List<String> problemIds,
     Map<String, Object> problemParams,
    String  generatorId,
     Map<String, Object> generatorParams,
@@ -23,7 +23,7 @@ public record RunRequest(
     Map<String, Object> crossoverParams,
     List<String> observerIds,
     Map<String, Object> observerParams,
-    List<String> stopConditionId,
+    List<String> stopConditionIds,
     Map<String, Object> stopConditionParams,
     long seed,
     int runTimes,

@@ -128,12 +128,12 @@ public class RunExecutor {
         Supplier<Generator<S>> generatorFactory = () -> factory.createGenerator(request.generatorId(), request.generatorParams(), ss.id());
 
         List<RunResponse> perProblemRuns = new ArrayList<>();
-        for (String pid : request.problemId()) {
+        for (String pid : request.problemIds()) {
             Problem<S> problem = factory.createProblem(pid, ss.dimension(), request.problemParams());
             factory.validateProblemSearchSpaceCompatibility(problem, pid, ss.id());
 
             SelectionRule selection = factory.createSelectionRule(request.selectionRuleId(), request.selectionRuleParams());
-            List<StopCondition<S>> stopConditions = factory.createStopConditionChain(request.stopConditionId(), request.stopConditionParams());
+            List<StopCondition<S>> stopConditions = factory.createStopConditionChain(request.stopConditionIds(), request.stopConditionParams());
             List<Observer<S>> observers = new ArrayList<>(factory.createObservers(request.observerIds(), request.observerParams()));
             PopulationModel<S> popModel = factory.createPopulationModel(request.populationModelId(), request.populationModelParams());
             Crossover<S> crossover = factory.createOptionalCrossover(request.crossoverId(), request.crossoverParams());

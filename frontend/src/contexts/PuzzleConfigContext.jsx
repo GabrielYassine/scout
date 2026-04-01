@@ -356,13 +356,13 @@ export function PuzzleConfigProvider({ children }) {
 
     const componentMapping = [
       { type: "searchSpace", catalogKey: "searchSpaces", requestKey: "searchSpaceId", single: true },
-      { type: "problem", catalogKey: "problems", requestKey: "problemId" },
+      { type: "problem", catalogKey: "problems", requestKey: "problemIds" },
       { type: "generator", catalogKey: "generators", requestKey: "generatorId", single: true },
       { type: "selection", catalogKey: "selectionRules", requestKey: "selectionRuleId", single: true },
       { type: "populationModel", catalogKey: "populationModels", requestKey: "populationModelId", single: true },
       { type: "parentSelectionRule", catalogKey: "parentSelectionRules", requestKey: "parentSelectionRuleId", single: true },
       { type: "crossover", catalogKey: "crossovers", requestKey: "crossoverId", single: true },
-      { type: "stopCondition", catalogKey: "stopConditions", requestKey: "stopConditionId" },
+      { type: "stopCondition", catalogKey: "stopConditions", requestKey: "stopConditionIds" },
       { type: "observer", catalogKey: "observers", requestKey: "observerIds" },
     ];
 

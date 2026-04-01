@@ -17,7 +17,7 @@ public class RunRequestValidator {
         if (request.searchSpaceId() == null || request.searchSpaceId().isBlank()) {
             throw new BadRequestException("Search space must be specified");
         }
-        if (request.problemId() == null || request.problemId().isEmpty()) {
+        if (request.problemIds() == null || request.problemIds().isEmpty()) {
             throw new BadRequestException("Problem must be specified");
         }
         if (request.generatorId() == null || request.generatorId().isBlank()) {
@@ -32,7 +32,7 @@ public class RunRequestValidator {
         if (request.parentSelectionRuleId() == null || request.parentSelectionRuleId().isBlank()) {
             throw new BadRequestException("Parent selection rule must be specified");
         }
-        if (request.stopConditionId() == null || request.stopConditionId().isEmpty()) {
+        if (request.stopConditionIds() == null || request.stopConditionIds().isEmpty()) {
             throw new BadRequestException("Stop condition must be specified");
         }
         if (request.runId() == null || request.runId().isBlank()) {
@@ -44,15 +44,10 @@ public class RunRequestValidator {
     }
 
     public int resolveLogEveryIterations(RunRequest request) {
-        int maxIterations = 0;
-        if (request != null && request.stopConditionParams() != null) {
-            Object value = request.stopConditionParams().get("maxIterations");
-            if (value instanceof Number n) {
-                maxIterations = n.intValue();
-            }
+        int logEvery = 100;
+        if (request.stopConditionParams() != null && request.stopConditionParams().get("logEveryIterations") instanceof Number logEveryIterations) {
+            logEvery = Math.max(1, logEveryIterations.intValue());
         }
-        if (maxIterations <= 0) return 1;
-        int interval = (int) Math.round(maxIterations * 0.001);
-        return Math.max(1, interval);
+        return logEvery;
     }
 }

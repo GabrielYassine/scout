@@ -5,7 +5,7 @@
     "searchSpaceId": ["permutation"],
     "searchSpaceParams": {},
 
-    "problemId": ["tsp"],
+    "problemIds": ["tsp"],
     "problemParams": {},
 
     "generatorId": ["tsp-aco"],
@@ -18,10 +18,13 @@
     "selectionRuleId": ["mu-plus-lambda"],
     "selectionRuleParams": {},
 
+    "parentSelectionRuleId": ["random-parents"],
+    "parentSelectionRuleParams": {},
+
     "populationModelId": ["mu-lambda"],
     "populationModelParams": { "lambda": 3 },
 
-    "stopConditionId": ["max-iterations" ],
+    "stopConditionIds": ["max-iterations" ],
     "stopConditionParams": { "maxIterations": 10000 },
 
     "observerIds": ["tsp-tour"],

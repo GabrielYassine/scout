@@ -94,7 +94,7 @@ export default function LabPage({catalog, catalogLoading, catalogError, template
       searchSpaceId: puzzleConfig.searchSpace?.[0]?.id ?? null,
       searchSpaceParams: searchSpaceParams,
 
-      problemId: puzzleConfig.problem?.map((x) => x.id) ?? [],
+      problemIds: puzzleConfig.problem?.map((x) => x.id) ?? [],
       problemParams: problemParams,
 
 
@@ -113,7 +113,7 @@ export default function LabPage({catalog, catalogLoading, catalogError, template
        crossoverId: puzzleConfig.crossover?.[0]?.id ?? null,
        crossoverParams: params.crossover,
 
-      stopConditionId: puzzleConfig.stopCondition?.map((x) => x.id) ?? [],
+      stopConditionIds: puzzleConfig.stopCondition?.map((x) => x.id) ?? [],
       stopConditionParams: params.stopCondition,
 
       observerIds: puzzleConfig.observer?.map((x) => x.id) ?? [],
