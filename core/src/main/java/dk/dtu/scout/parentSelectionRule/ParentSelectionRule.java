@@ -11,8 +11,5 @@ import java.util.Random;
  * Selects parents from the current population for variation operators.
  */
 public interface ParentSelectionRule<S> extends ScoutComponent {
-
     List<EvaluatedSolution<S>> selectParents(List<EvaluatedSolution<S>> parents, Random rng);
-
-    default void configure(Map<String, Object> params) {}
 }

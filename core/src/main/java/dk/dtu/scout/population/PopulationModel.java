@@ -3,8 +3,6 @@ package dk.dtu.scout.population;
 import dk.dtu.scout.ScoutComponent;
 import dk.dtu.scout.logging.RunState;
 
-import java.util.Map;
-
 /**
  * Population model contract for one evolutionary algorithm variant.
  *
@@ -32,6 +30,4 @@ public interface PopulationModel<S> extends ScoutComponent {
             int iteration,
             int evaluations
     );
-
-    default void configure(Map<String, Object> params) {}
 }
