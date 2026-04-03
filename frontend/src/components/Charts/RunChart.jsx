@@ -3,11 +3,13 @@ import "./RunChart.css";
 import HypercubePlot from "./HypercubePlot.jsx";
 import TSPVisualization from "./TSPVisualization/TSPVisualization.jsx";
 import LineCharts from "./LineCharts.jsx";
+import BoxPlotChart from "./BoxPlotChart.jsx";
 
 const HYPERCUBE_KEY = "__hypercube__";
 const TSP_TOUR_KEY = "__tsp-tour__";
+const BEST_FITNESS_BOXPLOT_KEY = "__boxplot__:bestFitness";
 
-function RunChart({ run, runIndex, problemIndex, playbackSpeed = 50, visibleCount }) {
+function RunChart({ run, runIndex, problemIndex, playbackSpeed = 50, visibleCount ,  bestFitnessBoxPlot = null}) {
   const evaluations = run?.evaluations ?? [];
   const iterations = run?.iterations ?? [];
   const series = run?.series ?? {};
@@ -28,8 +30,9 @@ function RunChart({ run, runIndex, problemIndex, playbackSpeed = 50, visibleCoun
     const out = [...keys];
      if (hasHypercube) out.push(HYPERCUBE_KEY);
      if (hasTSPTour) out.push(TSP_TOUR_KEY);
+    if (bestFitnessBoxPlot) out.push(BEST_FITNESS_BOXPLOT_KEY);
      return out;
-   }, [keys, hasHypercube, hasTSPTour]);
+   }, [keys, hasHypercube, hasTSPTour, bestFitnessBoxPlot]);
 
   const [selectedObserver, setSelectedObserver] = useState(displayKeys[0] || (hasTSPTour ? TSP_TOUR_KEY : null) );
 
@@ -44,11 +47,14 @@ function RunChart({ run, runIndex, problemIndex, playbackSpeed = 50, visibleCoun
     }
   }, [displayKeys, hasTSPTour, selectedObserver]);
 
+  const isBestFitnessBoxPlot = selectedObserver === BEST_FITNESS_BOXPLOT_KEY;
+
   const data = useMemo(() => {
     if (
       !selectedObserver ||
       selectedObserver === HYPERCUBE_KEY ||
       selectedObserver === TSP_TOUR_KEY ||
+      isBestFitnessBoxPlot ||
       !series[selectedObserver]
     ) {
       return [];
@@ -61,22 +67,7 @@ function RunChart({ run, runIndex, problemIndex, playbackSpeed = 50, visibleCoun
       Number(evaluations[i]),
       Number(observerData[i]),
     ]).filter(([x, y]) => Number.isFinite(x) && Number.isFinite(y));
-  }, [selectedObserver, evaluations, series]);
-
-  const animationLength = useMemo(() => {
-    if (selectedObserver === HYPERCUBE_KEY) {
-      return Math.min(
-        series.hypercubeX?.length ?? 0,
-        series.hypercubeY?.length ?? 0
-      );
-    }
-
-    if (selectedObserver === TSP_TOUR_KEY) {
-      return series.tspTour?.length ?? 0;
-    }
-
-    return data.length;
-  }, [selectedObserver, series, data.length]);
+  }, [selectedObserver, evaluations, series, isBestFitnessBoxPlot]);
 
   const visibleData = useMemo(() => {
     return data.slice(0, visibleCount);
@@ -94,6 +85,7 @@ function RunChart({ run, runIndex, problemIndex, playbackSpeed = 50, visibleCoun
     const lookupEvaluation = (iteration) => {
       const direct = iterationToEvaluation.get(iteration);
       if (direct != null) return direct;
+
       let bestIndex = -1;
       let bestDelta = Number.POSITIVE_INFINITY;
       for (let i = 0; i < iterations.length; i += 1) {
@@ -162,13 +154,14 @@ function RunChart({ run, runIndex, problemIndex, playbackSpeed = 50, visibleCoun
     const label = run?.problemId ?? `run-${runIndex}`;
     console.log(`[FitnessPhaseObserver] ${label}`, intervals);
   }, [series.fitnessPhaseIntervals, run?.problemId, runIndex]);
+  const hasAnyData =
+    displayKeys.length > 0 &&
+    (evaluations.length > 0 || bestFitnessBoxPlot != null);
 
-  if (!evaluations.length || displayKeys.length === 0) {
+  if (!hasAnyData) {
     return (
       <div className="run-chart-panel">
-        <div className="run-chart-title">
-            {run?.problemId}
-        </div>
+        <div className="run-chart-title">{run?.problemId}</div>
         <div>No data to plot.</div>
       </div>
     );
@@ -185,11 +178,18 @@ function RunChart({ run, runIndex, problemIndex, playbackSpeed = 50, visibleCoun
           <HypercubePlot run={run} visibleCount={visibleCount} />
         ) : selectedObserver === TSP_TOUR_KEY ? (
           <TSPVisualization run={run} />
-        ) :  (
+        ) : isBestFitnessBoxPlot ? (
+          <BoxPlotChart
+            problemId={run.problemId}
+            seriesName="bestFitness"
+            boxPlotResponse={bestFitnessBoxPlot}
+            searchSpaceId={run?.searchSpaceId}
+          />
+        ) : (
           <LineCharts
             selectedObserver={selectedObserver}
             chartPoints={visibleData}
-            SearchSpaceId={run?.SearchSpaceId}
+            searchSpaceId={run?.searchSpaceId}
             phaseRanges={phaseRanges}
           />
         )}
@@ -199,8 +199,7 @@ function RunChart({ run, runIndex, problemIndex, playbackSpeed = 50, visibleCoun
         <div className="observer-checkboxes">
           {displayKeys.map((key) => {
             // Display friendly names for special keys
-            const displayName = key === HYPERCUBE_KEY ? "Hypercube" :  key === TSP_TOUR_KEY ? "TSP Tour" : key;
-
+            const displayName = key === HYPERCUBE_KEY ? "Hypercube" :  key === TSP_TOUR_KEY ? "TSP Tour" :  key === BEST_FITNESS_BOXPLOT_KEY? "bestFitness boxplot": key;
             return (
               <label key={key} className="observer-checkbox-label">
                 <input
@@ -220,4 +219,3 @@ function RunChart({ run, runIndex, problemIndex, playbackSpeed = 50, visibleCoun
 }
 
 export default memo(RunChart);
-

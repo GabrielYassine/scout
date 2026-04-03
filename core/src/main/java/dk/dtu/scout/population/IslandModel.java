@@ -172,6 +172,9 @@ public class IslandModel<S> implements PopulationModel<S> {
 
             for (int k = 0; k < lambda; k++) {
                 S child = isl.generator.generate(r);
+                isl.state.update(Map.of(
+                        StateKeys.OFFSPRING_BASE, isl.current
+                ));
                 double f = context.problem().fitness(child);
                 generationEvaluated.add(new EvaluatedSolution<>(child, f));
                 evaluationsDelta++;

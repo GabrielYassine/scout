@@ -7,12 +7,7 @@ import dk.dtu.scout.backend.dto.catalog.CatalogResponse;
 import dk.dtu.scout.backend.dto.catalog.ComponentDef;
 import dk.dtu.scout.backend.dto.catalog.ParamDef;
 import dk.dtu.scout.backend.dto.error.ErrorResponse;
-import dk.dtu.scout.backend.dto.run.AverageRunResponse;
-import dk.dtu.scout.backend.dto.run.BatchRunResponse;
-import dk.dtu.scout.backend.dto.run.BatchSummaryResponse;
-import dk.dtu.scout.backend.dto.run.RunGroupResponse;
-import dk.dtu.scout.backend.dto.run.RunResponse;
-import dk.dtu.scout.backend.dto.run.RuntimeStats;
+import dk.dtu.scout.backend.dto.run.*;
 import dk.dtu.scout.backend.dto.template.ExperimentTemplateDto;
 import dk.dtu.scout.backend.dto.permutation.CityDto;
 import dk.dtu.scout.backend.dto.permutation.TSPDto;
@@ -144,10 +139,10 @@ public final class ViewMapper {
     }
 
     public static BatchSummaryResponse toBatchSummaryResponse(
-        Map<String, RuntimeStats> runtimeByProblem,
-        Map<String, AverageRunResponse> averageByProblem
+        Map<String, AverageRunResponse> averageByProblem,
+        Map<String, SeriesBoxPlotResponse> bestFitnessBoxPlotsByProblem
     ) {
-        return new BatchSummaryResponse(runtimeByProblem, averageByProblem);
+        return new BatchSummaryResponse( averageByProblem, bestFitnessBoxPlotsByProblem);
     }
 
     public static BatchRunResponse toBatchRunResponse(
@@ -166,17 +161,7 @@ public final class ViewMapper {
         return new AverageRunResponse(iterations, evaluations, series);
     }
 
-    public static RuntimeStats toRuntimeStats(
-        int n,
-        double mean,
-        double variance,
-        double stdDev,
-        double ci95Low,
-        double ci95High,
-        double finalEvaluationsMedian
-    ) {
-        return new RuntimeStats(n, mean, variance, stdDev, ci95Low, ci95High, finalEvaluationsMedian);
-    }
+
 
     public static SeriesResponse<?> toSeriesResponse(LoggedSeries<?> series) {
         if (series == null) {

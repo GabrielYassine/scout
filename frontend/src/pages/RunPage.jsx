@@ -53,9 +53,12 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
   const [loading, setLoading] = useState(!!initialLoading);
   const [error, setError] = useState(initialError ?? null);
   const [playbackSpeed, setPlaybackSpeed] = useState(50);
+  const [visibleCount, setVisibleCount] = useState(1);
 
   const batches = batch?.batches ?? [];
   const averageByProblem = batch?.summary?.averageByProblem ?? {};
+  const bestFitnessBoxPlotsByProblem =batch?.summary?.bestFitnessBoxPlotsByProblem ?? {};
+
   const averageRuns = useMemo(
     () =>
       Object.entries(averageByProblem).map(([problemId, avg]) => ({
@@ -85,7 +88,6 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
 
   const [tspInstance] = useState(initialTspInstance);
 
-   const [visibleCount, setVisibleCount] = useState(1);
    const currentAnimationLength = useMemo(() => {
      if (!runs.length) return 0;
 
@@ -375,6 +377,9 @@ function handleResetPlayback() {
                   problemIndex={idx + 1}
                   playbackSpeed={playbackSpeed}
                   visibleCount={visibleCount}
+                  bestFitnessBoxPlot={
+                    bestFitnessBoxPlotsByProblem[run.problemId] ?? null
+                  }
                 />
               ))}
             </div>
