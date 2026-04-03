@@ -27,6 +27,9 @@ public class FitnessPhaseObserver<S> implements Observer<S> {
     private final Deque<Integer> iterationBlock = new ArrayDeque<>();
     private final Deque<Integer> evaluationBlock = new ArrayDeque<>();
 
+    private Integer lastIntervalEndIteration = null;
+    private Integer lastIntervalEndEvaluation = null;
+
     private enum Phase {
         IMPROVING,
         WORSENING,
@@ -82,6 +85,8 @@ public class FitnessPhaseObserver<S> implements Observer<S> {
         fitnessBlock.clear();
         iterationBlock.clear();
         evaluationBlock.clear();
+        lastIntervalEndIteration = null;
+        lastIntervalEndEvaluation = null;
     }
 
     @Override
@@ -107,6 +112,14 @@ public class FitnessPhaseObserver<S> implements Observer<S> {
         int endIteration = iterationBlock.getLast();
         int startEvaluation = evaluationBlock.getFirst();
         int endEvaluation = evaluationBlock.getLast();
+
+        if (lastIntervalEndIteration != null && lastIntervalEndEvaluation != null) {
+            startIteration = lastIntervalEndIteration;
+            startEvaluation = lastIntervalEndEvaluation;
+        }
+
+        lastIntervalEndIteration = endIteration;
+        lastIntervalEndEvaluation = endEvaluation;
 
         Map<String, Object> interval = newInterval(
                 startIteration,
@@ -139,6 +152,14 @@ public class FitnessPhaseObserver<S> implements Observer<S> {
         int endIteration = iterationBlock.getLast();
         int startEvaluation = evaluationBlock.getFirst();
         int endEvaluation = evaluationBlock.getLast();
+
+        if (lastIntervalEndIteration != null && lastIntervalEndEvaluation != null) {
+            startIteration = lastIntervalEndIteration;
+            startEvaluation = lastIntervalEndEvaluation;
+        }
+
+        lastIntervalEndIteration = endIteration;
+        lastIntervalEndEvaluation = endEvaluation;
 
         Map<String, Object> interval = newInterval(
             startIteration,
