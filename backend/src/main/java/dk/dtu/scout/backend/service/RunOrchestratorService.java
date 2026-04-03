@@ -45,8 +45,8 @@ public class RunOrchestratorService {
 
     public BatchRunResponse run(RunRequest request) {
         validator.validate(request);
-        int logEvery = validator.resolveLogEveryIterations(request);
-        int wsUpdateEvery = request.wsUpdateEveryIterations() > 0 ? request.wsUpdateEveryIterations() : logEvery;
+        int logEvery = validator.resolveLogEveryIterations(request); // When we log progress in the backend
+        int wsUpdateEvery = request.wsUpdateEveryIterations() > 0 ? request.wsUpdateEveryIterations() : logEvery; // When we update frontend
         try {
             return runExecutor.executeBatch(request, logEvery, wsUpdateEvery);
         } catch (Exception ex) {

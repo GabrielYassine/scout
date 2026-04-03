@@ -126,8 +126,29 @@ public class FitnessPhaseObserver<S> implements Observer<S> {
 
     @Override
     public void onEnd(RunState<S> state, RunLog log) {
-        // Do nothing with partial leftover block.
-        // This matches your idea: only completed x-sized blocks get colored.
+        // even if the last block is not full, we can still classify and emit it
+        if (fitnessBlock.isEmpty()) {
+            return;
+        }
+
+        double firstFitness = fitnessBlock.getFirst();
+        double lastFitness = fitnessBlock.getLast();
+        Phase phase = classify(lastFitness - firstFitness);
+
+        int startIteration = iterationBlock.getFirst();
+        int endIteration = iterationBlock.getLast();
+        int startEvaluation = evaluationBlock.getFirst();
+        int endEvaluation = evaluationBlock.getLast();
+
+        Map<String, Object> interval = newInterval(
+            startIteration,
+            endIteration,
+            startEvaluation,
+            endEvaluation,
+            phase
+        );
+
+        emitInterval(log, interval);
     }
 
     private Phase classify(double delta) {
@@ -140,11 +161,13 @@ public class FitnessPhaseObserver<S> implements Observer<S> {
         return Phase.STAGNANT;
     }
 
-    private Map<String, Object> newInterval(int startIteration,
-                                            int endIteration,
-                                            int startEvaluation,
-                                            int endEvaluation,
-                                            Phase phase) {
+    private Map<String, Object> newInterval(
+        int startIteration,
+        int endIteration,
+        int startEvaluation,
+        int endEvaluation,
+        Phase phase
+    ) {
         Map<String, Object> interval = new LinkedHashMap<>();
         interval.put("startIteration", startIteration);
         interval.put("endIteration", endIteration);
