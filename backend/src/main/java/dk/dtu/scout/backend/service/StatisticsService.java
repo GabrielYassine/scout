@@ -54,22 +54,26 @@ public class StatisticsService {
 
         List<Integer> referenceEvaluations = referenceRun.evaluations() != null ? new ArrayList<>(referenceRun.evaluations()) : List.of();
 
-        Map<String, List<Double>> averageSeries = computeAverageSeries(runs);
+        Map<String, List<Double>> averageSeries = computeAverageSeries(runs, referenceEvaluations);
 
         return ViewMapper.toAverageRunResponse(referenceIterations, referenceEvaluations, averageSeries);
     }
 
-    private Map<String, List<Double>> computeAverageSeries(List<RunResponse> runs) {
+    private Map<String, List<Double>> computeAverageSeries(List<RunResponse> runs, List<Integer> referenceEvaluations) {
         Map<String, List<Double>> result = new LinkedHashMap<>();
-        if (runs == null || runs.isEmpty()) {
+        if (runs == null || runs.isEmpty() || referenceEvaluations == null || referenceEvaluations.isEmpty()) {
             return result;
         }
 
-        Map<String, List<List<Double>>> seriesValuesByName = new LinkedHashMap<>();
+        Map<String, List<AlignedSeries>> seriesValuesByName = new LinkedHashMap<>();
 
         for (RunResponse run : runs) {
             Map<String, SeriesResponse<?>> series = run.series();
-            if (series == null) continue;
+            List<Integer> runEvaluations = run.evaluations();
+
+            if (series == null || runEvaluations == null || runEvaluations.isEmpty()) {
+                continue;
+            }
 
             for (Map.Entry<String, SeriesResponse<?>> entry : series.entrySet()) {
                 String seriesName = entry.getKey();
@@ -79,39 +83,50 @@ public class StatisticsService {
                 List<Double> numericValues = toDoubleList(response.values());
                 if (numericValues.isEmpty()) continue;
 
+                int usableLength = Math.min(runEvaluations.size(), numericValues.size());
+                if (usableLength == 0) continue;
+
                 seriesValuesByName
                         .computeIfAbsent(seriesName, k -> new ArrayList<>())
-                        .add(numericValues);
+                        .add(new AlignedSeries(
+                                new ArrayList<>(runEvaluations.subList(0, usableLength)),
+                                new ArrayList<>(numericValues.subList(0, usableLength))
+                        ));
             }
         }
 
-        for (Map.Entry<String, List<List<Double>>> entry : seriesValuesByName.entrySet()) {
+        for (Map.Entry<String, List<AlignedSeries>> entry : seriesValuesByName.entrySet()) {
             String seriesName = entry.getKey();
-            List<List<Double>> allRunsForSeries = entry.getValue();
+            List<AlignedSeries> alignedRuns = entry.getValue();
 
-            int maxLength = allRunsForSeries.stream()
-                    .mapToInt(List::size)
-                    .max()
-                    .orElse(0);
+            if (alignedRuns.isEmpty()) continue;
 
-            if (maxLength == 0) continue;
+            List<Double> averaged = new ArrayList<>(referenceEvaluations.size());
 
-            List<Double> averaged = new ArrayList<>(maxLength);
-
-            for (int i = 0; i < maxLength; i++) {
+            for (Integer targetEvaluation : referenceEvaluations) {
                 double sum = 0.0;
+                int count = 0;
 
-                for (List<Double> runSeries : allRunsForSeries) {
-                    double value = i < runSeries.size()
-                            ? runSeries.get(i)
-                            : runSeries.get(runSeries.size() - 1);
-                    sum += value;
+                for (AlignedSeries aligned : alignedRuns) {
+                    Double value = valueAtEvaluation(
+                            aligned.evaluations(),
+                            aligned.values(),
+                            targetEvaluation
+                    );
+                    if (value != null) {
+                        sum += value;
+                        count++;
+                    }
                 }
 
-                averaged.add(sum / allRunsForSeries.size());
+                if (count > 0) {
+                    averaged.add(sum / count);
+                }
             }
 
-            result.put(seriesName, averaged);
+            if (!averaged.isEmpty()) {
+                result.put(seriesName, averaged);
+            }
         }
 
         return result;
@@ -239,5 +254,28 @@ public class StatisticsService {
 
         double fraction = index - lower;
         return sorted.get(lower) + fraction * (sorted.get(upper) - sorted.get(lower));
+    }
+    private record AlignedSeries(List<Integer> evaluations, List<Double> values) {}
+    private Double valueAtEvaluation(List<Integer> evaluations, List<Double> values, int targetEvaluation) {
+        if (evaluations == null || values == null || evaluations.isEmpty() || values.isEmpty()) {
+            return null;
+        }
+
+        int usableLength = Math.min(evaluations.size(), values.size());
+        if (usableLength == 0) {
+            return null;
+        }
+
+        if (targetEvaluation <= evaluations.get(0)) {
+            return values.get(0);
+        }
+
+        for (int i = 1; i < usableLength; i++) {
+            if (evaluations.get(i) > targetEvaluation) {
+                return values.get(i - 1);
+            }
+        }
+
+        return values.get(usableLength - 1);
     }
 }
