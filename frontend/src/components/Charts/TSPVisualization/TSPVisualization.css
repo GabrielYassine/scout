@@ -49,6 +49,11 @@
   transition: r 0.15s ease, fill 0.15s ease;
 }
 
+.city-dot.depot {
+  fill: #f59e0b;
+  stroke: #1f2937;
+}
+
 .city.editable .city-dot:hover {
   r: 12;
 }

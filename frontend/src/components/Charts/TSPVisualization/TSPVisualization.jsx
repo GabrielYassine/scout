@@ -1,6 +1,17 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import "./TSPVisualization.css";
 
+const ROUTE_COLORS = [
+  "#3b82f6",
+  "#ef4444",
+  "#22c55e",
+  "#f59e0b",
+  "#8b5cf6",
+  "#14b8a6",
+  "#e11d48",
+  "#84cc16",
+];
+
 export default function TSPVisualization({
   tspData,
   run,
@@ -40,7 +51,8 @@ export default function TSPVisualization({
           ? citiesData.map((city, index) => ({
               id: index,
               x: city.x,
-              y: city.y
+              y: city.y,
+              isDepot: city.isDepot === true,
             }))
           : [],
         observedTourLength: tourLength,
@@ -51,7 +63,12 @@ export default function TSPVisualization({
     } else if (tspData) {
       return {
         tour: tspData.tour,
-        cities: tspData.cities,
+        cities: (tspData.cities ?? []).map((city, index) => ({
+          id: city.id ?? index,
+          x: city.x,
+          y: city.y,
+          isDepot: city.isDepot === true,
+        })),
         originalTourLength: tspData.tourLength
       };
     }
@@ -184,45 +201,93 @@ export default function TSPVisualization({
     setDragPosition(null);
   }, [draggedCity, editable, onCitiesChange, cities]);
 
-  const tourPath = useMemo(() => {
-    if (!sourceData?.tour || !cities || cities.length === 0) return "";
+  const depotIndex = useMemo(() => cities.findIndex((c) => c.isDepot), [cities]);
 
-    const pathPoints = sourceData.tour
-      .map((cityIndex) => {
-        const city = cities[cityIndex];
-        if (!city) return null;
-        const coords = toSVGCoords(city.x, city.y);
-        return `${coords.x},${coords.y}`;
-      })
-      .filter((p) => p !== null);
+  const normalizeRoutes = useCallback((tour) => {
+    if (!Array.isArray(tour) || tour.length === 0) return [];
+    if (Array.isArray(tour[0])) return tour;
+    return [tour];
+  }, []);
 
-    if (pathPoints.length > 0) {
-      const firstCity = cities[sourceData.tour[0]];
-      if (firstCity) {
-        const firstCoords = toSVGCoords(firstCity.x, firstCity.y);
-        pathPoints.push(`${firstCoords.x},${firstCoords.y}`);
+  const buildRoutePath = useCallback(
+    (route) => {
+      if (!Array.isArray(route) || route.length === 0) return "";
+
+      const indices = route
+        .map((v) => Number(v))
+        .filter((v) => Number.isFinite(v));
+
+      if (indices.length === 0) return "";
+
+      if (depotIndex >= 0) {
+        if (indices[0] !== depotIndex) indices.unshift(depotIndex);
+        if (indices[indices.length - 1] !== depotIndex) indices.push(depotIndex);
+      } else {
+        indices.push(indices[0]);
       }
-    }
 
-    return pathPoints.join(" ");
-  }, [sourceData, cities, toSVGCoords]);
+      const pathPoints = indices
+        .map((cityIndex) => {
+          const city = cities[cityIndex];
+          if (!city) return null;
+          const coords = toSVGCoords(city.x, city.y);
+          return `${coords.x},${coords.y}`;
+        })
+        .filter((p) => p !== null);
+
+      return pathPoints.join(" ");
+    },
+    [cities, depotIndex, toSVGCoords]
+  );
+
+  const routePaths = useMemo(() => {
+    const routes = normalizeRoutes(sourceData?.tour);
+    if (!routes.length || !cities.length) return [];
+
+    return routes
+      .map((route, idx) => ({
+        key: `route-${idx}`,
+        color: ROUTE_COLORS[idx % ROUTE_COLORS.length],
+        points: buildRoutePath(route),
+      }))
+      .filter((route) => route.points);
+  }, [buildRoutePath, cities.length, normalizeRoutes, sourceData]);
 
   const currentTourLength = useMemo(() => {
-    if (!sourceData?.tour || !cities || cities.length === 0) return 0;
+    const routes = normalizeRoutes(sourceData?.tour);
+    if (!routes.length || !cities || cities.length === 0) return 0;
 
+    const startIndex = depotIndex >= 0 ? depotIndex : null;
     let totalDistance = 0;
-    for (let i = 0; i < sourceData.tour.length; i++) {
-      const currentCity = cities[sourceData.tour[i]];
-      const nextCity = cities[sourceData.tour[(i + 1) % sourceData.tour.length]];
 
-      if (currentCity && nextCity) {
-        const dx = currentCity.x - nextCity.x;
-        const dy = currentCity.y - nextCity.y;
-        totalDistance += Math.sqrt(dx * dx + dy * dy);
+    for (const route of routes) {
+      if (!Array.isArray(route) || route.length === 0) continue;
+      const indices = route
+        .map((v) => Number(v))
+        .filter((v) => Number.isFinite(v));
+      if (indices.length === 0) continue;
+
+      const sequence = [...indices];
+      if (startIndex != null) {
+        if (sequence[0] !== startIndex) sequence.unshift(startIndex);
+        if (sequence[sequence.length - 1] !== startIndex) sequence.push(startIndex);
+      } else {
+        sequence.push(sequence[0]);
+      }
+
+      for (let i = 0; i < sequence.length - 1; i++) {
+        const currentCity = cities[sequence[i]];
+        const nextCity = cities[sequence[i + 1]];
+        if (currentCity && nextCity) {
+          const dx = currentCity.x - nextCity.x;
+          const dy = currentCity.y - nextCity.y;
+          totalDistance += Math.sqrt(dx * dx + dy * dy);
+        }
       }
     }
+
     return totalDistance;
-  }, [sourceData, cities]);
+  }, [sourceData, cities, normalizeRoutes, depotIndex]);
 
   const pheromoneEdges = useMemo(() => {
     if (!run?.series?.pheromoneHeatmap || !cities?.length) {
@@ -333,7 +398,14 @@ export default function TSPVisualization({
           />
         ))}
 
-        {tourPath && <polyline points={tourPath} className="tour-path" />}
+        {routePaths.map((route) => (
+          <polyline
+            key={route.key}
+            points={route.points}
+            className="tour-path"
+            style={{ stroke: route.color }}
+          />
+        ))}
 
         {cities.map((city, index) => {
           const isDragging = draggedCity === index;
@@ -346,7 +418,7 @@ export default function TSPVisualization({
               className={`city ${isDragging ? "dragging" : ""} ${editable ? "editable" : "readonly"}`}
             >
               <circle
-                className="city-dot"
+                className={`city-dot ${city.isDepot ? "depot" : ""}`}
                 cx={coords.x}
                 cy={coords.y}
                 onMouseDown={(e) => handleMouseDown(e, index)}

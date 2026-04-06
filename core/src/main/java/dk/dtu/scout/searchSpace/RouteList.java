@@ -53,23 +53,12 @@ public class RouteList implements SearchSpace<List<List<Integer>>> {
 
     @Override
     public List<Parameter> params() {
-        return List.of(
-                new Parameter("customerCount", "Customer Count", "int", customerCount, 1.0, null),
-                new Parameter("numberOfVehicles", "Number Of Vehicles", "int", numberOfVehicles, 1.0, null)
-        );
+        return List.of();
     }
 
     @Override
     public void configure(Map<String, Object> params) {
         if (params == null) return;
-
-        if (params.containsKey("customerCount")) {
-            int value = ((Number) params.get("customerCount")).intValue();
-            if (value <= 0) {
-                throw new IllegalArgumentException("customerCount must be positive");
-            }
-            this.customerCount = value;
-        }
 
         if (params.containsKey("n")) {
             int value = ((Number) params.get("n")).intValue();
@@ -77,14 +66,6 @@ public class RouteList implements SearchSpace<List<List<Integer>>> {
                 throw new IllegalArgumentException("n must be positive");
             }
             this.customerCount = value;
-        }
-
-        if (params.containsKey("numberOfVehicles")) {
-            int value = ((Number) params.get("numberOfVehicles")).intValue();
-            if (value <= 0) {
-                throw new IllegalArgumentException("numberOfVehicles must be positive");
-            }
-            this.numberOfVehicles = value;
         }
 
         if (params.containsKey("vrpInstance")) {

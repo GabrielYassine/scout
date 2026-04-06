@@ -242,6 +242,18 @@ export default function LabRightbar({
     }
   };
 
+  const handleVehicleChange = (value) => {
+    if (instanceType !== "VRP") return;
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) return;
+    const nextValue = Math.max(1, Math.floor(parsed));
+
+    updateVrpInstance((current) => ({
+      ...current,
+      numberOfVehicles: nextValue,
+    }));
+  };
+
   const handleCityChange = (index, field, value) => {
     const numValue = Number(value);
     if (Number.isNaN(numValue)) return;
@@ -296,16 +308,28 @@ export default function LabRightbar({
   };
 
   const handleCitiesUpdate = (updatedCities) => {
-    if (instanceType !== "TSP") return;
-    const nodes = (updatedCities ?? []).map((city, idx) => ({
-      key: `city-${idx}`,
-      nodeId: idx,
-      x: city.x,
-      y: city.y,
-      demand: 0,
-      isDepot: false,
-    }));
-    syncCitiesToTsp(nodes);
+    const nodes = (updatedCities ?? []).map((city, idx) => {
+      const baseNode = view.nodes[idx] ?? {};
+      return {
+        key: baseNode.key ?? `city-${idx}`,
+        nodeId: baseNode.nodeId ?? idx,
+        x: city.x,
+        y: city.y,
+        demand: baseNode.demand ?? 0,
+        isDepot: baseNode.isDepot ?? false,
+      };
+    });
+
+    if (instanceType === "VRP") {
+      syncCitiesToVrp(nodes);
+    } else {
+      const tspNodes = nodes.map((node, idx) => ({
+        ...node,
+        nodeId: idx,
+        isDepot: false,
+      }));
+      syncCitiesToTsp(tspNodes);
+    }
   };
 
   const handleDepotToggle = (index) => {
@@ -436,7 +460,7 @@ export default function LabRightbar({
               </div>
             )}
 
-            {instanceType === "TSP" && view.nodes.length > 0 && (
+            {view.nodes.length > 0 && (
               <button className="view-graph-btn" onClick={() => setIsModalOpen(true)}>
                 View Graph
               </button>
@@ -494,7 +518,7 @@ export default function LabRightbar({
       </div>
 
       <TSPGraphModal
-        isOpen={isModalOpen && instanceType === "TSP"}
+        isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         tspInstance={{
           name: view.name,
@@ -502,6 +526,7 @@ export default function LabRightbar({
             id: idx,
             x: node.x,
             y: node.y,
+            isDepot: node.isDepot,
           })),
         }}
         onCitiesUpdate={handleCitiesUpdate}

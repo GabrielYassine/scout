@@ -1,0 +1,36 @@
+{
+  "id": "tpl-ea-vrp",
+  "displayName": "(mu+lambda) EA on VRP",
+  "description": "Baseline EA configuration for CVRP with route-list encoding",
+  "runRequest": {
+    "searchSpaceId": ["route-list"],
+    "searchSpaceParams": {
+      "vrpInstance": null
+    },
+
+    "problemIds": ["vrp"],
+    "problemParams": {
+      "vrpInstance": null
+    },
+
+    "generatorId": ["route-list-swap"],
+    "generatorParams": {},
+
+    "selectionRuleId": ["mu-plus-lambda"],
+    "selectionRuleParams": {},
+
+    "parentSelectionRuleId": ["random-parents"],
+    "parentSelectionRuleParams": {},
+
+    "populationModelId": ["mu-lambda"],
+    "populationModelParams": { "mu": 1, "lambda": 1 },
+
+    "stopConditionIds": ["max-iterations"],
+    "stopConditionParams": { "maxIterations": 10000 },
+
+    "observerIds": ["fitness"],
+
+    "seed": 1,
+    "runTimes": 1
+  }
+}

@@ -8,6 +8,7 @@ import dk.dtu.scout.backend.dto.run.BatchSummaryResponse;
 import dk.dtu.scout.backend.dto.run.RunGroupResponse;
 import dk.dtu.scout.backend.dto.run.RunResponse;
 import dk.dtu.scout.backend.util.ViewMapper;
+import dk.dtu.scout.backend.util.InstanceMapper;
 import dk.dtu.scout.backend.websocket.RunProgressObserver;
 import dk.dtu.scout.backend.websocket.RunStatusService;
 import dk.dtu.scout.backend.websocket.RunWsPayload;
@@ -32,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -140,7 +142,20 @@ public class RunExecutor {
 
         List<RunResponse> perProblemRuns = new ArrayList<>();
         for (String pid : request.problemIds()) {
-            Problem<S> problem = factory.createProblem(pid, ss.dimension(), request.problemParams());
+            Map<String, Object> problemParams = request.problemParams() != null
+                    ? new LinkedHashMap<>(request.problemParams())
+                    : new LinkedHashMap<>();
+
+            if ("tsp".equals(pid) && problemParams.containsKey("tspInstance")) {
+                Object rawInstance = problemParams.get("tspInstance");
+                problemParams.put("tspInstance", InstanceMapper.toTspInstance(rawInstance));
+            }
+            if ("vrp".equals(pid) && problemParams.containsKey("vrpInstance")) {
+                Object rawInstance = problemParams.get("vrpInstance");
+                problemParams.put("vrpInstance", InstanceMapper.toVrpInstance(rawInstance));
+            }
+
+            Problem<S> problem = factory.createProblem(pid, ss.dimension(), problemParams);
             factory.validateProblemSearchSpaceCompatibility(problem, pid, ss.id());
 
             SelectionRule selection = factory.createSelectionRule(request.selectionRuleId(), request.selectionRuleParams());

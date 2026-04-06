@@ -81,7 +81,7 @@ export default function LabLeftbar({
     );
   }, [puzzleConfig]);
 
-  const defaultSeed = useMemo(() => Date.now(), []);
+  const defaultSeed = 1;
 
   function setParam(type, def, rawValue) {
     const currentParams = params[type] ?? {};

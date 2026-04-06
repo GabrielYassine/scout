@@ -97,8 +97,6 @@ export default function LabPage({catalog, catalogLoading, catalogError, template
     }
     if (isVrpProblem && vrpInstance) {
       searchSpaceParams.vrpInstance = vrpInstance;
-      searchSpaceParams.customerCount = vrpInstance.customers?.length ?? 0;
-      searchSpaceParams.numberOfVehicles = vrpInstance.numberOfVehicles ?? 1;
     }
 
     const body = {

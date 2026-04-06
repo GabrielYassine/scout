@@ -115,9 +115,14 @@ public class TSPTourObserver implements Observer<int[]> {
     }
 
     private void logTourSnapshot(RunState<int[]> state, RunLog log) {
-        int[] tour = state.currentSolution();
-        if (tour == null) {
-            tour = state.bestSolution();
+        int[] tour;
+        try {
+            tour = state.currentSolution();
+            if (tour == null) {
+                tour = state.bestSolution();
+            }
+        } catch (ClassCastException ex) {
+            return;
         }
         if (tour == null) return;
 

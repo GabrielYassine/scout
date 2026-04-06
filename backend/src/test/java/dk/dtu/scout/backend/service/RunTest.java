@@ -2,7 +2,7 @@ package dk.dtu.scout.backend.service;
 
 import dk.dtu.scout.backend.dto.RunRequest;
 import dk.dtu.scout.backend.dto.run.BatchRunResponse;
-import dk.dtu.scout.backend.util.TSPLibParser;
+import dk.dtu.scout.backend.util.InstanceMapper;
 import dk.dtu.scout.backend.util.ViewMapper;
 import dk.dtu.scout.datatypes.TSPInstance;
 import org.junit.jupiter.api.Test;
@@ -28,7 +28,7 @@ class RunTest {
     private Map<String, Object> loadBerlin52Instance() throws IOException {
         String filePath = "src/test/resources/berlin52.tsp";
         String content = Files.readString(Paths.get(filePath));
-        TSPInstance instance = TSPLibParser.parse(content);
+        TSPInstance instance = InstanceMapper.parseTsplib(content);
 
         List<Map<String, Object>> cities = new ArrayList<>();
         double[][] coordinates = instance.getCoordinates();
@@ -82,9 +82,19 @@ class RunTest {
         );
 
         BatchRunResponse response = runOrchestratorService.run(request);
-        var stats = response.summary().runtimeByProblem().get(problemId);
-        assertNotNull(stats);
-        return stats.finalEvaluationsMedian();
+        List<Integer> finalEvals = response.batches().stream()
+                .flatMap((batch) -> batch.runs().stream())
+                .filter((run) -> problemId.equals(run.problemId()))
+                .map((run) -> run.finalEvaluations())
+                .sorted()
+                .toList();
+
+        assertFalse(finalEvals.isEmpty());
+        int mid = finalEvals.size() / 2;
+        if (finalEvals.size() % 2 == 1) {
+            return finalEvals.get(mid);
+        }
+        return (finalEvals.get(mid - 1) + finalEvals.get(mid)) / 2.0;
     }
 
     @Test
