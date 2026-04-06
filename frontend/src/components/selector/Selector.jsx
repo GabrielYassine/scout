@@ -25,8 +25,6 @@ const singleSelectTypes = new Set([
 
 export default function Selector({
     catalog,
-    catalogLoading,
-    catalogError,
     onPieceHover,
     onPieceLeave,
     puzzleConfig,

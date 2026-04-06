@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useMemo, useState } from "react";
 import { DndContext, DragOverlay, rectIntersection } from "@dnd-kit/core";
 import { useSessionStorageState } from "../hooks/useSessionStorageState.js";
@@ -26,20 +27,22 @@ const componentTypes = [
   "observer",
 ];
 
-export const DEFAULT_TSP_INSTANCE = {
-  name: "Default Instance",
-  cities: [
-    { id: 0, x: 50, y: 0 },
-    { id: 1, x: 100, y: 0 },
-    { id: 2, x: 100, y: 100 },
-    { id: 3, x: 50, y: 100 },
-  ],
-};
+const cloneTspInstance = (tsp) =>
+  tsp
+    ? {
+        ...tsp,
+        cities: (tsp.cities ?? []).map((c) => ({ ...c })),
+      }
+    : null;
 
-const cloneTspInstance = (tsp = DEFAULT_TSP_INSTANCE) => ({
-  ...tsp,
-  cities: (tsp.cities ?? []).map((c) => ({ ...c })),
-});
+const cloneVrpInstance = (vrp) =>
+  vrp
+    ? {
+        ...vrp,
+        depot: vrp.depot ? { ...vrp.depot } : null,
+        customers: (vrp.customers ?? []).map((c) => ({ ...c })),
+      }
+    : null;
 
 const createEmptyPuzzleConfig = () => ({
   searchSpace: [],
@@ -71,7 +74,8 @@ const createDefaultConfig = (id, name) => ({
   name,
   placedPieces: [],
   params: createEmptyParams(),
-  tspInstance: cloneTspInstance(DEFAULT_TSP_INSTANCE),
+  tspInstance: null,
+  vrpInstance: null,
 });
 
 function flattenGroupedPuzzleConfig(groupedConfig) {
@@ -91,9 +95,8 @@ function normalizeStoredConfig(config, fallbackIndex = 0) {
     id: config?.id ?? `config-${fallbackIndex + 1}`,
     name: config?.name ?? `Config ${fallbackIndex + 1}`,
     params: config?.params ?? createEmptyParams(),
-    tspInstance: config?.tspInstance
-      ? cloneTspInstance(config.tspInstance)
-      : cloneTspInstance(DEFAULT_TSP_INSTANCE),
+    tspInstance: config?.tspInstance ? cloneTspInstance(config.tspInstance) : null,
+    vrpInstance: config?.vrpInstance ? cloneVrpInstance(config.vrpInstance) : null,
   };
 
   if (Array.isArray(config?.placedPieces)) {
@@ -233,7 +236,10 @@ export function PuzzleConfigProvider({ children }) {
   const params = activeConfig?.params ?? createEmptyParams();
   const tspInstance = activeConfig?.tspInstance
     ? cloneTspInstance(activeConfig.tspInstance)
-    : cloneTspInstance(DEFAULT_TSP_INSTANCE);
+    : null;
+  const vrpInstance = activeConfig?.vrpInstance
+    ? cloneVrpInstance(activeConfig.vrpInstance)
+    : null;
 
   const updateActiveConfig = (key, updater) => {
     setConfigs((prev) => {
@@ -249,6 +255,7 @@ export function PuzzleConfigProvider({ children }) {
   const setPlacedPieces = (updater) => updateActiveConfig("placedPieces", updater);
   const setParams = (updater) => updateActiveConfig("params", updater);
   const setTspInstance = (updater) => updateActiveConfig("tspInstance", updater);
+  const setVrpInstance = (updater) => updateActiveConfig("vrpInstance", updater);
 
   const addNewConfig = () => {
     const newId = `config-${Date.now()}`;
@@ -398,6 +405,7 @@ export function PuzzleConfigProvider({ children }) {
     placedPieces,
     params,
     tspInstance,
+    vrpInstance,
 
     setActiveConfigId,
     addNewConfig,
@@ -410,6 +418,7 @@ export function PuzzleConfigProvider({ children }) {
     applyTemplateRunRequest,
 
     setTspInstance,
+    setVrpInstance,
 
     activeId: activeDrag?.id ?? null,
     activeLabel: activeDrag?.label ?? null,
@@ -446,5 +455,3 @@ export function PuzzleConfigProvider({ children }) {
     </PuzzleConfigContext.Provider>
   );
 }
-
-

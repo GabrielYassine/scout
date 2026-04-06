@@ -13,7 +13,9 @@ export default function LabPage({catalog, catalogLoading, catalogError, template
     puzzleConfig,
     params,
     tspInstance,
+    vrpInstance,
     setTspInstance,
+    setVrpInstance,
     applyTemplateRunRequest,
     handleParamChange,
     handleReset,
@@ -83,11 +85,20 @@ export default function LabPage({catalog, catalogLoading, catalogError, template
     if (tspInstance && tspInstance.cities && tspInstance.cities.length > 0) {
       problemParams.tspInstance = tspInstance;
     }
+    const isVrpProblem = puzzleConfig.problem?.some((p) => p.id === "vrp");
+    if (isVrpProblem && vrpInstance) {
+      problemParams.vrpInstance = vrpInstance;
+    }
 
     const searchSpaceParams = { ...params.searchSpace };
     const isTSPProblem = puzzleConfig.problem?.some((p) => p.id === "tsp");
     if (isTSPProblem && tspInstance && tspInstance.cities && tspInstance.cities.length > 0) {
       searchSpaceParams.n = tspInstance.cities.length;
+    }
+    if (isVrpProblem && vrpInstance) {
+      searchSpaceParams.vrpInstance = vrpInstance;
+      searchSpaceParams.customerCount = vrpInstance.customers?.length ?? 0;
+      searchSpaceParams.numberOfVehicles = vrpInstance.numberOfVehicles ?? 1;
     }
 
     const body = {
@@ -138,14 +149,14 @@ export default function LabPage({catalog, catalogLoading, catalogError, template
           if (data?.message) {
             message = data.message;
           }
-        } catch (e) {
-          // ignore parse errors
+        } catch {
+          console.error("Failed to parse error response as JSON");
         }
         throw new Error(message);
       }
 
       navigate("/run", {
-        state: { loading: true, puzzleConfig, params, tspInstance, runId },
+        state: { loading: true, puzzleConfig, params, tspInstance, vrpInstance, runId },
       });
     } catch (err) {
       showToast(err.message || "Failed to start run");
@@ -190,8 +201,6 @@ export default function LabPage({catalog, catalogLoading, catalogError, template
         <div className="chosen-selector-container">
           <Selector
             catalog={catalog}
-            catalogLoading={catalogLoading}
-            catalogError={catalogError}
             onPieceHover={handlePieceHover}
             onPieceLeave={clearHover}
             puzzleConfig={puzzleConfig}
@@ -201,7 +210,9 @@ export default function LabPage({catalog, catalogLoading, catalogError, template
       <LabRightbar
         hoverInfo={hoverInfo}
         tspInstance={tspInstance}
+        vrpInstance={vrpInstance}
         onTspInstanceChange={setTspInstance}
+        onVrpInstanceChange={setVrpInstance}
       />
     </div>
   );

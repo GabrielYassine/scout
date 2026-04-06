@@ -1,45 +1,19 @@
-import { useState, useEffect } from "react";
 import TSPVisualization from "./TSPVisualization/TSPVisualization.jsx";
 import "./TSPGraphModal.css";
 
 export default function TSPGraphModal({ isOpen, onClose, tspInstance, onCitiesUpdate }) {
-  const [localCities, setLocalCities] = useState([]);
-
-  useEffect(() => {
-    if (tspInstance?.cities) {
-      setLocalCities([...tspInstance.cities]);
-    }
-  }, [tspInstance]);
+  const cities = tspInstance?.cities ?? [];
 
   const handleCitiesChange = (updatedCities) => {
-    setLocalCities(updatedCities);
-    if (onCitiesUpdate) {
-      onCitiesUpdate(updatedCities);
-    }
-  };
-
-  const handleCityInputChange = (index, field, value) => {
-    const numValue = parseFloat(value);
-    if (isNaN(numValue)) return;
-
-    const updatedCities = [...localCities];
-    updatedCities[index] = {
-      ...updatedCities[index],
-      [field]: numValue
-    };
-
-    setLocalCities(updatedCities);
-    if (onCitiesUpdate) {
-      onCitiesUpdate(updatedCities);
-    }
+    onCitiesUpdate?.(updatedCities);
   };
 
   if (!isOpen) return null;
 
   const tspData = {
     tour: null,
-    cities: localCities,
-    tourLength: 0
+    cities,
+    tourLength: 0,
   };
 
   return (
@@ -53,6 +27,7 @@ export default function TSPGraphModal({ isOpen, onClose, tspInstance, onCitiesUp
         <div className="tsp-modal-content">
           <div className="tsp-modal-graph">
             <TSPVisualization
+              key={`tsp-editor-${tspInstance?.name ?? "tsp"}-${cities.length}`}
               tspData={tspData}
               width={600}
               height={400}

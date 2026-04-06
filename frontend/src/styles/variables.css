@@ -31,7 +31,7 @@
 
   /* Layout Dimensions */
   --navbar-height: clamp(3rem, 6vh, 4rem);
-  --sidebar-width: clamp(5rem, 13vw, 15rem);
+  --sidebar-width: clamp(8rem, 15vw, 22rem);
 
   /** Puzzle Dimensions */
   --puzzle-piece-size: 11rem;

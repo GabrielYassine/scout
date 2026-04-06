@@ -1,7 +1,7 @@
 package dk.dtu.scout.problems;
 
 import dk.dtu.scout.Parameter;
-import dk.dtu.scout.VRPInstance;
+import dk.dtu.scout.datatypes.VRPInstance;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -11,9 +11,8 @@ import java.util.Map;
 
 @Component
 @Scope("prototype")
-public class VRPProblem implements Problem<int[]> {
+public class VRPProblem implements Problem<List<List<Integer>>> {
 
-    private static final int ROUTE_SEPARATOR = -1;
     private static final double VEHICLE_PENALTY = 1_000_000.0;
     private static final double CAPACITY_PENALTY = 1_000_000.0;
 
@@ -31,7 +30,7 @@ public class VRPProblem implements Problem<int[]> {
 
     @Override
     public String description() {
-        return "CVRP with separator-based route encoding and capacity constraints";
+        return "CVRP with route-list encoding and capacity constraints";
     }
 
     @Override
@@ -41,7 +40,7 @@ public class VRPProblem implements Problem<int[]> {
 
     @Override
     public List<String> supportedSearchSpaces() {
-        return List.of("permutation");
+        return List.of("route-list");
     }
 
     @Override
@@ -50,68 +49,21 @@ public class VRPProblem implements Problem<int[]> {
 
         if (params.containsKey("vrpInstance")) {
             Object vrpInstanceObj = params.get("vrpInstance");
-            if (vrpInstanceObj instanceof Map<?, ?>) {
-                @SuppressWarnings("unchecked")
-                Map<String, Object> vrpInstanceMap = (Map<String, Object>) vrpInstanceObj;
-                this.instance = convertMapToInstance(vrpInstanceMap);
+            if (!(vrpInstanceObj instanceof VRPInstance)) {
+                throw new IllegalArgumentException("vrpInstance must be a VRPInstance");
             }
-        } else if (params.containsKey("instance")) {
-            this.instance = (VRPInstance) params.get("instance");
+            this.instance = (VRPInstance) vrpInstanceObj;
+            validateInstance(this.instance);
         }
     }
 
-    private VRPInstance convertMapToInstance(Map<String, Object> vrpInstanceMap) {
-        String name = (String) vrpInstanceMap.getOrDefault("name", "Custom VRP Instance");
-        double capacity = toDouble(vrpInstanceMap.get("capacity"));
-
-        @SuppressWarnings("unchecked")
-        Map<String, Object> depotMap = (Map<String, Object>) vrpInstanceMap.get("depot");
-        if (depotMap == null) {
-            throw new IllegalArgumentException("VRP instance must have a depot");
+    private void validateInstance(VRPInstance instance) {
+        for (int customerIndex = 0; customerIndex < instance.getCustomerCount(); customerIndex++) {
+            double demand = instance.getDemand(customerIndex);
+            if (demand > instance.getCapacity()) {
+                throw new IllegalArgumentException("Customer demand exceeds vehicle capacity for customer " + customerIndex + ": " + demand);
+            }
         }
-
-        double[] depotCoordinates = new double[] {
-                toDouble(depotMap.get("x")),
-                toDouble(depotMap.get("y"))
-        };
-
-        @SuppressWarnings("unchecked")
-        List<Map<String, Object>> customersList = (List<Map<String, Object>>) vrpInstanceMap.get("customers");
-        if (customersList == null || customersList.isEmpty()) {
-            throw new IllegalArgumentException("VRP instance must have customers");
-        }
-
-        int customerCount = customersList.size();
-        double[][] customerCoordinates = new double[customerCount][2];
-        double[] customerDemands = new double[customerCount];
-
-        for (int i = 0; i < customerCount; i++) {
-            Map<String, Object> customer = customersList.get(i);
-            customerCoordinates[i][0] = toDouble(customer.get("x"));
-            customerCoordinates[i][1] = toDouble(customer.get("y"));
-            customerDemands[i] = toDouble(customer.getOrDefault("demand", 0.0));
-        }
-
-        int numberOfVehicles = (int) toDouble(
-                vrpInstanceMap.getOrDefault("numberOfVehicles", customerCount)
-        );
-
-        return new VRPInstance(
-                name,
-                depotCoordinates,
-                customerCoordinates,
-                customerDemands,
-                capacity,
-                numberOfVehicles
-        );
-    }
-
-    private double toDouble(Object value) {
-        return value instanceof Number ? ((Number) value).doubleValue() : 0.0;
-    }
-
-    public void setInstance(VRPInstance instance) {
-        this.instance = instance;
     }
 
     public VRPInstance getInstance() {
@@ -119,62 +71,34 @@ public class VRPProblem implements Problem<int[]> {
     }
 
     @Override
-    public double fitness(int[] encodedSolution) {
+    public double fitness(List<List<Integer>> routes) {
         if (instance == null) {
-            throw new IllegalStateException(
-                    "VRP instance not configured. Make sure to upload or configure a VRP instance before running."
-            );
+            throw new IllegalStateException("VRP instance not configured. Make sure to upload or configure a VRP instance before running.");
         }
 
-        validateEncodedSolution(encodedSolution);
+        List<List<Integer>> normalizedRoutes = normalizeRoutes(routes);
+        validateRoutes(normalizedRoutes);
 
-        DecodedVRPSolution decoded = decode(encodedSolution);
-
-        double totalDistance = decoded.totalDistance();
-        double capacityPenalty = capacityPenalty(decoded.routes());
-        double vehiclePenalty = vehiclePenalty(decoded.routes());
+        double totalDistance = totalDistance(normalizedRoutes);
+        double capacityPenalty = capacityPenalty(normalizedRoutes);
+        double vehiclePenalty = vehiclePenalty(normalizedRoutes);
 
         return -(totalDistance + capacityPenalty + vehiclePenalty);
     }
 
-    /**
-     * Decodes a separator-based CVRP solution.
-     * Example:
-     * [1,2,-1,3,-1,4,5] -> [[1,2], [3], [4,5]]
-     */
-    public DecodedVRPSolution decode(int[] encodedSolution) {
-        List<List<Integer>> routes = decodeRoutes(encodedSolution);
-        double totalDistance = totalDistance(routes);
-        return new DecodedVRPSolution(routes, totalDistance);
-    }
+    private List<List<Integer>> normalizeRoutes(List<List<Integer>> routes) {
+        if (routes == null) {
+            return List.of();
+        }
 
-    /**
-     * Decodes routes explicitly from separator markers.
-     * Repeated separators are allowed and simply ignored.
-     * Leading/trailing separators are also ignored.
-     */
-    public List<List<Integer>> decodeRoutes(int[] encodedSolution) {
-        validateEncodedSolution(encodedSolution);
-
-        List<List<Integer>> routes = new ArrayList<>();
-        List<Integer> currentRoute = new ArrayList<>();
-
-        for (int value : encodedSolution) {
-            if (value == ROUTE_SEPARATOR) {
-                if (!currentRoute.isEmpty()) {
-                    routes.add(currentRoute);
-                    currentRoute = new ArrayList<>();
-                }
-            } else {
-                currentRoute.add(value);
+        List<List<Integer>> normalized = new ArrayList<>();
+        for (List<Integer> route : routes) {
+            if (route == null || route.isEmpty()) {
+                continue;
             }
+            normalized.add(route);
         }
-
-        if (!currentRoute.isEmpty()) {
-            routes.add(currentRoute);
-        }
-
-        return routes;
+        return normalized;
     }
 
     public double routeDistance(List<Integer> route) {
@@ -233,64 +157,38 @@ public class VRPProblem implements Problem<int[]> {
         return excessVehicles * VEHICLE_PENALTY;
     }
 
-    private void validateEncodedSolution(int[] encodedSolution) {
-        if (encodedSolution == null) {
-            throw new IllegalArgumentException("Solution cannot be null");
+    private void validateRoutes(List<List<Integer>> routes) {
+        if (routes == null || routes.isEmpty()) {
+            throw new IllegalArgumentException("Routes cannot be null or empty");
         }
 
         boolean[] seen = new boolean[instance.getCustomerCount()];
         int seenCustomers = 0;
 
-        for (int value : encodedSolution) {
-            if (value == ROUTE_SEPARATOR) {
+        for (List<Integer> route : routes) {
+            if (route == null) {
+                throw new IllegalArgumentException("Route cannot be null");
+            }
+            if (route.isEmpty()) {
                 continue;
             }
 
-            if (value < 0 || value >= instance.getCustomerCount()) {
-                throw new IllegalArgumentException("Customer index out of range: " + value);
-            }
+            for (int customerIndex : route) {
+                if (customerIndex < 0 || customerIndex >= instance.getCustomerCount()) {
+                    throw new IllegalArgumentException("Customer index out of range: " + customerIndex);
+                }
 
-            if (seen[value]) {
-                throw new IllegalArgumentException("Duplicate customer index in encoded solution: " + value);
-            }
+                if (seen[customerIndex]) {
+                    throw new IllegalArgumentException("Duplicate customer index in routes: " + customerIndex);
+                }
 
-            seen[value] = true;
-            seenCustomers++;
+                seen[customerIndex] = true;
+                seenCustomers++;
+            }
         }
 
         if (seenCustomers != instance.getCustomerCount()) {
-            throw new IllegalArgumentException(
-                    "Encoded solution must contain each customer exactly once. Found "
-                            + seenCustomers + " of " + instance.getCustomerCount()
-            );
-        }
-
-        for (int customerIndex = 0; customerIndex < instance.getCustomerCount(); customerIndex++) {
-            double demand = instance.getDemand(customerIndex);
-            if (demand > instance.getCapacity()) {
-                throw new IllegalArgumentException(
-                        "Customer demand exceeds vehicle capacity for customer "
-                                + customerIndex + ": " + demand
-                );
-            }
-        }
-    }
-
-    public static final class DecodedVRPSolution {
-        private final List<List<Integer>> routes;
-        private final double totalDistance;
-
-        private DecodedVRPSolution(List<List<Integer>> routes, double totalDistance) {
-            this.routes = routes;
-            this.totalDistance = totalDistance;
-        }
-
-        public List<List<Integer>> routes() {
-            return routes;
-        }
-
-        public double totalDistance() {
-            return totalDistance;
+            throw new IllegalArgumentException("Routes must contain each customer exactly once. Found " + seenCustomers + " of " + instance.getCustomerCount());
         }
     }
 }

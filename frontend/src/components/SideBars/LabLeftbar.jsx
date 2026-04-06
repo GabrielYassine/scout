@@ -1,7 +1,19 @@
 import { useMemo, useState } from "react";
 import "./LabLeftbar.css";
+import "./FormFields.css";
 import Section from "./Section.jsx";
-import ParamField, { parseValue } from "./ParamField.jsx";
+import ParamField from "./ParamField.jsx";
+
+const parseValue = (type, raw) => {
+  if (raw == null) return raw;
+  if (type === "boolean") return Boolean(raw);
+  if (type === "int" || type === "long" || type === "double") {
+    if (raw === "") return "";
+    return Number(raw);
+  }
+
+  return raw;
+};
 
 // Left sidebar for the lab page, containing configuration for each puzzle piece
 
@@ -68,6 +80,8 @@ export default function LabLeftbar({
       puzzleConfig.observer
     );
   }, [puzzleConfig]);
+
+  const defaultSeed = useMemo(() => Date.now(), []);
 
   function setParam(type, def, rawValue) {
     const currentParams = params[type] ?? {};
@@ -138,7 +152,7 @@ export default function LabLeftbar({
         >
           <div className="ll-subsection">
             <select
-              className="form-select"
+              className="field-input"
               value={selectedTemplateId}
               onChange={(e) => setSelectedTemplateId(e.target.value)}
               disabled={disabled || templatesLoading || templates.length === 0}
@@ -184,10 +198,10 @@ export default function LabLeftbar({
                 label: "Seed",
                 type: "long",
                 min: 1,
-                defaultValue: Date.now(),
+                defaultValue: defaultSeed,
               }}
               disabled={disabled}
-              value={params.global?.seed ?? Date.now()}
+              value={params.global?.seed ?? defaultSeed}
               onValueChange={(v) => setParam("global", { key: "seed", type: "long" }, v)}
             />
             <ParamField

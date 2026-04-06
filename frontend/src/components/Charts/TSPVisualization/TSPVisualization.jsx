@@ -18,7 +18,6 @@ export default function TSPVisualization({
   });
   const [draggedCity, setDraggedCity] = useState(null);
   const [dragPosition, setDragPosition] = useState(null);
-  const [cities, setCities] = useState([]);
 
   const sourceData = useMemo(() => {
     if (run?.series?.tspTour && run?.series?.tspCities) {
@@ -60,11 +59,8 @@ export default function TSPVisualization({
     return null;
   }, [tspData, run]);
 
-  useEffect(() => {
-    if (sourceData?.cities) {
-      setCities([...sourceData.cities]);
-    }
-  }, [sourceData]);
+  const initialCities = useMemo(() => sourceData?.cities ?? [], [sourceData]);
+  const [cities, setCities] = useState(() => [...initialCities]);
 
   useEffect(() => {
     if (!containerRef.current || (width && height)) return;
@@ -209,7 +205,7 @@ export default function TSPVisualization({
     }
 
     return pathPoints.join(" ");
-  }, [sourceData?.tour, cities, toSVGCoords]);
+  }, [sourceData, cities, toSVGCoords]);
 
   const currentTourLength = useMemo(() => {
     if (!sourceData?.tour || !cities || cities.length === 0) return 0;
@@ -226,7 +222,7 @@ export default function TSPVisualization({
       }
     }
     return totalDistance;
-  }, [sourceData?.tour, cities]);
+  }, [sourceData, cities]);
 
   const pheromoneEdges = useMemo(() => {
     if (!run?.series?.pheromoneHeatmap || !cities?.length) {
@@ -290,7 +286,7 @@ export default function TSPVisualization({
         };
       })
       .filter(Boolean);
-  }, [run?.series?.pheromoneHeatmap, run?.series?.tspTour, cities, toSVGCoords]);
+  }, [run, cities, toSVGCoords]);
 
   return (
     <div ref={containerRef} className="tsp-visualization">

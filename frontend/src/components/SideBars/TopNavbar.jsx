@@ -3,7 +3,6 @@ import "./TopNavbar.css";
 import logo from "../../assets/icons/ScoutLogo.png";
 import homeIcon from "../../assets/icons/Home.png";
 import labIcon from "../../assets/icons/Lab.png";
-import historyIcon from "../../assets/icons/History.png";
 
 function NavItem({ to, label, icon }) {
   return (

@@ -37,10 +37,9 @@ function HypercubePlot({
   eyeSteps = 250,
   visibleCount = null,
 }) {
-  const xs = run?.series?.hypercubeX ?? [];
-  const ys = run?.series?.hypercubeY ?? [];
-
   const { pts, leftD, rightD } = useMemo(() => {
+    const xs = run?.series?.hypercubeX ?? [];
+    const ys = run?.series?.hypercubeY ?? [];
     const len = Math.min(xs.length, ys.length);
     if (!len) return { pts: [], leftD: "", rightD: "" };
 
@@ -59,9 +58,9 @@ function HypercubePlot({
       pts.push({ i, px, py });
     }
 
-    const { leftD, rightD } = buildEyePaths(width, height, padding, gaussianScale,  eyeSteps);
+    const { leftD, rightD } = buildEyePaths(width, height, padding, gaussianScale, eyeSteps);
     return { pts, leftD, rightD };
-  }, [xs, ys, width, height, padding, gaussianScale,  eyeSteps]);
+  }, [run?.series?.hypercubeX, run?.series?.hypercubeY, width, height, padding, gaussianScale, eyeSteps]);
   const visiblePts = visibleCount == null ? pts : pts.slice(0, visibleCount);
 
   if (!visiblePts.length) return <div>No hypercube data.</div>;

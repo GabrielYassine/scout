@@ -1,0 +1,32 @@
+.field-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.field-label {
+  font-size: var(--font-xs);
+  color: var(--color-text);
+  opacity: 0.8;
+}
+
+.field-input {
+  width: 100%;
+  padding: var(--spacing-sm);
+  font-size: var(--font-xs);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: white;
+}
+
+.field-input:focus {
+  outline: none;
+  border-color: var(--color-border-highlight);
+}
+
+.field-input:disabled,
+.field-input[disabled] {
+  background: #d9d9d9;
+  cursor: not-allowed;
+  opacity: 1;
+}

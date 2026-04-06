@@ -4,10 +4,10 @@ import { useLocation, useNavigate } from "react-router-dom";
 import LabLeftbar from "../components/SideBars/LabLeftbar.jsx";
 import LabRightbar from "../components/SideBars/LabRightbar.jsx";
 import RunChart from "../components/charts/RunChart.jsx";
-import { DEFAULT_TSP_INSTANCE } from "../contexts/PuzzleConfigContext.jsx";
 import "./RunPage.css";
 import "../components/SideBars/LabLeftbar.css";
 import "../components/SideBars/LabRightbar.css";
+import "../components/SideBars/FormFields.css";
 
 export default function RunPage({ catalog, catalogLoading, catalogError }) {
   const location = useLocation();
@@ -20,7 +20,8 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
   const initialError = location.state?.error;
   const puzzleConfig = location.state?.puzzleConfig ?? [];
   const params = location.state?.params ?? [];
-  const initialTspInstance = location.state?.tspInstance ?? DEFAULT_TSP_INSTANCE;
+  const initialTspInstance = location.state?.tspInstance ?? null;
+  const initialVrpInstance = location.state?.vrpInstance ?? null;
 
   const normalizeSeriesMap = (series) => {
     if (!series) return {};
@@ -78,18 +79,19 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
     Object.keys(averageByProblem).length > 0 ? "average" : "0"
   );
 
-  useEffect(() => {
-    if (selectedRunKey === "average" && averageRuns.length === 0 && batches.length > 0) {
-      setSelectedRunKey("0");
-    }
-  }, [selectedRunKey, averageRuns.length, batches.length]);
+  const effectiveSelectedRunKey =
+    selectedRunKey === "average" && averageRuns.length === 0 && batches.length > 0
+      ? "0"
+      : selectedRunKey;
 
   const selectedBatch =
-    selectedRunKey === "average" ? null : batches[Number(selectedRunKey)];
+    effectiveSelectedRunKey === "average" ? null : batches[Number(effectiveSelectedRunKey)];
 
-  const runs = selectedRunKey === "average" ? averageRuns : selectedBatch?.runs ?? [];
+  const runs =
+    effectiveSelectedRunKey === "average" ? averageRuns : selectedBatch?.runs ?? [];
 
   const [tspInstance] = useState(initialTspInstance);
+  const [vrpInstance] = useState(initialVrpInstance);
 
    const currentAnimationLength = useMemo(() => {
      if (!runs.length) return 0;
@@ -327,13 +329,13 @@ function handleResetPlayback() {
           <>
             {(averageRuns.length > 0 || batches.length > 1) && (
               <div className="run-selector">
-                <label htmlFor="batch-select" className="form-label">
+                <label htmlFor="batch-select" className="field-label">
                   Select Run:
                 </label>
                 <select
                   id="batch-select"
-                  className="form-select"
-                  value={selectedRunKey}
+                  className="field-input"
+                  value={effectiveSelectedRunKey}
                   onChange={(e) => setSelectedRunKey(e.target.value)}
                 >
                   {averageRuns.length > 0 && (
@@ -350,11 +352,12 @@ function handleResetPlayback() {
             )}
 
             <div className="run-speed-control">
-              <label htmlFor="playback-speed" className="form-label">
+              <label htmlFor="playback-speed" className="field-label">
                 Graph speed:
               </label>
               <input
                 id="playback-speed"
+                className="field-input"
                 type="range"
                 min="1"
                 max="200"
@@ -377,8 +380,6 @@ function handleResetPlayback() {
                   key={`${selectedRunKey}-${idx}`}
                   run={run}
                   runIndex={selectedBatch?.runIndex ?? "average"}
-                  problemIndex={idx + 1}
-                  playbackSpeed={playbackSpeed}
                   visibleCount={visibleCount}
                   bestFitnessBoxPlot={
                     bestFitnessBoxPlotsByProblem[run.problemId] ?? null
@@ -393,7 +394,9 @@ function handleResetPlayback() {
         <LabRightbar
           hoverInfo={null}
           tspInstance={tspInstance}
+          vrpInstance={vrpInstance}
           onTspInstanceChange={() => {}}
+          onVrpInstanceChange={() => {}}
         />
       </div>
     </div>

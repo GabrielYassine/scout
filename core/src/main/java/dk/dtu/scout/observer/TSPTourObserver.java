@@ -6,7 +6,7 @@ import dk.dtu.scout.StateKeys;
 import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.logging.RunState;
 import dk.dtu.scout.logging.SeriesMode;
-import dk.dtu.scout.TSPInstance;
+import dk.dtu.scout.datatypes.TSPInstance;
 import dk.dtu.scout.problems.TSPProblem;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;

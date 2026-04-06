@@ -4,7 +4,7 @@ import dk.dtu.scout.backend.dto.permutation.TSPDto;
 import dk.dtu.scout.backend.exception.BadRequestException;
 import dk.dtu.scout.backend.util.TSPLibParser;
 import dk.dtu.scout.backend.util.ViewMapper;
-import dk.dtu.scout.TSPInstance;
+import dk.dtu.scout.datatypes.TSPInstance;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
