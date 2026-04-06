@@ -55,3 +55,7 @@
   display: block;
   background: white;
 }
+.run-chart-subtitle {
+  font-size: 0.95rem;
+  margin-bottom: 10px;
+}

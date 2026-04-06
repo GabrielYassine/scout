@@ -58,6 +58,8 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
   const batches = batch?.batches ?? [];
   const averageByProblem = batch?.summary?.averageByProblem ?? {};
   const bestFitnessBoxPlotsByProblem =batch?.summary?.bestFitnessBoxPlotsByProblem ?? {};
+ const averageRunTimeByProblem = batch?.summary?.AverageRunTimeByProblem ?? {};
+
 
   const averageRuns = useMemo(
     () =>
@@ -66,9 +68,10 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
         iterations: avg.iterations ?? [],
         evaluations: avg.evaluations ?? [],
         series: avg.series ?? {},
+         runtimeMs: averageRunTimeByProblem[problemId] ?? null,
         isAverage: true,
       })),
-    [averageByProblem]
+    [averageByProblem, averageRunTimeByProblem]
   );
 
   const [selectedRunKey, setSelectedRunKey] = useState(

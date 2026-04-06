@@ -140,9 +140,10 @@ public final class ViewMapper {
 
     public static BatchSummaryResponse toBatchSummaryResponse(
         Map<String, AverageRunResponse> averageByProblem,
-        Map<String, SeriesBoxPlotResponse> bestFitnessBoxPlotsByProblem
+        Map<String, SeriesBoxPlotResponse> bestFitnessBoxPlotsByProblem,
+        Map<String, Double> averageRunTimeByProblem
     ) {
-        return new BatchSummaryResponse( averageByProblem, bestFitnessBoxPlotsByProblem);
+        return new BatchSummaryResponse( averageByProblem, bestFitnessBoxPlotsByProblem, averageRunTimeByProblem);
     }
 
     public static BatchRunResponse toBatchRunResponse(

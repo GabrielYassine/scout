@@ -39,8 +39,9 @@ public class StatisticsService {
         for (Map.Entry<String, List<RunResponse>> entry : runsByProblem.entrySet()) {
             bestFitnessBoxPlotsByProblem.put(entry.getKey(), computeBestFitnessBoxPlot(entry.getValue()));
         }
+        Map<String, Double> averageRunTimeByProblem= computeAverageRuntimeByProblem(batches);
 
-        return new BatchSummaryResponse(averageByProblem, bestFitnessBoxPlotsByProblem);
+        return new BatchSummaryResponse(averageByProblem, bestFitnessBoxPlotsByProblem,averageRunTimeByProblem);
     }
 
     private AverageRunResponse computeAverageRun(List<RunResponse> runs) {
@@ -277,5 +278,28 @@ public class StatisticsService {
         }
 
         return values.get(usableLength - 1);
+    }
+
+    private Map<String, Double> computeAverageRuntimeByProblem(List<RunGroupResponse> batches) {
+        Map<String, List<Double>> runtimesByProblem = new LinkedHashMap<>();
+
+        for (RunGroupResponse batch : batches) {
+            for (RunResponse run : batch.runs()) {
+                runtimesByProblem
+                        .computeIfAbsent(run.problemId(), k -> new ArrayList<>())
+                        .add(run.runtimeMs());
+            }
+        }
+
+        Map<String, Double> result = new LinkedHashMap<>();
+
+        for (Map.Entry<String, List<Double>> entry : runtimesByProblem.entrySet()) {
+            String problemId = entry.getKey();
+            List<Double> runtimes = entry.getValue();
+
+            double avg = runtimes.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
+            result.put(problemId, avg);
+        }
+        return result;
     }
 }

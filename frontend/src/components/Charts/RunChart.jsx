@@ -15,6 +15,7 @@ function RunChart({ run, runIndex, problemIndex, playbackSpeed = 50, visibleCoun
   const series = run?.series ?? {};
   const hasHypercube =(series.hypercubeX?.length ?? 0) > 0 && (series.hypercubeY?.length ?? 0) > 0;
   const hasTSPTour = (series.tspTour?.length ?? 0) > 0 && (series.tspCities?.length ?? 0) > 0;
+  const runtimeMs = Number.isFinite(run?.runtimeMs) ? run.runtimeMs : null;
 
   const keys = Object.keys(series).filter(
     (k) =>
@@ -169,9 +170,12 @@ function RunChart({ run, runIndex, problemIndex, playbackSpeed = 50, visibleCoun
 
   return (
     <div className="chart-panel">
-      <div className="chart-title">
-        {run.problemId}
-      </div>
+      <div className="chart-title">{run.problemId}</div>
+      {runtimeMs != null && (
+        <div className="run-chart-subtitle">
+          Runtime: {runtimeMs.toFixed(2)} ms
+        </div>
+      )}
 
       <div className="run-chart-inner">
         {selectedObserver === HYPERCUBE_KEY ? (
