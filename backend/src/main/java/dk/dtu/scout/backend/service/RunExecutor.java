@@ -96,7 +96,6 @@ public class RunExecutor {
             .sorted(Comparator.comparingInt(RunGroupResponse::runIndex))
             .toList();
 
-        logProblemExecutionStats(batches, runId, request.searchSpaceId());
 
         long batchEndTime = System.nanoTime();
         double batchExecutionTimeMs = (batchEndTime - batchStartTime) / 1_000_000.0;
@@ -111,26 +110,7 @@ public class RunExecutor {
         return response;
     }
 
-    private void logProblemExecutionStats(List<RunGroupResponse> batches, String runId, String searchSpaceId) {
-        var runtimesByProblem = new LinkedHashMap<String, List<Double>>();
 
-        for (RunGroupResponse batch : batches) {
-            for (RunResponse run : batch.runs()) {
-                runtimesByProblem
-                        .computeIfAbsent(run.problemId(), k -> new ArrayList<>())
-                        .add(run.runtimeMs());
-            }
-        }
-
-        for (var entry : runtimesByProblem.entrySet()) {
-            String problemId = entry.getKey();
-            List<Double> runtimes = entry.getValue();
-
-            double avg = runtimes.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
-
-            logger.info("problem-execution-summary runId={} searchSpaceId={} problemId={} runs={} avgRuntimeMs={}", runId, searchSpaceId, problemId, runtimes.size(), avg);
-        }
-    }
 
     private void logExecutorStats(String phase, int runs, String runId) {
         var pool = runExecutor.getThreadPoolExecutor();
