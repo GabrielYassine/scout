@@ -17,32 +17,47 @@ import java.util.Map;
 
 @Service
 public class StatisticsService {
+    private static final int MAX_BOX_PLOTS = 50;
 
     public BatchSummaryResponse calculateSummary(List<RunGroupResponse> batches) {
-        Map<String, List<Integer>> finalEvaluationsByProblem = new HashMap<>();
-        Map<String, List<RunResponse>> runsByProblem = new HashMap<>();
+        Map<String, List<RunResponse>> runsByProblem = groupRunsByProblem(batches);
 
-        for (RunGroupResponse batch : batches) {
-            for (RunResponse run : batch.runs()) {
-                finalEvaluationsByProblem.computeIfAbsent(run.problemId(), k -> new ArrayList<>()).add(run.finalEvaluations());
-                runsByProblem.computeIfAbsent(run.problemId(), k -> new ArrayList<>()).add(run);
-            }
-        }
-
-
-        Map<String, AverageRunResponse> averageByProblem = new HashMap<>();
-        for (Map.Entry<String, List<RunResponse>> entry : runsByProblem.entrySet()) {
-            averageByProblem.put(entry.getKey(), computeAverageRun(entry.getValue()));
-        }
-
-        Map<String, SeriesBoxPlotResponse> bestFitnessBoxPlotsByProblem = new HashMap<>();
-        for (Map.Entry<String, List<RunResponse>> entry : runsByProblem.entrySet()) {
-            bestFitnessBoxPlotsByProblem.put(entry.getKey(), computeBestFitnessBoxPlot(entry.getValue()));
-        }
-        Map<String, Double> averageRunTimeByProblem= computeAverageRuntimeByProblem(batches);
+        Map<String, AverageRunResponse> averageByProblem = computeAverageByProblem(runsByProblem);
+        Map<String, SeriesBoxPlotResponse> bestFitnessBoxPlotsByProblem = computeBestFitnessBoxPlotsByProblem(runsByProblem);
+        Map<String, Double> averageRunTimeByProblem = computeAverageRuntimeByProblem(runsByProblem);
 
         return new BatchSummaryResponse(averageByProblem, bestFitnessBoxPlotsByProblem,averageRunTimeByProblem);
     }
+
+    private Map<String, List<RunResponse>> groupRunsByProblem(List<RunGroupResponse> batches) {
+        Map<String, List<RunResponse>> runsByProblem = new LinkedHashMap<>();
+
+        for (RunGroupResponse batch : batches) {
+            for (RunResponse run : batch.runs()) {
+                runsByProblem
+                        .computeIfAbsent(run.problemId(), k -> new ArrayList<>())
+                        .add(run);
+            }
+        }
+
+        return runsByProblem;
+    }
+    private Map<String, AverageRunResponse> computeAverageByProblem(Map<String, List<RunResponse>> runsByProblem) {
+        Map<String, AverageRunResponse> result = new LinkedHashMap<>();
+        for (Map.Entry<String, List<RunResponse>> entry : runsByProblem.entrySet()) {
+            result.put(entry.getKey(), computeAverageRun(entry.getValue()));
+        }
+        return result;
+    }
+
+    private Map<String, SeriesBoxPlotResponse> computeBestFitnessBoxPlotsByProblem(Map<String, List<RunResponse>> runsByProblem) {
+        Map<String, SeriesBoxPlotResponse> result = new LinkedHashMap<>();
+        for (Map.Entry<String, List<RunResponse>> entry : runsByProblem.entrySet()) {
+            result.put(entry.getKey(), computeBestFitnessBoxPlot(entry.getValue()));
+        }
+        return result;
+    }
+
 
     private AverageRunResponse computeAverageRun(List<RunResponse> runs) {
         if (runs == null || runs.isEmpty()) {
@@ -70,29 +85,15 @@ public class StatisticsService {
 
         for (RunResponse run : runs) {
             Map<String, SeriesResponse<?>> series = run.series();
-            List<Integer> runEvaluations = run.evaluations();
+            if (series == null) continue;
 
-            if (series == null || runEvaluations == null || runEvaluations.isEmpty()) {
-                continue;
-            }
-
-            for (Map.Entry<String, SeriesResponse<?>> entry : series.entrySet()) {
-                String seriesName = entry.getKey();
-                SeriesResponse<?> response = entry.getValue();
-                if (response == null) continue;
-
-                List<Double> numericValues = toDoubleList(response.values());
-                if (numericValues.isEmpty()) continue;
-
-                int usableLength = Math.min(runEvaluations.size(), numericValues.size());
-                if (usableLength == 0) continue;
+            for (String seriesName : series.keySet()) {
+                AlignedSeries aligned = extractAlignedSeries(run, seriesName);
+                if (aligned == null) continue;
 
                 seriesValuesByName
                         .computeIfAbsent(seriesName, k -> new ArrayList<>())
-                        .add(new AlignedSeries(
-                                new ArrayList<>(runEvaluations.subList(0, usableLength)),
-                                new ArrayList<>(numericValues.subList(0, usableLength))
-                        ));
+                        .add(aligned);
             }
         }
 
@@ -139,66 +140,87 @@ public class StatisticsService {
         }
 
         RunResponse referenceRun = findReferenceRun(runs);
-        List<Integer> referenceEvaluations =
-                referenceRun.evaluations() != null ? new ArrayList<>(referenceRun.evaluations()) : List.of();
+        List<Integer> referenceEvaluations = referenceRun.evaluations() != null ? new ArrayList<>(referenceRun.evaluations()) : List.of();
 
-        List<List<Double>> allRunsBestFitness = new ArrayList<>();
+        if (referenceEvaluations.isEmpty()) {
+            return new SeriesBoxPlotResponse(List.of(), List.of());
+        }
+
+        Map<RunResponse, AlignedSeries> bestFitnessByRun = new LinkedHashMap<>();
 
         for (RunResponse run : runs) {
-            Map<String, SeriesResponse<?>> series = run.series();
-            if (series == null) continue;
-
-            SeriesResponse<?> response = series.get("bestFitness");
-            if (response == null) continue;
-
-            List<Double> numericValues = toDoubleList(response.values());
-            if (numericValues.isEmpty()) continue;
-
-            allRunsBestFitness.add(numericValues);
+            AlignedSeries aligned = extractAlignedSeries(run, "bestFitness");
+            if (aligned != null) {
+                bestFitnessByRun.put(run, aligned);
+            }
         }
 
-        if (allRunsBestFitness.isEmpty()) {
+        if (bestFitnessByRun.isEmpty()) {
             return new SeriesBoxPlotResponse(List.of(), List.of());
         }
 
-        int maxLength = allRunsBestFitness.stream()
-                .mapToInt(List::size)
-                .max()
-                .orElse(0);
+        int step = Math.max(1, (int) Math.ceil((double) referenceEvaluations.size() / MAX_BOX_PLOTS));
 
-        if (maxLength == 0) {
-            return new SeriesBoxPlotResponse(List.of(), List.of());
-        }
+        List<Integer> sampledEvaluations = new ArrayList<>();
+        List<List<Double>> boxplots = new ArrayList<>();
 
-        List<List<Double>> boxplots = new ArrayList<>(maxLength);
+        for (int i = 0; i < referenceEvaluations.size(); i += step) {
+            int targetEvaluation = referenceEvaluations.get(i);
+            List<Double> valuesAtEvaluation = new ArrayList<>();
 
-        for (int i = 0; i < maxLength; i++) {
-            List<Double> valuesAtIndex = new ArrayList<>();
-
-            for (List<Double> runSeries : allRunsBestFitness) {
-                double value = i < runSeries.size()
-                        ? runSeries.get(i)
-                        : runSeries.get(runSeries.size() - 1);
-                valuesAtIndex.add(value);
+            for (AlignedSeries aligned : bestFitnessByRun.values()) {
+                Double value = valueAtEvaluation(
+                        aligned.evaluations(),
+                        aligned.values(),
+                        targetEvaluation
+                );
+                if (value != null) {
+                    valuesAtEvaluation.add(value);
+                }
             }
 
-            valuesAtIndex.sort(Double::compareTo);
+            if (valuesAtEvaluation.isEmpty()) {
+                continue;
+            }
 
+            valuesAtEvaluation.sort(Double::compareTo);
+
+            sampledEvaluations.add(targetEvaluation);
             boxplots.add(List.of(
-                    valuesAtIndex.getFirst(),
-                    percentile(valuesAtIndex, 25),
-                    percentile(valuesAtIndex, 50),
-                    percentile(valuesAtIndex, 75),
-                    valuesAtIndex.getLast()
+                    valuesAtEvaluation.getFirst(),
+                    percentile(valuesAtEvaluation, 25),
+                    percentile(valuesAtEvaluation, 50),
+                    percentile(valuesAtEvaluation, 75),
+                    valuesAtEvaluation.getLast()
             ));
         }
 
-        List<Integer> evaluations = referenceEvaluations.size() >= maxLength
-                ? new ArrayList<>(referenceEvaluations.subList(0, maxLength))
-                : padEvaluations(referenceEvaluations, maxLength);
-
-        return new SeriesBoxPlotResponse(evaluations, boxplots);
+        return new SeriesBoxPlotResponse(sampledEvaluations, boxplots);
     }
+
+    private Map<String, Double> computeAverageRuntimeByProblem(Map<String, List<RunResponse>> runsByProblem) {
+        Map<String, Double> result = new LinkedHashMap<>();
+
+        for (Map.Entry<String, List<RunResponse>> entry : runsByProblem.entrySet()) {
+            String problemId = entry.getKey();
+            List<RunResponse> runs = entry.getValue();
+
+            double avg = runs.stream()
+                    .mapToDouble(RunResponse::runtimeMs)
+                    .average()
+                    .orElse(0.0);
+
+            result.put(problemId, avg);
+        }
+
+        return result;
+    }
+
+
+
+    /**
+     * Helper Methods
+     */
 
     private RunResponse findReferenceRun(List<RunResponse> runs) {
         return runs.stream()
@@ -209,23 +231,7 @@ public class StatisticsService {
                 .orElse(runs.getFirst());
     }
 
-    private List<Integer> padEvaluations(List<Integer> evaluations, int targetLength) {
-        if (targetLength <= 0) return List.of();
-        if (evaluations == null || evaluations.isEmpty()) {
-            List<Integer> fallback = new ArrayList<>(targetLength);
-            for (int i = 0; i < targetLength; i++) {
-                fallback.add(i);
-            }
-            return fallback;
-        }
 
-        List<Integer> out = new ArrayList<>(evaluations);
-        int last = evaluations.getLast();
-        while (out.size() < targetLength) {
-            out.add(last);
-        }
-        return out;
-    }
 
     private List<Double> toDoubleList(List<?> rawValues) {
         List<Double> result = new ArrayList<>();
@@ -239,6 +245,31 @@ public class StatisticsService {
         }
 
         return result;
+    }
+    private AlignedSeries extractAlignedSeries(RunResponse run, String seriesName) {
+        if (run == null || run.series() == null || run.evaluations() == null || run.evaluations().isEmpty()) {
+            return null;
+        }
+
+        SeriesResponse<?> response = run.series().get(seriesName);
+        if (response == null) {
+            return null;
+        }
+
+        List<Double> numericValues = toDoubleList(response.values());
+        if (numericValues.isEmpty()) {
+            return null;
+        }
+
+        int usableLength = Math.min(run.evaluations().size(), numericValues.size());
+        if (usableLength == 0) {
+            return null;
+        }
+
+        return new AlignedSeries(
+                new ArrayList<>(run.evaluations().subList(0, usableLength)),
+                new ArrayList<>(numericValues.subList(0, usableLength))
+        );
     }
 
     private double percentile(List<Double> sorted, double p) {
@@ -276,30 +307,6 @@ public class StatisticsService {
                 return values.get(i - 1);
             }
         }
-
         return values.get(usableLength - 1);
-    }
-
-    private Map<String, Double> computeAverageRuntimeByProblem(List<RunGroupResponse> batches) {
-        Map<String, List<Double>> runtimesByProblem = new LinkedHashMap<>();
-
-        for (RunGroupResponse batch : batches) {
-            for (RunResponse run : batch.runs()) {
-                runtimesByProblem
-                        .computeIfAbsent(run.problemId(), k -> new ArrayList<>())
-                        .add(run.runtimeMs());
-            }
-        }
-
-        Map<String, Double> result = new LinkedHashMap<>();
-
-        for (Map.Entry<String, List<Double>> entry : runtimesByProblem.entrySet()) {
-            String problemId = entry.getKey();
-            List<Double> runtimes = entry.getValue();
-
-            double avg = runtimes.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
-            result.put(problemId, avg);
-        }
-        return result;
     }
 }

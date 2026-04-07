@@ -59,7 +59,7 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
   const batches = batch?.batches ?? [];
   const averageByProblem = batch?.summary?.averageByProblem ?? {};
   const bestFitnessBoxPlotsByProblem =batch?.summary?.bestFitnessBoxPlotsByProblem ?? {};
- const averageRunTimeByProblem = batch?.summary?.AverageRunTimeByProblem ?? {};
+ const averageRunTimeByProblem = batch?.summary?.averageRunTimeByProblem ?? {};
 
 
   const averageRuns = useMemo(
@@ -382,7 +382,9 @@ function handleResetPlayback() {
                   runIndex={selectedBatch?.runIndex ?? "average"}
                   visibleCount={visibleCount}
                   bestFitnessBoxPlot={
-                    bestFitnessBoxPlotsByProblem[run.problemId] ?? null
+                      selectedRunKey === "average"
+                        ? bestFitnessBoxPlotsByProblem[run.problemId] ?? null
+                        : null
                   }
                 />
               ))}

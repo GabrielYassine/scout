@@ -8,5 +8,5 @@ import java.util.Map;
 public record BatchSummaryResponse(
     Map<String, AverageRunResponse> averageByProblem,
     Map<String, SeriesBoxPlotResponse> bestFitnessBoxPlotsByProblem,
-    Map<String,  Double> AverageRunTimeByProblem
+    Map<String,  Double> averageRunTimeByProblem
 ) {}
