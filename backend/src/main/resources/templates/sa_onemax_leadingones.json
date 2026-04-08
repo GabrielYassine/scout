@@ -3,7 +3,7 @@
   "displayName": "Simulated Annealing on OneMax + LeadingOnes",
   "runRequest": {
     "searchSpaceId": ["bitstring"],
-    "searchSpaceParams": {},
+    "searchSpaceParams": { "n": 100 },
 
     "problemIds": ["onemax", "leadingones"],
     "problemParams": {},

@@ -3,7 +3,7 @@
   "displayName": "(mu+lambda) EA on OneMax + LeadingOnes",
   "runRequest": {
     "searchSpaceId": ["bitstring"],
-    "searchSpaceParams": {},
+    "searchSpaceParams": { "n": 100 },
 
     "problemIds": ["onemax", "leadingones"],
     "problemParams": {},
@@ -14,7 +14,7 @@
     "selectionRuleId": ["mu-plus-lambda"],
     "selectionRuleParams": {},
 
-    "parentSelectionRuleId": ["random-parents"],
+    "parentSelectionRuleId": ["elitist-parents"],
     "parentSelectionRuleParams": {},
 
     "populationModelId": ["mu-lambda"],

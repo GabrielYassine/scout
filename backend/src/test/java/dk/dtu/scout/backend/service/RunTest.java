@@ -2,6 +2,7 @@ package dk.dtu.scout.backend.service;
 
 import dk.dtu.scout.backend.dto.RunRequest;
 import dk.dtu.scout.backend.dto.run.BatchRunResponse;
+import dk.dtu.scout.backend.dto.run.RunResponse;
 import dk.dtu.scout.backend.util.InstanceMapper;
 import dk.dtu.scout.backend.util.ViewMapper;
 import dk.dtu.scout.datatypes.TSPInstance;
@@ -59,22 +60,31 @@ class RunTest {
         RunRequest request = ViewMapper.toRunRequest(
                 "bitstring",
                 Map.of("n", n),
+
                 List.of(problemId),
-                Map.of("n", n),
+                Map.of(),
+
                 "bit-flip",
-                Map.of("mutationRate", 1.0 / n),
-                "panmictic",
+                Map.of("flipProbability", "1/n"),
+
+                "mu-lambda",
                 Map.of("mu", 1, "lambda", 1),
-                "tournament",
-                Map.of("k", 2),
-                "tournament",
-                Map.of("k", 2),
-                "uniform",
-                Map.of("probability", 0.5),
+
+                "mu-plus-lambda",
+                Map.of(),
+
+                "elitist-parents",
+                Map.of(),
+
+                null,
+                null,
+
                 List.of("fitness"),
                 Map.of(),
-                List.of("max-iterations"),
-                Map.of("maxIterations", maxIterations, "logEveryIterations", 1),
+
+                List.of("max-iterations","optimum-reached"),
+                Map.of("maxIterations", maxIterations),
+
                 seed,
                 runs,
                 "test-" + problemId,
@@ -83,11 +93,11 @@ class RunTest {
 
         BatchRunResponse response = runOrchestratorService.run(request);
         List<Integer> finalEvals = response.batches().stream()
-                .flatMap((batch) -> batch.runs().stream())
-                .filter((run) -> problemId.equals(run.problemId()))
-                .map((run) -> run.finalEvaluations())
-                .sorted()
-                .toList();
+            .flatMap((batch) -> batch.runs().stream())
+            .filter((run) -> problemId.equals(run.problemId()))
+            .map(RunResponse::finalEvaluations)
+            .sorted()
+            .toList();
 
         assertFalse(finalEvals.isEmpty());
         int mid = finalEvals.size() / 2;
