@@ -13,7 +13,7 @@
       "vrpInstance": null
     },
 
-    "generatorId": ["route-list-swap"],
+    "generatorId": ["route-list-2opt"],
     "generatorParams": {},
 
     "selectionRuleId": ["mu-plus-lambda"],
@@ -28,7 +28,7 @@
     "stopConditionIds": ["max-iterations"],
     "stopConditionParams": { "maxIterations": 10000 },
 
-    "observerIds": ["fitness"],
+    "observerIds": ["vrp-tour"],
 
     "seed": 1,
     "runTimes": 1

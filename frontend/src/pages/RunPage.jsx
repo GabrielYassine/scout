@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Client } from "@stomp/stompjs";
 import { useLocation, useNavigate } from "react-router-dom";
 import LabLeftbar from "../components/SideBars/LabLeftbar.jsx";
@@ -55,6 +55,9 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
   const [error, setError] = useState(initialError ?? null);
   const [playbackSpeed, setPlaybackSpeed] = useState(50);
   const [visibleCount, setVisibleCount] = useState(1);
+
+  const wsClientRef = useRef(null);
+  const wsRunIdRef = useRef(null);
 
   const batches = batch?.batches ?? [];
   const averageByProblem = batch?.summary?.averageByProblem ?? {};
@@ -139,6 +142,20 @@ function handleResetPlayback() {
       return;
     }
 
+    if (wsClientRef.current && wsRunIdRef.current === runId) {
+      return;
+    }
+
+    if (wsClientRef.current) {
+      try {
+        wsClientRef.current.deactivate();
+      } catch (e) {
+        console.error("Failed to close previous WebSocket", e);
+      }
+      wsClientRef.current = null;
+      wsRunIdRef.current = null;
+    }
+
     const wsUrl = `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}/ws`;
     console.log("Connecting to WebSocket at", wsUrl, "for runId", runId);
 
@@ -146,6 +163,9 @@ function handleResetPlayback() {
       brokerURL: wsUrl,
       reconnectDelay: 0,
     });
+
+    wsClientRef.current = client;
+    wsRunIdRef.current = runId;
 
     const appendSeriesValue = (series, key, value) => {
       if (value === undefined) return series;
@@ -279,6 +299,9 @@ function handleResetPlayback() {
     client.activate();
 
     return () => {
+      if (wsClientRef.current !== client) {
+        return;
+      }
       try {
         if (client.connected) {
           client.publish({
@@ -289,6 +312,9 @@ function handleResetPlayback() {
         client.deactivate();
       } catch (e) {
         console.error("Failed to close WebSocket", e);
+      } finally {
+        wsClientRef.current = null;
+        wsRunIdRef.current = null;
       }
     };
   }, [runId]);

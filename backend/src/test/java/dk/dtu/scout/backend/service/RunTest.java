@@ -15,8 +15,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -45,6 +49,116 @@ class RunTest {
                 "name", instance.getName(),
                 "cities", cities
         );
+    }
+
+    private static final Pattern HEADER_PATTERN = Pattern.compile("^([A-Z_]+)\\s*:?\\s*(.*)$", Pattern.CASE_INSENSITIVE);
+
+    private Map<String, Object> loadXn101k25Instance() throws IOException {
+        String filePath = "src/test/resources/x-n101-k25.vrp";
+        String content = Files.readString(Paths.get(filePath));
+        return parseVrpInstance(content);
+    }
+
+    private Map<String, Object> parseVrpInstance(String content) {
+        Map<String, String> headers = new LinkedHashMap<>();
+        Map<Integer, double[]> coords = new TreeMap<>();
+        Map<Integer, Double> demands = new TreeMap<>();
+        List<Integer> depotIds = new ArrayList<>();
+        String section = null;
+
+        for (String rawLine : content.split("\\R")) {
+            String line = rawLine.trim();
+            if (line.isEmpty()) {
+                continue;
+            }
+            if (line.equalsIgnoreCase("EOF")) {
+                break;
+            }
+            if (line.equalsIgnoreCase("NODE_COORD_SECTION")) {
+                section = "NODE";
+                continue;
+            }
+            if (line.equalsIgnoreCase("DEMAND_SECTION")) {
+                section = "DEMAND";
+                continue;
+            }
+            if (line.equalsIgnoreCase("DEPOT_SECTION")) {
+                section = "DEPOT";
+                continue;
+            }
+
+            if (section == null) {
+                Matcher match = HEADER_PATTERN.matcher(line);
+                if (match.matches()) {
+                    headers.put(match.group(1).toUpperCase(), match.group(2).trim());
+                }
+                continue;
+            }
+
+            if ("NODE".equals(section)) {
+                String[] parts = line.split("\\s+");
+                if (parts.length >= 3) {
+                    int id = Integer.parseInt(parts[0]);
+                    double x = Double.parseDouble(parts[1]);
+                    double y = Double.parseDouble(parts[2]);
+                    coords.put(id, new double[] { x, y });
+                }
+                continue;
+            }
+
+            if ("DEMAND".equals(section)) {
+                String[] parts = line.split("\\s+");
+                if (parts.length >= 2) {
+                    int id = Integer.parseInt(parts[0]);
+                    double demand = Double.parseDouble(parts[1]);
+                    demands.put(id, demand);
+                }
+                continue;
+            }
+
+            if ("DEPOT".equals(section)) {
+                int id = Integer.parseInt(line);
+                if (id < 0) {
+                    section = null;
+                    continue;
+                }
+                if (id > 0) {
+                    depotIds.add(id);
+                }
+            }
+        }
+
+        String name = headers.getOrDefault("NAME", "");
+        Matcher vehicleMatch = Pattern.compile("-k(\\d+)", Pattern.CASE_INSENSITIVE).matcher(name);
+        int numberOfVehicles = vehicleMatch.find() ? Integer.parseInt(vehicleMatch.group(1)) : 1;
+        double capacity = headers.containsKey("CAPACITY") ? Double.parseDouble(headers.get("CAPACITY")) : 0.0;
+
+        int depotId = depotIds.isEmpty() ? 1 : depotIds.get(0);
+        double[] depotCoords = coords.getOrDefault(depotId, new double[] { 0.0, 0.0 });
+        Map<String, Object> depot = Map.of("x", depotCoords[0], "y", depotCoords[1]);
+
+        List<Map<String, Object>> customers = new ArrayList<>();
+        for (Map.Entry<Integer, double[]> entry : coords.entrySet()) {
+            int id = entry.getKey();
+            if (id == depotId) {
+                continue;
+            }
+            double[] point = entry.getValue();
+            double demand = demands.getOrDefault(id, 0.0);
+            customers.add(Map.of(
+                    "x", point[0],
+                    "y", point[1],
+                    "demand", demand
+            ));
+        }
+
+        Map<String, Object> vrpInstance = new LinkedHashMap<>();
+        vrpInstance.put("name", name);
+        vrpInstance.put("capacity", capacity);
+        vrpInstance.put("numberOfVehicles", numberOfVehicles);
+        vrpInstance.put("depot", depot);
+        vrpInstance.put("customers", customers);
+        return vrpInstance;
     }
 
     /**
@@ -213,5 +327,47 @@ class RunTest {
         );
 
         BatchRunResponse response = runOrchestratorService.run(request);
+    }
+
+    @Test
+    @DisplayName("VRP X-n101-k25 with route-list swap (smoke test)")
+    void testVrpXn101k25() throws IOException {
+        Map<String, Object> vrpInstance = loadXn101k25Instance();
+
+        RunRequest request = ViewMapper.toRunRequest(
+                "route-list",
+                Map.of("vrpInstance", vrpInstance),
+                List.of("vrp"),
+                Map.of("vrpInstance", vrpInstance),
+                "route-list-2opt",
+                Map.of(),
+                "mu-lambda",
+                Map.of("mu", 1, "lambda", 1),
+                "mu-plus-lambda",
+                Map.of(),
+                "random-parents",
+                Map.of(),
+                null,
+                null,
+                List.of("vrp-tour"),
+                Map.of(),
+                List.of("max-iterations"),
+                Map.of("maxIterations", 1000),
+                13579L,
+                1,
+                "test-run-vrp-xn101-k25",
+                100
+        );
+
+        BatchRunResponse response = runOrchestratorService.run(request);
+        RunResponse vrpRun = response.batches().stream()
+                .flatMap((batch) -> batch.runs().stream())
+                .filter((run) -> "vrp".equals(run.problemId()))
+                .findFirst()
+                .orElseThrow();
+
+        assertTrue(vrpRun.finalEvaluations() > 0);
+        assertTrue(vrpRun.series().containsKey("tspCities"));
+        assertTrue(vrpRun.series().containsKey("tspTour"));
     }
 }

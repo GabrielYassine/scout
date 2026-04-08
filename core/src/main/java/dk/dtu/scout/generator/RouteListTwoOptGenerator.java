@@ -13,7 +13,7 @@ import java.util.Random;
 
 @Component
 @Scope("prototype")
-public class RouteListSwapGenerator implements Generator<List<List<Integer>>> {
+public class RouteListTwoOptGenerator implements Generator<List<List<Integer>>> {
 
     private State state;
 
@@ -24,17 +24,17 @@ public class RouteListSwapGenerator implements Generator<List<List<Integer>>> {
 
     @Override
     public String id() {
-        return "route-list-swap";
+        return "route-list-2opt";
     }
 
     @Override
     public String displayName() {
-        return "Route List Swap";
+        return "Route List 2-Opt";
     }
 
     @Override
     public String description() {
-        return "Swaps two customers within or across route-list solutions";
+        return "Applies a 2-opt reversal within a single route";
     }
 
     @Override
@@ -58,59 +58,45 @@ public class RouteListSwapGenerator implements Generator<List<List<Integer>>> {
             baseObj = state.get(StateKeys.SELECTED_PARENT_1);
         }
         if (!(baseObj instanceof List<?> baseRoutes)) {
-            throw new IllegalStateException("RouteListSwapGenerator requires 'offspringBase' or 'selectedParent1' in state");
+            throw new IllegalStateException("RouteListTwoOptGenerator requires 'offspringBase' or 'selectedParent1' in state");
         }
 
         List<List<Integer>> routes = copyRoutes(baseRoutes);
-        int totalCustomers = countCustomers(routes);
-        if (totalCustomers < 2) {
+        int routeIndex = pickRouteIndex(routes, rng);
+        if (routeIndex < 0) {
             return routes;
         }
 
-        RoutePos first = pickPosition(routes, rng);
-        RoutePos second = pickPosition(routes, rng);
-        int guard = 0;
-        while (first.equals(second) && guard < 10) {
-            second = pickPosition(routes, rng);
-            guard++;
-        }
-
-        if (first.equals(second)) {
+        List<Integer> route = routes.get(routeIndex);
+        if (route.size() < 2) {
             return routes;
         }
 
-        int firstValue = routes.get(first.routeIndex).get(first.positionIndex);
-        int secondValue = routes.get(second.routeIndex).get(second.positionIndex);
+        int i = rng.nextInt(route.size() - 1);
+        int k = i + 1 + rng.nextInt(route.size() - i - 1);
 
-        routes.get(first.routeIndex).set(first.positionIndex, secondValue);
-        routes.get(second.routeIndex).set(second.positionIndex, firstValue);
+        while (i < k) {
+            Integer tmp = route.get(i);
+            route.set(i, route.get(k));
+            route.set(k, tmp);
+            i++;
+            k--;
+        }
 
         return routes;
     }
 
-    private int countCustomers(List<List<Integer>> routes) {
-        int total = 0;
-        for (List<Integer> route : routes) {
-            total += route.size();
-        }
-        return total;
-    }
-
-    private RoutePos pickPosition(List<List<Integer>> routes, Random rng) {
-        List<Integer> eligibleRoutes = new ArrayList<>();
+    private int pickRouteIndex(List<List<Integer>> routes, Random rng) {
+        List<Integer> eligible = new ArrayList<>();
         for (int i = 0; i < routes.size(); i++) {
-            if (!routes.get(i).isEmpty()) {
-                eligibleRoutes.add(i);
+            if (routes.get(i) != null && routes.get(i).size() >= 2) {
+                eligible.add(i);
             }
         }
-
-        if (eligibleRoutes.isEmpty()) {
-            return new RoutePos(0, 0);
+        if (eligible.isEmpty()) {
+            return -1;
         }
-
-        int routeIndex = eligibleRoutes.get(rng.nextInt(eligibleRoutes.size()));
-        int positionIndex = rng.nextInt(routes.get(routeIndex).size());
-        return new RoutePos(routeIndex, positionIndex);
+        return eligible.get(rng.nextInt(eligible.size()));
     }
 
     private List<List<Integer>> copyRoutes(List<?> baseRoutes) {
@@ -129,8 +115,5 @@ public class RouteListSwapGenerator implements Generator<List<List<Integer>>> {
             routes.add(copy);
         }
         return routes;
-    }
-
-    private record RoutePos(int routeIndex, int positionIndex) {
     }
 }
