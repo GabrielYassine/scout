@@ -123,6 +123,7 @@ export default function LabRightbar({
         comment: vrpInstance?.comment ?? "",
         type: "VRP",
         numberOfVehicles: vrpInstance?.numberOfVehicles ?? 1,
+        capacity: vrpInstance?.capacity ?? "",
         nodes,
       };
     }
@@ -132,6 +133,7 @@ export default function LabRightbar({
       comment: tspInstance?.comment ?? "",
       type: "TSP",
       numberOfVehicles: 1,
+      capacity: "",
       nodes: (tspInstance?.cities ?? []).map((c, idx) => ({
         key: `city-${idx}`,
         nodeId: idx,
@@ -251,6 +253,26 @@ export default function LabRightbar({
     updateVrpInstance((current) => ({
       ...current,
       numberOfVehicles: nextValue,
+    }));
+  };
+
+  const handleCapacityChange = (value) => {
+    if (instanceType !== "VRP") return;
+    if (value === "") {
+      updateVrpInstance((current) => ({
+        ...current,
+        capacity: "",
+      }));
+      return;
+    }
+
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) return;
+    const nextValue = Math.max(0, parsed);
+
+    updateVrpInstance((current) => ({
+      ...current,
+      capacity: nextValue,
     }));
   };
 
@@ -443,6 +465,15 @@ export default function LabRightbar({
                   disabled
                 />
               </FieldRow>
+              <FieldRow label="Capacity">
+                <input
+                  className="field-input"
+                  type="number"
+                  value={view.capacity}
+                  onChange={(e) => handleCapacityChange(e.target.value)}
+                  disabled={instanceType === "TSP"}
+                />
+              </FieldRow>
               <FieldRow label="Vehicle Amount">
                 <input
                   className="field-input"
@@ -472,6 +503,7 @@ export default function LabRightbar({
                 <span className="city-col-id">ID</span>
                 <span className="city-col-coord">X</span>
                 <span className="city-col-coord">Y</span>
+                <span className="city-col-coord">Demand</span>
                 <span className="city-col-action"></span>
               </div>
 
@@ -497,6 +529,13 @@ export default function LabRightbar({
                       className="city-input"
                       value={node.y}
                       onChange={(e) => handleCityChange(index, "y", e.target.value)}
+                    />
+                    <input
+                      type="number"
+                      className="city-input"
+                      value={node.demand ?? 0}
+                      onChange={(e) => handleCityChange(index, "demand", e.target.value)}
+                      disabled={instanceType !== "VRP" || node.isDepot}
                     />
                     <button
                       className="city-remove-btn"
