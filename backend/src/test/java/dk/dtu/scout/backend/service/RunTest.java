@@ -339,7 +339,7 @@ class RunTest {
                 Map.of("vrpInstance", vrpInstance),
                 List.of("vrp"),
                 Map.of("vrpInstance", vrpInstance),
-                "route-list-2opt",
+                "route-list-relocate",
                 Map.of(),
                 "mu-lambda",
                 Map.of("mu", 1, "lambda", 1),

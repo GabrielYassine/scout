@@ -13,7 +13,7 @@
       "vrpInstance": null
     },
 
-    "generatorId": ["route-list-2opt"],
+    "generatorId": ["route-list-relocate"],
     "generatorParams": {},
 
     "selectionRuleId": ["mu-plus-lambda"],
