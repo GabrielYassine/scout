@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
-import "./TSPVisualization.css";
+import "./RouteVisualization.css";
 
 const ROUTE_COLORS = [
   "#3b82f6",

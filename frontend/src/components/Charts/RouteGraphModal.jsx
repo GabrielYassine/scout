@@ -1,0 +1,113 @@
+import TSPVisualization from "./RouteVisualization/RouteVisualization.jsx";
+import "./RouteGraphModal.css";
+
+export default function TSPGraphModal({
+  isOpen,
+  onClose,
+  tspInstance,
+  onCitiesUpdate,
+  nodes = [],
+  instanceType = "TSP",
+  onCityChange,
+  onAddCity,
+  onRemoveCity,
+  onDepotToggle,
+}) {
+  const cities = tspInstance?.cities ?? [];
+
+  const handleCitiesChange = (updatedCities) => {
+    onCitiesUpdate?.(updatedCities);
+  };
+
+  if (!isOpen) return null;
+
+  const tspData = {
+    tour: null,
+    cities,
+    tourLength: 0,
+  };
+
+  return (
+    <div className="tsp-modal-overlay" onClick={onClose}>
+      <div className="tsp-modal-container" onClick={(e) => e.stopPropagation()}>
+        <div className="tsp-modal-header">
+          <h3>TSP Graph Editor</h3>
+          <button className="tsp-modal-close" onClick={onClose}><span>×</span></button>
+        </div>
+
+        <div className="tsp-modal-content">
+          <div className="tsp-modal-split">
+            <div className="tsp-modal-graph">
+              <TSPVisualization
+                key={`tsp-editor-${tspInstance?.name ?? "tsp"}-${cities.length}`}
+                tspData={tspData}
+                width={600}
+                height={400}
+                editable={true}
+                onCitiesChange={handleCitiesChange}
+              />
+            </div>
+
+            <div className="tsp-modal-list">
+              <div className="cities-list">
+                <div className="cities-header">
+                  <span className="city-col-id">ID</span>
+                  <span className="city-col-action">Depot</span>
+                  <span className="city-col-coord">X</span>
+                  <span className="city-col-coord">Y</span>
+                  <span className="city-col-coord">Demand</span>
+                  <span className="city-col-action"></span>
+                </div>
+
+                <div className="cities-scroll">
+                  {nodes.map((node, index) => (
+                    <div key={node.key ?? `node-${index}`} className="city-row">
+                      <span className="city-col-id">{node.nodeId}</span>
+                      <button
+                          type="button"
+                          className={`depot-toggle ${node.isDepot ? "active" : ""}`}
+                          onClick={() => onDepotToggle?.(index)}
+                          title={node.isDepot ? "Depot" : "Customer"}
+                          disabled={instanceType !== "VRP"}
+                      />
+                      <input
+                        type="number"
+                        className="city-input"
+                        value={node.x}
+                        onChange={(e) => onCityChange?.(index, "x", e.target.value)}
+                      />
+                      <input
+                        type="number"
+                        className="city-input"
+                        value={node.y}
+                        onChange={(e) => onCityChange?.(index, "y", e.target.value)}
+                      />
+                      <input
+                        type="number"
+                        className="city-input"
+                        value={node.demand ?? 0}
+                        onChange={(e) => onCityChange?.(index, "demand", e.target.value)}
+                        disabled={instanceType !== "VRP" || node.isDepot}
+                      />
+                      <button
+                        className="city-remove-btn"
+                        onClick={() => onRemoveCity?.(index)}
+                        title="Remove city"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <button className="add-city-btn" onClick={() => onAddCity?.()}>
+                  + Add City
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

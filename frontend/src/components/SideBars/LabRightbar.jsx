@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import "./LabRightbar.css";
-import TSPGraphModal from "../Charts/TSPGraphModal.jsx";
+import TSPGraphModal from "../Charts/RouteGraphModal.jsx";
 import FieldRow from "./FieldRow.jsx";
 import { detectInstanceType, parseTspContent, parseVrpContent } from "./instanceParsing.js";
 
@@ -73,7 +73,7 @@ const buildVrpNodes = (vrp) => {
       isDepot: false,
     }))
     .filter((c) => !depotIds.has(c.nodeId));
-  return [...depots, ...customers];
+  return [...depots, ...customers].sort((a, b) => (a.nodeId ?? 0) - (b.nodeId ?? 0));
 };
 
 const getNextNodeId = (nodes) => {
@@ -372,8 +372,6 @@ export default function LabRightbar({
   return (
     <section className="lab-rightbar">
       <div className="lr-content">
-        <div className="lr-title">Info</div>
-
         <div className="lr-section">
           <div className="lr-section-header">
             <div className="lr-section-title">Description</div>
@@ -418,6 +416,10 @@ export default function LabRightbar({
               <div className="tsp-file-hint">Accepts .tsp and .vrp file formats</div>
               {uploadError && <div className="tsp-upload-error">{uploadError}</div>}
             </div>
+
+            <button className="view-graph-btn" onClick={() => setIsModalOpen(true)}>
+              Edit Graph
+            </button>
 
             <div className="instance-fields">
               <FieldRow label="Name">
@@ -484,74 +486,6 @@ export default function LabRightbar({
                 />
               </FieldRow>
             </div>
-
-            {view.name && (
-              <div className="tsp-instance-name">
-                Instance: <strong>{view.name}</strong>
-              </div>
-            )}
-
-            {view.nodes.length > 0 && (
-              <button className="view-graph-btn" onClick={() => setIsModalOpen(true)}>
-                View Graph
-              </button>
-            )}
-
-            <div className="cities-list">
-              <div className="cities-header">
-                <span className="city-col-action"></span>
-                <span className="city-col-id">ID</span>
-                <span className="city-col-coord">X</span>
-                <span className="city-col-coord">Y</span>
-                <span className="city-col-coord">Demand</span>
-                <span className="city-col-action"></span>
-              </div>
-
-              <div className="cities-scroll">
-                {view.nodes.map((node, index) => (
-                  <div key={node.key} className="city-row">
-                    <button
-                      type="button"
-                      className={`depot-toggle ${node.isDepot ? "active" : ""}`}
-                      onClick={() => handleDepotToggle(index)}
-                      title={node.isDepot ? "Depot" : "Customer"}
-                      disabled={instanceType !== "VRP"}
-                    />
-                    <span className="city-col-id">{node.nodeId}</span>
-                    <input
-                      type="number"
-                      className="city-input"
-                      value={node.x}
-                      onChange={(e) => handleCityChange(index, "x", e.target.value)}
-                    />
-                    <input
-                      type="number"
-                      className="city-input"
-                      value={node.y}
-                      onChange={(e) => handleCityChange(index, "y", e.target.value)}
-                    />
-                    <input
-                      type="number"
-                      className="city-input"
-                      value={node.demand ?? 0}
-                      onChange={(e) => handleCityChange(index, "demand", e.target.value)}
-                      disabled={instanceType !== "VRP" || node.isDepot}
-                    />
-                    <button
-                      className="city-remove-btn"
-                      onClick={() => handleRemoveCity(index)}
-                      title="Remove city"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
-
-              <button className="add-city-btn" onClick={handleAddCity}>
-                + Add City
-              </button>
-            </div>
           </div>
         </div>
       </div>
@@ -569,6 +503,12 @@ export default function LabRightbar({
           })),
         }}
         onCitiesUpdate={handleCitiesUpdate}
+        nodes={view.nodes}
+        instanceType={instanceType}
+        onCityChange={handleCityChange}
+        onAddCity={handleAddCity}
+        onRemoveCity={handleRemoveCity}
+        onDepotToggle={handleDepotToggle}
       />
     </section>
   );

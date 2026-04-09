@@ -1,7 +1,7 @@
 import { useState, useMemo, memo, useCallback, useEffect } from "react";
 import "./RunChart.css";
 import HypercubePlot from "./HypercubePlot.jsx";
-import TSPVisualization from "./TSPVisualization/TSPVisualization.jsx";
+import TSPVisualization from "./RouteVisualization/RouteVisualization.jsx";
 import LineCharts from "./LineCharts.jsx";
 import BoxPlotChart from "./BoxPlotChart.jsx";
 
