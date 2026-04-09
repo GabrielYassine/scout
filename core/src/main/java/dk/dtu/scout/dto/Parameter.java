@@ -1,4 +1,4 @@
-package dk.dtu.scout;
+package dk.dtu.scout.dto;
 
 /**
  * Metadata describing a configurable component parameter exposed to the UI.

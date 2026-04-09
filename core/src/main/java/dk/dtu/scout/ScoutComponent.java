@@ -1,5 +1,7 @@
 package dk.dtu.scout;
 
+import dk.dtu.scout.dto.Parameter;
+
 import java.util.List;
 import java.util.Map;
 

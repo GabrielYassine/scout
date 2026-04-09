@@ -1,10 +1,10 @@
 package dk.dtu.scout.population;
 
-import dk.dtu.scout.EvaluatedSolution;
-import dk.dtu.scout.Parameter;
+import dk.dtu.scout.dto.EvaluatedSolution;
+import dk.dtu.scout.dto.Parameter;
 import dk.dtu.scout.ScoutComponent;
 import dk.dtu.scout.State;
-import dk.dtu.scout.StateKeys;
+import dk.dtu.scout.datatypes.StateKeys;
 import dk.dtu.scout.generator.Generator;
 import dk.dtu.scout.logging.RunState;
 import org.springframework.context.annotation.Scope;

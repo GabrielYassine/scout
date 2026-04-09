@@ -1,4 +1,6 @@
-package dk.dtu.scout;
+package dk.dtu.scout.datatypes;
+
+import dk.dtu.scout.State;
 
 /**
  * Canonical keys used in the shared per-run {@link State} map.

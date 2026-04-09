@@ -1,5 +1,7 @@
 package dk.dtu.scout;
 
+import dk.dtu.scout.datatypes.StateKeys;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;

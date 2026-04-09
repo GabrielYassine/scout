@@ -1,7 +1,7 @@
 package dk.dtu.scout.backend.util;
 
 import dk.dtu.scout.ScoutComponent;
-import dk.dtu.scout.Parameter;
+import dk.dtu.scout.dto.Parameter;
 import dk.dtu.scout.backend.dto.RunRequest;
 import dk.dtu.scout.backend.dto.catalog.CatalogResponse;
 import dk.dtu.scout.backend.dto.catalog.ComponentDef;

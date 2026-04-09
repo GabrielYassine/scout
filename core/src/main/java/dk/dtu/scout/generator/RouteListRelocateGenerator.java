@@ -1,14 +1,13 @@
 package dk.dtu.scout.generator;
 
-import dk.dtu.scout.Parameter;
+import dk.dtu.scout.dto.Parameter;
 import dk.dtu.scout.State;
-import dk.dtu.scout.StateKeys;
+import dk.dtu.scout.datatypes.StateKeys;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 
 @Component

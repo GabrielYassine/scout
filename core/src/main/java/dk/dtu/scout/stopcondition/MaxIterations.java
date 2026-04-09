@@ -1,6 +1,6 @@
 package dk.dtu.scout.stopcondition;
 
-import dk.dtu.scout.Parameter;
+import dk.dtu.scout.dto.Parameter;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 

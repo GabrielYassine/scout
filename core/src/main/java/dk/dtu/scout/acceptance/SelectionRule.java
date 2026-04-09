@@ -1,6 +1,6 @@
 package dk.dtu.scout.acceptance;
 
-import dk.dtu.scout.EvaluatedSolution;
+import dk.dtu.scout.dto.EvaluatedSolution;
 import dk.dtu.scout.ScoutComponent;
 
 import java.util.List;

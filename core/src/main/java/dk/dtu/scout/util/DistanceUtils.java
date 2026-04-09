@@ -1,4 +1,4 @@
-package dk.dtu.scout;
+package dk.dtu.scout.util;
 
 public final class DistanceUtils {
     private DistanceUtils() {}

@@ -1,10 +1,9 @@
 package dk.dtu.scout.parentSelectionRule;
 
-import dk.dtu.scout.EvaluatedSolution;
+import dk.dtu.scout.dto.EvaluatedSolution;
 import dk.dtu.scout.ScoutComponent;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 
 /**

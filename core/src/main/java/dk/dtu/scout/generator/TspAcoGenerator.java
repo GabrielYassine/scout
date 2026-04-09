@@ -1,9 +1,9 @@
 package dk.dtu.scout.generator;
 
-import dk.dtu.scout.EvaluatedSolution;
-import dk.dtu.scout.Parameter;
+import dk.dtu.scout.dto.EvaluatedSolution;
+import dk.dtu.scout.dto.Parameter;
 import dk.dtu.scout.State;
-import dk.dtu.scout.StateKeys;
+import dk.dtu.scout.datatypes.StateKeys;
 import dk.dtu.scout.datatypes.TSPInstance;
 import dk.dtu.scout.problems.TSPProblem;
 import org.springframework.context.annotation.Scope;

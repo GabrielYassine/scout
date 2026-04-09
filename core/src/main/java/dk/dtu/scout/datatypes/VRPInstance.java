@@ -1,6 +1,6 @@
 package dk.dtu.scout.datatypes;
 
-import dk.dtu.scout.DistanceUtils;
+import dk.dtu.scout.util.DistanceUtils;
 
 public class VRPInstance {
     private final String name;

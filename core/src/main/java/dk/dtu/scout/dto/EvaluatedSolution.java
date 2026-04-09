@@ -1,4 +1,4 @@
-package dk.dtu.scout;
+package dk.dtu.scout.dto;
 
 /**
  * Pairing of a solution with its fitness value.

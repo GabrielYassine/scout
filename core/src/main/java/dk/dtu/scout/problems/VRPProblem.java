@@ -1,7 +1,8 @@
 package dk.dtu.scout.problems;
 
-import dk.dtu.scout.Parameter;
+import dk.dtu.scout.dto.Parameter;
 import dk.dtu.scout.datatypes.VRPInstance;
+import dk.dtu.scout.util.OptimaLookup;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -15,6 +16,9 @@ public class VRPProblem implements Problem<List<List<Integer>>> {
 
     private static final double VEHICLE_PENALTY = 1_000_000.0;
     private static final double CAPACITY_PENALTY = 1_000_000.0;
+    private static final String VRP_OPTIMA_RESOURCE = "optima/vrp-optima.properties";
+    private static final double EPSILON = 1e-9;
+    private static final Map<String, Double> VRP_OPTIMA = OptimaLookup.loadDoubleMap(VRP_OPTIMA_RESOURCE);
 
     private VRPInstance instance;
 
@@ -45,7 +49,9 @@ public class VRPProblem implements Problem<List<List<Integer>>> {
 
     @Override
     public void configure(Map<String, Object> params) {
-        if (params == null) return;
+        if (params == null) {
+            return;
+        }
 
         if (params.containsKey("vrpInstance")) {
             Object vrpInstanceObj = params.get("vrpInstance");
@@ -68,6 +74,12 @@ public class VRPProblem implements Problem<List<List<Integer>>> {
 
     public VRPInstance getInstance() {
         return instance;
+    }
+
+    @Override
+    public boolean isOptimal(double fitness) {
+        Double optimum = OptimaLookup.resolve(VRP_OPTIMA, instance.getName());
+        return optimum != null && fitness >= -optimum - EPSILON;
     }
 
     @Override
@@ -107,7 +119,7 @@ public class VRPProblem implements Problem<List<List<Integer>>> {
         }
 
         double distance = 0.0;
-        int previousNode = 0; // depot
+        int previousNode = 0;
 
         for (int customerIndex : route) {
             int nodeIndex = customerIndex + 1;
@@ -115,7 +127,7 @@ public class VRPProblem implements Problem<List<List<Integer>>> {
             previousNode = nodeIndex;
         }
 
-        distance += instance.getDistance(previousNode, 0); // return to depot
+        distance += instance.getDistance(previousNode, 0);
         return distance;
     }
 
@@ -168,9 +180,6 @@ public class VRPProblem implements Problem<List<List<Integer>>> {
         for (List<Integer> route : routes) {
             if (route == null) {
                 throw new IllegalArgumentException("Route cannot be null");
-            }
-            if (route.isEmpty()) {
-                continue;
             }
 
             for (int customerIndex : route) {

@@ -1,8 +1,8 @@
 package dk.dtu.scout.observer;
 
-import dk.dtu.scout.Parameter;
+import dk.dtu.scout.dto.Parameter;
 import dk.dtu.scout.State;
-import dk.dtu.scout.StateKeys;
+import dk.dtu.scout.datatypes.StateKeys;
 import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.logging.RunState;
 import dk.dtu.scout.logging.SeriesMode;

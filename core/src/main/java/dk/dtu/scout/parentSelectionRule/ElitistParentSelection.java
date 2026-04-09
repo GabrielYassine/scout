@@ -1,7 +1,7 @@
 package dk.dtu.scout.parentSelectionRule;
 
-import dk.dtu.scout.EvaluatedSolution;
-import dk.dtu.scout.Parameter;
+import dk.dtu.scout.dto.EvaluatedSolution;
+import dk.dtu.scout.dto.Parameter;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 

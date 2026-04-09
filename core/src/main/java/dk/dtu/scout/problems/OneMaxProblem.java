@@ -1,11 +1,11 @@
 package dk.dtu.scout.problems;
 
-import dk.dtu.scout.Parameter;
+import dk.dtu.scout.dto.Parameter;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
+
 import org.springframework.context.annotation.Scope;
 
 /**

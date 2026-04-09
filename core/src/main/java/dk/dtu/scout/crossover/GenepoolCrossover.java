@@ -1,9 +1,8 @@
 package dk.dtu.scout.crossover;
 
-import dk.dtu.scout.EvaluatedSolution;
-import dk.dtu.scout.Parameter;
+import dk.dtu.scout.dto.EvaluatedSolution;
+import dk.dtu.scout.dto.Parameter;
 import dk.dtu.scout.State;
-import dk.dtu.scout.crossover.Crossover;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 

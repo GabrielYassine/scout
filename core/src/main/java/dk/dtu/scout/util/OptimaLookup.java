@@ -1,0 +1,62 @@
+package dk.dtu.scout.util;
+
+import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
+
+public final class OptimaLookup {
+
+    private OptimaLookup() {}
+
+    public static Map<String, Double> loadDoubleMap(String resourcePath) {
+        Map<String, Double> result = new HashMap<>();
+
+        try (InputStream stream = OptimaLookup.class.getClassLoader().getResourceAsStream(resourcePath)) {
+            if (stream == null) {
+                return result;
+            }
+
+            Properties props = new Properties();
+            props.load(stream);
+
+            for (String key : props.stringPropertyNames()) {
+                String value = props.getProperty(key);
+                if (key == null || value == null) {
+                    continue;
+                }
+
+                String normalizedKey = normalizeInstanceKey(key);
+                if (normalizedKey.isEmpty()) {
+                    continue;
+                }
+
+                try {
+                    result.put(normalizedKey, Double.parseDouble(value.trim()));
+                } catch (NumberFormatException ignored) {
+                }
+            }
+        } catch (Exception ignored) {
+        }
+
+        return result;
+    }
+
+    public static String normalizeInstanceKey(String name) {
+        if (name == null) {
+            return "";
+        }
+
+        String key = name.trim().toLowerCase();
+
+        if (key.endsWith(".tsp") || key.endsWith(".vrp")) {
+            key = key.substring(0, key.lastIndexOf('.'));
+        }
+
+        return key;
+    }
+
+    public static Double resolve(Map<String, Double> optima, String instanceName) {
+        return optima.get(normalizeInstanceKey(instanceName));
+    }
+}

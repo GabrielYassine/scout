@@ -1,6 +1,6 @@
 package dk.dtu.scout.generator;
 
-import dk.dtu.scout.Parameter;
+import dk.dtu.scout.dto.Parameter;
 
 import java.util.List;
 import java.util.Map;
