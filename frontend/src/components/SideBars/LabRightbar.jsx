@@ -422,24 +422,11 @@ export default function LabRightbar({
             </button>
 
             <div className="instance-fields">
-              <FieldRow label="Name">
-                <input
-                  className="field-input"
-                  value={view.name}
-                  readOnly
-                  disabled
-                  placeholder={CUSTOM_INSTANCE_NAME}
-                />
-              </FieldRow>
-              <FieldRow label="Description">
-                <input
-                  className="field-input"
-                  value={view.comment}
-                  readOnly
-                  disabled
-                  placeholder="Optional"
-                />
-              </FieldRow>
+              <span className="instance-summary-label">Name:</span>
+              <span className="instance-summary-value">{view.name || CUSTOM_INSTANCE_NAME}</span>
+              <span className="instance-summary-label">Dimension:</span>
+              <span className="instance-summary-value">{dimension}</span>
+
               <FieldRow label="Type">
                 <select
                   className="field-input"
@@ -449,15 +436,6 @@ export default function LabRightbar({
                   <option value="TSP">TSP</option>
                   <option value="VRP">VRP</option>
                 </select>
-              </FieldRow>
-              <FieldRow label="Dimension">
-                <input
-                  className="field-input"
-                  type="number"
-                  value={dimension}
-                  readOnly
-                  disabled
-                />
               </FieldRow>
               <FieldRow label="Edge Weight Type">
                 <input
