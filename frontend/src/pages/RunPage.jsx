@@ -3,7 +3,8 @@ import { Client } from "@stomp/stompjs";
 import { useLocation, useNavigate } from "react-router-dom";
 import LabLeftbar from "../components/SideBars/LabLeftbar.jsx";
 import LabRightbar from "../components/SideBars/LabRightbar.jsx";
-import RunChart from "../components/charts/RunChart.jsx";
+import RunChart from "../components/Charts/RunChart.jsx";
+import RuntimeStudyChart from "../components/Charts/RuntimeStudyChart.jsx";
 import "./RunPage.css";
 import "../components/SideBars/LabLeftbar.css";
 import "../components/SideBars/LabRightbar.css";
@@ -13,11 +14,14 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const runId = location.state?.runId;
+  const pageMode = location.state?.pageMode ?? "run";
+  const runId = location.state?.runId ?? null;
+  const studyId = location.state?.studyId ?? null;
+  const runtimeStudyRequest = location.state?.runtimeStudyRequest ?? null;
 
-  const batchResponse = location.state?.batch;
-  const initialLoading = location.state?.loading;
-  const initialError = location.state?.error;
+  const batchResponse = location.state?.batch ?? null;
+  const initialLoading = location.state?.loading ?? false;
+  const initialError = location.state?.error ?? null;
   const puzzleConfig = location.state?.puzzleConfig ?? [];
   const params = location.state?.params ?? [];
   const initialTspInstance = location.state?.tspInstance ?? null;
@@ -51,13 +55,13 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
   };
 
   const [batch, setBatch] = useState(() => normalizeBatch(batchResponse ?? null));
+  const [studyPoints, setStudyPoints] = useState([]);
   const [loading, setLoading] = useState(!!initialLoading);
   const [error, setError] = useState(initialError ?? null);
   const [playbackSpeed, setPlaybackSpeed] = useState(50);
   const [visibleCount, setVisibleCount] = useState(1);
 
-  const wsClientRef = useRef(null);
-  const wsRunIdRef = useRef(null);
+  const studyStartedRef = useRef(false);
 
   const batches = batch?.batches ?? [];
   const averageByProblem = batch?.summary?.averageByProblem ?? {};
@@ -72,7 +76,7 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
         iterations: avg.iterations ?? [],
         evaluations: avg.evaluations ?? [],
         series: avg.series ?? {},
-         runtimeMs: averageRunTimeByProblem[problemId] ?? null,
+        runtimeMs: averageRunTimeByProblem[problemId] ?? null,
         isAverage: true,
       })),
     [averageByProblem, averageRunTimeByProblem]
@@ -90,14 +94,22 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
   const selectedBatch =
     effectiveSelectedRunKey === "average" ? null : batches[Number(effectiveSelectedRunKey)];
 
-  const runs =
-    effectiveSelectedRunKey === "average" ? averageRuns : selectedBatch?.runs ?? [];
+  const runs =  effectiveSelectedRunKey === "average" ? averageRuns : selectedBatch?.runs ?? [];
 
   const [tspInstance] = useState(initialTspInstance);
   const [vrpInstance] = useState(initialVrpInstance);
 
-   const currentAnimationLength = useMemo(() => {
-     if (!runs.length) return 0;
+ const runtimeStudyProblemId =
+   location.state?.runtimeStudyRequest?.problemId ??
+   puzzleConfig?.problem?.[0]?.id ??
+   null;
+
+ const currentAnimationLength = useMemo(() => {
+   if (pageMode === "runtimeStudy") {
+     return studyPoints.length;
+   }
+
+   if (!runs.length) return 0;
 
      return Math.max(
        ...runs.map((run) => {
@@ -137,187 +149,244 @@ function handleResetPlayback() {
 }
 
   useEffect(() => {
-    if (!runId) {
-      console.log("No runId provided, skipping WebSocket connection");
-      return;
-    }
+    if (pageMode === "run") {
+      if (!runId) return;
 
-    if (wsClientRef.current && wsRunIdRef.current === runId) {
-      return;
-    }
+      const wsUrl = `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}/ws`;
 
-    if (wsClientRef.current) {
-      try {
-        wsClientRef.current.deactivate();
-      } catch (e) {
-        console.error("Failed to close previous WebSocket", e);
-      }
-      wsClientRef.current = null;
-      wsRunIdRef.current = null;
-    }
+      const client = new Client({
+        brokerURL: wsUrl,
+        reconnectDelay: 0,
+      });
 
-    const wsUrl = `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}/ws`;
-    console.log("Connecting to WebSocket at", wsUrl, "for runId", runId);
+      const appendSeriesValue = (series, key, value) => {
+        if (value === undefined) return series;
+        const next = { ...series };
 
-    const client = new Client({
-      brokerURL: wsUrl,
-      reconnectDelay: 0,
-    });
+        if (Array.isArray(value)) {
+          const list = Array.isArray(next[key]) ? [...next[key]] : [];
 
-    wsClientRef.current = client;
-    wsRunIdRef.current = runId;
+          if (key === "tspCities") {
+            if (list.length === 0) list.push(value);
+            next[key] = list;
+            return next;
+          }
 
-    const appendSeriesValue = (series, key, value) => {
-      if (value === undefined) return series;
-      const next = { ...series };
-      if (Array.isArray(value)) {
+          if (key === "pheromoneHeatmap") {
+            list.push(value);
+            next[key] = list;
+            return next;
+          }
+
+          next[key] = [...value];
+          return next;
+        }
+
         const list = Array.isArray(next[key]) ? [...next[key]] : [];
         if (key === "tspCities") {
           if (list.length === 0) list.push(value);
-          next[key] = list;
-          return next;
-        }
-        if (key === "pheromoneHeatmap") {
+        } else {
           list.push(value);
-          next[key] = list;
-          return next;
         }
-        next[key] = [...value];
+        next[key] = list;
         return next;
-      }
-      const list = Array.isArray(next[key]) ? [...next[key]] : [];
-      if (key === "tspCities") {
-        if (list.length === 0) list.push(value);
-      } else {
-        list.push(value);
-      }
-      next[key] = list;
-      return next;
-    };
+      };
 
-    const mergeProgress = (prev, update) => {
-      const base = prev ?? { runId: update.runId, batches: [], summary: null };
-      const nextBatches = [...(base.batches ?? [])];
-      const batchIndex = nextBatches.findIndex((b) => b.runIndex === update.runIndex);
-      const runGroup =
-        batchIndex >= 0
-          ? { ...nextBatches[batchIndex] }
-          : { runIndex: update.runIndex, seed: update.seed, runs: [] };
+      const mergeProgress = (prev, update) => {
+        const base = prev ?? { runId: update.runId, batches: [], summary: null };
+        const nextBatches = [...(base.batches ?? [])];
 
-      const runsList = [...(runGroup.runs ?? [])];
-      const runIndex = runsList.findIndex((r) => r.problemId === update.problemId);
-      const run =
-        runIndex >= 0
-          ? { ...runsList[runIndex] }
-          : {
-              problemId: update.problemId,
-              iterations: [],
-              evaluations: [],
-              series: {},
-              runtimeMs: 0,
-              finalEvaluations: 0,
-            };
+        const batchIndex = nextBatches.findIndex((b) => b.runIndex === update.runIndex);
+        const runGroup =
+          batchIndex >= 0
+            ? { ...nextBatches[batchIndex] }
+            : { runIndex: update.runIndex, seed: update.seed, runs: [] };
 
-      if (Array.isArray(update.iterations)) {
-        run.iterations = [...update.iterations];
-      } else if (update.iteration != null) {
-        run.iterations = [...run.iterations, update.iteration];
-      }
+        const runsList = [...(runGroup.runs ?? [])];
+        const runIndex = runsList.findIndex((r) => r.problemId === update.problemId);
 
-      if (Array.isArray(update.evaluations)) {
-        run.evaluations = [...update.evaluations];
-      } else if (update.evaluation != null) {
-        run.evaluations = [...run.evaluations, update.evaluation];
-      }
-      const seriesDelta = update.seriesDelta ?? {};
-      const seriesValues = Object.values(seriesDelta);
-      const hasSeriesSnapshot = seriesValues.length > 0 && seriesValues.every(Array.isArray);
-      if (hasSeriesSnapshot) {
-        run.series = normalizeSeriesMap(seriesDelta);
-      } else {
-        run.series = Object.entries(seriesDelta).reduce(
-          (acc, [key, value]) => appendSeriesValue(acc, key, value),
-          run.series ?? {}
-        );
-      }
+        const run =
+          runIndex >= 0
+            ? { ...runsList[runIndex] }
+            : {
+                problemId: update.problemId,
+                iterations: [],
+                evaluations: [],
+                series: {},
+                runtimeMs: 0,
+                finalEvaluations: 0,
+              };
 
-      runsList[runIndex >= 0 ? runIndex : runsList.length] = run;
-      runGroup.runs = runsList;
-      if (batchIndex >= 0) {
-        nextBatches[batchIndex] = runGroup;
-      } else {
-        nextBatches.push(runGroup);
-      }
-
-      return { ...base, batches: nextBatches };
-    };
-
-    client.onConnect = () => {
-      console.log("WebSocket connected", runId);
-      client.subscribe(`/topic/run/${runId}`, (message) => {
-        const data = JSON.parse(message.body);
-
-        if (data.type === "RUN_PROGRESS") {
-          setLoading(false);
-          setBatch((prev) => mergeProgress(prev, data));
-          return;
+        if (Array.isArray(update.iterations)) {
+          run.iterations = [...update.iterations];
+        } else if (update.iteration != null) {
+          run.iterations = [...run.iterations, update.iteration];
         }
 
-        if (data.type === "RUN_FINISHED") {
-          setLoading(false);
-          setBatch(normalizeBatch(data.batch ?? null));
+        if (Array.isArray(update.evaluations)) {
+          run.evaluations = [...update.evaluations];
+        } else if (update.evaluation != null) {
+          run.evaluations = [...run.evaluations, update.evaluation];
+        }
+
+        const seriesDelta = update.seriesDelta ?? {};
+        const seriesValues = Object.values(seriesDelta);
+        const hasSeriesSnapshot =
+          seriesValues.length > 0 && seriesValues.every(Array.isArray);
+
+        if (hasSeriesSnapshot) {
+          run.series = normalizeSeriesMap(seriesDelta);
+        } else {
+          run.series = Object.entries(seriesDelta).reduce(
+            (acc, [key, value]) => appendSeriesValue(acc, key, value),
+            run.series ?? {}
+          );
+        }
+
+        runsList[runIndex >= 0 ? runIndex : runsList.length] = run;
+        runGroup.runs = runsList;
+
+        if (batchIndex >= 0) {
+          nextBatches[batchIndex] = runGroup;
+        } else {
+          nextBatches.push(runGroup);
+        }
+
+        return { ...base, batches: nextBatches };
+      };
+
+      client.onConnect = () => {
+        client.subscribe(`/topic/run/${runId}`, (message) => {
+          const data = JSON.parse(message.body);
+
+          if (data.type === "RUN_PROGRESS") {
+            setLoading(false);
+            setBatch((prev) => mergeProgress(prev, data));
+            return;
+          }
+
+          if (data.type === "RUN_FINISHED") {
+            setLoading(false);
+            setBatch(normalizeBatch(data.batch ?? null));
+            client.deactivate();
+            return;
+          }
+
+          if (data.type === "RUN_FAILED") {
+            setLoading(false);
+            setError(data.message || "Run failed");
+            client.deactivate();
+            return;
+          }
+
+          if (data.type === "RUN_DISCONNECTED") {
+            client.deactivate();
+          }
+        });
+
+        client.publish({
+          destination: `/app/run/${runId}/connect`,
+          body: JSON.stringify({}),
+        });
+      };
+
+      client.activate();
+
+      return () => {
+        try {
+          if (client.connected) {
+            client.publish({
+              destination: `/app/run/${runId}/disconnect`,
+              body: JSON.stringify({}),
+            });
+          }
           client.deactivate();
-          return;
+        } catch (e) {
+          console.error("Failed to close run WebSocket", e);
         }
+      };
+    }
 
-        if (data.type === "RUN_FAILED") {
-          setLoading(false);
-          setError(data.message || "Run failed");
-          client.deactivate();
-          return;
-        }
+    if (pageMode === "runtimeStudy") {
+      if (!studyId || !runtimeStudyRequest) return;
 
-        if (data.type === "RUN_DISCONNECTED") {
-          client.deactivate();
-        }
+      const wsUrl = `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}/ws`;
+
+      const client = new Client({
+        brokerURL: wsUrl,
+        reconnectDelay: 0,
       });
 
-      client.publish({
-        destination: `/app/run/${runId}/connect`,
-        body: JSON.stringify({}),
-      });
-    };
+      client.onConnect = async () => {
+        client.subscribe(`/topic/study/${studyId}`, (message) => {
+          const data = JSON.parse(message.body);
 
-    client.onStompError = (frame) => {
-      console.error("WebSocket STOMP error", frame.headers["message"], frame.body);
-    };
+          if (data.type === "STUDY_FINISHED") {
+            setLoading(false);
+            setStudyPoints(
+              [...(data.study?.points ?? [])].sort(
+                (a, b) => Number(a.problemSize) - Number(b.problemSize)
+              )
+            );
+            client.deactivate();
+            return;
+          }
 
-    client.onWebSocketError = (event) => {
-      console.error("WebSocket transport error", event);
-    };
+          if (data.type === "STUDY_FAILED") {
+            setLoading(false);
+            setError(data.message || "Runtime study failed");
+            client.deactivate();
+          }
+        });
 
-    client.activate();
+        if (!studyStartedRef.current) {
+          studyStartedRef.current = true;
+          //TODO: APi call should be in labpage
+          try {
+            console.log("POST /api/runtime-study payload:", runtimeStudyRequest);
 
-    return () => {
-      if (wsClientRef.current !== client) {
-        return;
-      }
-      try {
-        if (client.connected) {
-          client.publish({
-            destination: `/app/run/${runId}/disconnect`,
-            body: JSON.stringify({}),
-          });
+            const res = await fetch("/api/runtime-study", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(runtimeStudyRequest),
+            });
+
+            if (!res.ok) {
+              let message = `Runtime study failed with status ${res.status}`;
+              try {
+                const data = await res.json();
+                if (data?.message) {
+                  message = data.message;
+                }
+              } catch {}
+              throw new Error(message);
+            }
+          } catch (err) {
+            setLoading(false);
+            setError(err.message || "Failed to start runtime study");
+          }
         }
-        client.deactivate();
-      } catch (e) {
-        console.error("Failed to close WebSocket", e);
-      } finally {
-        wsClientRef.current = null;
-        wsRunIdRef.current = null;
-      }
-    };
-  }, [runId]);
+      };
+
+      client.onStompError = (frame) => {
+        console.error("Study WebSocket STOMP error", frame.headers["message"], frame.body);
+      };
+
+      client.onWebSocketError = (event) => {
+        console.error("Study WebSocket transport error", event);
+      };
+
+      client.activate();
+
+      return () => {
+        try {
+          client.deactivate();
+        } catch (e) {
+          console.error("Failed to close study WebSocket", e);
+        }
+      };
+    }
+  }, [pageMode, runId, studyId, runtimeStudyRequest]);
 
   return (
     <div className="run-page">
@@ -346,75 +415,92 @@ function handleResetPlayback() {
             <div className="run-chart-title">Run failed</div>
             <div>{error}</div>
           </div>
-        ) : batches.length === 0 ? (
-          <div className="run-chart-panel">
-            <div className="run-chart-title">No run data</div>
-            <div>No data to plot..</div>
-          </div>
         ) : (
           <>
-            {(averageRuns.length > 0 || batches.length > 1) && (
-              <div className="run-selector">
-                <label htmlFor="batch-select" className="field-label">
-                  Select Run:
+            {!loading && !error && currentAnimationLength > 0 && (
+              <div className="run-speed-control">
+                <label htmlFor="playback-speed" className="field-label">
+                  Graph speed:
                 </label>
-                <select
-                  id="batch-select"
+                <input
+                  id="playback-speed"
                   className="field-input"
-                  value={effectiveSelectedRunKey}
-                  onChange={(e) => setSelectedRunKey(e.target.value)}
+                  type="range"
+                  min="1"
+                  max="200"
+                  value={playbackSpeed}
+                  onChange={(e) => setPlaybackSpeed(Number(e.target.value))}
+                />
+                <span>{playbackSpeed}</span>
+                <button
+                  type="button"
+                  className="reset-playback-button"
+                  onClick={handleResetPlayback}
                 >
-                  {averageRuns.length > 0 && (
-                    <option value="average">Average</option>
-                  )}
-
-                  {batches.map((batch, idx) => (
-                    <option key={idx} value={String(idx)}>
-                      Run {batch.runIndex} (Seed: {batch.seed})
-                    </option>
-                  ))}
-                </select>
+                  Reset
+                </button>
               </div>
             )}
 
-            <div className="run-speed-control">
-              <label htmlFor="playback-speed" className="field-label">
-                Graph speed:
-              </label>
-              <input
-                id="playback-speed"
-                className="field-input"
-                type="range"
-                min="1"
-                max="200"
-                value={playbackSpeed}
-                onChange={(e) => setPlaybackSpeed(Number(e.target.value))}
-              />
-              <span>{playbackSpeed}</span>
-              <button
-                type="button"
-                className="reset-playback-button"
-                onClick={handleResetPlayback}
-              >
-                Reset
-              </button>
-            </div>
-
-            <div className="run-stack">
-              {runs.map((run, idx) => (
-                <RunChart
-                  key={`${selectedRunKey}-${idx}`}
-                  run={run}
-                  runIndex={selectedBatch?.runIndex ?? "average"}
+            {pageMode === "runtimeStudy" ? (
+              studyPoints.length === 0 ? (
+                <div className="run-chart-panel">
+                  <div className="run-chart-title">No runtime study data</div>
+                  <div>No study points to plot.</div>
+                </div>
+              ) : (
+                <RuntimeStudyChart
+                  studyTitle="Runtime Study"
+                  problemId={runtimeStudyProblemId}
+                  points={studyPoints}
                   visibleCount={visibleCount}
-                  bestFitnessBoxPlot={
-                      selectedRunKey === "average"
-                        ? bestFitnessBoxPlotsByProblem[run.problemId] ?? null
-                        : null
-                  }
                 />
-              ))}
-            </div>
+              )
+            ) : batches.length === 0 ? (
+              <div className="run-chart-panel">
+                <div className="run-chart-title">No run data</div>
+                <div>No data to plot.</div>
+              </div>
+            ) : (
+              <>
+                {(averageRuns.length > 0 || batches.length > 1) && (
+                  <div className="run-selector">
+                    <label htmlFor="batch-select" className="field-label">
+                      Select Run:
+                    </label>
+                    <select
+                      id="batch-select"
+                      className="field-input"
+                      value={effectiveSelectedRunKey}
+                      onChange={(e) => setSelectedRunKey(e.target.value)}
+                    >
+                      {averageRuns.length > 0 && <option value="average">Average</option>}
+                      {batches.map((batch, idx) => (
+                        <option key={idx} value={String(idx)}>
+                          Run {batch.runIndex} (Seed: {batch.seed})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <div className="run-stack">
+                  {runs.map((run, idx) => (
+                    <RunChart
+                      key={`${effectiveSelectedRunKey}-${idx}`}
+                      run={run}
+                      runIndex={selectedBatch?.runIndex ?? "average"}
+                      visibleCount={visibleCount}
+                      bestFitnessBoxPlot={
+                        effectiveSelectedRunKey === "average"
+                          ? bestFitnessBoxPlotsByProblem[run.problemId] ?? null
+                          : null
+                      }
+                    />
+                  ))}
+                </div>
+              </>
+            )}
           </>
         )}
       </div>

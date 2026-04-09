@@ -1,15 +1,28 @@
 import { useMemo, memo } from "react";
 import ReactECharts from "echarts-for-react";
 
-function LineCharts({ selectedObserver, chartPoints, SearchSpaceId, phaseRanges = [] }) {
+function LineCharts({
+  chartPoints,
+  seriesName,
+  xAxisLabel = "Evaluation",
+  yAxisLabel = null,
+  searchSpaceId = null,
+  phaseRanges = [],
+  enableDataZoom = true,
+  invertPermutationFitness = true,
+}) {
   const option = useMemo(() => {
-    if (!selectedObserver || !chartPoints?.length) return null;
+    if (!seriesName || !chartPoints?.length) return null;
 
-    const isTspFitness =SearchSpaceId === "permutation" && (selectedObserver === "fitness" || selectedObserver === "bestFitness");
+    const isPermutationFitness =
+      invertPermutationFitness &&
+      searchSpaceId === "permutation" &&
+      (seriesName === "fitness" || seriesName === "bestFitness");
 
-    const displayObserverName = isTspFitness ? "tourLength" : selectedObserver;
+    const displaySeriesName = isPermutationFitness ? "tourLength" : seriesName;
+    const resolvedYAxisLabel = yAxisLabel ?? displaySeriesName;
 
-    const displayChartPoints = isTspFitness
+    const displayChartPoints = isPermutationFitness
       ? chartPoints.map(([x, y]) => [x, -y])
       : chartPoints;
 
@@ -49,12 +62,12 @@ function LineCharts({ selectedObserver, chartPoints, SearchSpaceId, phaseRanges 
           const value = first?.value ?? [];
           const x = value[0] ?? "-";
           const y = value[1] ?? "-";
-          return `Evaluation: ${x}<br/>${displayObserverName}: ${y}`;
+          return `${xAxisLabel}: ${x}<br/>${resolvedYAxisLabel}: ${y}`;
         },
       },
       xAxis: {
         type: "value",
-        name: "Evaluation",
+        name: xAxisLabel,
         nameLocation: "middle",
         nameGap: 30,
         min: "dataMin",
@@ -62,7 +75,7 @@ function LineCharts({ selectedObserver, chartPoints, SearchSpaceId, phaseRanges 
       },
       yAxis: {
         type: "value",
-        name: displayObserverName,
+        name: resolvedYAxisLabel,
         nameLocation: "middle",
         nameGap: 45,
         scale: true,
@@ -78,7 +91,7 @@ function LineCharts({ selectedObserver, chartPoints, SearchSpaceId, phaseRanges 
       ],
       series: [
         {
-          name: displayObserverName,
+          name: displaySeriesName,
           type: "line",
           data: displayChartPoints,
           showSymbol: false,
@@ -102,7 +115,15 @@ function LineCharts({ selectedObserver, chartPoints, SearchSpaceId, phaseRanges 
         },
       ],
     };
-  }, [selectedObserver, chartPoints, SearchSpaceId, phaseRanges]);
+  }, [
+    chartPoints,
+    seriesName,
+    xAxisLabel,
+    yAxisLabel,
+    searchSpaceId,
+    phaseRanges,
+    invertPermutationFitness,
+  ]);
 
   if (!option) {
     return <div>No chart data.</div>;

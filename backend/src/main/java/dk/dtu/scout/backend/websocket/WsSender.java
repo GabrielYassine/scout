@@ -15,4 +15,5 @@ public class WsSender {
     public void sendToRun(String runId, Object payload) {
         template.convertAndSend("/topic/run/" + runId, payload);
     }
+    public void sendToStudy(String studyId, Object payload) {template.convertAndSend("/topic/study/" + studyId, payload);}
 }

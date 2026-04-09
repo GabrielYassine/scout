@@ -1,6 +1,7 @@
 package dk.dtu.scout.backend.controller;
 
 import dk.dtu.scout.backend.dto.RunRequest;
+import dk.dtu.scout.backend.dto.RuntimeStudyRequest;
 import dk.dtu.scout.backend.service.RunOrchestratorService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,6 +23,11 @@ public class RunController {
     @PostMapping("/run")
     public ResponseEntity<Void> run(@RequestBody RunRequest request) {
         runOrchestratorService.startRun(request);
+        return ResponseEntity.accepted().build();
+    }
+    @PostMapping("/runtime-study")
+    public ResponseEntity<Void> startStudy(@RequestBody RuntimeStudyRequest request) {
+        runOrchestratorService.startRuntimeStudy(request);
         return ResponseEntity.accepted().build();
     }
 }

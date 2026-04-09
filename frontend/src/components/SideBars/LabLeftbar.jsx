@@ -30,6 +30,7 @@ export default function LabLeftbar({
   templatesLoading = false,
   templatesError = null,
   onApplyTemplate,
+  readOnly = false,
 }) {
   const [open, setOpen] = useState({
     templates: true,
@@ -45,8 +46,10 @@ export default function LabLeftbar({
     observer: true,
   });
 
-  const disabled = catalogLoading || !!catalogError;
+  const disabled = readOnly || catalogLoading || !!catalogError;
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
+  const runMode = params.global?.experimentType ?? "run";
+
   const findPieceDef = (type, id) => {
     if (!catalog || !id) return null;
 
@@ -144,46 +147,47 @@ export default function LabLeftbar({
       <div className="ll-content">
         <div className="ll-title">Configuration</div>
 
-        {/* Templates Section */}
-        <Section
-          title="Templates"
-          isOpen={open.templates ?? true}
-          onToggle={() => setOpen((o) => ({ ...o, templates: !(o.templates ?? true) }))}
-        >
-          <div className="ll-subsection">
-            <select
-              className="field-input"
-              value={selectedTemplateId}
-              onChange={(e) => setSelectedTemplateId(e.target.value)}
-              disabled={disabled || templatesLoading || templates.length === 0}
-            >
-              <option value="">Select template</option>
-              {templates.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.displayName}
-                </option>
-              ))}
-            </select>
+        {!readOnly && (
+          <Section
+            title="Templates"
+            isOpen={open.templates ?? true}
+            onToggle={() => setOpen((o) => ({ ...o, templates: !(o.templates ?? true) }))}
+          >
+            <div className="ll-subsection">
+              <select
+                className="field-input"
+                value={selectedTemplateId}
+                onChange={(e) => setSelectedTemplateId(e.target.value)}
+                disabled={disabled || templatesLoading || templates.length === 0}
+              >
+                <option value="">Select template</option>
+                {templates.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.displayName}
+                  </option>
+                ))}
+              </select>
 
-            <button
-              className="btn btn--green .ll-subsection"
-              type="button"
-              disabled={disabled || !selectedTemplateId}
-              onClick={() => {
-                onApplyTemplate?.(selectedTemplateId);
-                setSelectedTemplateId("");
-              }}
-            >
-              Apply Template
-            </button>
+              <button
+                className="btn btn--green .ll-subsection"
+                type="button"
+                disabled={disabled || !selectedTemplateId}
+                onClick={() => {
+                  onApplyTemplate?.(selectedTemplateId);
+                  setSelectedTemplateId("");
+                }}
+              >
+                Apply Template
+              </button>
 
-            {templatesError && (
-              <div className="ll-subsection">
-                Failed to load templates: {templatesError}
-              </div>
-            )}
-          </div>
-        </Section>
+              {templatesError && (
+                <div className="ll-subsection">
+                  Failed to load templates: {templatesError}
+                </div>
+              )}
+            </div>
+          </Section>
+        )}
 
         {/* Global Settings Section */}
         <Section
@@ -192,6 +196,24 @@ export default function LabLeftbar({
           onToggle={() => setOpen((o) => ({ ...o, global: !o.global }))}
         >
           <div className="ll-subsection">
+            <div className="field-row">
+              <label className="field-label">Mode</label>
+              <select
+                className="field-input"
+                disabled={disabled}
+                value={runMode}
+                onChange={(e) =>
+                  onParamChange("global", {
+                    ...(params.global ?? {}),
+                    experimentType: e.target.value,
+                  })
+                }
+              >
+                <option value="run">Standard Run</option>
+                <option value="runtimeStudy">Runtime Study</option>
+              </select>
+            </div>
+
             <ParamField
               def={{
                 key: "seed",
@@ -204,32 +226,73 @@ export default function LabLeftbar({
               value={params.global?.seed ?? defaultSeed}
               onValueChange={(v) => setParam("global", { key: "seed", type: "long" }, v)}
             />
-            <ParamField
-              def={{
-                key: "runTimes",
-                label: "Run Times",
-                type: "int",
-                min: 1,
-                defaultValue: 1,
-              }}
-              disabled={disabled}
-              value={params.global?.runTimes ?? 1}
-              onValueChange={(v) => setParam("global", { key: "runTimes", type: "int" }, v)}
-            />
-            <ParamField
-              def={{
-                key: "wsUpdateEveryIterations",
-                label: "WebSocket update every X iterations",
-                type: "int",
-                min: 1,
-                defaultValue: 100,
-              }}
-              disabled={disabled}
-              value={params.global?.wsUpdateEveryIterations ?? 100}
-              onValueChange={(v) =>
-                setParam("global", { key: "wsUpdateEveryIterations", type: "int" }, v)
-              }
-            />
+
+            {runMode === "run" && (
+              <ParamField
+                def={{
+                  key: "runTimes",
+                  label: "Run Times",
+                  type: "int",
+                  min: 1,
+                  defaultValue: 1,
+                }}
+                disabled={disabled}
+                value={params.global?.runTimes ?? 1}
+                onValueChange={(v) =>
+                  setParam("global", { key: "runTimes", type: "int" }, v)
+                }
+              />
+            )}
+
+            {runMode === "runtimeStudy" && (
+              <ParamField
+                def={{
+                  key: "repetitionsPerSize",
+                  label: "Repetitions per Size",
+                  type: "int",
+                  min: 1,
+                  defaultValue: 1,
+                }}
+                disabled={disabled}
+                value={params.global?.repetitionsPerSize ?? 1}
+                onValueChange={(v) =>
+                  setParam("global", { key: "repetitionsPerSize", type: "int" }, v)
+                }
+              />
+            )}
+
+            {runMode =="run" && (
+              <ParamField
+                def={{
+                  key: "wsUpdateEveryIterations",
+                  label: "WebSocket update every X iterations",
+                  type: "int",
+                  min: 1,
+                  defaultValue: 100,
+                }}
+                disabled={disabled}
+                value={params.global?.wsUpdateEveryIterations ?? 100}
+                onValueChange={(v) =>
+                  setParam("global", { key: "wsUpdateEveryIterations", type: "int" }, v)
+                }
+              />
+            )}
+
+            {runMode === "runtimeStudy" && (
+              <ParamField
+                def={{
+                  key: "problemSizes",
+                  label: "Problem Sizes (comma separated)",
+                  type: "string",
+                  defaultValue: "100, 200, 400, 800",
+                }}
+                disabled={disabled}
+                value={params.global?.problemSizes ?? "100, 200, 400, 800"}
+                onValueChange={(v) =>
+                  setParam("global", { key: "problemSizes", type: "string" }, v)
+                }
+              />
+            )}
           </div>
         </Section>
 

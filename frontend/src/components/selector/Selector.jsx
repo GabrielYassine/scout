@@ -22,14 +22,23 @@ const singleSelectTypes = new Set([
     "parentSelectionRule",
     "crossover",
 ]);
+const runtimeStudySingleSelectTypes = new Set([
+    ...singleSelectTypes,
+    "problem",
+    "stopCondition",
+]);
+
 
 export default function Selector({
     catalog,
     onPieceHover,
     onPieceLeave,
     puzzleConfig,
+    params,
 }) {
     const [activeTab, setActiveTab] = useSessionStorageState("scout:activeSelector", "searchSpace");
+    const runMode = params?.global?.experimentType ?? "run";
+    const isRuntimeStudy = runMode === "runtimeStudy";
 
     const validTabKeys = componentTypesAll.map((t) => t.key);
     const currentActiveTab = validTabKeys.includes(activeTab)
@@ -48,6 +57,13 @@ export default function Selector({
         return Array.isArray(puzzleConfig[key]) ? puzzleConfig[key].length : 0;
     };
 
+    const isSingleSelectType = (type) => {
+        if (isRuntimeStudy) {
+            return runtimeStudySingleSelectTypes.has(type);
+        }
+        return singleSelectTypes.has(type);
+    };
+
     const getSelectedSearchSpaceId = () => {
         if (!puzzleConfig || !Array.isArray(puzzleConfig.searchSpace) || puzzleConfig.searchSpace.length === 0) {
             return null;
@@ -56,6 +72,25 @@ export default function Selector({
     };
 
     const isItemCompatible = (item) => {
+        if (isRuntimeStudy) {
+                if (currentActiveTab === "observer") {
+                    return false;
+                }
+
+                if (currentActiveTab === "searchSpace") {
+                    return item.id === "bitstring";
+                }
+
+                if (currentActiveTab === "problem") {
+                    if (item.id === "tsp" || item.id === "vrp") {
+                        return false;
+                    }
+                }
+
+                if (currentActiveTab === "stopCondition") {
+                    return item.id === "optimum-reached";
+                }
+         }
         if (currentActiveTab === "searchSpace") {
             return true;
         }
@@ -81,7 +116,7 @@ export default function Selector({
     };
 
     const isDisabledBySingleSelectRule = (item) => {
-        if (!singleSelectTypes.has(currentActiveTab)) {
+        if (!isSingleSelectType(currentActiveTab)) {
             return false;
         }
 
@@ -104,6 +139,30 @@ export default function Selector({
     };
 
     const getDisableReason = (item) => {
+        if (isRuntimeStudy) {
+                if (currentActiveTab === "observer") {
+                    return "Observers cannot be selected in runtime study mode";
+                }
+
+                if (currentActiveTab === "searchSpace" && item.id !== "bitstring") {
+                    return "Runtime study currently supports only the BitString search space";
+                }
+
+                if (
+                    currentActiveTab === "problem" &&
+                    (item.id === "tsp" || item.id === "vrp")
+                ) {
+                    return "Runtime study currently supports only theoretical size-based problems";
+                }
+
+                if (
+                    currentActiveTab === "stopCondition" &&
+                    item.id !== "optimum-reached"
+                ) {
+                    return "Runtime study requires the 'optimum-reached' stop condition";
+                }
+       }
+
         if (!isItemCompatible(item)) {
             return "Not compatible with the selected search space";
         }

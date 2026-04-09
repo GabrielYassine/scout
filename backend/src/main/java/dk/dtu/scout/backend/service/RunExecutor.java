@@ -50,20 +50,17 @@ public class RunExecutor {
     private final RunComponentFactory factory;
     private final StatisticsService statisticsService;
     private final WsSender wsSender;
-    private final RunStatusService runStatusService;
     private final ThreadPoolTaskExecutor runExecutor;
 
     public RunExecutor(
             RunComponentFactory factory,
             StatisticsService statisticsService,
             WsSender wsSender,
-            RunStatusService runStatusService,
             @Qualifier("runTaskExecutor") Executor runExecutor
     ) {
         this.factory = factory;
         this.statisticsService = statisticsService;
         this.wsSender = wsSender;
-        this.runStatusService = runStatusService;
         this.runExecutor = (ThreadPoolTaskExecutor) runExecutor;
     }
 
@@ -106,8 +103,6 @@ public class RunExecutor {
 
         BatchSummaryResponse summary = statisticsService.calculateSummary(batches);
         BatchRunResponse response = ViewMapper.toBatchRunResponse(runId, batches, summary);
-        runStatusService.markFinished(runId, response);
-        wsSender.sendToRun(runId, RunWsPayload.finished(runId, response));
         logExecutorStats("run-batch-end", runtimes, runId);
         return response;
     }
@@ -164,8 +159,9 @@ public class RunExecutor {
             PopulationModel<S> popModel = factory.createPopulationModel(request.populationModelId(), request.populationModelParams());
             Crossover<S> crossover = factory.createOptionalCrossover(request.crossoverId(), request.crossoverParams());
             ParentSelectionRule<S> parentSelection = factory.createParentSelectionRule(request.parentSelectionRuleId(), request.parentSelectionRuleParams());
-            observers.add(new RunProgressObserver<>(wsSender, request.runId(), runIndex, runSeed, pid, wsUpdateEveryIterations));
-
+            if (request.runId() != null && wsUpdateEveryIterations > 0) {
+                observers.add(new RunProgressObserver<>(wsSender, request.runId(), runIndex, runSeed, pid, wsUpdateEveryIterations));
+            }
             long startTime = System.nanoTime();
 
             SimulationRunner runner = new SimulationRunner();

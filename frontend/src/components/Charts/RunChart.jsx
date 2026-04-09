@@ -187,17 +187,20 @@ function RunChart({ run, runIndex, visibleCount, bestFitnessBoxPlot = null }) {
           />
         ) : isBestFitnessBoxPlot ? (
           <BoxPlotChart
-            problemId={run.problemId}
             seriesName="bestFitness"
             boxPlotResponse={bestFitnessBoxPlot}
             searchSpaceId={run?.searchSpaceId}
+            xAxisLabel="Evaluation"
+            yAxisLabel="bestFitness"
           />
         ) : (
           <LineCharts
-            selectedObserver={effectiveObserver}
+            seriesName={effectiveObserver}
             chartPoints={visibleData}
             searchSpaceId={run?.searchSpaceId}
             phaseRanges={phaseRanges}
+            xAxisLabel="Evaluation"
+            yAxisLabel={effectiveObserver}
           />
         )}
       </div>

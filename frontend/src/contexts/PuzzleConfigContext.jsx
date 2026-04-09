@@ -335,9 +335,35 @@ export function PuzzleConfigProvider({ children }) {
     });
   }
 
-  function handleParamChange(type, newParams) {
-    setParams((prev) => ({ ...prev, [type]: newParams }));
+function handleParamChange(type, newParams) {
+  if (type === "global") {
+    const previousMode = params?.global?.experimentType ?? "run";
+    const nextMode = newParams?.experimentType ?? previousMode;
+
+    const switchedToRuntimeStudy =
+      previousMode !== "runtimeStudy" && nextMode === "runtimeStudy";
+
+    if (switchedToRuntimeStudy) {
+      setPlacedPieces([]);
+      setParams((prev) => ({
+        ...prev,
+        global: newParams,
+        searchSpace: {},
+        problem: {},
+        generator: {},
+        selection: {},
+        populationModel: {},
+        parentSelectionRule: {},
+        crossover: {},
+        stopCondition: {},
+        observer: {},
+      }));
+      return;
+    }
   }
+
+  setParams((prev) => ({ ...prev, [type]: newParams }));
+}
 
   function handleReset() {
     setPlacedPieces([]);
@@ -381,9 +407,13 @@ export function PuzzleConfigProvider({ children }) {
 
     setParams({
       global: {
+        experimentType: "run",
         seed: runRequest.seed || Date.now(),
         runTimes: runRequest.runTimes || 1,
         wsUpdateEveryIterations: runRequest.wsUpdateEveryIterations || 100,
+        problemSizes: "100, 200, 400, 800",
+        repetitionsPerSize: 10,
+        wsUpdateEverySizes: 1,
       },
       searchSpace: runRequest.searchSpaceParams || {},
       problem: runRequest.problemParams || {},

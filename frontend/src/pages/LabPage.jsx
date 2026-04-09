@@ -75,91 +75,148 @@ export default function LabPage({catalog, catalogLoading, catalogError, template
       setHoverInfo(null);
   }
 
-  async function onRun() {
-    const seed = params.global?.seed ?? Date.now();
-    const runTimes = params.global?.runTimes ?? 1;
-    const wsUpdateEveryIterations = params.global?.wsUpdateEveryIterations ?? 100;
-    const runId = window.crypto?.randomUUID ? window.crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const parseProblemSizes = (text) =>
+    String(text ?? "")
+      .split(",")
+      .map((s) => Number(s.trim()))
+      .filter((n) => Number.isInteger(n) && n > 0);
 
-    const problemParams = { ...params.problem };
-    if (tspInstance && tspInstance.cities && tspInstance.cities.length > 0) {
-      problemParams.tspInstance = tspInstance;
-    }
-    const isVrpProblem = puzzleConfig.problem?.some((p) => p.id === "vrp");
-    if (isVrpProblem && vrpInstance) {
-      problemParams.vrpInstance = vrpInstance;
-    }
+ async function onRun() {
+   try {
+     const experimentType = params.global?.experimentType ?? "run";
+     const seed = params.global?.seed ?? Date.now();
 
-    const searchSpaceParams = { ...params.searchSpace };
-    const isTSPProblem = puzzleConfig.problem?.some((p) => p.id === "tsp");
-    if (isTSPProblem && tspInstance && tspInstance.cities && tspInstance.cities.length > 0) {
-      searchSpaceParams.n = tspInstance.cities.length;
-    }
-    if (isVrpProblem && vrpInstance) {
-      searchSpaceParams.vrpInstance = vrpInstance;
-    }
+     const problemList = Array.isArray(puzzleConfig.problem) ? puzzleConfig.problem : [];
+     const problemParams = { ...params.problem };
 
-    const body = {
-      searchSpaceId: puzzleConfig.searchSpace?.[0]?.id ?? null,
-      searchSpaceParams: searchSpaceParams,
+     if (tspInstance && tspInstance.cities && tspInstance.cities.length > 0) {
+       problemParams.tspInstance = tspInstance;
+     }
 
-      problemIds: puzzleConfig.problem?.map((x) => x.id) ?? [],
-      problemParams: problemParams,
+     const isVrpProblem = problemList.some((p) => p.id === "vrp");
+     if (isVrpProblem && vrpInstance) {
+       problemParams.vrpInstance = vrpInstance;
+     }
 
+     const searchSpaceParams = { ...params.searchSpace };
+     const isTSPProblem = problemList.some((p) => p.id === "tsp");
 
-      generatorId: puzzleConfig.generator?.[0]?.id ?? null,
-      generatorParams: params.generator,
+     if (isTSPProblem && tspInstance && tspInstance.cities && tspInstance.cities.length > 0) {
+       searchSpaceParams.n = tspInstance.cities.length;
+     }
 
-      selectionRuleId: puzzleConfig.selection?.[0]?.id ?? null,
-      selectionRuleParams: params.selection,
+     if (isVrpProblem && vrpInstance) {
+       searchSpaceParams.vrpInstance = vrpInstance;
+     }
 
-      populationModelId: puzzleConfig.populationModel?.[0]?.id ?? null,
-      populationModelParams: params.populationModel,
+     if (experimentType === "runtimeStudy") {
+       const repetitionsPerSize = params.global?.repetitionsPerSize ?? 30;
+       const problemSizes = parseProblemSizes(params.global?.problemSizes);
+       const wsUpdateEverySizes = params.global?.wsUpdateEverySizes ?? 1;
+       const studyId = window.crypto?.randomUUID
+         ? window.crypto.randomUUID()
+         : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
+       if (problemSizes.length === 0) {
+         throw new Error("Please enter at least one valid problem size");
+       }
+
+       const body = {
+         studyId,
+         searchSpaceId: puzzleConfig.searchSpace?.[0]?.id ?? null,
+         searchSpaceParams,
+         problemId: puzzleConfig.problem?.[0]?.id ?? null,
+         problemParams,
+         generatorId: puzzleConfig.generator?.[0]?.id ?? null,
+         generatorParams: params.generator,
+         selectionRuleId: puzzleConfig.selection?.[0]?.id ?? null,
+         selectionRuleParams: params.selection,
+         populationModelId: puzzleConfig.populationModel?.[0]?.id ?? null,
+         populationModelParams: params.populationModel,
+         parentSelectionRuleId: puzzleConfig.parentSelectionRule?.[0]?.id ?? null,
+         parentSelectionRuleParams: params.parentSelectionRule,
+         crossoverId: puzzleConfig.crossover?.[0]?.id ?? null,
+         crossoverParams: params.crossover,
+         stopConditionIds: puzzleConfig.stopCondition?.map((x) => x.id) ?? [],
+         stopConditionParams: params.stopCondition,
+         seed,
+         problemSizes,
+         repetitionsPerSize,
+         wsUpdateEverySizes,
+       };
+
+       navigate("/run", {
+         state: {
+           pageMode: "runtimeStudy",
+           loading: true,
+           puzzleConfig,
+           params,
+           tspInstance,
+           vrpInstance,
+           studyId,
+           runtimeStudyRequest: body,
+         },
+       });
+       return;
+     }
+
+     const runTimes = params.global?.runTimes ?? 1;
+     const wsUpdateEveryIterations = params.global?.wsUpdateEveryIterations ?? 100;
+     const runId = window.crypto?.randomUUID
+       ? window.crypto.randomUUID()
+       : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+     const body = {
+       searchSpaceId: puzzleConfig.searchSpace?.[0]?.id ?? null,
+       searchSpaceParams,
+       problemIds: puzzleConfig.problem?.map((x) => x.id) ?? [],
+       problemParams,
+       generatorId: puzzleConfig.generator?.[0]?.id ?? null,
+       generatorParams: params.generator,
+       selectionRuleId: puzzleConfig.selection?.[0]?.id ?? null,
+       selectionRuleParams: params.selection,
+       populationModelId: puzzleConfig.populationModel?.[0]?.id ?? null,
+       populationModelParams: params.populationModel,
        parentSelectionRuleId: puzzleConfig.parentSelectionRule?.[0]?.id ?? null,
        parentSelectionRuleParams: params.parentSelectionRule,
-
        crossoverId: puzzleConfig.crossover?.[0]?.id ?? null,
        crossoverParams: params.crossover,
+       stopConditionIds: puzzleConfig.stopCondition?.map((x) => x.id) ?? [],
+       stopConditionParams: params.stopCondition,
+       observerIds: puzzleConfig.observer?.map((x) => x.id) ?? [],
+       observerParams: params.observer,
+       seed,
+       runTimes,
+       runId,
+       wsUpdateEveryIterations,
+     };
 
-      stopConditionIds: puzzleConfig.stopCondition?.map((x) => x.id) ?? [],
-      stopConditionParams: params.stopCondition,
+     const res = await fetch("/api/run", {
+       method: "POST",
+       headers: { "Content-Type": "application/json" },
+       body: JSON.stringify(body),
+     });
 
-      observerIds: puzzleConfig.observer?.map((x) => x.id) ?? [],
-      observerParams: params.observer,
-      seed: seed,
-      runTimes: runTimes,
-      runId,
-      wsUpdateEveryIterations,
-    };
+     if (!res.ok) {
+       let message = `Run failed with status ${res.status}`;
+       try {
+         const data = await res.json();
+         if (data?.message) {
+           message = data.message;
+         }
+       } catch {
+         console.error("Failed to parse error response as JSON");
+       }
+       throw new Error(message);
+     }
 
-    try {
-      const res = await fetch("/api/run", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      if (!res.ok) {
-        let message = `Run failed with status ${res.status}`;
-        try {
-          const data = await res.json();
-          if (data?.message) {
-            message = data.message;
-          }
-        } catch {
-          console.error("Failed to parse error response as JSON");
-        }
-        throw new Error(message);
-      }
-
-      navigate("/run", {
-        state: { loading: true, puzzleConfig, params, tspInstance, vrpInstance, runId },
-      });
-    } catch (err) {
-      showToast(err.message || "Failed to start run");
-    }
-  }
+     navigate("/run", {
+       state: { loading: true, puzzleConfig, params, tspInstance, vrpInstance, runId },
+     });
+   } catch (err) {
+     showToast(err.message || "Failed to start run");
+   }
+ }
   function onApplyTemplate(templateId) {
     if (!catalog || !templateId) return;
     const tpl = (templates ?? []).find((t) => t.id === templateId);
@@ -202,6 +259,7 @@ export default function LabPage({catalog, catalogLoading, catalogError, template
             onPieceHover={handlePieceHover}
             onPieceLeave={clearHover}
             puzzleConfig={puzzleConfig}
+            params={params}
           />
         </div>
       </div>

@@ -1,11 +1,20 @@
 import { useMemo, memo } from "react";
 import ReactECharts from "echarts-for-react";
 
-function BoxPlotChart({ problemId, seriesName, boxPlotResponse, searchSpaceId }) {
+function BoxPlotChart({
+  seriesName,
+  boxPlotResponse,
+  searchSpaceId = null,
+  xAxisLabel = "Evaluation",
+  yAxisLabel = null,
+  invertPermutationFitness = true,
+}) {
   const option = useMemo(() => {
     if (!seriesName || !boxPlotResponse) return null;
 
-    const evaluations = Array.isArray(boxPlotResponse.evaluations)
+    const xValues = Array.isArray(boxPlotResponse.xValues)
+      ? boxPlotResponse.xValues
+      : Array.isArray(boxPlotResponse.evaluations)
       ? boxPlotResponse.evaluations
       : [];
 
@@ -13,21 +22,24 @@ function BoxPlotChart({ problemId, seriesName, boxPlotResponse, searchSpaceId })
       ? boxPlotResponse.boxplots
       : [];
 
-    if (!evaluations.length || !rawBoxplots.length) return null;
+    if (!xValues.length || !rawBoxplots.length) return null;
 
-    const isTspFitness =
+    const isPermutationFitness =
+      invertPermutationFitness &&
       searchSpaceId === "permutation" &&
       (seriesName === "fitness" || seriesName === "bestFitness");
 
-    const displaySeriesName = isTspFitness ? "tourLength" : seriesName;
+    const displaySeriesName = isPermutationFitness ? "tourLength" : seriesName;
+    const resolvedYAxisLabel = yAxisLabel ?? displaySeriesName;
 
     const boxplots = rawBoxplots
       .map((row) => {
         if (!Array.isArray(row) || row.length !== 5) return null;
+
         const values = row.map(Number);
         if (!values.every(Number.isFinite)) return null;
 
-        if (!isTspFitness) return values;
+        if (!isPermutationFitness) return values;
 
         return [-values[4], -values[3], -values[2], -values[1], -values[0]];
       })
@@ -35,7 +47,7 @@ function BoxPlotChart({ problemId, seriesName, boxPlotResponse, searchSpaceId })
 
     if (!boxplots.length) return null;
 
-    const xLabels = evaluations.slice(0, boxplots.length).map(String);
+    const labels = xValues.slice(0, boxplots.length).map(String);
 
     return {
       animation: false,
@@ -51,8 +63,8 @@ function BoxPlotChart({ problemId, seriesName, boxPlotResponse, searchSpaceId })
         formatter: (params) => {
           const value = params?.data ?? [];
           return [
-            `${problemId}`,
-            `Evaluation: ${params?.name ?? "-"}`,
+            displaySeriesName,
+            `${xAxisLabel}: ${params?.name ?? "-"}`,
             `Min: ${value[0] ?? "-"}`,
             `Q1: ${value[1] ?? "-"}`,
             `Median: ${value[2] ?? "-"}`,
@@ -63,8 +75,8 @@ function BoxPlotChart({ problemId, seriesName, boxPlotResponse, searchSpaceId })
       },
       xAxis: {
         type: "category",
-        data: xLabels,
-        name: "Evaluation",
+        data: labels,
+        name: xAxisLabel,
         nameLocation: "middle",
         nameGap: 55,
         axisLabel: {
@@ -73,7 +85,7 @@ function BoxPlotChart({ problemId, seriesName, boxPlotResponse, searchSpaceId })
       },
       yAxis: {
         type: "value",
-        name: displaySeriesName,
+        name: resolvedYAxisLabel,
         nameLocation: "middle",
         nameGap: 45,
         scale: true,
@@ -86,7 +98,14 @@ function BoxPlotChart({ problemId, seriesName, boxPlotResponse, searchSpaceId })
         },
       ],
     };
-  }, [problemId, seriesName, boxPlotResponse, searchSpaceId]);
+  }, [
+    seriesName,
+    boxPlotResponse,
+    searchSpaceId,
+    xAxisLabel,
+    yAxisLabel,
+    invertPermutationFitness,
+  ]);
 
   if (!option) {
     return <div>No boxplot data.</div>;

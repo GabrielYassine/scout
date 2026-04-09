@@ -1,11 +1,8 @@
 package dk.dtu.scout.backend.service;
 
-import dk.dtu.scout.backend.dto.run.AverageRunResponse;
-import dk.dtu.scout.backend.dto.run.BatchSummaryResponse;
-import dk.dtu.scout.backend.dto.run.RunGroupResponse;
-import dk.dtu.scout.backend.dto.run.RunResponse;
-import dk.dtu.scout.backend.dto.run.SeriesBoxPlotResponse;
+import dk.dtu.scout.backend.dto.run.*;
 import dk.dtu.scout.backend.dto.series.SeriesResponse;
+import dk.dtu.scout.backend.dto.study.RuntimeStudyPointResponse;
 import dk.dtu.scout.backend.util.ViewMapper;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +16,14 @@ import java.util.Map;
 public class StatisticsService {
     private static final int MAX_BOX_PLOTS = 50;
 
+    /**
+     * Builds the normal run summary used by the regular run page.
+     *
+     *  Includes:
+     *   average series per problem
+     *   boxplots for bestFitness
+     *   average runtime per problem
+     */
     public BatchSummaryResponse calculateSummary(List<RunGroupResponse> batches) {
         Map<String, List<RunResponse>> runsByProblem = groupRunsByProblem(batches);
 
@@ -29,6 +34,9 @@ public class StatisticsService {
         return new BatchSummaryResponse(averageByProblem, bestFitnessBoxPlotsByProblem,averageRunTimeByProblem);
     }
 
+    /**
+     * Groups all runs by problem id.
+     */
     private Map<String, List<RunResponse>> groupRunsByProblem(List<RunGroupResponse> batches) {
         Map<String, List<RunResponse>> runsByProblem = new LinkedHashMap<>();
 
@@ -42,6 +50,9 @@ public class StatisticsService {
 
         return runsByProblem;
     }
+    /**
+     * Computes average series data for every problem.
+     */
     private Map<String, AverageRunResponse> computeAverageByProblem(Map<String, List<RunResponse>> runsByProblem) {
         Map<String, AverageRunResponse> result = new LinkedHashMap<>();
         for (Map.Entry<String, List<RunResponse>> entry : runsByProblem.entrySet()) {
@@ -50,6 +61,9 @@ public class StatisticsService {
         return result;
     }
 
+    /**
+     * Computes bestFitness boxplots for every problem.
+     */
     private Map<String, SeriesBoxPlotResponse> computeBestFitnessBoxPlotsByProblem(Map<String, List<RunResponse>> runsByProblem) {
         Map<String, SeriesBoxPlotResponse> result = new LinkedHashMap<>();
         for (Map.Entry<String, List<RunResponse>> entry : runsByProblem.entrySet()) {
@@ -57,8 +71,9 @@ public class StatisticsService {
         }
         return result;
     }
-
-
+    /**
+     * Builds one runtime-study point for one problem size.
+     */
     private AverageRunResponse computeAverageRun(List<RunResponse> runs) {
         if (runs == null || runs.isEmpty()) {
             return ViewMapper.toAverageRunResponse(List.of(), List.of(), Map.of());
@@ -214,6 +229,31 @@ public class StatisticsService {
         }
 
         return result;
+    }
+
+
+    public RuntimeStudyPointResponse toRuntimeStudyPoint(int problemSize, BatchRunResponse batch) {
+        List<Double> values = new ArrayList<>();
+        for (RunGroupResponse group : batch.batches()) {
+            for (RunResponse run : group.runs()) {
+                values.add((double) run.finalEvaluations());
+            }
+        }
+
+        values.sort(Double::compareTo);
+
+        double mean = values.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
+
+        List<Double> boxPlot = values.isEmpty()
+                ? List.of()
+                : List.of(
+                values.getFirst(),
+                percentile(values, 25),
+                percentile(values, 50),
+                percentile(values, 75),
+                values.getLast()
+        );
+        return new RuntimeStudyPointResponse(problemSize, mean, boxPlot);
     }
 
 
