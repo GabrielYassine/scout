@@ -74,7 +74,15 @@ public class RunExecutor {
         int runtimes = request.runTimes();
         String runId = request.runId();
 
-        Supplier<SearchSpace<S>> searchSpaceFactory = () -> factory.createSearchSpace(request.searchSpaceId(), request.searchSpaceParams());
+        Map<String, Object> searchSpaceParams = request.searchSpaceParams() != null
+                ? new LinkedHashMap<>(request.searchSpaceParams())
+                : new LinkedHashMap<>();
+
+        if ("route-list".equals(request.searchSpaceId()) && searchSpaceParams.containsKey("vrpInstance")) {
+            searchSpaceParams.compute("vrpInstance", (k, rawInstance) -> InstanceMapper.toVrpInstance(rawInstance));
+        }
+
+        Supplier<SearchSpace<S>> searchSpaceFactory = () -> factory.createSearchSpace(request.searchSpaceId(), searchSpaceParams);
 
         long batchStartTime = System.nanoTime();
 
@@ -111,10 +119,6 @@ public class RunExecutor {
 
     private void logExecutorStats(String phase, int runs, String runId) {
         var pool = runExecutor.getThreadPoolExecutor();
-        if (pool == null) {
-            logger.info("{} runId={} runs={} executor=unavailable", phase, runId, runs);
-            return;
-        }
         int active = pool.getActiveCount();
         int queued = pool.getQueue().size();
         int poolSize = pool.getPoolSize();
@@ -142,12 +146,10 @@ public class RunExecutor {
                     : new LinkedHashMap<>();
 
             if ("tsp".equals(pid) && problemParams.containsKey("tspInstance")) {
-                Object rawInstance = problemParams.get("tspInstance");
-                problemParams.put("tspInstance", InstanceMapper.toTspInstance(rawInstance));
+                problemParams.compute("tspInstance", (k, rawInstance) -> InstanceMapper.toTspInstance(rawInstance));
             }
             if ("vrp".equals(pid) && problemParams.containsKey("vrpInstance")) {
-                Object rawInstance = problemParams.get("vrpInstance");
-                problemParams.put("vrpInstance", InstanceMapper.toVrpInstance(rawInstance));
+                problemParams.compute("vrpInstance", (k, rawInstance) -> InstanceMapper.toVrpInstance(rawInstance));
             }
 
             Problem<S> problem = factory.createProblem(pid, ss.dimension(), problemParams);

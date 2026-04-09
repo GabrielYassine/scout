@@ -70,13 +70,10 @@ public class RouteList implements SearchSpace<List<List<Integer>>> {
 
         if (params.containsKey("vrpInstance")) {
             Object vrpInstanceObj = params.get("vrpInstance");
-            if (vrpInstanceObj instanceof VRPInstance vrpInstance) {
-                this.instance = vrpInstance;
-            } else if (vrpInstanceObj instanceof Map<?, ?>) {
-                @SuppressWarnings("unchecked")
-                Map<String, Object> vrpInstanceMap = (Map<String, Object>) vrpInstanceObj;
-                this.instance = convertMapToInstance(vrpInstanceMap);
+            if (!(vrpInstanceObj instanceof VRPInstance vrpInstance)) {
+                throw new IllegalArgumentException("vrpInstance must be a VRPInstance");
             }
+            this.instance = vrpInstance;
         }
 
         if (instance != null) {
@@ -119,55 +116,5 @@ public class RouteList implements SearchSpace<List<List<Integer>>> {
         routes.add(new ArrayList<>(customers.subList(start, customers.size())));
 
         return routes;
-    }
-
-    private VRPInstance convertMapToInstance(Map<String, Object> vrpInstanceMap) {
-        String name = (String) vrpInstanceMap.getOrDefault("name", "Custom VRP Instance");
-        double capacity = toDouble(vrpInstanceMap.get("capacity"));
-
-        @SuppressWarnings("unchecked")
-        Map<String, Object> depotMap = (Map<String, Object>) vrpInstanceMap.get("depot");
-        if (depotMap == null) {
-            throw new IllegalArgumentException("VRP instance must have a depot");
-        }
-
-        double[] depotCoordinates = new double[] {
-                toDouble(depotMap.get("x")),
-                toDouble(depotMap.get("y"))
-        };
-
-        @SuppressWarnings("unchecked")
-        List<Map<String, Object>> customersList = (List<Map<String, Object>>) vrpInstanceMap.get("customers");
-        if (customersList == null || customersList.isEmpty()) {
-            throw new IllegalArgumentException("VRP instance must have customers");
-        }
-
-        int customerCount = customersList.size();
-        double[][] customerCoordinates = new double[customerCount][2];
-        double[] customerDemands = new double[customerCount];
-
-        for (int i = 0; i < customerCount; i++) {
-            Map<String, Object> customer = customersList.get(i);
-            customerCoordinates[i][0] = toDouble(customer.get("x"));
-            customerCoordinates[i][1] = toDouble(customer.get("y"));
-            customerDemands[i] = toDouble(customer.getOrDefault("demand", 0.0));
-        }
-
-        int numberOfVehicles = (int) toDouble(
-                vrpInstanceMap.getOrDefault("numberOfVehicles", customerCount)
-        );
-
-        return new VRPInstance(
-                name,
-                depotCoordinates,
-                customerCoordinates,
-                customerDemands,
-                capacity,
-                numberOfVehicles
-        );
-    }
-
-    private double toDouble(Object value) {
-        return value instanceof Number ? ((Number) value).doubleValue() : 0.0;
     }
 }

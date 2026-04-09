@@ -27,7 +27,7 @@
     "stopConditionIds": ["max-iterations" ],
     "stopConditionParams": { "maxIterations": 10000 },
 
-    "observerIds": ["tsp-tour"],
+    "observerIds": ["tour"],
 
     "seed": 1,
     "runTimes": 1

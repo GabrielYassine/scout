@@ -44,7 +44,7 @@ public class ElitistParentSelection<S> implements ParentSelectionRule<S> {
         sorted.sort(Comparator.comparingDouble(EvaluatedSolution<S>::fitness).reversed());
 
         if (sorted.size() == 1) {
-            return List.of(sorted.get(0), sorted.get(0));
+            return List.of(sorted.getFirst(), sorted.getFirst());
         }
 
         return List.of(sorted.get(0), sorted.get(1));

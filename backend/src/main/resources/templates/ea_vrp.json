@@ -28,7 +28,7 @@
     "stopConditionIds": ["max-iterations"],
     "stopConditionParams": { "maxIterations": 10000 },
 
-    "observerIds": ["vrp-tour"],
+    "observerIds": ["tour"],
 
     "seed": 1,
     "runTimes": 1
