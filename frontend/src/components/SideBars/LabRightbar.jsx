@@ -6,6 +6,7 @@ import { detectInstanceType, parseTspContent, parseVrpContent } from "./instance
 
 const CUSTOM_INSTANCE_NAME = "Custom Instance";
 const EDGE_WEIGHT_TYPE = "EUC_2D";
+const CUSTOM_EDITED_COMMENT = "Custom edited instance";
 
 const createEmptyTspInstance = () => ({
   name: CUSTOM_INSTANCE_NAME,
@@ -36,6 +37,15 @@ const markCustomImportIfNeeded = (next, prev) => {
     return { ...next, name: CUSTOM_INSTANCE_NAME, source: "custom" };
   }
   return next;
+};
+
+const applyEditedMetadata = (next, prev) => {
+  const updated = markCustomImportIfNeeded(next, prev);
+  return {
+    ...updated,
+    comment: CUSTOM_EDITED_COMMENT,
+    source: "custom",
+  };
 };
 
 const buildDepotList = (vrp) => {
@@ -104,7 +114,7 @@ export default function LabRightbar({
     onTspInstanceChange((prev) => {
       const base = prev ?? createEmptyTspInstance();
       const next = typeof updater === "function" ? updater(base) : updater;
-      return markCustomImportIfNeeded(next, prev);
+      return applyEditedMetadata(next, prev);
     });
   };
 
@@ -113,7 +123,7 @@ export default function LabRightbar({
     onVrpInstanceChange((prev) => {
       const base = prev ?? createEmptyVrpInstance();
       const next = typeof updater === "function" ? updater(base) : updater;
-      return markCustomImportIfNeeded(next, prev);
+      return applyEditedMetadata(next, prev);
     });
   };
 
@@ -237,6 +247,7 @@ export default function LabRightbar({
 
   const buildTspExportPayload = () => ({
     name: view.name || CUSTOM_INSTANCE_NAME,
+    comment: view.comment || "",
     cities: view.nodes.map((node, idx) => ({ id: idx, x: node.x, y: node.y })),
   });
 
@@ -261,6 +272,7 @@ export default function LabRightbar({
 
     return {
       name: view.name || CUSTOM_INSTANCE_NAME,
+      comment: view.comment || "",
       type: "CVRP",
       edgeWeightType: EDGE_WEIGHT_TYPE,
       capacity: view.capacity ?? 0,
@@ -561,6 +573,10 @@ export default function LabRightbar({
             <div className="instance-fields">
               <span className="instance-summary-label">Name:</span>
               <span className="instance-summary-value">{view.name || CUSTOM_INSTANCE_NAME}</span>
+              <span className="instance-summary-label">Comment:</span>
+              <span className="instance-summary-value">
+                {view.comment || "-"}
+              </span>
               <span className="instance-summary-label">Dimension:</span>
               <span className="instance-summary-value">{dimension}</span>
 

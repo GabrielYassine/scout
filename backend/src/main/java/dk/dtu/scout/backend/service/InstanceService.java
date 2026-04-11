@@ -23,18 +23,22 @@ public class InstanceService {
         sanitized.remove("exportType");
 
         String normalized = exportType.trim().toUpperCase(Locale.ROOT);
+        String comment = extractComment(sanitized);
         return switch (normalized) {
-            case "TSP" -> formatTsp(InstanceMapper.toTspInstance(sanitized));
-            case "VRP" -> formatVrp(InstanceMapper.toVrpInstance(sanitized));
+            case "TSP" -> formatTsp(InstanceMapper.toTspInstance(sanitized), comment);
+            case "VRP" -> formatVrp(InstanceMapper.toVrpInstance(sanitized), comment);
             default -> throw new IllegalArgumentException("exportType must be TSP or VRP");
         };
     }
 
-    private String formatTsp(TSPInstance instance) {
+    private String formatTsp(TSPInstance instance, String comment) {
         StringBuilder out = new StringBuilder();
         String name = normalizeName(instance.getName(), "Custom TSP Instance");
         out.append("NAME: ").append(name).append("\n");
         out.append("TYPE: TSP\n");
+        if (comment != null && !comment.isBlank()) {
+            out.append("COMMENT: ").append(comment).append("\n");
+        }
         out.append("DIMENSION: ").append(instance.getDimension()).append("\n");
         out.append("EDGE_WEIGHT_TYPE: EUC_2D\n");
         out.append("NODE_COORD_SECTION\n");
@@ -53,7 +57,7 @@ public class InstanceService {
         return out.toString();
     }
 
-    private String formatVrp(VRPInstance instance) {
+    private String formatVrp(VRPInstance instance, String comment) {
         StringBuilder out = new StringBuilder();
         String name = normalizeName(instance.getName(), "Custom VRP Instance");
         name = ensureVehicleSuffix(name, instance.getNumberOfVehicles());
@@ -61,25 +65,28 @@ public class InstanceService {
         int dimension = instance.getCustomerCount() + 1;
         out.append("NAME: ").append(name).append("\n");
         out.append("TYPE: CVRP\n");
+        if (comment != null && !comment.isBlank()) {
+            out.append("COMMENT: ").append(comment).append("\n");
+        }
         out.append("DIMENSION: ").append(dimension).append("\n");
         out.append("EDGE_WEIGHT_TYPE: EUC_2D\n");
-        out.append("CAPACITY: ").append(formatNumber(instance.getCapacity())).append("\n");
+        out.append("CAPACITY: ").append(formatInteger(instance.getCapacity())).append("\n");
         out.append("NODE_COORD_SECTION\n");
 
         double[] depot = instance.getDepotCoordinates();
         out.append("1 ")
-            .append(formatNumber(depot[0]))
+            .append(formatInteger(depot[0]))
             .append(" ")
-            .append(formatNumber(depot[1]))
+            .append(formatInteger(depot[1]))
             .append("\n");
 
         double[][] customers = instance.getCustomerCoordinates();
         for (int i = 0; i < customers.length; i++) {
             out.append(i + 2)
                 .append(" ")
-                .append(formatNumber(customers[i][0]))
+                .append(formatInteger(customers[i][0]))
                 .append(" ")
-                .append(formatNumber(customers[i][1]))
+                .append(formatInteger(customers[i][1]))
                 .append("\n");
         }
 
@@ -88,7 +95,7 @@ public class InstanceService {
         for (int i = 0; i < customers.length; i++) {
             out.append(i + 2)
                 .append(" ")
-                .append(formatNumber(instance.getDemand(i)))
+                .append(formatInteger(instance.getDemand(i)))
                 .append("\n");
         }
 
@@ -106,6 +113,21 @@ public class InstanceService {
         return name.trim();
     }
 
+    private String extractComment(Map<String, Object> payload) {
+        if (payload == null) {
+            return null;
+        }
+        Object raw = payload.get("comment");
+        if (raw == null) {
+            return null;
+        }
+        String text = raw.toString().trim();
+        if (text.isEmpty()) {
+            return null;
+        }
+        return text.replaceAll("\\s+", " ");
+    }
+
     private String ensureVehicleSuffix(String name, int vehicleCount) {
         if (vehicleCount > 0 && !name.matches(".*-k\\d+.*")) {
             return name + "-k" + vehicleCount;
@@ -118,5 +140,10 @@ public class InstanceService {
         DecimalFormat formatter = new DecimalFormat("0.######", symbols);
         formatter.setGroupingUsed(false);
         return formatter.format(value);
+    }
+
+    private String formatInteger(double value) {
+        long rounded = Math.round(value);
+        return Long.toString(rounded);
     }
 }
