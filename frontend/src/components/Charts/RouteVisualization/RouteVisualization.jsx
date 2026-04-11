@@ -12,7 +12,7 @@ const ROUTE_COLORS = [
   "#84cc16",
 ];
 
-export default function TSPVisualization({
+export default function RouteVisualization({
   tspData,
   run,
   width,
@@ -33,9 +33,11 @@ export default function TSPVisualization({
   const sourceData = useMemo(() => {
     if (run?.series?.tspTour && run?.series?.tspCities) {
       const tspCitiesSeries = run.series.tspCities;
-      const citiesData = Array.isArray(tspCitiesSeries)
-        ? (Array.isArray(tspCitiesSeries[0]) ? tspCitiesSeries[0] : tspCitiesSeries)
-        : null;
+
+      const citiesData =
+        Array.isArray(tspCitiesSeries?.[0]) || !tspCitiesSeries?.length
+          ? tspCitiesSeries[tspCitiesSeries.length - 1]
+          : tspCitiesSeries;
 
       const tspTourSeries = run.series.tspTour;
       const tourDataEntry = Array.isArray(tspTourSeries)
@@ -50,23 +52,26 @@ export default function TSPVisualization({
         cities: Array.isArray(citiesData)
           ? citiesData.map((city, index) => ({
               id: index,
-              x: city.x,
-              y: city.y,
+              x: Number(city.x),
+              y: Number(city.y),
               isDepot: city.isDepot === true,
             }))
           : [],
         observedTourLength: tourLength,
-        originalTourLength: run.series?.fitness?.[run.series.fitness.length - 1]
-          ? Math.abs(run.series.fitness[run.series.fitness.length - 1])
-          : null
+        originalTourLength:
+          run.series?.fitness?.[run.series.fitness.length - 1] != null
+            ? Math.abs(run.series.fitness[run.series.fitness.length - 1])
+            : null
       };
-    } else if (tspData) {
+    }
+
+    if (tspData) {
       return {
         tour: tspData.tour,
         cities: (tspData.cities ?? []).map((city, index) => ({
           id: city.id ?? index,
-          x: city.x,
-          y: city.y,
+          x: Number(city.x),
+          y: Number(city.y),
           isDepot: city.isDepot === true,
         })),
         originalTourLength: tspData.tourLength
@@ -80,14 +85,20 @@ export default function TSPVisualization({
   const [cities, setCities] = useState(() => [...initialCities]);
 
   useEffect(() => {
-    if (!containerRef.current || (width && height)) return;
+    if (draggedCity === null) {
+      setCities([...initialCities]);
+    }
+  }, [initialCities, draggedCity]);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
 
     const updateDimensions = () => {
       if (containerRef.current) {
         const { width: w, height: h } = containerRef.current.getBoundingClientRect();
         setDimensions({
-          width: Math.max(300, w),
-          height: Math.max(200, h)
+          width: width || Math.max(300, w),
+          height: height || Math.max(200, h)
         });
       }
     };
@@ -219,14 +230,16 @@ export default function TSPVisualization({
 
       if (indices.length === 0) return "";
 
+      const sequence = [...indices];
+
       if (depotIndex >= 0) {
-        if (indices[0] !== depotIndex) indices.unshift(depotIndex);
-        if (indices[indices.length - 1] !== depotIndex) indices.push(depotIndex);
+        if (sequence[0] !== depotIndex) sequence.unshift(depotIndex);
+        if (sequence[sequence.length - 1] !== depotIndex) sequence.push(depotIndex);
       } else {
-        indices.push(indices[0]);
+        sequence.push(sequence[0]);
       }
 
-      const pathPoints = indices
+      const pathPoints = sequence
         .map((cityIndex) => {
           const city = cities[cityIndex];
           if (!city) return null;
@@ -262,12 +275,15 @@ export default function TSPVisualization({
 
     for (const route of routes) {
       if (!Array.isArray(route) || route.length === 0) continue;
+
       const indices = route
         .map((v) => Number(v))
         .filter((v) => Number.isFinite(v));
+
       if (indices.length === 0) continue;
 
       const sequence = [...indices];
+
       if (startIndex != null) {
         if (sequence[0] !== startIndex) sequence.unshift(startIndex);
         if (sequence[sequence.length - 1] !== startIndex) sequence.push(startIndex);
@@ -278,6 +294,7 @@ export default function TSPVisualization({
       for (let i = 0; i < sequence.length - 1; i++) {
         const currentCity = cities[sequence[i]];
         const nextCity = cities[sequence[i + 1]];
+
         if (currentCity && nextCity) {
           const dx = currentCity.x - nextCity.x;
           const dy = currentCity.y - nextCity.y;

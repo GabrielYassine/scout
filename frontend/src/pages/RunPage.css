@@ -16,7 +16,8 @@
   flex: 1 1 auto;
   min-width: 0;
   padding: 16px;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: scroll;
 }
 
 .run-selector {

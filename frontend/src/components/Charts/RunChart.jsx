@@ -153,7 +153,6 @@ function RunChart({ run, runIndex, visibleCount, bestFitnessBoxPlot = null }) {
     const intervals = series.fitnessPhaseIntervals ?? [];
     if (!intervals.length) return;
     const label = run?.problemId ?? `run-${runIndex}`;
-    console.log(`[FitnessPhaseObserver] ${label}`, intervals);
   }, [series.fitnessPhaseIntervals, run?.problemId, runIndex]);
   const hasAnyData =
     displayKeys.length > 0 &&
@@ -182,7 +181,6 @@ function RunChart({ run, runIndex, visibleCount, bestFitnessBoxPlot = null }) {
           <HypercubePlot run={run} visibleCount={visibleCount} />
         ) : effectiveObserver === TSP_TOUR_KEY ? (
           <TSPVisualization
-            key={`tsp-${run?.problemId ?? "run"}-${(run?.series?.tspTour ?? []).length}-${(run?.series?.tspCities ?? []).length}`}
             run={run}
           />
         ) : isBestFitnessBoxPlot ? (

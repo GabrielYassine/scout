@@ -20,14 +20,17 @@ public record RunWsPayload(
     BatchRunResponse batch
 ) {
     public static RunWsPayload connected(String runId) {
+        System.out.println("Creating connected payload for run " + runId);
         return status("RUN_CONNECTED", runId, "Run session connected");
     }
 
     public static RunWsPayload disconnected(String runId) {
+        System.out.println("Creating disconnected payload for run " + runId);
         return status("RUN_DISCONNECTED", runId, "Run session disconnected");
     }
 
     public static RunWsPayload finished(String runId, BatchRunResponse batch) {
+        System.out.println("Creating finished payload for run " + runId);
         return new RunWsPayload(
             "RUN_FINISHED",
             runId,
@@ -45,6 +48,7 @@ public record RunWsPayload(
     }
 
     public static RunWsPayload failed(String runId, String message) {
+        System.out.println("Creating failed payload for run " + runId + " with message: " + message);
         return status("RUN_FAILED", runId, message == null ? "Run failed" : message);
     }
 

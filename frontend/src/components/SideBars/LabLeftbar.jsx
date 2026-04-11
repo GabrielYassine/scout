@@ -261,7 +261,24 @@ export default function LabLeftbar({
               />
             )}
 
-            {runMode =="run" && (
+            {runMode === "run" && (
+              <ParamField
+                def={{
+                  key: "logEveryIterations",
+                  label: "Backend log every X iterations",
+                  type: "int",
+                  min: 10,
+                  defaultValue: 10,
+                }}
+                disabled={disabled}
+                value={params.global?.logEveryIterations ?? 10}
+                onValueChange={(v) =>
+                  setParam("global", { key: "logEveryIterations", type: "int" }, v)
+                }
+              />
+            )}
+
+            {runMode === "run" && (
               <ParamField
                 def={{
                   key: "wsUpdateEveryIterations",

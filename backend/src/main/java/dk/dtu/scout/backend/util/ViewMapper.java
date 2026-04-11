@@ -215,6 +215,7 @@ public final class ViewMapper {
         long seed,
         int runTimes,
         String runId,
+        int logEveryIterations,
         int wsUpdateEveryIterations
     ) {
         return new RunRequest(
@@ -239,6 +240,7 @@ public final class ViewMapper {
             seed,
             runTimes,
             runId,
+            logEveryIterations,
             wsUpdateEveryIterations
         );
     }

@@ -186,33 +186,28 @@ function handleResetPlayback() {
 
       const appendSeriesValue = (series, key, value) => {
         if (value === undefined) return series;
+
         const next = { ...series };
+        const list = Array.isArray(next[key]) ? [...next[key]] : [];
 
-        if (Array.isArray(value)) {
-          const list = Array.isArray(next[key]) ? [...next[key]] : [];
-
-          if (key === "tspCities") {
-            if (list.length === 0) list.push(value);
-            next[key] = list;
-            return next;
-          }
-
-          if (key === "pheromoneHeatmap") {
-            list.push(value);
-            next[key] = list;
-            return next;
-          }
-
-          next[key] = [...value];
+        if (key === "tspCities") {
+          next[key] = [value];
           return next;
         }
 
-        const list = Array.isArray(next[key]) ? [...next[key]] : [];
-        if (key === "tspCities") {
-          if (list.length === 0) list.push(value);
-        } else {
+        if (key === "tspTour" || key === "pheromoneHeatmap") {
           list.push(value);
+          next[key] = list;
+          return next;
         }
+
+        if (Array.isArray(value)) {
+          list.push(value);
+          next[key] = list;
+          return next;
+        }
+
+        list.push(value);
         next[key] = list;
         return next;
       };
@@ -290,7 +285,13 @@ function handleResetPlayback() {
             return;
           }
 
+          if (data.type === "RUN_CONNECTED") {
+            console.log("Run WebSocket connected", { runId: data.runId, message: data.message });
+            return;
+          }
+
           if (data.type === "RUN_FINISHED") {
+            console.log("Run WebSocket finished", { runId: data.runId, message: data.message });
             setLoading(false);
             setBatch(normalizeBatch(data.batch ?? null));
             setSavedRun({
@@ -316,6 +317,7 @@ function handleResetPlayback() {
           }
 
           if (data.type === "RUN_DISCONNECTED") {
+            console.log("Run WebSocket disconnected", { runId: data.runId, message: data.message });
             client.deactivate();
           }
         });

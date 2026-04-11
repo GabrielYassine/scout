@@ -42,6 +42,9 @@ public class RunRequestValidator {
         if (request.runTimes() <= 0) {
             throw new BadRequestException("runTimes must be positive");
         }
+        if (request.logEveryIterations() < 0) {
+            throw new BadRequestException("logEveryIterations must be zero or positive");
+        }
     }
     public void runtimeStudyRequestValidator(RuntimeStudyRequest request) {
         if (request == null) {
@@ -96,21 +99,12 @@ public class RunRequestValidator {
         }
     }
 
-
     /**
      * Derives the logging interval based on a fraction of max iterations.
      * @param request The run request containing stop condition parameters
      * @return The number of iterations between log updates, defaulting to 10 or 0.1% of max iterations
      */
-    public int resolveLogEveryIterations(RunRequest request) {
-        int logEvery = 10;
-        if (request.stopConditionParams() != null && request.stopConditionIds().contains("max-iterations")) {
-            Object maxIterationsObj = request.stopConditionParams().get("maxIterations");
-            if (maxIterationsObj != null) {
-                int maxIterations = ((Number) maxIterationsObj).intValue();
-                logEvery = Math.max(10, maxIterations / 1000); // Log every 0.1% of iterations, with a minimum of every 10 iterations
-            }
-        }
-        return logEvery;
-    }
+public int resolveLogEveryIterations(RunRequest request) {
+    return request.logEveryIterations() > 0 ? request.logEveryIterations() : 10;
+}
 }

@@ -15,6 +15,9 @@
 .run-chart-inner {
   background: white;
   height: 30rem;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .observer-checkboxes {

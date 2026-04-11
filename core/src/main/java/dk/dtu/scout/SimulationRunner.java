@@ -48,10 +48,6 @@ public class SimulationRunner {
             List<Observer<S>> observers,
             int logEveryIterations
     ) {
-        if (logEveryIterations <= 0) {
-            throw new IllegalArgumentException("logEveryIterations must be positive");
-        }
-
         RunLog log = new RunLog();
         State sharedState = new State();
         sharedState.update(Map.of(

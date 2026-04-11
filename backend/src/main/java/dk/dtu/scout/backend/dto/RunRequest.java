@@ -28,5 +28,6 @@ public record RunRequest(
     long seed,
     int runTimes,
     String runId,
+   int logEveryIterations,
     int wsUpdateEveryIterations
  ) {}

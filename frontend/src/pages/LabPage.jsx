@@ -161,6 +161,7 @@ export default function LabPage({catalog, catalogLoading, catalogError, template
      }
 
      const runTimes = params.global?.runTimes ?? 1;
+     const logEveryIterations = params.global?.logEveryIterations ?? 100;
      const wsUpdateEveryIterations = params.global?.wsUpdateEveryIterations ?? 100;
      const runId = window.crypto?.randomUUID
        ? window.crypto.randomUUID()
@@ -188,6 +189,7 @@ export default function LabPage({catalog, catalogLoading, catalogError, template
        seed,
        runTimes,
        runId,
+       logEveryIterations,
        wsUpdateEveryIterations,
      };
 
