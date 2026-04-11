@@ -116,10 +116,19 @@
   cursor: not-allowed;
 }
 
+.tsp-export-btn {
+  margin-top: var(--spacing-sm);
+}
+
 .tsp-file-hint {
   color: var(--color-text);
   font-size: var(--font-xs);
   opacity: 0.6;
+}
+
+.tsp-upload-error {
+  color: #a02323;
+  font-size: var(--font-xs);
 }
 
 .tsp-instance-name {

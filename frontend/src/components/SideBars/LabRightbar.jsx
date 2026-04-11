@@ -91,6 +91,8 @@ export default function LabRightbar({
 }) {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState(null);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const fileInputRef = useRef(null);
 
@@ -230,6 +232,103 @@ export default function LabRightbar({
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
+    }
+  };
+
+  const buildTspExportPayload = () => ({
+    name: view.name || CUSTOM_INSTANCE_NAME,
+    cities: view.nodes.map((node, idx) => ({ id: idx, x: node.x, y: node.y })),
+  });
+
+  const buildVrpExportPayload = () => {
+    const depotNodes = view.nodes.filter((n) => n.isDepot);
+    const depots = depotNodes.map((d, idx) => ({
+      id: idx,
+      nodeId: d.nodeId ?? idx + 1,
+      x: d.x,
+      y: d.y,
+    }));
+    const customers = view.nodes
+      .filter((n) => !n.isDepot)
+      .map((c, idx) => ({
+        id: idx,
+        x: c.x,
+        y: c.y,
+        demand: c.demand ?? 0,
+        originalId: c.nodeId ?? idx + 1,
+      }));
+    const primaryDepot = depots[0] ? { x: depots[0].x, y: depots[0].y } : null;
+
+    return {
+      name: view.name || CUSTOM_INSTANCE_NAME,
+      type: "CVRP",
+      edgeWeightType: EDGE_WEIGHT_TYPE,
+      capacity: view.capacity ?? 0,
+      numberOfVehicles: view.numberOfVehicles ?? 1,
+      depot: primaryDepot,
+      depots,
+      customers,
+    };
+  };
+
+  const handleExport = async () => {
+    setExportError(null);
+
+    if (instanceType === "TSP" && view.nodes.length === 0) {
+      setExportError("Add at least one city before exporting.");
+      return;
+    }
+    if (instanceType === "VRP") {
+      const hasDepot = view.nodes.some((n) => n.isDepot);
+      const hasCustomer = view.nodes.some((n) => !n.isDepot);
+      if (!hasDepot || !hasCustomer) {
+        setExportError("Add at least one depot and one customer before exporting.");
+        return;
+      }
+    }
+
+    setExporting(true);
+    try {
+      const endpoint = "/api/instance/export";
+      const payload = instanceType === "VRP" ? buildVrpExportPayload() : buildTspExportPayload();
+      const requestBody = {
+        exportType: instanceType,
+        ...payload,
+      };
+
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!res.ok) {
+        const message = await res.text();
+        throw new Error(message || "Failed to export instance");
+      }
+
+      const content = await res.text();
+      const extension = instanceType === "VRP" ? "vrp" : "tsp";
+      const safeName = String(payload.name || "instance")
+        .trim()
+        .replace(/[^a-zA-Z0-9-_]+/g, "_")
+        .replace(/_+/g, "_");
+      const fileName = `${safeName || "instance"}.${extension}`;
+
+      const blob = new Blob([content], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setExportError(err.message || "Failed to export instance");
+      console.error("Instance export error:", err);
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -442,8 +541,17 @@ export default function LabRightbar({
               >
                 {uploading ? "Uploading..." : "Upload Instance File"}
               </label>
+              <button
+                className={`tsp-upload-btn tsp-export-btn ${exporting ? "disabled" : ""}`}
+                type="button"
+                onClick={handleExport}
+                disabled={exporting}
+              >
+                {exporting ? "Exporting..." : "Export Instance File"}
+              </button>
               <div className="tsp-file-hint">Accepts .tsp and .vrp file formats</div>
               {uploadError && <div className="tsp-upload-error">{uploadError}</div>}
+              {exportError && <div className="tsp-upload-error">{exportError}</div>}
             </div>
 
             <button className="view-graph-btn" onClick={() => setIsModalOpen(true)}>
