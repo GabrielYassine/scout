@@ -9,23 +9,32 @@ import "./RunPage.css";
 import "../components/SideBars/LabLeftbar.css";
 import "../components/SideBars/LabRightbar.css";
 import "../components/SideBars/FormFields.css";
+import { useLocalStorageState } from "../hooks/useLocalStorageState.js";
 
 export default function RunPage({ catalog, catalogLoading, catalogError }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const [savedRun, setSavedRun, clearSavedRun] = useLocalStorageState("scout:lastRun", null);
 
-  const pageMode = location.state?.pageMode ?? "run";
-  const runId = location.state?.runId ?? null;
-  const studyId = location.state?.studyId ?? null;
-  const runtimeStudyRequest = location.state?.runtimeStudyRequest ?? null;
+  const locationState = location.state ?? {};
 
-  const batchResponse = location.state?.batch ?? null;
-  const initialLoading = location.state?.loading ?? false;
-  const initialError = location.state?.error ?? null;
-  const puzzleConfig = location.state?.puzzleConfig ?? [];
-  const params = location.state?.params ?? [];
-  const initialTspInstance = location.state?.tspInstance ?? null;
-  const initialVrpInstance = location.state?.vrpInstance ?? null;
+  const pageMode =
+     locationState.pageMode ??
+     (locationState.runId ? "run" : null) ??
+     (locationState.studyId ? "runtimeStudy" : null) ??
+     savedRun?.pageMode ??
+     "run";
+  const runId = locationState.runId ?? null;
+  const studyId = locationState.studyId ?? null;
+
+  const batchResponse = locationState.batch ?? savedRun?.batch ?? null;
+  const initialLoading = locationState.loading ?? false;
+  const initialError = locationState.error ?? null;
+  const puzzleConfig = locationState.puzzleConfig ?? savedRun?.puzzleConfig ?? [];
+  const runtimeStudyRequest = locationState.runtimeStudyRequest ?? null;
+  const params = locationState.params ?? savedRun?.params ?? [];
+  const initialTspInstance = locationState.tspInstance ?? savedRun?.tspInstance ?? null;
+  const initialVrpInstance = locationState.vrpInstance ?? savedRun?.vrpInstance ?? null;
 
   const normalizeSeriesMap = (series) => {
     if (!series) return {};
@@ -55,7 +64,7 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
   };
 
   const [batch, setBatch] = useState(() => normalizeBatch(batchResponse ?? null));
-  const [studyPoints, setStudyPoints] = useState([]);
+  const [studyPoints, setStudyPoints] = useState(() => savedRun?.studyPoints ?? []);
   const [loading, setLoading] = useState(!!initialLoading);
   const [error, setError] = useState(initialError ?? null);
   const [playbackSpeed, setPlaybackSpeed] = useState(50);
@@ -82,9 +91,25 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
     [averageByProblem, averageRunTimeByProblem]
   );
 
-  const [selectedRunKey, setSelectedRunKey] = useState(
-    Object.keys(averageByProblem).length > 0 ? "average" : "0"
-  );
+ const [selectedRunKey, setSelectedRunKey] = useState(() => {
+   if (savedRun?.selectedRunKey != null) {
+     return savedRun.selectedRunKey;
+   }
+   return Object.keys(averageByProblem).length > 0 ? "average" : "0";
+ });
+
+ function handleSelectedRunChange(value) {
+   setSelectedRunKey(value);
+
+   setSavedRun((prev) =>
+     prev
+       ? {
+           ...prev,
+           selectedRunKey: value,
+         }
+       : prev
+   );
+ }
 
   const effectiveSelectedRunKey =
     selectedRunKey === "average" && averageRuns.length === 0 && batches.length > 0
@@ -129,7 +154,7 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
          return Math.max(hypercubeLen, tspLen, ...normalLens, run.evaluations?.length ?? 0);
        })
      );
-   }, [runs]);
+   }, [pageMode, studyPoints, runs]);
    useEffect(() => {
      if (!currentAnimationLength) return;
 
@@ -268,6 +293,17 @@ function handleResetPlayback() {
           if (data.type === "RUN_FINISHED") {
             setLoading(false);
             setBatch(normalizeBatch(data.batch ?? null));
+            setSavedRun({
+                pageMode: "run",
+                batch: normalizeBatch(data.batch ?? null),
+                studyPoints: [],
+                puzzleConfig,
+                params,
+                tspInstance,
+                vrpInstance,
+                selectedRunKey,
+                savedAt: Date.now(),
+              });
             client.deactivate();
             return;
           }
@@ -322,12 +358,21 @@ function handleResetPlayback() {
           const data = JSON.parse(message.body);
 
           if (data.type === "STUDY_FINISHED") {
+          const sortedPoints = [...(data.study?.points ?? [])].sort(
+              (a, b) => Number(a.problemSize) - Number(b.problemSize)
+           );
             setLoading(false);
-            setStudyPoints(
-              [...(data.study?.points ?? [])].sort(
-                (a, b) => Number(a.problemSize) - Number(b.problemSize)
-              )
-            );
+            setStudyPoints(sortedPoints);
+            setSavedRun({
+                pageMode: "runtimeStudy",
+                batch: null,
+                studyPoints: sortedPoints,
+                puzzleConfig,
+                params,
+                tspInstance,
+                vrpInstance,
+                savedAt: Date.now(),
+              });
             client.deactivate();
             return;
           }
@@ -472,7 +517,7 @@ function handleResetPlayback() {
                       id="batch-select"
                       className="field-input"
                       value={effectiveSelectedRunKey}
-                      onChange={(e) => setSelectedRunKey(e.target.value)}
+                      onChange={(e) => handleSelectedRunChange(e.target.value)}
                     >
                       {averageRuns.length > 0 && <option value="average">Average</option>}
                       {batches.map((batch, idx) => (

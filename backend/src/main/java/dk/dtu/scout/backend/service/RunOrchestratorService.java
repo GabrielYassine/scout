@@ -24,7 +24,6 @@ import java.util.concurrent.Executor;
 public class RunOrchestratorService {
 
     private final RunRequestValidator runRequestValidator;
-    private final RuntimeStudyRequestValidator runtimeStudyRequestValidator;
     private final RunExecutor runExecutor;
     private final StatisticsService statisticsService;
     private final WsSender wsSender;
@@ -33,7 +32,6 @@ public class RunOrchestratorService {
 
     public RunOrchestratorService(
             RunRequestValidator runRequestValidator,
-            RuntimeStudyRequestValidator runtimeStudyRequestValidator,
             RunExecutor runExecutor,
             StatisticsService statisticsService,
             WsSender wsSender,
@@ -41,7 +39,6 @@ public class RunOrchestratorService {
             @Qualifier("requestExecutor") Executor requestExecutor
     ) {
         this.runRequestValidator = runRequestValidator;
-        this.runtimeStudyRequestValidator = runtimeStudyRequestValidator;
         this.runExecutor = runExecutor;
         this.statisticsService = statisticsService;
         this.wsSender = wsSender;
@@ -50,12 +47,12 @@ public class RunOrchestratorService {
     }
 
     public void startRun(RunRequest request) {
-        runRequestValidator.validate(request);
+        runRequestValidator.runRequestValidator(request);
         CompletableFuture.runAsync(() -> run(request), requestExecutor).exceptionally(ex -> null);
     }
 
     public BatchRunResponse run(RunRequest request) {
-        runRequestValidator.validate(request);
+        runRequestValidator.runRequestValidator(request);
         int logEvery = runRequestValidator.resolveLogEveryIterations(request); // When we log progress in the backend
         int wsUpdateEvery = request.wsUpdateEveryIterations() > 0 ? request.wsUpdateEveryIterations() : logEvery; // When we update frontend
         try {
@@ -75,7 +72,7 @@ public class RunOrchestratorService {
     }
 
     public void startRuntimeStudy(RuntimeStudyRequest request) {
-        runtimeStudyRequestValidator.validate(request);
+        runRequestValidator.runtimeStudyRequestValidator(request);
         System.out.println("Starting runtime study with ID: " + request.studyId());
         CompletableFuture.runAsync(() -> runRuntimeStudy(request), requestExecutor).exceptionally(ex -> {
             wsSender.sendToStudy(
@@ -88,7 +85,7 @@ public class RunOrchestratorService {
     }
 
     public RuntimeStudyResponse runRuntimeStudy(RuntimeStudyRequest request) {
-        runtimeStudyRequestValidator.validate(request);
+        runRequestValidator.runtimeStudyRequestValidator(request);
 
         List<RuntimeStudyPointResponse> points = new ArrayList<>();
         List<Integer> sizes = request.problemSizes();

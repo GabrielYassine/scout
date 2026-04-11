@@ -211,7 +211,7 @@ export default function LabPage({catalog, catalogLoading, catalogError, template
      }
 
      navigate("/run", {
-       state: { loading: true, puzzleConfig, params, tspInstance, vrpInstance, runId },
+       state: { pageMode: "run", loading: true, puzzleConfig, params, tspInstance, vrpInstance, runId },
      });
    } catch (err) {
      showToast(err.message || "Failed to start run");
