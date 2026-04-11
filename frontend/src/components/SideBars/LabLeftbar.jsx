@@ -46,6 +46,9 @@ export default function LabLeftbar({
     observer: true,
   });
 
+  const [showModeConfirm, setShowModeConfirm] = useState(false);
+  const [pendingMode, setPendingMode] = useState(null);
+
   const disabled = readOnly || catalogLoading || !!catalogError;
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const runMode = params.global?.experimentType ?? "run";
@@ -69,7 +72,12 @@ export default function LabLeftbar({
     return list.find((item) => item.id === id) ?? null;
   };
 
-  // Check if all required pieces are placed
+  const placedPieceCount = useMemo(() => {
+    return Object.values(puzzleConfig ?? {}).reduce((sum, group) => {
+      return sum + (Array.isArray(group) ? group.length : 0);
+    }, 0);
+  }, [puzzleConfig]);
+
   const allPiecesPlaced = useMemo(() => {
     return (
       puzzleConfig.searchSpace &&
@@ -94,6 +102,42 @@ export default function LabLeftbar({
       ...currentParams,
       [def.key]: parsedValue,
     });
+  }
+
+  function handleModeChange(nextMode) {
+    const currentMode = params.global?.experimentType ?? "run";
+
+    if (nextMode === currentMode) return;
+
+    const switchingToRuntimeStudy = nextMode === "runtimeStudy";
+
+    if (switchingToRuntimeStudy && placedPieceCount > 0) {
+      setPendingMode(nextMode);
+      setShowModeConfirm(true);
+      return;
+    }
+
+    onParamChange("global", {
+      ...(params.global ?? {}),
+      experimentType: nextMode,
+    });
+  }
+
+  function confirmModeChange() {
+    if (!pendingMode) return;
+
+    onParamChange("global", {
+      ...(params.global ?? {}),
+      experimentType: pendingMode,
+    });
+
+    setPendingMode(null);
+    setShowModeConfirm(false);
+  }
+
+  function cancelModeChange() {
+    setPendingMode(null);
+    setShowModeConfirm(false);
   }
 
   const renderPieceSection = (type, title) => {
@@ -202,12 +246,7 @@ export default function LabLeftbar({
                 className="field-input"
                 disabled={disabled}
                 value={runMode}
-                onChange={(e) =>
-                  onParamChange("global", {
-                    ...(params.global ?? {}),
-                    experimentType: e.target.value,
-                  })
-                }
+                onChange={(e) => handleModeChange(e.target.value)}
               >
                 <option value="run">Standard Run</option>
                 <option value="runtimeStudy">Runtime Study</option>
@@ -338,6 +377,34 @@ export default function LabLeftbar({
           Reset
         </button>
       </div>
+
+     {showModeConfirm && (
+       <div className="mode-confirm-overlay">
+         <div className="mode-confirm-modal" role="dialog" aria-modal="true">
+           <h3>Switch to Runtime Study?</h3>
+           <p>Switching to Runtime Study will reset your current puzzle configuration.</p>
+           <p>All selected puzzle pieces and their parameter setup will be removed.</p>
+           <p>Are you sure you want to continue?</p>
+
+           <div className="mode-confirm-actions">
+             <button
+               type="button"
+               className="btn btn--red"
+               onClick={cancelModeChange}
+             >
+               Cancel
+             </button>
+             <button
+               type="button"
+               className="btn btn--green"
+               onClick={confirmModeChange}
+             >
+               Yes, reset and continue
+             </button>
+           </div>
+         </div>
+       </div>
+     )}
     </section>
   );
 }

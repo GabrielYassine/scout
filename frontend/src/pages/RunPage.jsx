@@ -100,7 +100,6 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
 
  function handleSelectedRunChange(value) {
    setSelectedRunKey(value);
-
    setSavedRun((prev) =>
      prev
        ? {
@@ -111,10 +110,16 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
    );
  }
 
-  const effectiveSelectedRunKey =
-    selectedRunKey === "average" && averageRuns.length === 0 && batches.length > 0
-      ? "0"
-      : selectedRunKey;
+  function normalizeSelectedRunKey(selectedKey, averageRuns, batches) {
+       const hasAverage = averageRuns.length > 0;
+       const numericIndex = Number(selectedKey);
+       if (!Number.isInteger(numericIndex) || numericIndex < 0 || numericIndex >= batches.length) {
+         return hasAverage ? "average" : "0";
+       }
+      return String(numericIndex);
+  }
+
+  const effectiveSelectedRunKey = normalizeSelectedRunKey(selectedRunKey,averageRuns,batches);
 
   const selectedBatch =
     effectiveSelectedRunKey === "average" ? null : batches[Number(effectiveSelectedRunKey)];
@@ -302,7 +307,7 @@ function handleResetPlayback() {
                 params,
                 tspInstance,
                 vrpInstance,
-                selectedRunKey,
+                selectedRunKey: 0,
                 savedAt: Date.now(),
               });
             client.deactivate();
