@@ -13,7 +13,16 @@ export default function TSPGraphModal({
   onRemoveCity,
   onDepotToggle,
 }) {
-  const cities = tspInstance?.cities ?? [];
+  const cities = nodes.length
+    ? nodes.map((node, idx) => ({
+        id: idx,
+        x: node.x,
+        y: node.y,
+        isDepot: node.isDepot,
+      }))
+    : tspInstance?.cities ?? [];
+
+  const depotSignature = nodes.map((node) => (node.isDepot ? "1" : "0")).join("");
 
   const handleCitiesChange = (updatedCities) => {
     onCitiesUpdate?.(updatedCities);
@@ -31,7 +40,7 @@ export default function TSPGraphModal({
     <div className="tsp-modal-overlay" onClick={onClose}>
       <div className="tsp-modal-container" onClick={(e) => e.stopPropagation()}>
         <div className="tsp-modal-header">
-          <h3>TSP Graph Editor</h3>
+          <h3>Route Graph Editor</h3>
           <button className="tsp-modal-close" onClick={onClose}><span>×</span></button>
         </div>
 
@@ -39,7 +48,7 @@ export default function TSPGraphModal({
           <div className="tsp-modal-split">
             <div className="tsp-modal-graph">
               <TSPVisualization
-                key={`tsp-editor-${tspInstance?.name ?? "tsp"}-${cities.length}`}
+                key={`tsp-editor-${tspInstance?.name ?? "tsp"}-${cities.length}-${depotSignature}`}
                 tspData={tspData}
                 width={600}
                 height={400}

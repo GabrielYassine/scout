@@ -34,9 +34,7 @@
   --sidebar-width: clamp(8rem, 15vw, 22rem);
 
   /** Puzzle Dimensions */
-  --puzzle-piece-size: 11rem;
-  --puzzle-horizontal-overlap: 2.5rem;
-  --puzzle-vertical-overlap: 2.5rem;
+  --puzzle-piece-max-size: 11rem;
   --puzzle-row-pieces: 6;
 
   /* Puzzle Type Colors */

@@ -6,8 +6,15 @@
 }
 
 .shared-drop-area {
+    --puzzle-piece-size: clamp(6rem, 12vw, var(--puzzle-piece-max-size));
+    --puzzle-horizontal-overlap: calc(var(--puzzle-piece-size) * 0.23);
+    --puzzle-vertical-overlap: calc(var(--puzzle-piece-size) * 0.23);
+
     display: grid;
-    grid-template-columns: repeat(var(--puzzle-row-pieces), calc(var(--puzzle-piece-size) - var(--puzzle-horizontal-overlap)));
+    grid-template-columns: repeat(
+        var(--puzzle-row-pieces),
+        calc(var(--puzzle-piece-size) - var(--puzzle-horizontal-overlap))
+    );
     grid-auto-rows: calc(var(--puzzle-piece-size) - var(--puzzle-vertical-overlap));
 
     width: 100%;

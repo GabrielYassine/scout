@@ -118,11 +118,12 @@ export default function LabRightbar({
   const getViewModel = () => {
     if (instanceType === "VRP") {
       const nodes = buildVrpNodes(vrpInstance);
+      const vrpVehicles = vrpInstance?.numberOfVehicles;
       return {
         name: vrpInstance?.name ?? CUSTOM_INSTANCE_NAME,
         comment: vrpInstance?.comment ?? "",
         type: "VRP",
-        numberOfVehicles: vrpInstance?.numberOfVehicles ?? 1,
+        numberOfVehicles: vrpVehicles === "" ? "" : vrpVehicles ?? 1,
         capacity: vrpInstance?.capacity ?? "",
         nodes,
       };
@@ -246,6 +247,14 @@ export default function LabRightbar({
 
   const handleVehicleChange = (value) => {
     if (instanceType !== "VRP") return;
+    if (value === "") {
+      updateVrpInstance((current) => ({
+        ...current,
+        numberOfVehicles: "",
+      }));
+      return;
+    }
+
     const parsed = Number(value);
     if (!Number.isFinite(parsed)) return;
     const nextValue = Math.max(1, Math.floor(parsed));
@@ -253,6 +262,16 @@ export default function LabRightbar({
     updateVrpInstance((current) => ({
       ...current,
       numberOfVehicles: nextValue,
+    }));
+  };
+
+  const handleVehicleBlur = () => {
+    if (instanceType !== "VRP") return;
+    if (view.numberOfVehicles !== "") return;
+
+    updateVrpInstance((current) => ({
+      ...current,
+      numberOfVehicles: 1,
     }));
   };
 
@@ -273,6 +292,16 @@ export default function LabRightbar({
     updateVrpInstance((current) => ({
       ...current,
       capacity: nextValue,
+    }));
+  };
+
+  const handleCapacityBlur = () => {
+    if (instanceType !== "VRP") return;
+    if (view.capacity !== "") return;
+
+    updateVrpInstance((current) => ({
+      ...current,
+      capacity: 0,
     }));
   };
 
@@ -451,6 +480,7 @@ export default function LabRightbar({
                   type="number"
                   value={view.capacity}
                   onChange={(e) => handleCapacityChange(e.target.value)}
+                  onBlur={handleCapacityBlur}
                   disabled={instanceType === "TSP"}
                 />
               </FieldRow>
@@ -460,6 +490,7 @@ export default function LabRightbar({
                   type="number"
                   value={view.numberOfVehicles}
                   onChange={(e) => handleVehicleChange(e.target.value)}
+                  onBlur={handleVehicleBlur}
                   disabled={instanceType === "TSP"}
                 />
               </FieldRow>
