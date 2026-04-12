@@ -10,8 +10,16 @@ import "./LabPage.css";
 
 import { usePuzzleConfig } from "@/shared/contexts/PuzzleConfigContext.jsx";
 import { useLocalStorageState } from "@/shared/hooks/useLocalStorageState.js";
+import { startRun } from "@/shared/api/run.js";
 
-export default function LabPage({catalog, catalogLoading, catalogError, templates, templatesLoading, templatesError}) {
+export default function LabPage({
+  catalog,
+  catalogLoading,
+  catalogError,
+  templates,
+  templatesLoading,
+  templatesError,
+}) {
   const {
     puzzleConfig,
     params,
@@ -212,24 +220,7 @@ export default function LabPage({catalog, catalogLoading, catalogError, template
        wsUpdateEveryIterations,
      };
 
-     const res = await fetch("/api/run", {
-       method: "POST",
-       headers: { "Content-Type": "application/json" },
-       body: JSON.stringify(body),
-     });
-
-     if (!res.ok) {
-       let message = `Run failed with status ${res.status}`;
-       try {
-         const data = await res.json();
-         if (data?.message) {
-           message = data.message;
-         }
-       } catch {
-         console.error("Failed to parse error response as JSON");
-       }
-       throw new Error(message);
-     }
+     await startRun(body);
 
      setSavedRun({
        pageMode: "run",

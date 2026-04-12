@@ -1,4 +1,3 @@
-import "./LabLeftbar.css";
 import FieldRow from "./FieldRow.jsx";
 
 export default function ParamField({ def, value, onValueChange, disabled }) {

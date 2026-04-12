@@ -1,4 +1,4 @@
-import "./LabLeftbar.css";
+// Section no longer imports sidebar-specific CSS so it can be shared.
 
 // A collapsible section component for the lab left sidebar
 // @author s235257

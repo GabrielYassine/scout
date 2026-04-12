@@ -1,107 +1,31 @@
-import { useState, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import RouteGraphModal from "@/features/run/components/charts/RouteGraphModal.jsx";
 import FieldRow from "./FieldRow.jsx";
+import ParamField from "./ParamField.jsx";
+import SidebarSection from "./SidebarSection.jsx";
 
+import "./FormFields.css";
 import "./LabRightbar.css";
 
 import { detectInstanceType, parseTspContent, parseVrpContent } from "./instanceParsing.js";
+import {
+  applyEditedMetadata,
+  buildVrpNodes,
+  createEmptyTspInstance,
+  createEmptyVrpInstance,
+  CUSTOM_INSTANCE_NAME,
+  EDGE_WEIGHT_TYPE,
+  getNextNodeId,
+} from "./instanceModel.js";
 
-const CUSTOM_INSTANCE_NAME = "Custom Instance";
-const EDGE_WEIGHT_TYPE = "EUC_2D";
-const CUSTOM_EDITED_COMMENT = "Custom edited instance";
-
-const createEmptyTspInstance = () => ({
-  name: CUSTOM_INSTANCE_NAME,
-  comment: "",
-  type: "TSP",
-  dimension: 0,
-  edgeWeightType: EDGE_WEIGHT_TYPE,
-  cities: [],
-  source: "manual",
-});
-
-const createEmptyVrpInstance = () => ({
-  name: CUSTOM_INSTANCE_NAME,
-  comment: "",
-  type: "CVRP",
-  dimension: 0,
-  edgeWeightType: EDGE_WEIGHT_TYPE,
-  capacity: "",
-  numberOfVehicles: "",
-  depot: { x: 0, y: 0 },
-  depots: [{ id: 0, x: 0, y: 0 }],
-  customers: [],
-  source: "manual",
-});
-
-const markCustomImportIfNeeded = (next, prev) => {
-  if (prev?.source === "import") {
-    return { ...next, name: CUSTOM_INSTANCE_NAME, source: "custom" };
-  }
-  return next;
-};
-
-const applyEditedMetadata = (next, prev) => {
-  const updated = markCustomImportIfNeeded(next, prev);
-  return {
-    ...updated,
-    comment: CUSTOM_EDITED_COMMENT,
-    source: "custom",
-  };
-};
-
-const buildDepotList = (vrp) => {
-  if (Array.isArray(vrp?.depots)) {
-    return vrp.depots.map((d, idx) => ({
-      id: idx,
-      nodeId: d.nodeId ?? d.originalId ?? idx,
-      x: d.x,
-      y: d.y,
-    }));
-  }
-  if (vrp?.depot) {
-    return [{ id: 0, nodeId: 1, x: vrp.depot.x, y: vrp.depot.y }];
-  }
-  return [];
-};
-
-const buildVrpNodes = (vrp) => {
-  const depots = buildDepotList(vrp).map((d) => ({
-    key: `depot-${d.nodeId}`,
-    nodeId: d.nodeId,
-    x: d.x,
-    y: d.y,
-    demand: 0,
-    isDepot: true,
-  }));
-  const depotIds = new Set(depots.map((d) => d.nodeId));
-  const customers = (vrp?.customers ?? [])
-    .map((c, idx) => ({
-      key: `cust-${c.originalId ?? idx}`,
-      nodeId: c.originalId ?? idx + 1,
-      x: c.x,
-      y: c.y,
-      demand: c.demand ?? 0,
-      isDepot: false,
-    }))
-    .filter((c) => !depotIds.has(c.nodeId));
-  return [...depots, ...customers].sort((a, b) => (a.nodeId ?? 0) - (b.nodeId ?? 0));
-};
-
-const getNextNodeId = (nodes) => {
-  if (!nodes.length) return 1;
-  const maxId = Math.max(...nodes.map((n) => Number(n.nodeId) || 0));
-  return maxId + 1;
-};
-
-export default function LabRightbar({
+const LabRightbar = ({
   hoverInfo,
   tspInstance,
   vrpInstance,
   onTspInstanceChange,
   onVrpInstanceChange,
-}) {
+}) => {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState(null);
   const [exporting, setExporting] = useState(false);
@@ -512,15 +436,16 @@ export default function LabRightbar({
     syncCitiesToVrp(updatedNodes);
   };
 
+  const depotCount = useMemo(
+    () => (instanceType === "VRP" ? view.nodes.filter((n) => n.isDepot).length : 0),
+    [instanceType, view.nodes]
+  );
+
   return (
     <section className="lab-rightbar">
       <div className="lr-content">
-        <div className="lr-section">
-          <div className="lr-section-header">
-            <div className="lr-section-title">Description</div>
-          </div>
-
-          <div className="lr-section-body lr-description-body">
+        <SidebarSection title="Description" collapsible={false}>
+          <div className="lr-description-body">
             {hoverInfo ? (
               <>
                 <div className="lr-selected-piece">{hoverInfo.title}</div>
@@ -532,98 +457,92 @@ export default function LabRightbar({
               </div>
             )}
           </div>
-        </div>
+        </SidebarSection>
 
-        <div className="lr-section">
-          <div className="lr-section-header">
-            <div className="lr-section-title">Problem Instance</div>
-          </div>
-
-          <div className="lr-section-body">
-            <div className="tsp-upload-section">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".tsp,.vrp,.txt"
-                onChange={handleFileUpload}
-                disabled={uploading}
-                className="tsp-file-input"
-                id="instance-file-upload"
-              />
-              <label
-                htmlFor="instance-file-upload"
-                className={`tsp-upload-btn ${uploading ? "disabled" : ""}`}
-              >
-                {uploading ? "Uploading..." : "Upload Instance File"}
-              </label>
-              <button
-                className={`tsp-upload-btn tsp-export-btn ${exporting ? "disabled" : ""}`}
-                type="button"
-                onClick={handleExport}
-                disabled={exporting}
-              >
-                {exporting ? "Exporting..." : "Export Instance File"}
-              </button>
-              <div className="tsp-file-hint">Accepts .tsp and .vrp file formats</div>
-              {uploadError && <div className="tsp-upload-error">{uploadError}</div>}
-              {exportError && <div className="tsp-upload-error">{exportError}</div>}
-            </div>
-
-            <button className="view-graph-btn" onClick={() => setIsModalOpen(true)}>
-              Edit Graph
+        <SidebarSection title="Problem Instance" collapsible={false}>
+          <div className="tsp-upload-section">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".tsp,.vrp,.txt"
+              onChange={handleFileUpload}
+              disabled={uploading}
+              className="tsp-file-input"
+              id="instance-file-upload"
+            />
+            <label
+              htmlFor="instance-file-upload"
+              className={`tsp-upload-btn ${uploading ? "disabled" : ""}`}
+            >
+              {uploading ? "Uploading..." : "Upload Instance File"}
+            </label>
+            <button
+              className={`tsp-upload-btn tsp-export-btn ${exporting ? "disabled" : ""}`}
+              type="button"
+              onClick={handleExport}
+              disabled={exporting}
+            >
+              {exporting ? "Exporting..." : "Export Instance File"}
             </button>
-
-            <div className="instance-fields">
-              <span className="instance-summary-label">Name:</span>
-              <span className="instance-summary-value">{view.name || CUSTOM_INSTANCE_NAME}</span>
-              <span className="instance-summary-label">Comment:</span>
-              <span className="instance-summary-value">
-                {view.comment || "-"}
-              </span>
-              <span className="instance-summary-label">Dimension:</span>
-              <span className="instance-summary-value">{dimension}</span>
-
-              <FieldRow label="Type">
-                <select
-                  className="field-input"
-                  value={instanceType}
-                  onChange={(e) => handleTypeChange(e.target.value)}
-                >
-                  <option value="TSP">TSP</option>
-                  <option value="VRP">VRP</option>
-                </select>
-              </FieldRow>
-              <FieldRow label="Edge Weight Type">
-                <input
-                  className="field-input"
-                  value={EDGE_WEIGHT_TYPE}
-                  readOnly
-                  disabled
-                />
-              </FieldRow>
-              <FieldRow label="Capacity">
-                <input
-                  className="field-input"
-                  type="number"
-                  value={view.capacity}
-                  onChange={(e) => handleCapacityChange(e.target.value)}
-                  onBlur={handleCapacityBlur}
-                  disabled={instanceType === "TSP"}
-                />
-              </FieldRow>
-              <FieldRow label="Vehicle Amount">
-                <input
-                  className="field-input"
-                  type="number"
-                  value={view.numberOfVehicles}
-                  onChange={(e) => handleVehicleChange(e.target.value)}
-                  onBlur={handleVehicleBlur}
-                  disabled={instanceType === "TSP"}
-                />
-              </FieldRow>
-            </div>
+            <div className="tsp-file-hint">Accepts .tsp and .vrp file formats</div>
+            {uploadError && <div className="tsp-upload-error">{uploadError}</div>}
+            {exportError && <div className="tsp-upload-error">{exportError}</div>}
           </div>
-        </div>
+
+          <button className="view-graph-btn" onClick={() => setIsModalOpen(true)}>
+            Edit Graph
+          </button>
+
+          <div className="instance-fields">
+            <span className="instance-summary-label">Name:</span>
+            <span className="instance-summary-value">{view.name || CUSTOM_INSTANCE_NAME}</span>
+            <span className="instance-summary-label">Comment:</span>
+            <span className="instance-summary-value">
+              {view.comment || "-"}
+            </span>
+            <span className="instance-summary-label">Dimension:</span>
+            <span className="instance-summary-value">{dimension}</span>
+
+            <FieldRow label="Type">
+              <select
+                className="field-input"
+                value={instanceType}
+                onChange={(e) => handleTypeChange(e.target.value)}
+              >
+                <option value="TSP">TSP</option>
+                <option value="VRP">VRP</option>
+              </select>
+            </FieldRow>
+
+            <ParamField
+              def={{ key: "capacity", label: "Capacity", type: "double", min: 0, defaultValue: 0 }}
+              value={view.capacity}
+              disabled={instanceType === "TSP"}
+              onValueChange={(v) => handleCapacityChange(v)}
+            />
+
+            <ParamField
+              def={{
+                key: "numberOfVehicles",
+                label: "Vehicle Amount",
+                type: "int",
+                min: 1,
+                defaultValue: 1,
+              }}
+              value={view.numberOfVehicles}
+              disabled={instanceType === "TSP"}
+              onValueChange={(v) => handleVehicleChange(v)}
+            />
+
+            <FieldRow label="Edge Weight Type">
+              <input className="field-input" value={EDGE_WEIGHT_TYPE} readOnly disabled />
+            </FieldRow>
+          </div>
+
+          {instanceType === "VRP" && depotCount <= 1 && (
+            <div className="tsp-file-hint">VRP needs at least one depot.</div>
+          )}
+        </SidebarSection>
       </div>
 
       <RouteGraphModal
@@ -648,4 +567,6 @@ export default function LabRightbar({
       />
     </section>
   );
-}
+};
+
+export default LabRightbar;
