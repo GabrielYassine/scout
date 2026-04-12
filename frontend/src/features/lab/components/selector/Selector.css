@@ -5,6 +5,18 @@
     flex-direction: column;
 }
 
+.option-list-outer {
+    --puzzle-piece-size: clamp(6rem, 12vw, var(--puzzle-piece-max-size));
+
+    border: 3px solid var(--color-border);
+    border-top: none;
+    background: var(--color-panel);
+    position: relative;
+    overflow: hidden;
+    flex: 1;
+    min-height: 0;
+}
+
 .tab-buttons-row {
     display: flex;
     flex-direction: row;
@@ -43,16 +55,6 @@
     color: white;
     font-weight: 600;
     border-bottom: none;
-}
-
-.option-list-outer {
-    border: 3px solid var(--color-border);
-    border-top: none;
-    background: var(--color-panel);
-    position: relative;
-    overflow: hidden;
-    flex: 1;
-    min-height: 0;
 }
 
 .option-list {

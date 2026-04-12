@@ -1,6 +1,7 @@
-import { createContext, useContext, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { DndContext, DragOverlay, rectIntersection } from "@dnd-kit/core";
 
+import { PuzzleConfigContext } from "@/shared/contexts/PuzzleConfigContextInternal.js";
 import { useSessionStorageState } from "@/shared/hooks/useSessionStorageState.js";
 import { maskStyle } from "@/shared/util/puzzleMasks.js";
 
@@ -17,14 +18,6 @@ import {
 } from "@/shared/contexts/puzzleConfigHelpers.js";
 
 import "@/features/lab/components/selector/PuzzlePiece.css";
-
-const PuzzleConfigContext = createContext(null);
-
-export const usePuzzleConfig = () => {
-  const context = useContext(PuzzleConfigContext);
-  if (!context) throw new Error("usePuzzleConfig must be used within PuzzleConfigProvider");
-  return context;
-};
 
 export function PuzzleConfigProvider({ children }) {
   const [configs, setConfigs] = useSessionStorageState("scout:runConfigs", [
@@ -233,15 +226,21 @@ export function PuzzleConfigProvider({ children }) {
         <DragOverlay>
           {activeDrag ? (
             <div
-              className="selector-item"
+              className="selector-item-wrapper selector-item-wrapper--overlay"
               style={{
-                ...maskStyle("0000"),
-                cursor: "grabbing",
-                boxShadow: "0 8px 24px rgba(0, 0, 0, 0.3)",
-                background: overlayBg,
+                "--puzzle-piece-size": "clamp(6rem, 12vw, var(--puzzle-piece-max-size))",
+                "--overlay-bg": overlayBg,
               }}
             >
-              <div className="selector-item-title">{activeDrag.label}</div>
+              <div
+                className="selector-item selector-item--overlay"
+                style={{
+                  ...maskStyle("0000"),
+                  cursor: "grabbing",
+                }}
+              >
+                <div className="selector-item-title">{activeDrag.label}</div>
+              </div>
             </div>
           ) : null}
         </DragOverlay>

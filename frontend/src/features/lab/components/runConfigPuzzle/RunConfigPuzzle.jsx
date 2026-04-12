@@ -2,7 +2,7 @@ import { useDroppable } from "@dnd-kit/core";
 import { useState } from "react";
 
 import DroppedPiece from "./DroppedPiece.jsx";
-import { usePuzzleConfig } from "@/shared/contexts/PuzzleConfigContext.jsx";
+import { usePuzzleConfig } from "@/shared/contexts/usePuzzleConfig.js";
 
 import "./RunConfigPuzzle.css";
 

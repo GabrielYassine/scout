@@ -34,7 +34,6 @@ export default function RouteVisualization({
 }) {
   const containerRef = useRef(null);
   const svgRef = useRef(null);
-  const panRef = useRef({ x: 0, y: 0 });
   const panStartRef = useRef(null);
   const viewRef = useRef({ zoom: 1, panX: 0, panY: 0 });
   const [isPanning, setIsPanning] = useState(false);
@@ -106,11 +105,24 @@ export default function RouteVisualization({
   const initialCities = useMemo(() => sourceData?.cities ?? [], [sourceData]);
   const [cities, setCities] = useState(() => [...initialCities]);
 
+  // Reset the internal `cities` state when the *input data* changes, but don't do it
+  // as a direct side-effect of render-time memo changes.
+  const initialCitiesKey = useMemo(() => {
+    if (!initialCities?.length) return "";
+    return initialCities.map((c) => `${c.id}:${c.x},${c.y}:${c.isDepot ? 1 : 0}`).join("|");
+  }, [initialCities]);
+
+  const lastInitialKeyRef = useRef(initialCitiesKey);
   useEffect(() => {
-    if (draggedCity === null) {
-      setCities([...initialCities]);
-    }
-  }, [initialCities, draggedCity]);
+    if (draggedCity !== null) return;
+    if (lastInitialKeyRef.current === initialCitiesKey) return;
+    lastInitialKeyRef.current = initialCitiesKey;
+
+    // This is an intentional sync: when the backing data changes (new run / new instance),
+    // refresh the local editable state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setCities([...initialCities]);
+  }, [initialCitiesKey, draggedCity, initialCities]);
 
   useEffect(() => {
     if (!containerRef.current) return;

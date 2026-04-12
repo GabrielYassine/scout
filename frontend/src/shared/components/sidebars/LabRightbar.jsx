@@ -303,16 +303,6 @@ const LabRightbar = ({
     }));
   };
 
-  const handleVehicleBlur = () => {
-    if (instanceType !== "VRP") return;
-    if (view.numberOfVehicles !== "") return;
-
-    updateVrpInstance((current) => ({
-      ...current,
-      numberOfVehicles: 1,
-    }));
-  };
-
   const handleCapacityChange = (value) => {
     if (instanceType !== "VRP") return;
     if (value === "") {
@@ -330,16 +320,6 @@ const LabRightbar = ({
     updateVrpInstance((current) => ({
       ...current,
       capacity: nextValue,
-    }));
-  };
-
-  const handleCapacityBlur = () => {
-    if (instanceType !== "VRP") return;
-    if (view.capacity !== "") return;
-
-    updateVrpInstance((current) => ({
-      ...current,
-      capacity: 0,
     }));
   };
 
@@ -570,3 +550,4 @@ const LabRightbar = ({
 };
 
 export default LabRightbar;
+

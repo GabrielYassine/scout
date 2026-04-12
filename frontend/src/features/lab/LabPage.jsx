@@ -8,7 +8,7 @@ import Selector from "@/features/lab/components/selector/Selector.jsx";
 
 import "./LabPage.css";
 
-import { usePuzzleConfig } from "@/shared/contexts/PuzzleConfigContext.jsx";
+import { usePuzzleConfig } from "@/shared/contexts/usePuzzleConfig.js";
 import { useLocalStorageState } from "@/shared/hooks/useLocalStorageState.js";
 import { startRun } from "@/shared/api/run.js";
 
@@ -37,7 +37,7 @@ export default function LabPage({
   const [toastVisible, setToastVisible] = useState(false);
   const toastTimeoutRef = useRef(null);
   const navigate = useNavigate();
-  const [savedRun, setSavedRun, clearSavedRun] = useLocalStorageState("scout:lastRun", null);
+  const [, setSavedRun] = useLocalStorageState("scout:lastRun", null);
 
 
   useEffect(() => {
