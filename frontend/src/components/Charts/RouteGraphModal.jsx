@@ -1,6 +1,8 @@
 import TSPVisualization from "./RouteVisualization/RouteVisualization.jsx";
 import "./RouteGraphModal.css";
 
+const toInt = (value) => Math.round(Number(value) || 0);
+
 export default function TSPGraphModal({
   isOpen,
   onClose,
@@ -25,7 +27,17 @@ export default function TSPGraphModal({
   const depotSignature = nodes.map((node) => (node.isDepot ? "1" : "0")).join("");
 
   const handleCitiesChange = (updatedCities) => {
-    onCitiesUpdate?.(updatedCities);
+    onCitiesUpdate?.(
+      updatedCities.map((city) => ({
+        ...city,
+        x: toInt(city.x),
+        y: toInt(city.y),
+      }))
+    );
+  };
+
+  const handleCityChange = (index, field, value) => {
+    onCityChange?.(index, field, field === "x" || field === "y" || field === "demand" ? toInt(value) : value);
   };
 
   if (!isOpen) return null;
@@ -81,21 +93,24 @@ export default function TSPGraphModal({
                       />
                       <input
                         type="number"
+                        step="1"
                         className="city-input"
                         value={node.x}
-                        onChange={(e) => onCityChange?.(index, "x", e.target.value)}
+                        onChange={(e) => handleCityChange(index, "x", e.target.value)}
                       />
                       <input
                         type="number"
+                        step="1"
                         className="city-input"
                         value={node.y}
-                        onChange={(e) => onCityChange?.(index, "y", e.target.value)}
+                        onChange={(e) => handleCityChange(index, "y", e.target.value)}
                       />
                       <input
                         type="number"
+                        step="1"
                         className="city-input"
                         value={node.demand ?? 0}
-                        onChange={(e) => onCityChange?.(index, "demand", e.target.value)}
+                        onChange={(e) => handleCityChange(index, "demand", e.target.value)}
                         disabled={instanceType !== "VRP" || node.isDepot}
                       />
                       <button

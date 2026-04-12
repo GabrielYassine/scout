@@ -12,6 +12,18 @@ const ROUTE_COLORS = [
   "#84cc16",
 ];
 
+const MIN_ZOOM = 0.25;
+const MAX_ZOOM = 8;
+const ZOOM_SENSITIVITY = 0.0015;
+
+const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+const toInt = (value) => Math.round(Number(value) || 0);
+const sanitizeCity = (city) => ({
+  ...city,
+  x: toInt(city.x),
+  y: toInt(city.y),
+});
+
 export default function RouteVisualization({
   tspData,
   run,
@@ -22,6 +34,10 @@ export default function RouteVisualization({
 }) {
   const containerRef = useRef(null);
   const svgRef = useRef(null);
+  const panRef = useRef({ x: 0, y: 0 });
+  const panStartRef = useRef(null);
+  const viewRef = useRef({ zoom: 1, panX: 0, panY: 0 });
+  const [isPanning, setIsPanning] = useState(false);
 
   const [dimensions, setDimensions] = useState({
     width: width || 800,
@@ -29,6 +45,12 @@ export default function RouteVisualization({
   });
   const [draggedCity, setDraggedCity] = useState(null);
   const [dragPosition, setDragPosition] = useState(null);
+  const [view, setView] = useState({ zoom: 1, panX: 0, panY: 0 });
+  const dragOffsetRef = useRef({ x: 0, y: 0 });
+
+  useEffect(() => {
+    viewRef.current = view;
+  }, [view]);
 
   const sourceData = useMemo(() => {
     if (run?.series?.tspTour && run?.series?.tspCities) {
@@ -50,10 +72,10 @@ export default function RouteVisualization({
       return {
         tour: tourArray,
         cities: Array.isArray(citiesData)
-          ? citiesData.map((city, index) => ({
+          ? citiesData.map((city, index) => sanitizeCity({
               id: index,
-              x: Number(city.x),
-              y: Number(city.y),
+              x: city.x,
+              y: city.y,
               isDepot: city.isDepot === true,
             }))
           : [],
@@ -68,10 +90,10 @@ export default function RouteVisualization({
     if (tspData) {
       return {
         tour: tspData.tour,
-        cities: (tspData.cities ?? []).map((city, index) => ({
+        cities: (tspData.cities ?? []).map((city, index) => sanitizeCity({
           id: city.id ?? index,
-          x: Number(city.x),
-          y: Number(city.y),
+          x: city.x,
+          y: city.y,
           isDepot: city.isDepot === true,
         })),
         originalTourLength: tspData.tourLength
@@ -147,22 +169,26 @@ export default function RouteVisualization({
 
   const toSVGCoords = useCallback(
     (x, y) => {
+      const baseX = (x - minX) * scale + offsetX;
+      const baseY = dimensions.height - ((y - minY) * scale + offsetY);
       return {
-        x: (x - minX) * scale + offsetX,
-        y: dimensions.height - ((y - minY) * scale + offsetY)
+        x: baseX * view.zoom + view.panX,
+        y: baseY * view.zoom + view.panY
       };
     },
-    [minX, minY, scale, offsetX, offsetY, dimensions.height]
+    [minX, minY, scale, offsetX, offsetY, dimensions.height, view]
   );
 
   const fromSVGCoords = useCallback(
     (svgX, svgY) => {
+      const baseX = (svgX - view.panX) / view.zoom;
+      const baseY = (svgY - view.panY) / view.zoom;
       return {
-        x: (svgX - offsetX) / scale + minX,
-        y: (dimensions.height - svgY - offsetY) / scale + minY
+        x: (baseX - offsetX) / scale + minX,
+        y: (dimensions.height - baseY - offsetY) / scale + minY
       };
     },
-    [minX, minY, scale, offsetX, offsetY, dimensions.height]
+    [minX, minY, scale, offsetX, offsetY, dimensions.height, view]
   );
 
   const getSVGPoint = useCallback((clientX, clientY) => {
@@ -179,38 +205,106 @@ export default function RouteVisualization({
     (e, cityIndex) => {
       if (!editable) return;
       e.preventDefault();
+      e.stopPropagation();
+
+      const city = cities[cityIndex];
+      if (!city) return;
+
+      const svgPoint = getSVGPoint(e.clientX, e.clientY);
+      const dataCoords = fromSVGCoords(svgPoint.x, svgPoint.y);
+      dragOffsetRef.current = {
+        x: dataCoords.x - city.x,
+        y: dataCoords.y - city.y
+      };
+
       setDraggedCity(cityIndex);
+      setIsPanning(false);
+      panStartRef.current = null;
     },
-    [editable]
+    [cities, editable, fromSVGCoords, getSVGPoint]
+  );
+
+  const handlePanMouseDown = useCallback(
+    (e) => {
+      if (!editable || draggedCity !== null || e.button !== 0) return;
+      e.preventDefault();
+      const point = getSVGPoint(e.clientX, e.clientY);
+      panStartRef.current = { point, panX: viewRef.current.panX, panY: viewRef.current.panY };
+      setIsPanning(true);
+    },
+    [editable, draggedCity, getSVGPoint]
   );
 
   const handleMouseMove = useCallback(
     (e) => {
-      if (draggedCity === null) return;
+      if (draggedCity !== null) {
+        const svgPoint = getSVGPoint(e.clientX, e.clientY);
+        const dataCoords = fromSVGCoords(svgPoint.x, svgPoint.y);
+        const nextCoords = {
+          x: toInt(dataCoords.x - dragOffsetRef.current.x),
+          y: toInt(dataCoords.y - dragOffsetRef.current.y)
+        };
 
-      const svgPoint = getSVGPoint(e.clientX, e.clientY);
-      const dataCoords = fromSVGCoords(svgPoint.x, svgPoint.y);
+        setDragPosition(nextCoords);
 
-      setDragPosition(dataCoords);
+        setCities((prevCities) =>
+          prevCities.map((city, index) =>
+            index === draggedCity
+              ? { ...city, ...nextCoords }
+              : city
+          )
+        );
+        return;
+      }
 
-      setCities((prevCities) =>
-        prevCities.map((city, index) =>
-          index === draggedCity
-            ? { ...city, x: dataCoords.x, y: dataCoords.y }
-            : city
-        )
-      );
+      if (!isPanning || !panStartRef.current) return;
+
+      const point = getSVGPoint(e.clientX, e.clientY);
+      const dx = point.x - panStartRef.current.point.x;
+      const dy = point.y - panStartRef.current.point.y;
+      const { panX, panY } = panStartRef.current;
+       setView((prev) => ({
+         ...prev,
+        panX: panX + dx,
+        panY: panY + dy
+       }));
     },
-    [draggedCity, getSVGPoint, fromSVGCoords]
+    [draggedCity, getSVGPoint, fromSVGCoords, isPanning]
   );
 
-  const handleMouseUp = useCallback(() => {
+  const finishInteraction = useCallback(() => {
     if (draggedCity !== null && editable && onCitiesChange) {
-      onCitiesChange(cities);
+      onCitiesChange(cities.map(sanitizeCity));
     }
     setDraggedCity(null);
     setDragPosition(null);
+    setIsPanning(false);
+    panStartRef.current = null;
+    dragOffsetRef.current = { x: 0, y: 0 };
   }, [draggedCity, editable, onCitiesChange, cities]);
+
+  const handleWheel = useCallback(
+    (e) => {
+      e.preventDefault();
+      const point = getSVGPoint(e.clientX, e.clientY);
+      const currentView = viewRef.current;
+      const nextZoom = clamp(
+        currentView.zoom * Math.exp(-e.deltaY * ZOOM_SENSITIVITY),
+        MIN_ZOOM,
+        MAX_ZOOM
+      );
+
+      const worldX = (point.x - currentView.panX) / currentView.zoom;
+      const worldY = (point.y - currentView.panY) / currentView.zoom;
+
+      setView({
+        zoom: nextZoom,
+        panX: point.x - worldX * nextZoom,
+        panY: point.y - worldY * nextZoom
+      });
+    },
+    [getSVGPoint]
+  );
 
   const depotIndex = useMemo(() => cities.findIndex((c) => c.isDepot), [cities]);
 
@@ -390,10 +484,12 @@ export default function RouteVisualization({
         ref={svgRef}
         width={dimensions.width}
         height={dimensions.height}
-        className="tsp-svg"
+        className={`tsp-svg ${editable ? "editable" : "readonly"} ${isPanning ? "panning" : ""}`}
         onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
+        onMouseUp={finishInteraction}
+        onMouseLeave={finishInteraction}
+        onMouseDown={handlePanMouseDown}
+        onWheel={handleWheel}
       >
         <defs>
           <filter id="pheromone-blur-wide" x="-40%" y="-40%" width="180%" height="180%">
@@ -401,51 +497,57 @@ export default function RouteVisualization({
           </filter>
         </defs>
 
-        {pheromoneEdges.map((e, idx) => (
-          <line
-            key={`ph-${idx}`}
-            x1={e.x1}
-            y1={e.y1}
-            x2={e.x2}
-            y2={e.y2}
-            stroke="#ff6a2a"
-            strokeOpacity={0.08 + 0.5 * e.intensity}
-            strokeWidth={0.5 + 3 * e.intensity}
-            strokeLinecap="round"
-          />
-        ))}
+        <g transform={`translate(${view.panX} ${view.panY}) scale(${view.zoom})`}>
+          {pheromoneEdges.map((e, idx) => (
+            <line
+              key={`ph-${idx}`}
+              x1={e.x1}
+              y1={e.y1}
+              x2={e.x2}
+              y2={e.y2}
+              stroke="#ff6a2a"
+              strokeOpacity={0.08 + 0.5 * e.intensity}
+              strokeWidth={0.5 + 3 * e.intensity}
+              strokeLinecap="round"
+              pointerEvents="none"
+            />
+          ))}
 
-        {routePaths.map((route) => (
-          <polyline
-            key={route.key}
-            points={route.points}
-            className="tour-path"
-            style={{ stroke: route.color }}
-          />
-        ))}
+          {routePaths.map((route) => (
+            <polyline
+              key={route.key}
+              points={route.points}
+              className="tour-path"
+              style={{ stroke: route.color }}
+              pointerEvents="none"
+            />
+          ))}
 
-        {cities.map((city, index) => {
-          const isDragging = draggedCity === index;
-          const displayCity = isDragging && dragPosition ? dragPosition : city;
-          const coords = toSVGCoords(displayCity.x, displayCity.y);
+          {cities.map((city, index) => {
+            const isDragging = draggedCity === index;
+            const displayCity = isDragging && dragPosition ? dragPosition : city;
+            const coords = toSVGCoords(displayCity.x, displayCity.y);
 
-          return (
-            <g
-              key={city.id ?? index}
-              className={`city ${isDragging ? "dragging" : ""} ${editable ? "editable" : "readonly"}`}
-            >
-              <circle
-                className={`city-dot ${city.isDepot ? "depot" : ""}`}
-                cx={coords.x}
-                cy={coords.y}
-                onMouseDown={(e) => handleMouseDown(e, index)}
-              />
-              <text className="city-label" x={coords.x} y={coords.y - 12}>
-                {index}
-              </text>
-            </g>
-          );
-        })}
+            return (
+              <g
+                key={city.id ?? index}
+                className={`city ${isDragging ? "dragging" : ""} ${editable ? "editable" : "readonly"}`}
+                pointerEvents="none"
+              >
+                <circle
+                  className={`city-dot ${city.isDepot ? "depot" : ""}`}
+                  cx={coords.x}
+                  cy={coords.y}
+                  onMouseDown={(e) => handleMouseDown(e, index)}
+                  pointerEvents="all"
+                />
+                <text className="city-label" x={coords.x} y={coords.y - 12} pointerEvents="none">
+                  {index}
+                </text>
+              </g>
+            );
+          })}
+        </g>
       </svg>
     </div>
   );

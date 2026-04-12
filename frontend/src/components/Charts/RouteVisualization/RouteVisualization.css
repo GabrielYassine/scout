@@ -28,6 +28,18 @@
   display: block;
 }
 
+.tsp-svg.editable {
+  cursor: default;
+}
+
+.tsp-svg.panning {
+  cursor: grabbing;
+}
+
+.tsp-svg.readonly {
+  cursor: default;
+}
+
 .tour-path {
   fill: none;
   stroke: #3b82f6;
@@ -40,36 +52,48 @@
   transition: none;
 }
 
+.city.editable {
+  cursor: default;
+}
+
+.city.editable:hover .city-dot {
+  stroke: #d1fae5;
+  stroke-width: 3;
+  filter: drop-shadow(0 0 4px rgba(16, 185, 129, 0.28));
+}
+
+.city.editable:active .city-dot,
+.city.dragging .city-dot {
+  cursor: grabbing;
+  stroke: #ffffff;
+  stroke-width: 3;
+  filter: drop-shadow(0 0 6px rgba(16, 185, 129, 0.4));
+}
+
 .city-dot {
   r: 8;
   fill: #10b981;
   stroke: #fff;
   stroke-width: 2;
   cursor: grab;
-  transition: r 0.15s ease, fill 0.15s ease;
+}
+
+.city-dot:hover {
+  filter: drop-shadow(0 0 4px rgba(16, 185, 129, 0.22));
 }
 
 .city-dot.depot {
-  fill: #f59e0b;
-  stroke: #1f2937;
+  fill: #ef4444;
 }
 
-.city.editable .city-dot:hover {
-  r: 12;
-}
-
-.city.readonly .city-dot {
-  cursor: default;
-}
-
-.city.dragging .city-dot {
-  r: 12;
-  cursor: grabbing;
+.city-dot.depot:hover {
+  filter: drop-shadow(0 0 4px rgba(239, 68, 68, 0.24));
 }
 
 .city-label {
-  text-anchor: middle;
   font-size: 11px;
-  fill: #333;
+  fill: #111827;
+  text-anchor: middle;
   pointer-events: none;
+  user-select: none;
 }
