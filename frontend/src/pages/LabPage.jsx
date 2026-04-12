@@ -7,6 +7,7 @@ import Selector from "../components/selector/Selector.jsx";
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePuzzleConfig } from "../contexts/PuzzleConfigContext.jsx";
+import { useLocalStorageState } from "../hooks/useLocalStorageState.js";
 
 export default function LabPage({catalog, catalogLoading, catalogError, templates, templatesLoading, templatesError}) {
   const {
@@ -26,6 +27,8 @@ export default function LabPage({catalog, catalogLoading, catalogError, template
   const [toastVisible, setToastVisible] = useState(false);
   const toastTimeoutRef = useRef(null);
   const navigate = useNavigate();
+  const [savedRun, setSavedRun, clearSavedRun] = useLocalStorageState("scout:lastRun", null);
+
 
   useEffect(() => {
     return () => {
@@ -144,6 +147,20 @@ export default function LabPage({catalog, catalogLoading, catalogError, template
          repetitionsPerSize,
          wsUpdateEverySizes,
        };
+        setSavedRun({
+          pageMode: "runtimeStudy",
+          loading: true,
+          studyId,
+          batch: null,
+          studyPoints: [],
+          puzzleConfig,
+          params,
+          tspInstance,
+          vrpInstance,
+          runtimeStudyRequest: body,
+          savedAt: Date.now(),
+        });
+
 
        navigate("/run", {
          state: {
@@ -211,6 +228,21 @@ export default function LabPage({catalog, catalogLoading, catalogError, template
        }
        throw new Error(message);
      }
+
+     setSavedRun({
+       pageMode: "run",
+        loading: true,
+        runId,
+        studyId: null,
+        batch: null,
+        studyPoints: [],
+        puzzleConfig,
+        params,
+        tspInstance,
+        vrpInstance,
+        selectedRunKey: "0",
+        savedAt: Date.now(),
+    });
 
      navigate("/run", {
        state: { pageMode: "run", loading: true, puzzleConfig, params, tspInstance, vrpInstance, runId },
