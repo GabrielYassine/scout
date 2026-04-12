@@ -3,11 +3,15 @@ package dk.dtu.scout.backend.service;
 import dk.dtu.scout.backend.dto.run.*;
 import dk.dtu.scout.backend.dto.series.SeriesResponse;
 import dk.dtu.scout.backend.dto.study.RuntimeStudyPointResponse;
+import dk.dtu.scout.backend.dto.stats.SeriesPoint;
+import dk.dtu.scout.backend.dto.stats.SeriesWindowStatsRequest;
+import dk.dtu.scout.backend.dto.stats.SeriesWindowStatsResponse;
+import dk.dtu.scout.backend.exception.BadRequestException;
 import dk.dtu.scout.backend.util.ViewMapper;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,6 +19,7 @@ import java.util.Map;
 @Service
 public class StatisticsService {
     private static final int MAX_BOX_PLOTS = 50;
+    private static final double TREND_THRESHOLD = 0.0001;
 
     /**
      * Builds the normal run summary used by the regular run page.
@@ -256,6 +261,78 @@ public class StatisticsService {
         return new RuntimeStudyPointResponse(problemSize, mean, boxPlot);
     }
 
+    public SeriesWindowStatsResponse computeSeriesWindowStats(SeriesWindowStatsRequest request) {
+        if (request == null) {
+            throw new BadRequestException("Request body is required.");
+        }
+        if (request.points() == null || request.points().isEmpty()) {
+            throw new BadRequestException("points must not be empty.");
+        }
+        if (!Double.isFinite(request.xMin()) || !Double.isFinite(request.xMax())) {
+            throw new BadRequestException("xMin and xMax must be finite numbers.");
+        }
+        if (request.xMin() > request.xMax()) {
+            throw new BadRequestException("xMin must be less than or equal to xMax.");
+        }
+
+        List<SeriesPoint> filtered = request.points().stream()
+                .filter(p -> p != null && Double.isFinite(p.x()) && Double.isFinite(p.y()))
+                .filter(p -> p.x() >= request.xMin() && p.x() <= request.xMax())
+                .sorted(Comparator.comparingDouble(SeriesPoint::x))
+                .toList();
+
+        if (filtered.isEmpty()) {
+            throw new BadRequestException("No points fall inside the requested x-range.");
+        }
+
+        List<Double> ys = filtered.stream().map(SeriesPoint::y).sorted().toList();
+        List<Double> xs = filtered.stream().map(SeriesPoint::x).toList();
+
+        int count = ys.size();
+        double mean = ys.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
+        double variance = ys.stream().mapToDouble(y -> (y - mean) * (y - mean)).average().orElse(0.0);
+        double stdDev = Math.sqrt(variance);
+        double min = ys.getFirst();
+        double max = ys.getLast();
+        double median = percentile(ys, 50);
+        double q1 = percentile(ys, 25);
+        double q3 = percentile(ys, 75);
+        double iqr = q3 - q1;
+
+        double xMean = xs.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
+        double covariance = 0.0;
+        double xVariance = 0.0;
+        for (SeriesPoint point : filtered) {
+            double x = point.x();
+            double y = point.y();
+            covariance += (x - xMean) * (y - mean);
+            xVariance += (x - xMean) * (x - xMean);
+        }
+        covariance /= count;
+        xVariance /= count;
+        double slope = xVariance == 0.0 ? 0.0 : covariance / xVariance;
+        String trend = slope > TREND_THRESHOLD ? "up" : slope < -TREND_THRESHOLD ? "down" : "flat";
+
+        return new SeriesWindowStatsResponse(
+                request.seriesName(),
+                request.xAxisLabel(),
+                request.yAxisLabel(),
+                request.xMin(),
+                request.xMax(),
+                count,
+                min,
+                max,
+                mean,
+                stdDev,
+                median,
+                q1,
+                q3,
+                iqr,
+                slope,
+                trend
+        );
+    }
+
 
 
     /**
@@ -264,10 +341,7 @@ public class StatisticsService {
 
     private RunResponse findReferenceRun(List<RunResponse> runs) {
         return runs.stream()
-                .max((a, b) -> Integer.compare(
-                        a.evaluations() != null ? a.evaluations().size() : 0,
-                        b.evaluations() != null ? b.evaluations().size() : 0
-                ))
+                .max(Comparator.comparingInt(a -> a.evaluations() != null ? a.evaluations().size() : 0))
                 .orElse(runs.getFirst());
     }
 
@@ -334,12 +408,9 @@ public class StatisticsService {
         }
 
         int usableLength = Math.min(evaluations.size(), values.size());
-        if (usableLength == 0) {
-            return null;
-        }
 
-        if (targetEvaluation <= evaluations.get(0)) {
-            return values.get(0);
+        if (targetEvaluation <= evaluations.getFirst()) {
+            return values.getFirst();
         }
 
         for (int i = 1; i < usableLength; i++) {

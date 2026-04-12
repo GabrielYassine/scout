@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import "./LabRightbar.css";
-import TSPGraphModal from "../Charts/RouteGraphModal.jsx";
+import TSPGraphModal from "@/components/Charts/RouteGraphModal.jsx";
 import FieldRow from "./FieldRow.jsx";
 import { detectInstanceType, parseTspContent, parseVrpContent } from "./instanceParsing.js";
 

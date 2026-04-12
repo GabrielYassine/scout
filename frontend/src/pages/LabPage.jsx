@@ -1,12 +1,12 @@
 import "./LabPage.css";
 
-import LabLeftbar from "../components/SideBars/LabLeftbar.jsx";
-import LabRightbar from "../components/SideBars/LabRightbar.jsx";
-import RunConfigPuzzle from "../components/runConfigPuzzle/RunConfigPuzzle.jsx";
-import Selector from "../components/selector/Selector.jsx";
+import LabLeftbar from "@/components/SideBars/LabLeftbar.jsx";
+import LabRightbar from "@/components/SideBars/LabRightbar.jsx";
+import RunConfigPuzzle from "@/components/runConfigPuzzle/RunConfigPuzzle.jsx";
+import Selector from "@/components/selector/Selector.jsx";
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { usePuzzleConfig } from "../contexts/PuzzleConfigContext.jsx";
+import { usePuzzleConfig } from "@/contexts/PuzzleConfigContext.jsx";
 
 export default function LabPage({catalog, catalogLoading, catalogError, templates, templatesLoading, templatesError}) {
   const {

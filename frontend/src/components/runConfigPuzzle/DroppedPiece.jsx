@@ -1,5 +1,5 @@
 import { useDraggable } from "@dnd-kit/core";
-import { maskStyle } from "../../util/puzzleMasks.js";
+import { maskStyle } from "@/util/puzzleMasks.js";
 import "./DroppedPiece.css";
 
 export default function DroppedPiece({ id, label, type, index, puzzleData, onHover, onLeave }) {

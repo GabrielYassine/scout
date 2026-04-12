@@ -2,7 +2,7 @@ import { useDroppable } from "@dnd-kit/core";
 import { useState } from "react";
 import "./RunConfigPuzzle.css";
 import DroppedPiece from "./DroppedPiece.jsx";
-import { usePuzzleConfig } from "../../contexts/PuzzleConfigContext.jsx";
+import { usePuzzleConfig } from "@/contexts/PuzzleConfigContext.jsx";
 
 export default function RunConfigPuzzle({ onPieceHover, onPieceLeave }) {
   const {

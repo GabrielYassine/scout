@@ -2,7 +2,7 @@ import { useState, useMemo, memo, useCallback, useEffect } from "react";
 import "./RunChart.css";
 import HypercubePlot from "./HypercubePlot.jsx";
 import TSPVisualization from "./RouteVisualization/RouteVisualization.jsx";
-import LineCharts from "./LineCharts.jsx";
+import LineCharts, { LineChartStatsPanel } from "./LineCharts.jsx";
 import BoxPlotChart from "./BoxPlotChart.jsx";
 
 const HYPERCUBE_KEY = "__hypercube__";
@@ -73,6 +73,13 @@ function RunChart({ run, runIndex, visibleCount, bestFitnessBoxPlot = null }) {
   const visibleData = useMemo(() => {
     return data.slice(0, visibleCount);
   }, [data, visibleCount]);
+
+  const [lineChartWindowRange, setLineChartWindowRange] = useState(null);
+
+  const statsVisiblePoints = useMemo(() => {
+    if (!lineChartWindowRange) return visibleData;
+    return visibleData.filter(([x]) => x >= lineChartWindowRange.min && x <= lineChartWindowRange.max);
+  }, [visibleData, lineChartWindowRange]);
 
   const phaseRanges = useMemo(() => {
     const intervals = series.fitnessPhaseIntervals ?? [];
@@ -152,8 +159,9 @@ function RunChart({ run, runIndex, visibleCount, bestFitnessBoxPlot = null }) {
   useEffect(() => {
     const intervals = series.fitnessPhaseIntervals ?? [];
     if (!intervals.length) return;
-    const label = run?.problemId ?? `run-${runIndex}`;
+    // placeholder for future side-effects tied to phase intervals
   }, [series.fitnessPhaseIntervals, run?.problemId, runIndex]);
+
   const hasAnyData =
     displayKeys.length > 0 &&
     (evaluations.length > 0 || bestFitnessBoxPlot != null);
@@ -199,6 +207,8 @@ function RunChart({ run, runIndex, visibleCount, bestFitnessBoxPlot = null }) {
             phaseRanges={phaseRanges}
             xAxisLabel="Evaluation"
             yAxisLabel={effectiveObserver}
+            showStats={false}
+            onWindowRangeChange={setLineChartWindowRange}
           />
         )}
       </div>
@@ -222,6 +232,18 @@ function RunChart({ run, runIndex, visibleCount, bestFitnessBoxPlot = null }) {
           })}
         </div>
       )}
+
+      {effectiveObserver !== HYPERCUBE_KEY && effectiveObserver !== TSP_TOUR_KEY && !isBestFitnessBoxPlot && (
+        <div style={{ marginTop: 12 }}>
+          <LineChartStatsPanel
+            seriesName={effectiveObserver}
+            xAxisLabel="Evaluation"
+            yAxisLabel={effectiveObserver}
+            visiblePoints={statsVisiblePoints}
+            windowRange={lineChartWindowRange}
+          />
+         </div>
+       )}
     </div>
   );
 }

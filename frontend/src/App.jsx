@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import TopNavbar from "./components/SideBars/TopNavbar.jsx";
 import { PuzzleConfigProvider } from "./contexts/PuzzleConfigContext.jsx";
@@ -7,66 +6,12 @@ import HomePage from "./pages/HomePage.jsx";
 import LabPage from "./pages/LabPage.jsx";
 import RunPage from "./pages/RunPage.jsx";
 
+import { useCatalog } from "@/shared/hooks/useCatalog.js";
+import { useTemplates } from "@/shared/hooks/useTemplates.js";
+
 export default function App() {
-  const [catalog, setCatalog] = useState(null);
-  const [catalogLoading, setCatalogLoading] = useState(true);
-  const [catalogError, setCatalogError] = useState(null);
-
-  const [templates, setTemplates] = useState([]);
-  const [templatesLoading, setTemplatesLoading] = useState(true);
-  const [templatesError, setTemplatesError] = useState(null);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      try {
-        setCatalogLoading(true);
-        setCatalogError(null);
-
-        const res = await fetch("/api/catalog");
-        if (!res.ok) throw new Error(`Catalog fetch failed: ${res.status}`);
-
-        const data = await res.json();
-        if (!cancelled) setCatalog(data);
-      } catch (e) {
-        if (!cancelled) setCatalogError(e?.message ?? String(e));
-      } finally {
-        if (!cancelled) setCatalogLoading(false);
-      }
-    }
-
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-      let cancelled = false;
-
-      async function load() {
-        try {
-          setTemplatesLoading(true);
-          setTemplatesError(null);
-
-          const res = await fetch("/api/templates");
-          if (!res.ok) throw new Error(`Templates fetch failed: ${res.status}`);
-
-          const data = await res.json();
-          if (!cancelled) setTemplates(data);
-        } catch (e) {
-          if (!cancelled) setTemplatesError(e?.message ?? String(e));
-        } finally {
-          if (!cancelled) setTemplatesLoading(false);
-        }
-      }
-
-      load();
-      return () => {
-        cancelled = true;
-      };
-    }, []);
+  const { catalog, catalogLoading, catalogError } = useCatalog();
+  const { templates, templatesLoading, templatesError } = useTemplates();
 
   return (
     <PuzzleConfigProvider>

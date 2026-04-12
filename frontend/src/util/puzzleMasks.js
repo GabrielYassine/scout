@@ -1,28 +1,28 @@
-import _0000 from "../assets/puzzlePNG/0000.png";
+import _0000 from "@/assets/puzzlePNG/0000.png";
 
-import _1000 from "../assets/puzzlePNG/3flat/1000.png";
-import _2000 from "../assets/puzzlePNG/3flat/2000.png";
+import _1000 from "@/assets/puzzlePNG/3flat/1000.png";
+import _2000 from "@/assets/puzzlePNG/3flat/2000.png";
 
-import _1010 from "../assets/puzzlePNG/2flat/1010.png";
-import _1020 from "../assets/puzzlePNG/2flat/1020.png";
-import _1100 from "../assets/puzzlePNG/2flat/1100.png";
-import _1200 from "../assets/puzzlePNG/2flat/1200.png";
-import _2020 from "../assets/puzzlePNG/2flat/2020.png";
-import _2200 from "../assets/puzzlePNG/2flat/2200.png";
+import _1010 from "@/assets/puzzlePNG/2flat/1010.png";
+import _1020 from "@/assets/puzzlePNG/2flat/1020.png";
+import _1100 from "@/assets/puzzlePNG/2flat/1100.png";
+import _1200 from "@/assets/puzzlePNG/2flat/1200.png";
+import _2020 from "@/assets/puzzlePNG/2flat/2020.png";
+import _2200 from "@/assets/puzzlePNG/2flat/2200.png";
 
-import _1110 from "../assets/puzzlePNG/1flat/1110.png";
-import _1120 from "../assets/puzzlePNG/1flat/1120.png";
-import _1210 from "../assets/puzzlePNG/1flat/1210.png";
-import _2120 from "../assets/puzzlePNG/1flat/2120.png";
-import _2210 from "../assets/puzzlePNG/1flat/2210.png";
-import _2220 from "../assets/puzzlePNG/1flat/2220.png";
+import _1110 from "@/assets/puzzlePNG/1flat/1110.png";
+import _1120 from "@/assets/puzzlePNG/1flat/1120.png";
+import _1210 from "@/assets/puzzlePNG/1flat/1210.png";
+import _2120 from "@/assets/puzzlePNG/1flat/2120.png";
+import _2210 from "@/assets/puzzlePNG/1flat/2210.png";
+import _2220 from "@/assets/puzzlePNG/1flat/2220.png";
 
-import _1111 from "../assets/puzzlePNG/0flat/1111.png";
-import _1112 from "../assets/puzzlePNG/0flat/1112.png";
-import _1122 from "../assets/puzzlePNG/0flat/1122.png";
-import _1212 from "../assets/puzzlePNG/0flat/1212.png";
-import _1222 from "../assets/puzzlePNG/0flat/1222.png";
-import _2222 from "../assets/puzzlePNG/0flat/2222.png";
+import _1111 from "@/assets/puzzlePNG/0flat/1111.png";
+import _1112 from "@/assets/puzzlePNG/0flat/1112.png";
+import _1122 from "@/assets/puzzlePNG/0flat/1122.png";
+import _1212 from "@/assets/puzzlePNG/0flat/1212.png";
+import _1222 from "@/assets/puzzlePNG/0flat/1222.png";
+import _2222 from "@/assets/puzzlePNG/0flat/2222.png";
 
 export const PUZZLE_MASKS = {
     "0000": _0000,

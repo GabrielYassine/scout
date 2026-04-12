@@ -78,35 +78,17 @@
   font-size: var(--font-sm);
   color: var(--color-text);
   opacity: 0.9;
+
 }
 
 .home-card ul,
 .home-card ol {
   margin: 0;
-  padding-left: 1.25rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  padding-left: 1.2rem;
   font-size: var(--font-sm);
+  line-height: 1.5;
 }
 
-.home-how {
-  max-width: 52rem;
-  background: var(--color-panel);
-  padding: 1.25rem;
-  border-radius: var(--radius-md);
-}
-
-.home-how h2 {
-  margin: 0 0 0.75rem 0;
-  font-size: var(--font-md);
-}
-
-.home-how ol {
-  margin: 0;
-  padding-left: 1.25rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  font-size: var(--font-sm);
+.home-card li {
+  margin-bottom: 0.5rem;
 }
