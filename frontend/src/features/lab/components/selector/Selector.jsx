@@ -1,6 +1,6 @@
 import "./Selector.css";
 import PuzzlePiece from "./PuzzlePiece";
-import { useSessionStorageState } from "@/hooks/useSessionStorageState.js";
+import { useSessionStorageState } from "@/shared/hooks/useSessionStorageState.js";
 
 const componentTypesAll = [
     { key: "searchSpace", label: "Search Space", catalogKey: "searchSpaces" },

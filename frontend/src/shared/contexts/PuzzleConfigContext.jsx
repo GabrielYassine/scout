@@ -1,10 +1,11 @@
-/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useMemo, useState } from "react";
 import { DndContext, DragOverlay, rectIntersection } from "@dnd-kit/core";
-import { useSessionStorageState } from "@/hooks/useSessionStorageState.js";
-import { generatePuzzleKey } from "@/util/puzzleGenerator.js";
-import { maskStyle } from "@/util/puzzleMasks.js";
-import "@/components/selector/PuzzlePiece.css";
+
+import { useSessionStorageState } from "@/shared/hooks/useSessionStorageState.js";
+import { generatePuzzleKey } from "@/shared/util/puzzleGenerator.js";
+import { maskStyle } from "@/shared/util/puzzleMasks.js";
+
+import "@/features/lab/components/selector/PuzzlePiece.css";
 
 const PuzzleConfigContext = createContext(null);
 const GRID_COLUMNS = 6;

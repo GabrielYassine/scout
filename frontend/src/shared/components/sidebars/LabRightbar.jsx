@@ -1,7 +1,10 @@
 import { useState, useRef } from "react";
-import "./LabRightbar.css";
-import TSPGraphModal from "@/components/Charts/RouteGraphModal.jsx";
+
+import RouteGraphModal from "@/features/run/components/charts/RouteGraphModal.jsx";
 import FieldRow from "./FieldRow.jsx";
+
+import "./LabRightbar.css";
+
 import { detectInstanceType, parseTspContent, parseVrpContent } from "./instanceParsing.js";
 
 const CUSTOM_INSTANCE_NAME = "Custom Instance";
@@ -623,7 +626,7 @@ export default function LabRightbar({
         </div>
       </div>
 
-      <TSPGraphModal
+      <RouteGraphModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         tspInstance={{
@@ -646,4 +649,3 @@ export default function LabRightbar({
     </section>
   );
 }
-

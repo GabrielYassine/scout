@@ -1,10 +1,10 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import TopNavbar from "./components/SideBars/TopNavbar.jsx";
-import { PuzzleConfigProvider } from "./contexts/PuzzleConfigContext.jsx";
+import TopNavbar from "@/shared/components/navigation/TopNavbar.jsx";
+import { PuzzleConfigProvider } from "@/shared/contexts/PuzzleConfigContext.jsx";
 
-import HomePage from "./pages/HomePage.jsx";
-import LabPage from "./pages/LabPage.jsx";
-import RunPage from "./pages/RunPage.jsx";
+import HomePage from "@/features/home/HomePage.jsx";
+import LabPage from "@/features/lab/LabPage.jsx";
+import RunPage from "@/features/run/RunPage.jsx";
 
 import { useCatalog } from "@/shared/hooks/useCatalog.js";
 import { useTemplates } from "@/shared/hooks/useTemplates.js";

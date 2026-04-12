@@ -1,15 +1,18 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { Client } from "@stomp/stompjs";
 import { useLocation, useNavigate } from "react-router-dom";
-import LabLeftbar from "@/components/SideBars/LabLeftbar.jsx";
-import LabRightbar from "@/components/SideBars/LabRightbar.jsx";
-import RunChart from "@/components/Charts/RunChart.jsx";
-import RuntimeStudyChart from "@/components/Charts/RuntimeStudyChart.jsx";
+
+import LabLeftbar from "@/shared/components/sidebars/LabLeftbar.jsx";
+import LabRightbar from "@/shared/components/sidebars/LabRightbar.jsx";
+import RunChart from "@/features/run/components/charts/RunChart.jsx";
+import RuntimeStudyChart from "@/features/run/components/charts/RuntimeStudyChart.jsx";
+
 import "./RunPage.css";
-import "@/components/SideBars/LabLeftbar.css";
-import "@/components/SideBars/LabRightbar.css";
-import "@/components/SideBars/FormFields.css";
-import { useLocalStorageState } from "@/hooks/useLocalStorageState.js";
+import "@/shared/components/sidebars/LabLeftbar.css";
+import "@/shared/components/sidebars/LabRightbar.css";
+import "@/shared/components/sidebars/FormFields.css";
+
+import { useLocalStorageState } from "@/shared/hooks/useLocalStorageState.js";
 
 export default function RunPage({ catalog, catalogLoading, catalogError }) {
   const location = useLocation();

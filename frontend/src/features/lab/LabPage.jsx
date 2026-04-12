@@ -1,13 +1,15 @@
-import "./LabPage.css";
-
-import LabLeftbar from "@/components/SideBars/LabLeftbar.jsx";
-import LabRightbar from "@/components/SideBars/LabRightbar.jsx";
-import RunConfigPuzzle from "@/components/runConfigPuzzle/RunConfigPuzzle.jsx";
-import Selector from "@/components/selector/Selector.jsx";
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { usePuzzleConfig } from "@/contexts/PuzzleConfigContext.jsx";
-import { useLocalStorageState } from "../hooks/useLocalStorageState.js";
+
+import LabLeftbar from "@/shared/components/sidebars/LabLeftbar.jsx";
+import LabRightbar from "@/shared/components/sidebars/LabRightbar.jsx";
+import RunConfigPuzzle from "@/features/lab/components/runConfigPuzzle/RunConfigPuzzle.jsx";
+import Selector from "@/features/lab/components/selector/Selector.jsx";
+
+import "./LabPage.css";
+
+import { usePuzzleConfig } from "@/shared/contexts/PuzzleConfigContext.jsx";
+import { useLocalStorageState } from "@/shared/hooks/useLocalStorageState.js";
 
 export default function LabPage({catalog, catalogLoading, catalogError, templates, templatesLoading, templatesError}) {
   const {
