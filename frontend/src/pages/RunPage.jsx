@@ -17,24 +17,29 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
   const [savedRun, setSavedRun, clearSavedRun] = useLocalStorageState("scout:lastRun", null);
 
   const locationState = location.state ?? {};
+  const hasIncomingExecution =
+    Boolean(locationState.runId) ||
+    Boolean(locationState.studyId) ||
+    locationState.loading === true;
+
+  const restoredRun = hasIncomingExecution ? null : savedRun;
 
   const pageMode =
      locationState.pageMode ??
      (locationState.runId ? "run" : null) ??
      (locationState.studyId ? "runtimeStudy" : null) ??
-     savedRun?.pageMode ??
+     restoredRun?.pageMode ??
      "run";
   const runId = locationState.runId ?? null;
   const studyId = locationState.studyId ?? null;
 
-  const batchResponse = locationState.batch ?? savedRun?.batch ?? null;
-  const initialLoading = locationState.loading ?? false;
+  const batchResponse = locationState.batch ?? restoredRun?.batch ?? null;
+  const initialLoading = locationState.loading ?? restoredRun?.loading ?? false;
   const initialError = locationState.error ?? null;
-  const puzzleConfig = locationState.puzzleConfig ?? savedRun?.puzzleConfig ?? [];
-  const runtimeStudyRequest = locationState.runtimeStudyRequest ?? null;
-  const params = locationState.params ?? savedRun?.params ?? [];
-  const initialTspInstance = locationState.tspInstance ?? savedRun?.tspInstance ?? null;
-  const initialVrpInstance = locationState.vrpInstance ?? savedRun?.vrpInstance ?? null;
+  const puzzleConfig = locationState.puzzleConfig ?? restoredRun?.puzzleConfig ?? [];
+  const runtimeStudyRequest = locationState.runtimeStudyRequest ?? restoredRun?.runtimeStudyRequest ?? null;  const params = locationState.params ?? restoredRun?.params ?? [];
+  const initialTspInstance = locationState.tspInstance ?? restoredRun?.tspInstance ?? null;
+  const initialVrpInstance = locationState.vrpInstance ?? restoredRun?.vrpInstance ?? null;
 
   const normalizeSeriesMap = (series) => {
     if (!series) return {};
@@ -64,7 +69,7 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
   };
 
   const [batch, setBatch] = useState(() => normalizeBatch(batchResponse ?? null));
-  const [studyPoints, setStudyPoints] = useState(() => savedRun?.studyPoints ?? []);
+  const [studyPoints, setStudyPoints] = useState(() => restoredRun?.studyPoints ?? []);
   const [loading, setLoading] = useState(!!initialLoading);
   const [error, setError] = useState(initialError ?? null);
   const [playbackSpeed, setPlaybackSpeed] = useState(50);
@@ -92,8 +97,8 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
   );
 
  const [selectedRunKey, setSelectedRunKey] = useState(() => {
-   if (savedRun?.selectedRunKey != null) {
-     return savedRun.selectedRunKey;
+   if (restoredRun?.selectedRunKey != null) {
+     return restoredRun.selectedRunKey;
    }
    return Object.keys(averageByProblem).length > 0 ? "average" : "0";
  });
@@ -303,6 +308,7 @@ function handleResetPlayback() {
                 pageMode: "run",
                 batch: normalizeBatch(data.batch ?? null),
                 studyPoints: [],
+                loading: false,
                 puzzleConfig,
                 params,
                 tspInstance,
@@ -374,6 +380,7 @@ function handleResetPlayback() {
                 pageMode: "runtimeStudy",
                 batch: null,
                 studyPoints: sortedPoints,
+                loading: false,
                 puzzleConfig,
                 params,
                 tspInstance,
