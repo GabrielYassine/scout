@@ -1,9 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Client } from "@stomp/stompjs";
 
-import { normalizeBatch } from "@/features/run/utils/runData.js";
-import { createOrderedProgressApplier } from "@/features/run/utils/orderedProgress.js";
-
 export function useRunWebSocket({
   enabled,
   runId,
@@ -20,11 +17,18 @@ export function useRunWebSocket({
   const activeRunIdRef = useRef(null);
   const readyFiredRef = useRef(false);
 
+  const progressQueueRef = useRef([]);
+  const flushTimerRef = useRef(null);
+  const latestBatchRef = useRef(null);
+
   useEffect(() => {
     if (!enabled) return;
     if (!runId) return;
 
+    activeRunIdRef.current = runId;
     readyFiredRef.current = false;
+    progressQueueRef.current = [];
+    latestBatchRef.current = null;
 
     const wsUrl = `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}/ws`;
 
@@ -32,6 +36,8 @@ export function useRunWebSocket({
       brokerURL: wsUrl,
       reconnectDelay: 0,
     });
+
+    const FLUSH_INTERVAL_MS = 75;
 
     const mergeList = (prevList, op, incomingSingle, incomingList) => {
       const prev = Array.isArray(prevList) ? prevList : [];
@@ -50,9 +56,7 @@ export function useRunWebSocket({
       }
 
       if (op === "REPLACE_LAST") {
-        if (Array.isArray(incomingList)) {
-          return [...incomingList];
-        }
+        if (Array.isArray(incomingList)) return [...incomingList];
         if (incomingSingle == null) return prev;
         if (prev.length === 0) return [incomingSingle];
         const next = [...prev];
@@ -88,8 +92,18 @@ export function useRunWebSocket({
               finalEvaluations: 0,
             };
 
-      run.iterations = mergeList(run.iterations, update.iterationsMerge, update.iteration, update.iterations);
-      run.evaluations = mergeList(run.evaluations, update.evaluationsMerge, update.evaluation, update.evaluations);
+      run.iterations = mergeList(
+        run.iterations,
+        update.iterationsMerge,
+        update.iteration,
+        update.iterations
+      );
+      run.evaluations = mergeList(
+        run.evaluations,
+        update.evaluationsMerge,
+        update.evaluation,
+        update.evaluations
+      );
 
       const seriesDelta = update.seriesDelta ?? {};
       const seriesMerge = update.seriesMerge ?? {};
@@ -97,11 +111,20 @@ export function useRunWebSocket({
       const nextSeries = { ...(run.series ?? {}) };
       for (const [key, value] of Object.entries(seriesDelta)) {
         const op = seriesMerge[key] ?? "APPEND";
-        nextSeries[key] = mergeList(nextSeries[key], op, value, Array.isArray(value) ? value : null);
+        nextSeries[key] = mergeList(
+          nextSeries[key],
+          op,
+          value,
+          Array.isArray(value) ? value : null
+        );
       }
       run.series = nextSeries;
 
-      const xLen = Math.min(run.evaluations.length, run.iterations.length || run.evaluations.length);
+      const xLen = Math.min(
+        run.evaluations.length,
+        run.iterations.length || run.evaluations.length
+      );
+
       for (const [key, op] of Object.entries(seriesMerge)) {
         if (op === "APPEND") {
           const arr = run.series?.[key];
@@ -123,55 +146,79 @@ export function useRunWebSocket({
       return { ...base, batches: nextBatches };
     };
 
-    const ordered = createOrderedProgressApplier({
-      applyPacket: (packet) => {
-        if (!packet?.runId) return;
-        if (activeRunIdRef.current && packet.runId !== activeRunIdRef.current) return;
-        setLoading(false);
-        setBatch((prev) => mergeProgress(prev, packet));
-      },
-    });
+    const sortBySequence = (packets) =>
+      [...packets].sort((a, b) => {
+        const aSeq = a.sequenceId ?? 0;
+        const bSeq = b.sequenceId ?? 0;
+        return aSeq - bSeq;
+      });
+
+    const flushProgressQueue = () => {
+      if (!enabled) return;
+      const queued = progressQueueRef.current;
+      if (!queued.length) return;
+
+      progressQueueRef.current = [];
+      const orderedPackets = sortBySequence(queued);
+
+      setLoading(false);
+      setBatch((prev) => {
+        let next = prev;
+        for (const pkt of orderedPackets) {
+          if (!pkt?.runId) continue;
+          if (activeRunIdRef.current && pkt.runId !== activeRunIdRef.current) continue;
+          next = mergeProgress(next, pkt);
+        }
+        latestBatchRef.current = next;
+        return next;
+      });
+    };
+
+    flushTimerRef.current = setInterval(flushProgressQueue, FLUSH_INTERVAL_MS);
 
     client.onConnect = () => {
       activeRunIdRef.current = runId;
 
       client.subscribe(`/topic/run/${runId}`, (message) => {
-        // Fire readiness exactly once per runId after we know subscription is active.
-        if (!readyFiredRef.current) {
-          readyFiredRef.current = true;
-          try {
-            onReady?.();
-          } catch (e) {
-            console.error("onReady handler failed", e);
-          }
-        }
-
-        const data = JSON.parse(message.body);
-
-        if (!data?.runId) return;
-        if (activeRunIdRef.current && data.runId !== activeRunIdRef.current) {
+        let data;
+        try {
+          data = JSON.parse(message.body);
+        } catch {
           return;
         }
 
+        if (!data?.runId) return;
+        if (activeRunIdRef.current && data.runId !== activeRunIdRef.current) return;
+
         if (data.type === "RUN_PROGRESS") {
-          console.log("Run WebSocket progress", { runId: data.runId, message: data.message });
-          ordered.ingest(data);
+          progressQueueRef.current.push(data);
           return;
         }
 
         if (data.type === "RUN_CONNECTED") {
-          console.log("Run WebSocket connected", { runId: data.runId, message: data.message });
           return;
         }
 
         if (data.type === "RUN_FINISHED") {
+          // Flush any outstanding progress before marking complete.
+          flushProgressQueue();
+
           console.log("Run WebSocket finished", { runId: data.runId, message: data.message });
           setLoading(false);
-          const normalized = normalizeBatch(data.batch ?? null);
-          setBatch(normalized);
-          setSavedRun({
+
+          // Terminal packet can add end-only information (e.g., summary/averages) without replacing batches.
+          if (data.summary) {
+            setBatch((prev) => {
+              const base = prev ?? { runId: data.runId, batches: [], summary: null };
+              const next = { ...base, summary: data.summary };
+              latestBatchRef.current = next;
+              return next;
+            });
+          }
+
+          setSavedRun(() => ({
             pageMode: "run",
-            batch: normalized,
+            batch: latestBatchRef.current,
             studyPoints: [],
             loading: false,
             puzzleConfig,
@@ -180,16 +227,17 @@ export function useRunWebSocket({
             vrpInstance,
             selectedRunKey: 0,
             savedAt: Date.now(),
-          });
+          }));
+
           client.deactivate();
           return;
         }
 
         if (data.type === "RUN_FAILED") {
+          flushProgressQueue();
           setLoading(false);
           setError(data.message || "Run failed");
           client.deactivate();
-          return;
         }
       });
 
@@ -197,12 +245,28 @@ export function useRunWebSocket({
         destination: `/app/run/${runId}/connect`,
         body: JSON.stringify({}),
       });
+
+      if (!readyFiredRef.current) {
+        readyFiredRef.current = true;
+        try {
+          onReady?.();
+        } catch (e) {
+          console.error("onReady handler failed", e);
+        }
+      }
     };
 
     client.activate();
 
     return () => {
       try {
+        if (flushTimerRef.current) {
+          clearInterval(flushTimerRef.current);
+          flushTimerRef.current = null;
+        }
+
+        progressQueueRef.current = [];
+        latestBatchRef.current = null;
         client.deactivate();
       } catch (e) {
         console.error("Failed to close run WebSocket", e);

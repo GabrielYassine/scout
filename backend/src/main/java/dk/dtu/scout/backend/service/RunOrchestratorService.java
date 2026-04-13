@@ -92,7 +92,7 @@ public class RunOrchestratorService {
         try {
             BatchRunResponse response = runExecutor.executeBatch(request, logEvery, wsUpdateEvery);
             if (request.runId() != null) {
-                wsSender.sendToRun(request.runId(), RunWsPayload.finished(request.runId(), response));
+                wsSender.sendToRun(request.runId(), RunWsPayload.finished(request.runId(), response.summary()));
             }
             return response;
         } catch (CancellationException ex) {

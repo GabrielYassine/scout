@@ -44,12 +44,10 @@ public class RunProgressObserver<S> implements Observer<S> {
         this.wsUpdateEveryIterations = wsUpdateEveryIterations;
 
         this.streamKey = streamKey(runId, problemId, seed);
-        // Ensure each stream starts at 0 so first emitted packet is sequenceId=1.
         SEQUENCE_BY_STREAM.computeIfAbsent(this.streamKey, k -> new AtomicLong(0));
     }
 
     private static String streamKey(String runId, String problemId, long seed) {
-        // Stable, frontend-friendly identity: runId + problemId + seed.
         return runId + ":" + problemId + ":" + seed;
     }
 
@@ -61,8 +59,6 @@ public class RunProgressObserver<S> implements Observer<S> {
         if (series == null) return MergeOp.APPEND;
         SeriesMode mode = series.getMode();
         if (mode == SeriesMode.LATEST_ONLY) {
-            // Observers that only keep the latest value should not cause x-axis misalignment.
-            // Replace the last y-value for the current tick (or append if empty).
             return MergeOp.REPLACE_LAST;
         }
         return MergeOp.APPEND;
@@ -94,6 +90,50 @@ public class RunProgressObserver<S> implements Observer<S> {
         if ((state.iteration() + 1) % wsUpdateEveryIterations != 0) return;
 
         int logIndex = log.getIterations().size() - 1;
+        if (logIndex <= lastSentLogIndex) return;
+        lastSentLogIndex = logIndex;
+
+        int iteration = log.getIterations().get(logIndex);
+        int evaluation = log.getEvaluations().get(logIndex);
+
+        Map<String, Object> seriesDelta = new LinkedHashMap<>();
+        Map<String, MergeOp> seriesMerge = new LinkedHashMap<>();
+
+        for (Map.Entry<String, LoggedSeries<?>> entry : log.getSeries().entrySet()) {
+            String key = entry.getKey();
+            LoggedSeries<?> loggedSeries = entry.getValue();
+            if (loggedSeries == null) continue;
+            List<?> values = loggedSeries.getValues();
+            if (values == null || values.isEmpty()) continue;
+
+            seriesDelta.put(key, values.getLast());
+            seriesMerge.put(key, seriesMergeOp(loggedSeries));
+        }
+
+        wsSender.sendToRun(
+            runId,
+            RunWsPayload.progress(
+                runId,
+                runIndex,
+                seed,
+                problemId,
+                nextSequenceId(),
+                MergeOp.APPEND,
+                MergeOp.APPEND,
+                seriesMerge,
+                iteration,
+                evaluation,
+                null,
+                null,
+                seriesDelta
+            )
+        );
+    }
+
+    @Override
+    public void onEnd(RunState<S> state, RunLog log) {
+        int logIndex = log.getIterations().size() - 1;
+        if (logIndex < 0) return;
         if (logIndex <= lastSentLogIndex) return;
         lastSentLogIndex = logIndex;
 

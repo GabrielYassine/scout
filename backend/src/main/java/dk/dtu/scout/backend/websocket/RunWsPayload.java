@@ -1,6 +1,6 @@
 package dk.dtu.scout.backend.websocket;
 
-import dk.dtu.scout.backend.dto.run.BatchRunResponse;
+import dk.dtu.scout.backend.dto.run.BatchSummaryResponse;
 
 import java.util.List;
 import java.util.Map;
@@ -21,15 +21,13 @@ public record RunWsPayload(
     List<Integer> iterations,
     List<Integer> evaluations,
     Map<String, Object> seriesDelta,
-    BatchRunResponse batch
+    BatchSummaryResponse summary
 ) {
     public static RunWsPayload connected(String runId) {
-        System.out.println("Creating connected payload for run " + runId);
         return status("RUN_CONNECTED", runId, "Run session connected");
     }
 
-    public static RunWsPayload finished(String runId, BatchRunResponse batch) {
-        System.out.println("Creating finished payload for run " + runId);
+    public static RunWsPayload finished(String runId, BatchSummaryResponse summary) {
         return new RunWsPayload(
             "RUN_FINISHED",
             runId,
@@ -46,12 +44,11 @@ public record RunWsPayload(
             null,
             null,
             null,
-            batch
+            summary
         );
     }
 
     public static RunWsPayload failed(String runId, String message) {
-        System.out.println("Creating failed payload for run " + runId + " with message: " + message);
         return status("RUN_FAILED", runId, message == null ? "Run failed" : message);
     }
 
@@ -70,7 +67,6 @@ public record RunWsPayload(
         List<Integer> evaluations,
         Map<String, Object> seriesDelta
     ) {
-        System.out.println("Creating progress payload for run " + runId + " at iteration " + iteration + " and evaluation " + evaluation);
         return new RunWsPayload(
             "RUN_PROGRESS",
             runId,
