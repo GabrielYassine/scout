@@ -70,10 +70,11 @@ public record RunWsPayload(
         List<Integer> evaluations,
         Map<String, Object> seriesDelta
     ) {
+        System.out.println("Creating progress payload for run " + runId + " at iteration " + iteration + " and evaluation " + evaluation);
         return new RunWsPayload(
             "RUN_PROGRESS",
             runId,
-            null,
+            "Run progress update",
             runIndex,
             seed,
             problemId,

@@ -10,7 +10,6 @@ import "./LabPage.css";
 
 import { usePuzzleConfig } from "@/shared/contexts/usePuzzleConfig.js";
 import { useLocalStorageState } from "@/shared/hooks/useLocalStorageState.js";
-import { startRun } from "@/shared/api/run.js";
 
 export default function LabPage({
   catalog,
@@ -240,6 +239,7 @@ export default function LabPage({
         wsUpdateEveryIterations,
       };
 
+      // WS-first: Run page will start the backend run after the /topic/run/{runId} subscription is active.
       setSavedRun({
         pageMode: "run",
         loading: true,
@@ -256,18 +256,10 @@ export default function LabPage({
       });
 
       navigate("/run", {
-        state: {
-          pageMode: "run",
-          loading: true,
-          puzzleConfig,
-          params,
-          tspInstance,
-          vrpInstance,
-          runId,
-        },
+        state: { pageMode: "run", loading: true, puzzleConfig, params, tspInstance, vrpInstance, runId },
       });
 
-      await startRun(body);
+      // Important: don't call startRun(body) here;
     } catch (err) {
       showToast(err.message || "Failed to start run");
     }

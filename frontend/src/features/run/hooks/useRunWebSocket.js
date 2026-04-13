@@ -15,12 +15,16 @@ export function useRunWebSocket({
   setError,
   setBatch,
   setSavedRun,
+  onReady,
 }) {
   const activeRunIdRef = useRef(null);
+  const readyFiredRef = useRef(false);
 
   useEffect(() => {
     if (!enabled) return;
     if (!runId) return;
+
+    readyFiredRef.current = false;
 
     const wsUrl = `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}/ws`;
 
@@ -132,6 +136,16 @@ export function useRunWebSocket({
       activeRunIdRef.current = runId;
 
       client.subscribe(`/topic/run/${runId}`, (message) => {
+        // Fire readiness exactly once per runId after we know subscription is active.
+        if (!readyFiredRef.current) {
+          readyFiredRef.current = true;
+          try {
+            onReady?.();
+          } catch (e) {
+            console.error("onReady handler failed", e);
+          }
+        }
+
         const data = JSON.parse(message.body);
 
         if (!data?.runId) return;
@@ -140,6 +154,7 @@ export function useRunWebSocket({
         }
 
         if (data.type === "RUN_PROGRESS") {
+          console.log("Run WebSocket progress", { runId: data.runId, message: data.message });
           ordered.ingest(data);
           return;
         }
@@ -204,5 +219,6 @@ export function useRunWebSocket({
     setError,
     setBatch,
     setSavedRun,
+    onReady,
   ]);
 }
