@@ -87,10 +87,17 @@ public class RunProgressObserver<S> implements Observer<S> {
     @Override
     public void onStep(RunState<S> state, RunLog log) {
         if (wsUpdateEveryIterations <= 0) return;
-        if ((state.iteration() + 1) % wsUpdateEveryIterations != 0) return;
-
         int logIndex = log.getIterations().size() - 1;
+        if (logIndex < 0) return;
         if (logIndex <= lastSentLogIndex) return;
+
+        boolean isInitialPoint = logIndex == 0;
+        boolean matchesInterval = ((state.iteration() + 1) % wsUpdateEveryIterations) == 0;
+
+        if (!isInitialPoint && !matchesInterval) {
+            return;
+        }
+
         lastSentLogIndex = logIndex;
 
         int iteration = log.getIterations().get(logIndex);

@@ -1,6 +1,36 @@
 import { useEffect, useRef } from "react";
 import { Client } from "@stomp/stompjs";
 
+function applyCompletedRuns(prev, completedRuns, summary) {
+  if (!prev) {
+    return { runId: null, batches: [], summary: summary ?? null };
+  }
+
+  const metaByKey = new Map(
+    (completedRuns ?? []).map((item) => [
+      `${item.runIndex}::${item.problemId}`,
+      item,
+    ])
+  );
+  const nextBatches = (prev.batches ?? []).map((batch) => ({
+    ...batch,
+    runs: (batch.runs ?? []).map((run) => {
+      const meta = metaByKey.get(`${batch.runIndex}::${run.problemId}`);
+      if (!meta) return run;
+
+      return {
+        ...run,
+        runtimeMs: meta.runtimeMs
+              };
+    }),
+  }));
+
+  return {
+    ...prev,
+    batches: nextBatches,
+    summary: summary ?? prev.summary ?? null,
+  };
+}
 export function useRunWebSocket({
   enabled,
   runId,
@@ -88,7 +118,7 @@ export function useRunWebSocket({
               iterations: [],
               evaluations: [],
               series: {},
-              runtimeMs: 0,
+              runtimeMs: null,
               finalEvaluations: 0,
             };
 
@@ -207,14 +237,12 @@ export function useRunWebSocket({
           setLoading(false);
 
           // Terminal packet can add end-only information (e.g., summary/averages) without replacing batches.
-          if (data.summary) {
-            setBatch((prev) => {
-              const base = prev ?? { runId: data.runId, batches: [], summary: null };
-              const next = { ...base, summary: data.summary };
+          setBatch((prev) => {
+              const next = applyCompletedRuns(prev, data.completedRuns, data.summary);
               latestBatchRef.current = next;
               return next;
             });
-          }
+
 
           setSavedRun(() => ({
             pageMode: "run",

@@ -1,6 +1,7 @@
 package dk.dtu.scout.backend.websocket;
 
 import dk.dtu.scout.backend.dto.run.BatchSummaryResponse;
+import dk.dtu.scout.backend.dto.run.RunFinalResponse;
 
 import java.util.List;
 import java.util.Map;
@@ -21,13 +22,14 @@ public record RunWsPayload(
     List<Integer> iterations,
     List<Integer> evaluations,
     Map<String, Object> seriesDelta,
-    BatchSummaryResponse summary
+    BatchSummaryResponse summary,
+    List<RunFinalResponse> completedRuns
 ) {
     public static RunWsPayload connected(String runId) {
         return status("RUN_CONNECTED", runId, "Run session connected");
     }
 
-    public static RunWsPayload finished(String runId, BatchSummaryResponse summary) {
+    public static RunWsPayload finished(String runId, BatchSummaryResponse summary, List<RunFinalResponse> completedRuns) {
         return new RunWsPayload(
             "RUN_FINISHED",
             runId,
@@ -44,7 +46,8 @@ public record RunWsPayload(
             null,
             null,
             null,
-            summary
+            summary,
+            completedRuns
         );
     }
 
@@ -83,7 +86,8 @@ public record RunWsPayload(
             iterations,
             evaluations,
             seriesDelta,
-            null
+            null,
+                null
         );
     }
 
@@ -104,7 +108,8 @@ public record RunWsPayload(
             null,
             null,
             null,
-            null
+            null,
+                null
         );
     }
 }

@@ -3,6 +3,7 @@ package dk.dtu.scout.backend.service;
 import dk.dtu.scout.backend.dto.RunRequest;
 import dk.dtu.scout.backend.dto.RuntimeStudyRequest;
 import dk.dtu.scout.backend.dto.run.BatchRunResponse;
+import dk.dtu.scout.backend.dto.run.RunFinalResponse;
 import dk.dtu.scout.backend.dto.study.RuntimeStudyPointResponse;
 import dk.dtu.scout.backend.dto.study.RuntimeStudyResponse;
 import dk.dtu.scout.backend.websocket.*;
@@ -92,7 +93,12 @@ public class RunOrchestratorService {
         try {
             BatchRunResponse response = runExecutor.executeBatch(request, logEvery, wsUpdateEvery);
             if (request.runId() != null) {
-                wsSender.sendToRun(request.runId(), RunWsPayload.finished(request.runId(), response.summary()));
+                List<RunFinalResponse> completedRuns = response.batches().stream()
+                        .flatMap(batch -> batch.runs().stream().map(run ->
+                                new RunFinalResponse(batch.runIndex(), run.problemId(), run.runtimeMs()))
+                        )
+                        .toList();
+                wsSender.sendToRun(request.runId(), RunWsPayload.finished(request.runId(), response.summary(),completedRuns));
             }
             return response;
         } catch (CancellationException ex) {
