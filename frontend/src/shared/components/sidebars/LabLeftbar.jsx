@@ -94,7 +94,6 @@ export default function LabLeftbar({
     );
   }, [puzzleConfig]);
 
-  const defaultSeed = 1;
 
   function setParam(type, def, rawValue) {
     const currentParams = params[type] ?? {};
@@ -261,10 +260,9 @@ export default function LabLeftbar({
                 label: "Seed",
                 type: "long",
                 min: 1,
-                defaultValue: defaultSeed,
               }}
               disabled={disabled}
-              value={params.global?.seed ?? defaultSeed}
+              value={params.global?.seed}
               onValueChange={(v) => setParam("global", { key: "seed", type: "long" }, v)}
             />
 
@@ -275,10 +273,9 @@ export default function LabLeftbar({
                   label: "Run Times",
                   type: "int",
                   min: 1,
-                  defaultValue: 1,
                 }}
                 disabled={disabled}
-                value={params.global?.runTimes ?? 1}
+                value={params.global?.runTimes }
                 onValueChange={(v) =>
                   setParam("global", { key: "runTimes", type: "int" }, v)
                 }
@@ -292,10 +289,9 @@ export default function LabLeftbar({
                   label: "Repetitions per Size",
                   type: "int",
                   min: 1,
-                  defaultValue: 1,
                 }}
                 disabled={disabled}
-                value={params.global?.repetitionsPerSize ?? 1}
+                value={params.global?.repetitionsPerSize}
                 onValueChange={(v) =>
                   setParam("global", { key: "repetitionsPerSize", type: "int" }, v)
                 }
@@ -309,10 +305,9 @@ export default function LabLeftbar({
                   label: "Backend log every X iterations",
                   type: "int",
                   min: 10,
-                  defaultValue: 10,
                 }}
                 disabled={disabled}
-                value={params.global?.logEveryIterations ?? 10}
+                value={params.global?.logEveryIterations}
                 onValueChange={(v) =>
                   setParam("global", { key: "logEveryIterations", type: "int" }, v)
                 }
@@ -326,10 +321,9 @@ export default function LabLeftbar({
                   label: "WebSocket update every X iterations",
                   type: "int",
                   min: 1,
-                  defaultValue: 100,
                 }}
                 disabled={disabled}
-                value={params.global?.wsUpdateEveryIterations ?? 100}
+                value={params.global?.wsUpdateEveryIterations}
                 onValueChange={(v) =>
                   setParam("global", { key: "wsUpdateEveryIterations", type: "int" }, v)
                 }
@@ -342,10 +336,9 @@ export default function LabLeftbar({
                   key: "problemSizes",
                   label: "Problem Sizes (comma separated)",
                   type: "string",
-                  defaultValue: "100, 200, 400, 800",
                 }}
                 disabled={disabled}
-                value={params.global?.problemSizes ?? "100, 200, 400, 800"}
+                value={params.global?.problemSizes}
                 onValueChange={(v) =>
                   setParam("global", { key: "problemSizes", type: "string" }, v)
                 }

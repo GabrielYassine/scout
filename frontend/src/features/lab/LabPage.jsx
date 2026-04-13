@@ -123,9 +123,9 @@ export default function LabPage({
      }
 
      if (experimentType === "runtimeStudy") {
-       const repetitionsPerSize = params.global?.repetitionsPerSize ?? 30;
+       const repetitionsPerSize = params.global?.repetitionsPerSize;
        const problemSizes = parseProblemSizes(params.global?.problemSizes);
-       const wsUpdateEverySizes = params.global?.wsUpdateEverySizes ?? 1;
+       const wsUpdateEverySizes = params.global?.wsUpdateEverySizes ;
        const studyId = window.crypto?.randomUUID
          ? window.crypto.randomUUID()
          : `${Date.now()}-${Math.random().toString(16).slice(2)}`;

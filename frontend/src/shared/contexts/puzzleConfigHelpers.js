@@ -44,7 +44,16 @@ export const createEmptyPuzzleConfig = () => ({
 });
 
 export const createEmptyParams = () => ({
-  global: {},
+  global: {
+    experimentType: "run",
+    seed: 1,
+    runTimes: 1,
+    logEveryIterations: 10,
+    wsUpdateEveryIterations: 100,
+    repetitionsPerSize: 10,
+    problemSizes: "100, 200, 400, 800",
+    wsUpdateEverySizes: 1,
+  },
   searchSpace: {},
   problem: {},
   generator: {},
