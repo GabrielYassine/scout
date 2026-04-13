@@ -27,7 +27,6 @@ public class RunOrchestratorService {
     private final RunExecutor runExecutor;
     private final StatisticsService statisticsService;
     private final WsSender wsSender;
-    private final RunStatusService runStatusService;
     private final Executor requestExecutor;
 
     public RunOrchestratorService(
@@ -35,14 +34,12 @@ public class RunOrchestratorService {
             RunExecutor runExecutor,
             StatisticsService statisticsService,
             WsSender wsSender,
-            RunStatusService runStatusService,
             @Qualifier("requestExecutor") Executor requestExecutor
     ) {
         this.runRequestValidator = runRequestValidator;
         this.runExecutor = runExecutor;
         this.statisticsService = statisticsService;
         this.wsSender = wsSender;
-        this.runStatusService = runStatusService;
         this.requestExecutor = requestExecutor;
     }
 
@@ -58,13 +55,11 @@ public class RunOrchestratorService {
         try {
             BatchRunResponse response = runExecutor.executeBatch(request, logEvery, wsUpdateEvery);
             if (request.runId() != null) {
-                runStatusService.markFinished(request.runId(), response);
                 wsSender.sendToRun(request.runId(), RunWsPayload.finished(request.runId(), response));
             }
             return response;
         } catch (Exception ex) {
             if (request.runId() != null) {
-                runStatusService.markFailed(request.runId(), ex.getMessage());
                 wsSender.sendToRun(request.runId(), RunWsPayload.failed(request.runId(), ex.getMessage()));
             }
             throw ex;

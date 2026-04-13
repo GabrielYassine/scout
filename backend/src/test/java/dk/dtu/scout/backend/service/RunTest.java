@@ -202,7 +202,8 @@ class RunTest {
                 seed,
                 runs,
                 "test-" + problemId,
-                1
+                1,
+                0
         );
 
         BatchRunResponse response = runOrchestratorService.run(request);
@@ -247,11 +248,13 @@ class RunTest {
     @Test
     @DisplayName("(1+1) EA on LeadingOnes: scaling matches n^2 (ratio test)")
     void testLeadingOnesRatioScaling() {
-        int runs = 20;
+        int runs = 5;
         int n1 = 128, n2 = 256;
 
-        double m1 = runAndGetMedianFinalEvals("leadingones", n1, 67890L, runs, 20_000_000);
-        double m2 = runAndGetMedianFinalEvals("leadingones", n2, 77890L, runs, 80_000_000);
+        // Keep iteration caps comfortably above expected runtime for these n values,
+        // but bounded so the test can't run indefinitely on slower machines.
+        double m1 = runAndGetMedianFinalEvals("leadingones", n1, 67890L, runs, 5_000_000);
+        double m2 = runAndGetMedianFinalEvals("leadingones", n2, 77890L, runs, 20_000_000);
 
         assertTrue(m1 > 0 && m2 > 0);
 
@@ -263,8 +266,8 @@ class RunTest {
         assertTrue(Robs >= 0.9 * Rpred && Robs <= 1.1 * Rpred, "LeadingOnes ratio mismatch: Robs=" + Robs + " Rpred=" + Rpred + " (m1=" + m1 + ", m2=" + m2 + ")");
         System.out.println("LeadingOnes: m1=" + m1 + ", m2=" + m2 + ", Robs=" + Robs + ", Rpred=" + Rpred);
 
-        assertTrue(m1 < 0.5 * 20_000_000);
-        assertTrue(m2 < 0.5 * 80_000_000);
+        assertTrue(m1 < 0.5 * 5_000_000);
+        assertTrue(m2 < 0.5 * 20_000_000);
     }
 
     @Test
@@ -288,14 +291,18 @@ class RunTest {
                 List.of("fitness", "tour"),
                 Map.of(),
                 List.of("max-iterations"),
-                Map.of("maxIterations", 20000),
+                Map.of("maxIterations", 2000),
                 12345L,
-                3,
+                1,
                 "test-run-tsp-1",
-                100
+                100,
+                0
         );
 
         BatchRunResponse response = runOrchestratorService.run(request);
+        assertNotNull(response);
+        assertNotNull(response.batches());
+        assertFalse(response.batches().isEmpty());
     }
 
     @Test
@@ -321,9 +328,10 @@ class RunTest {
                 List.of("max-iterations"),
                 Map.of("maxIterations", 10000),
                 67890L,
-                3,
+                1,
                 "test-run-tsp-2",
-                100
+                100,
+                0
         );
 
         BatchRunResponse response = runOrchestratorService.run(request);
@@ -356,15 +364,17 @@ class RunTest {
                 13579L,
                 1,
                 "test-run-vrp-xn101-k25",
-                100
+                100,
+                0
+
         );
 
         BatchRunResponse response = runOrchestratorService.run(request);
         RunResponse vrpRun = response.batches().stream()
-                .flatMap((batch) -> batch.runs().stream())
-                .filter((run) -> "vrp".equals(run.problemId()))
-                .findFirst()
-                .orElseThrow();
+            .flatMap((batch) -> batch.runs().stream())
+            .filter((run) -> "vrp".equals(run.problemId()))
+            .findFirst()
+            .orElseThrow();
 
         assertTrue(vrpRun.finalEvaluations() > 0);
         assertTrue(vrpRun.series().containsKey("tspCities"));

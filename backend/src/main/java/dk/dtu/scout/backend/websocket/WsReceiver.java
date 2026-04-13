@@ -8,24 +8,14 @@ import org.springframework.stereotype.Controller;
 public class WsReceiver {
 
     private final WsSender wsSender;
-    private final RunStatusService runStatusService;
 
-    public WsReceiver(WsSender wsSender, RunStatusService runStatusService) {
+    public WsReceiver(WsSender wsSender) {
         this.wsSender = wsSender;
-        this.runStatusService = runStatusService;
     }
 
     @MessageMapping("/run/{runId}/connect")
     public void connect(@DestinationVariable String runId) {
         wsSender.sendToRun(runId, RunWsPayload.connected(runId));
-        var finished = runStatusService.getFinishedResponse(runId);
-        if (finished != null) {
-            wsSender.sendToRun(runId, RunWsPayload.finished(runId, finished));
-        } else if (runStatusService.isFinished(runId)) {
-            wsSender.sendToRun(runId, RunWsPayload.finished(runId, null));
-        } else if (runStatusService.isFailed(runId)) {
-            wsSender.sendToRun(runId, RunWsPayload.failed(runId, runStatusService.getFailedMessage(runId)));
-        }
     }
 
     @MessageMapping("/run/{runId}/disconnect")

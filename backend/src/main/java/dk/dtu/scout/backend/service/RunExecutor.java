@@ -10,7 +10,6 @@ import dk.dtu.scout.backend.dto.run.RunResponse;
 import dk.dtu.scout.backend.util.ViewMapper;
 import dk.dtu.scout.backend.util.InstanceMapper;
 import dk.dtu.scout.backend.websocket.RunProgressObserver;
-import dk.dtu.scout.backend.websocket.RunStatusService;
 import dk.dtu.scout.backend.websocket.RunWsPayload;
 import dk.dtu.scout.backend.websocket.WsSender;
 import dk.dtu.scout.crossover.Crossover;
