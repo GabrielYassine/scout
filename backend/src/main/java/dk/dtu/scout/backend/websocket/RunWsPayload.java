@@ -28,11 +28,6 @@ public record RunWsPayload(
         return status("RUN_CONNECTED", runId, "Run session connected");
     }
 
-    public static RunWsPayload disconnected(String runId) {
-        System.out.println("Creating disconnected payload for run " + runId);
-        return status("RUN_DISCONNECTED", runId, "Run session disconnected");
-    }
-
     public static RunWsPayload finished(String runId, BatchRunResponse batch) {
         System.out.println("Creating finished payload for run " + runId);
         return new RunWsPayload(

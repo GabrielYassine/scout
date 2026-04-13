@@ -8,13 +8,13 @@ import dk.dtu.scout.backend.dto.study.RuntimeStudyResponse;
 import dk.dtu.scout.backend.websocket.*;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
+import java.util.concurrent.*;
 
 /**
  * Facade for run orchestration. Validates requests, triggers async execution,
@@ -23,11 +23,18 @@ import java.util.concurrent.Executor;
 @Service
 public class RunOrchestratorService {
 
+    private record ActiveRun(String runId, Future<?> future) {}
+
     private final RunRequestValidator runRequestValidator;
     private final RunExecutor runExecutor;
     private final StatisticsService statisticsService;
     private final WsSender wsSender;
-    private final Executor requestExecutor;
+    private final ThreadPoolTaskExecutor requestExecutor;
+
+    /**
+     * Active run per client session (tab-scoped).
+     */
+    private final ConcurrentHashMap<String, ActiveRun> activeBySession = new ConcurrentHashMap<>();
 
     public RunOrchestratorService(
             RunRequestValidator runRequestValidator,
@@ -40,12 +47,42 @@ public class RunOrchestratorService {
         this.runExecutor = runExecutor;
         this.statisticsService = statisticsService;
         this.wsSender = wsSender;
-        this.requestExecutor = requestExecutor;
+        this.requestExecutor = (ThreadPoolTaskExecutor) requestExecutor;
     }
 
     public void startRun(RunRequest request) {
         runRequestValidator.runRequestValidator(request);
-        CompletableFuture.runAsync(() -> run(request), requestExecutor).exceptionally(ex -> null);
+
+        String sessionId = request.sessionId();
+        if (sessionId == null || sessionId.isBlank()) {
+            throw new IllegalArgumentException("sessionId is required");
+        }
+        String runId = request.runId();
+
+        ActiveRun previous = activeBySession.get(sessionId);
+        if (previous != null) {
+            previous.future.cancel(true);
+        }
+
+        Future<?> future = requestExecutor.submit(() -> run(request));
+
+        ActiveRun current = new ActiveRun(runId, future);
+        activeBySession.put(sessionId, current);
+
+        // Cleanup: remove only if this run is still the active one for the session.
+        requestExecutor.execute(() -> {
+            try {
+                future.get();
+            } catch (CancellationException ignored) {
+                // cancelled
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            } catch (ExecutionException ignored) {
+                // run() already emitted failed payload if needed
+            } finally {
+                activeBySession.computeIfPresent(sessionId, (sid, active) -> runId.equals(active.runId()) ? null : active);
+            }
+        });
     }
 
     public BatchRunResponse run(RunRequest request) {
@@ -58,6 +95,9 @@ public class RunOrchestratorService {
                 wsSender.sendToRun(request.runId(), RunWsPayload.finished(request.runId(), response));
             }
             return response;
+        } catch (CancellationException ex) {
+            // Task was superseded/cancelled. Don't emit failed; client should ignore stale runIds.
+            throw ex;
         } catch (Exception ex) {
             if (request.runId() != null) {
                 wsSender.sendToRun(request.runId(), RunWsPayload.failed(request.runId(), ex.getMessage()));
@@ -127,6 +167,7 @@ public class RunOrchestratorService {
                 request.stopConditionParams(),
                 seed,
                 request.repetitionsPerSize(),
+                null,
                 null,
                 0,
                 0

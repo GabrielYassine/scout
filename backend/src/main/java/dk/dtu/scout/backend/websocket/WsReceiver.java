@@ -17,9 +17,4 @@ public class WsReceiver {
     public void connect(@DestinationVariable String runId) {
         wsSender.sendToRun(runId, RunWsPayload.connected(runId));
     }
-
-    @MessageMapping("/run/{runId}/disconnect")
-    public void disconnect(@DestinationVariable String runId) {
-        wsSender.sendToRun(runId, RunWsPayload.disconnected(runId));
-    }
 }

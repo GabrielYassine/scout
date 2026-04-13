@@ -24,12 +24,7 @@ export async function startRun(body) {
     throw new Error(await parseErrorMessage(res, `Run failed with status ${res.status}`));
   }
 
-  // backend response isn't used by the UI right now, but return it for future use
-  try {
-    return await res.json();
-  } catch {
-    return null;
-  }
+  return null;
 }
 
 export async function startRuntimeStudy(body) {

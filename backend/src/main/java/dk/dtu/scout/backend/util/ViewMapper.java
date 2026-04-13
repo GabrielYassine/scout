@@ -214,6 +214,7 @@ public final class ViewMapper {
         Map<String, Object> stopConditionParams,
         long seed,
         int runTimes,
+        String sessionId,
         String runId,
         int logEveryIterations,
         int wsUpdateEveryIterations
@@ -239,6 +240,7 @@ public final class ViewMapper {
             stopConditionParams,
             seed,
             runTimes,
+            sessionId,
             runId,
             logEveryIterations,
             wsUpdateEveryIterations

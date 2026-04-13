@@ -102,12 +102,19 @@ public class SimulationRunner {
         updateComponentStateVariables(sharedState, stateComponents);
 
         notifyOnStart(observers, currentState, log);
+        if (Thread.currentThread().isInterrupted()) {
+            throw new java.util.concurrent.CancellationException("Run cancelled");
+        }
         log.tick(currentState.iteration(), currentState.evaluations() - 1);
         notifyOnStep(observers, currentState, log);
 
         int iteration = currentState.iteration();
 
         while (!shouldStop(stopConditions, iteration, evaluations, currentState.bestFitness(), currentState.bestSolution())) {
+            if (Thread.currentThread().isInterrupted()) {
+                throw new java.util.concurrent.CancellationException("Run cancelled");
+            }
+
             PopulationStepResult<S> stepResult = populationModel.step(context, populationState, iteration, evaluations);
             evaluations += stepResult.evaluationsDelta();
             currentState = stepResult.runState();
@@ -116,6 +123,9 @@ public class SimulationRunner {
             updateComponentStateVariables(sharedState, stateComponents);
 
             if ((currentState.iteration() + 1) % logEveryIterations == 0) {
+                if (Thread.currentThread().isInterrupted()) {
+                    throw new java.util.concurrent.CancellationException("Run cancelled");
+                }
                 log.tick(currentState.iteration(), currentState.evaluations() - 1);
                 notifyOnStep(observers, currentState, log);
             }
@@ -124,10 +134,16 @@ public class SimulationRunner {
         }
 
         if (((currentState.iteration() + 1) % logEveryIterations) != 0) {
+            if (Thread.currentThread().isInterrupted()) {
+                throw new java.util.concurrent.CancellationException("Run cancelled");
+            }
             log.tick(currentState.iteration(), currentState.evaluations() - 1);
             notifyOnStep(observers, currentState, log);
         }
 
+        if (Thread.currentThread().isInterrupted()) {
+            throw new java.util.concurrent.CancellationException("Run cancelled");
+        }
         notifyOnEnd(observers, currentState, log);
         return log;
     }

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Client } from "@stomp/stompjs";
 
 import { normalizeBatch } from "@/features/run/utils/runData.js";
@@ -16,6 +16,8 @@ export function useRunWebSocket({
   setBatch,
   setSavedRun,
 }) {
+  const activeRunIdRef = useRef(null);
+
   useEffect(() => {
     if (!enabled) return;
     if (!runId) return;
@@ -33,7 +35,6 @@ export function useRunWebSocket({
 
       if (op === "REPLACE") {
         if (Array.isArray(incomingList)) return [...incomingList];
-        // If backend says REPLACE but we only got a single, treat it as singleton.
         if (incomingSingle != null) return [incomingSingle];
         return [];
       }
@@ -46,7 +47,6 @@ export function useRunWebSocket({
 
       if (op === "REPLACE_LAST") {
         if (Array.isArray(incomingList)) {
-          // For REPLACE_LAST, list payloads mean "replace entire list" (rare, but deterministic).
           return [...incomingList];
         }
         if (incomingSingle == null) return prev;
@@ -84,11 +84,9 @@ export function useRunWebSocket({
               finalEvaluations: 0,
             };
 
-      // Merge x-values strictly by explicit op.
       run.iterations = mergeList(run.iterations, update.iterationsMerge, update.iteration, update.iterations);
       run.evaluations = mergeList(run.evaluations, update.evaluationsMerge, update.evaluation, update.evaluations);
 
-      // Merge Y series strictly by per-key op.
       const seriesDelta = update.seriesDelta ?? {};
       const seriesMerge = update.seriesMerge ?? {};
 
@@ -99,9 +97,6 @@ export function useRunWebSocket({
       }
       run.series = nextSeries;
 
-      // Alignment safety: for APPEND series we expect at most one y per tick.
-      // If a series gets ahead of x-values due to old data or misconfigured observer,
-      // clamp it to keep plotting deterministic.
       const xLen = Math.min(run.evaluations.length, run.iterations.length || run.evaluations.length);
       for (const [key, op] of Object.entries(seriesMerge)) {
         if (op === "APPEND") {
@@ -126,14 +121,23 @@ export function useRunWebSocket({
 
     const ordered = createOrderedProgressApplier({
       applyPacket: (packet) => {
+        if (!packet?.runId) return;
+        if (activeRunIdRef.current && packet.runId !== activeRunIdRef.current) return;
         setLoading(false);
         setBatch((prev) => mergeProgress(prev, packet));
       },
     });
 
     client.onConnect = () => {
+      activeRunIdRef.current = runId;
+
       client.subscribe(`/topic/run/${runId}`, (message) => {
         const data = JSON.parse(message.body);
+
+        if (!data?.runId) return;
+        if (activeRunIdRef.current && data.runId !== activeRunIdRef.current) {
+          return;
+        }
 
         if (data.type === "RUN_PROGRESS") {
           ordered.ingest(data);
@@ -172,11 +176,6 @@ export function useRunWebSocket({
           client.deactivate();
           return;
         }
-
-        if (data.type === "RUN_DISCONNECTED") {
-          console.log("Run WebSocket disconnected", { runId: data.runId, message: data.message });
-          client.deactivate();
-        }
       });
 
       client.publish({
@@ -189,12 +188,6 @@ export function useRunWebSocket({
 
     return () => {
       try {
-        if (client.connected) {
-          client.publish({
-            destination: `/app/run/${runId}/disconnect`,
-            body: JSON.stringify({}),
-          });
-        }
         client.deactivate();
       } catch (e) {
         console.error("Failed to close run WebSocket", e);

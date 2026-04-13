@@ -25,6 +25,7 @@ public class RunController {
         runOrchestratorService.startRun(request);
         return ResponseEntity.accepted().build();
     }
+
     @PostMapping("/runtime-study")
     public ResponseEntity<Void> startStudy(@RequestBody RuntimeStudyRequest request) {
         runOrchestratorService.startRuntimeStudy(request);

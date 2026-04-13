@@ -201,6 +201,7 @@ class RunTest {
 
                 seed,
                 runs,
+                "test-session",
                 "test-" + problemId,
                 1,
                 0
@@ -294,6 +295,7 @@ class RunTest {
                 Map.of("maxIterations", 2000),
                 12345L,
                 1,
+                "test-session",
                 "test-run-tsp-1",
                 100,
                 0
@@ -329,6 +331,7 @@ class RunTest {
                 Map.of("maxIterations", 10000),
                 67890L,
                 1,
+                "test-session",
                 "test-run-tsp-2",
                 100,
                 0
@@ -363,6 +366,7 @@ class RunTest {
                 Map.of("maxIterations", 1000),
                 13579L,
                 1,
+                "test-session",
                 "test-run-vrp-xn101-k25",
                 100,
                 0

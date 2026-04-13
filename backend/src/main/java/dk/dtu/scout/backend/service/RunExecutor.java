@@ -10,7 +10,6 @@ import dk.dtu.scout.backend.dto.run.RunResponse;
 import dk.dtu.scout.backend.util.ViewMapper;
 import dk.dtu.scout.backend.util.InstanceMapper;
 import dk.dtu.scout.backend.websocket.RunProgressObserver;
-import dk.dtu.scout.backend.websocket.RunWsPayload;
 import dk.dtu.scout.backend.websocket.WsSender;
 import dk.dtu.scout.crossover.Crossover;
 import dk.dtu.scout.generator.Generator;
@@ -34,8 +33,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Future;
 import java.util.function.Supplier;
 
 /**
@@ -63,12 +64,20 @@ public class RunExecutor {
         this.runExecutor = (ThreadPoolTaskExecutor) runExecutor;
     }
 
+    private void checkCancelled() {
+        if (Thread.currentThread().isInterrupted()) {
+            throw new CancellationException("Run cancelled");
+        }
+    }
+
     public BatchRunResponse executeBatch(RunRequest request, int logEveryIterations, int wsUpdateEveryIterations) {
+        checkCancelled();
         return runBatch(request, logEveryIterations, wsUpdateEveryIterations);
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     private <S> BatchRunResponse runBatch(RunRequest request, int logEveryIterations, int wsUpdateEveryIterations) {
+        checkCancelled();
         long baseSeed = request.seed();
         int runtimes = request.runTimes();
         String runId = request.runId();
@@ -85,33 +94,62 @@ public class RunExecutor {
 
         long batchStartTime = System.nanoTime();
 
-        List<CompletableFuture<RunGroupResponse>> futures = new ArrayList<>();
-        for (int i = 0; i < runtimes; i++) {
-            final int runIndex = i;
-            final long runSeed = baseSeed + i;
-            futures.add(CompletableFuture.supplyAsync(
-                () -> runSingleIndex(request, runIndex, runSeed, searchSpaceFactory, logEveryIterations, wsUpdateEveryIterations),
-                runExecutor
-            ));
+        List<Future<RunGroupResponse>> futures = new ArrayList<>();
+        try {
+            for (int i = 0; i < runtimes; i++) {
+                checkCancelled();
+                final int runIndex = i;
+                final long runSeed = baseSeed + i;
+                futures.add(runExecutor.submit(() -> runSingleIndex(request, runIndex, runSeed, searchSpaceFactory, logEveryIterations, wsUpdateEveryIterations)));
+            }
+
+            logExecutorStats("run-batch-start", runtimes, runId);
+
+            List<RunGroupResponse> batches = new ArrayList<>(runtimes);
+            for (Future<RunGroupResponse> f : futures) {
+                checkCancelled();
+                try {
+                    batches.add(f.get());
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw new CancellationException("Run cancelled");
+                } catch (ExecutionException ee) {
+                    Throwable cause = ee.getCause();
+                    if (cause instanceof CancellationException) {
+                        throw (CancellationException) cause;
+                    }
+                    if (cause instanceof RuntimeException re) {
+                        throw re;
+                    }
+                    throw new RuntimeException(cause);
+                }
+            }
+
+            batches = batches.stream()
+                .sorted(Comparator.comparingInt(RunGroupResponse::runIndex))
+                .toList();
+
+            long batchEndTime = System.nanoTime();
+            double batchExecutionTimeMs = (batchEndTime - batchStartTime) / 1_000_000.0;
+
+            logger.info("run-batch-execution-time runId={} searchSpaceId={} runtimes={} batchExecutionTimeMs={}", runId, request.searchSpaceId(), runtimes, batchExecutionTimeMs);
+
+            BatchSummaryResponse summary = statisticsService.calculateSummary(batches);
+            BatchRunResponse response = ViewMapper.toBatchRunResponse(runId, batches, summary);
+            logExecutorStats("run-batch-end", runtimes, runId);
+            return response;
+        } catch (CancellationException ex) {
+            // Best-effort: cancel outstanding child tasks.
+            for (Future<RunGroupResponse> f : futures) {
+                f.cancel(true);
+            }
+            throw ex;
+        } catch (RuntimeException ex) {
+            for (Future<RunGroupResponse> f : futures) {
+                f.cancel(true);
+            }
+            throw ex;
         }
-
-        logExecutorStats("run-batch-start", runtimes, runId);
-
-        List<RunGroupResponse> batches = futures.stream()
-            .map(CompletableFuture::join)
-            .sorted(Comparator.comparingInt(RunGroupResponse::runIndex))
-            .toList();
-
-
-        long batchEndTime = System.nanoTime();
-        double batchExecutionTimeMs = (batchEndTime - batchStartTime) / 1_000_000.0;
-
-        logger.info("run-batch-execution-time runId={} searchSpaceId={} runtimes={} batchExecutionTimeMs={}", runId, request.searchSpaceId(), runtimes, batchExecutionTimeMs);
-
-        BatchSummaryResponse summary = statisticsService.calculateSummary(batches);
-        BatchRunResponse response = ViewMapper.toBatchRunResponse(runId, batches, summary);
-        logExecutorStats("run-batch-end", runtimes, runId);
-        return response;
     }
 
 
@@ -133,6 +171,7 @@ public class RunExecutor {
             int logEveryIterations,
             int wsUpdateEveryIterations
     ) {
+        checkCancelled();
         Random rng = new Random(runSeed);
         SearchSpace<S> ss = searchSpaceFactory.get();
 
@@ -140,6 +179,7 @@ public class RunExecutor {
 
         List<RunResponse> perProblemRuns = new ArrayList<>();
         for (String pid : request.problemIds()) {
+            checkCancelled();
             Map<String, Object> problemParams = request.problemParams() != null
                     ? new LinkedHashMap<>(request.problemParams())
                     : new LinkedHashMap<>();
@@ -167,6 +207,8 @@ public class RunExecutor {
 
             SimulationRunner runner = new SimulationRunner();
             RunLog log = runner.run(popModel, generatorFactory, crossover, parentSelection, selection, ss, problem, rng, stopConditions, observers, logEveryIterations);
+
+            checkCancelled();
 
             long endTime = System.nanoTime();
             double runtimeMs = (endTime - startTime) / 1_000_000.0;

@@ -27,6 +27,7 @@ public record RunRequest(
     Map<String, Object> stopConditionParams,
     long seed,
     int runTimes,
+    String sessionId,
     String runId,
    int logEveryIterations,
     int wsUpdateEveryIterations
