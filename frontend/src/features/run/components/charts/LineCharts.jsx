@@ -1,4 +1,4 @@
-import { useMemo, memo, useState, useRef, useCallback } from "react";
+import { useMemo, memo, useState, useRef, useCallback, useEffect } from "react";
 import ReactECharts from "echarts-for-react";
 
 const computePercentile = (sorted, p) => {
@@ -148,31 +148,37 @@ function LineCharts({
   showStats = true,
   onWindowRangeChange = null,
 }) {
-  const chartRef = useRef(null);
+  const echartsRef = useRef(null);
+  const chartInstanceRef = useRef(null);
   const [windowRange, setWindowRange] = useState(null);
 
-  const option = useMemo(() => {
-    if (!seriesName || !chartPoints?.length) return null;
-
-    const isPermutationFitness =
+  const isPermutationFitness = useMemo(() => {
+    return (
       invertPermutationFitness &&
       searchSpaceId === "permutation" &&
-      (seriesName === "fitness" || seriesName === "bestFitness");
+      (seriesName === "fitness" || seriesName === "bestFitness")
+    );
+  }, [invertPermutationFitness, searchSpaceId, seriesName]);
 
-    const displaySeriesName = isPermutationFitness ? "tourLength" : seriesName;
-    const resolvedYAxisLabel = yAxisLabel ?? displaySeriesName;
+  const displaySeriesName = isPermutationFitness ? "tourLength" : seriesName;
+  const resolvedYAxisLabel = yAxisLabel ?? displaySeriesName;
 
-    const displayChartPoints = isPermutationFitness
-      ? chartPoints.map(([x, y]) => [x, -y])
-      : chartPoints;
+  const displayChartPoints = useMemo(() => {
+    if (!chartPoints?.length) return [];
+    return isPermutationFitness ? chartPoints.map(([x, y]) => [x, -y]) : chartPoints;
+  }, [chartPoints, isPermutationFitness]);
 
-    const phaseColors = {
+  const phaseColors = useMemo(
+    () => ({
       IMPROVING: "rgba(46, 204, 113, 0.18)",
       WORSENING: "rgba(231, 76, 60, 0.18)",
       STAGNANT: "rgba(241, 196, 15, 0.18)",
-    };
+    }),
+    []
+  );
 
-    const markAreaData = (phaseRanges ?? [])
+  const markAreaData = useMemo(() => {
+    return (phaseRanges ?? [])
       .map((range) => {
         const start = Number(range?.start);
         const end = Number(range?.end);
@@ -184,6 +190,27 @@ function LineCharts({
         ];
       })
       .filter(Boolean);
+  }, [phaseRanges, phaseColors]);
+
+  // Fast-path x-range for ordered series.
+  const dataXRange = useMemo(() => {
+    if (!displayChartPoints.length) return null;
+    const first = displayChartPoints[0]?.[0];
+    const last = displayChartPoints[displayChartPoints.length - 1]?.[0];
+    const min = Number(first);
+    const max = Number(last);
+    if (Number.isFinite(min) && Number.isFinite(max)) {
+      return { min: Math.min(min, max), max: Math.max(min, max) };
+    }
+    const xs = displayChartPoints.map(([x]) => Number(x)).filter(Number.isFinite);
+    if (!xs.length) return null;
+    return { min: Math.min(...xs), max: Math.max(...xs) };
+  }, [displayChartPoints]);
+
+  // Stable base option: keep structure stable so ECharts can diff efficiently.
+  // Data and markArea are applied via setOption in effects.
+  const baseOption = useMemo(() => {
+    if (!seriesName) return null;
 
     return {
       animation: false,
@@ -240,7 +267,7 @@ function LineCharts({
         {
           name: displaySeriesName,
           type: "line",
-          data: displayChartPoints,
+          data: [],
           showSymbol: false,
           symbol: "none",
           connectNulls: false,
@@ -250,46 +277,81 @@ function LineCharts({
           sampling: "lttb",
           progressive: 2000,
           progressiveThreshold: 3000,
-          ...(markAreaData.length
-            ? {
-                markArea: {
-                  silent: true,
-                  label: { show: false },
-                  data: markAreaData,
-                },
-              }
-            : {}),
         },
       ],
     };
-  }, [
-    chartPoints,
-    seriesName,
-    xAxisLabel,
-    yAxisLabel,
-    searchSpaceId,
-    phaseRanges,
-    invertPermutationFitness,
-    enableDataZoom,
-  ]);
+  }, [displaySeriesName, enableDataZoom, resolvedYAxisLabel, seriesName, xAxisLabel]);
 
-  const displayChartPoints = useMemo(() => {
-    if (!chartPoints?.length) return [];
-    const isPermutationFitness =
-      invertPermutationFitness &&
-      searchSpaceId === "permutation" &&
-      (seriesName === "fitness" || seriesName === "bestFitness");
-    return isPermutationFitness ? chartPoints.map(([x, y]) => [x, -y]) : chartPoints;
-  }, [chartPoints, invertPermutationFitness, searchSpaceId, seriesName]);
+  const applySeriesPatch = useCallback(
+    (chartInstance) => {
+      if (!chartInstance) return;
+      if (!seriesName) return;
+
+      const seriesPatch = {
+        name: displaySeriesName,
+        data: displayChartPoints,
+      };
+
+      if (markAreaData.length) {
+        seriesPatch.markArea = {
+          silent: true,
+          label: { show: false },
+          data: markAreaData,
+        };
+      } else {
+        seriesPatch.markArea = null;
+      }
+
+      try {
+        chartInstance.setOption(
+          {
+            series: [seriesPatch],
+          },
+          {
+            notMerge: false,
+            lazyUpdate: true,
+          }
+        );
+      } catch {
+        // ignore disposed instance races
+      }
+    },
+    [seriesName, displaySeriesName, displayChartPoints, markAreaData]
+  );
+
+  // Push live data + markArea updates into the existing chart instance.
+  useEffect(() => {
+    const chart = chartInstanceRef.current;
+    if (!chart) return;
+    applySeriesPatch(chart);
+  }, [applySeriesPatch]);
+
+  // Keep windowRange in sync when new points arrive.
+  useEffect(() => {
+    if (!dataXRange) return;
+    if (!windowRange) {
+      setWindowRange(dataXRange);
+      onWindowRangeChange?.(dataXRange);
+      return;
+    }
+    const next = {
+      min: Math.min(windowRange.min, dataXRange.min),
+      max: Math.max(windowRange.max, dataXRange.max),
+    };
+    if (next.min !== windowRange.min || next.max !== windowRange.max) {
+      setWindowRange(next);
+      onWindowRangeChange?.(next);
+    }
+  }, [dataXRange, windowRange, onWindowRangeChange]);
 
   const visiblePoints = useMemo(() => {
     if (!windowRange || !displayChartPoints.length) return displayChartPoints;
     return displayChartPoints.filter(([x]) => x >= windowRange.min && x <= windowRange.max);
   }, [displayChartPoints, windowRange]);
 
-  const handleChartReady = useCallback((chartInstance) => {
-    chartRef.current = chartInstance;
-    const updateRange = () => {
+  const updateRangeFromInstance = useCallback(
+    (chartInstance) => {
+      if (!chartInstance) return;
       const optionRef = chartInstance.getOption?.();
       const zoom = optionRef?.dataZoom?.[0];
       const start = Number(zoom?.startValue ?? zoom?.start);
@@ -298,20 +360,33 @@ function LineCharts({
         const range = { min: Math.min(start, end), max: Math.max(start, end) };
         setWindowRange(range);
         onWindowRangeChange?.(range);
-      } else if (displayChartPoints.length) {
-        const xs = displayChartPoints.map(([x]) => x);
-        const range = { min: Math.min(...xs), max: Math.max(...xs) };
-        setWindowRange(range);
-        onWindowRangeChange?.(range);
+        return;
       }
-    };
 
-    updateRange();
-    chartInstance.off?.("datazoom");
-    chartInstance.on?.("datazoom", updateRange);
-  }, [displayChartPoints, onWindowRangeChange]);
+      if (dataXRange) {
+        setWindowRange(dataXRange);
+        onWindowRangeChange?.(dataXRange);
+      }
+    },
+    [dataXRange, onWindowRangeChange]
+  );
 
-  if (!option) {
+  const handleChartReady = useCallback(
+    (chartInstance) => {
+      chartInstanceRef.current = chartInstance;
+
+      // Apply current series data immediately to avoid a hydration race
+      // where the effect runs before onChartReady and the chart stays blank.
+      applySeriesPatch(chartInstance);
+
+      updateRangeFromInstance(chartInstance);
+      chartInstance.off?.("datazoom");
+      chartInstance.on?.("datazoom", () => updateRangeFromInstance(chartInstance));
+    },
+    [applySeriesPatch, updateRangeFromInstance]
+  );
+
+  if (!baseOption || !seriesName) {
     return <div>No chart data.</div>;
   }
 
@@ -328,8 +403,9 @@ function LineCharts({
       )}
 
       <ReactECharts
-        option={option}
-        notMerge={true}
+        ref={echartsRef}
+        option={baseOption}
+        notMerge={false}
         lazyUpdate={true}
         opts={{ renderer: "canvas" }}
         style={{ width: "100%", height: "100%" }}
@@ -340,3 +416,4 @@ function LineCharts({
 }
 
 export default memo(LineCharts);
+

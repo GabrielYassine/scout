@@ -1,4 +1,4 @@
-import { useState, useMemo, memo, useCallback, useEffect } from "react";
+import { useState, useMemo, memo, useCallback, useEffect, useRef } from "react";
 import "./RunChart.css";
 import HypercubePlot from "./HypercubePlot.jsx";
 import TSPVisualization from "./RouteVisualization/RouteVisualization.jsx";
@@ -50,6 +50,13 @@ function RunChart({ run, runIndex, visibleCount, bestFitnessBoxPlot = null }) {
 
   const isBestFitnessBoxPlot = effectiveObserver === BEST_FITNESS_BOXPLOT_KEY;
 
+  const pointsCacheRef = useRef({
+    observerKey: null,
+    lastEvalLen: 0,
+    lastYLen: 0,
+    points: [],
+  });
+
   const data = useMemo(() => {
     if (
       !effectiveObserver ||
@@ -58,16 +65,71 @@ function RunChart({ run, runIndex, visibleCount, bestFitnessBoxPlot = null }) {
       isBestFitnessBoxPlot ||
       !series[effectiveObserver]
     ) {
+      // Reset cache when we're not plotting a standard line series.
+      pointsCacheRef.current = {
+        observerKey: effectiveObserver,
+        lastEvalLen: 0,
+        lastYLen: 0,
+        points: [],
+      };
       return [];
     }
 
-    const observerData = series[effectiveObserver];
-    const minLen = Math.min(evaluations.length, observerData.length);
+    const observerData = series[effectiveObserver] ?? [];
+    const evalLen = evaluations.length;
+    const yLen = observerData.length;
+    const minLen = Math.min(evalLen, yLen);
 
-    return Array.from({ length: minLen }, (_, i) => [
-      Number(evaluations[i]),
-      Number(observerData[i]),
-    ]).filter(([x, y]) => Number.isFinite(x) && Number.isFinite(y));
+    const cache = pointsCacheRef.current;
+    const sameObserver = cache.observerKey === effectiveObserver;
+
+    // Detect reset/shrink or observer switch => rebuild from scratch.
+    const shouldRebuild =
+      !sameObserver ||
+      cache.lastEvalLen > evalLen ||
+      cache.lastYLen > yLen ||
+      cache.points.length > minLen;
+
+    if (shouldRebuild) {
+      const next = [];
+      for (let i = 0; i < minLen; i += 1) {
+        const x = Number(evaluations[i]);
+        const y = Number(observerData[i]);
+        if (Number.isFinite(x) && Number.isFinite(y)) next.push([x, y]);
+      }
+      pointsCacheRef.current = {
+        observerKey: effectiveObserver,
+        lastEvalLen: evalLen,
+        lastYLen: yLen,
+        points: next,
+      };
+      return next;
+    }
+
+    // Incremental append from cached length up to new minLen.
+    const start = cache.points.length;
+    if (start >= minLen) {
+      // Nothing new.
+      cache.lastEvalLen = evalLen;
+      cache.lastYLen = yLen;
+      return cache.points;
+    }
+
+    const next = cache.points.slice();
+    for (let i = start; i < minLen; i += 1) {
+      const x = Number(evaluations[i]);
+      const y = Number(observerData[i]);
+      if (Number.isFinite(x) && Number.isFinite(y)) next.push([x, y]);
+    }
+
+    pointsCacheRef.current = {
+      observerKey: effectiveObserver,
+      lastEvalLen: evalLen,
+      lastYLen: yLen,
+      points: next,
+    };
+
+    return next;
   }, [effectiveObserver, evaluations, series, isBestFitnessBoxPlot]);
 
   const visibleData = useMemo(() => {

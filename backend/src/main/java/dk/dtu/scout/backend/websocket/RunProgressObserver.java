@@ -5,12 +5,17 @@ import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.logging.RunState;
 import dk.dtu.scout.observer.Observer;
 import dk.dtu.scout.logging.LoggedSeries;
+import dk.dtu.scout.logging.SeriesMode;
 
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class RunProgressObserver<S> implements Observer<S> {
+
+    private static final ConcurrentHashMap<String, AtomicLong> SEQUENCE_BY_STREAM = new ConcurrentHashMap<>();
 
     private final WsSender wsSender;
     private final String runId;
@@ -18,6 +23,8 @@ public class RunProgressObserver<S> implements Observer<S> {
     private final long seed;
     private final String problemId;
     private final int wsUpdateEveryIterations;
+
+    private final String streamKey;
 
     private int lastSentLogIndex = -1;
 
@@ -35,6 +42,30 @@ public class RunProgressObserver<S> implements Observer<S> {
         this.seed = seed;
         this.problemId = problemId;
         this.wsUpdateEveryIterations = wsUpdateEveryIterations;
+
+        this.streamKey = streamKey(runId, problemId, seed);
+        // Ensure each stream starts at 0 so first emitted packet is sequenceId=1.
+        SEQUENCE_BY_STREAM.computeIfAbsent(this.streamKey, k -> new AtomicLong(0));
+    }
+
+    private static String streamKey(String runId, String problemId, long seed) {
+        // Stable, frontend-friendly identity: runId + problemId + seed.
+        return runId + ":" + problemId + ":" + seed;
+    }
+
+    private long nextSequenceId() {
+        return SEQUENCE_BY_STREAM.get(streamKey).incrementAndGet();
+    }
+
+    private static MergeOp seriesMergeOp(LoggedSeries<?> series) {
+        if (series == null) return MergeOp.APPEND;
+        SeriesMode mode = series.getMode();
+        if (mode == SeriesMode.LATEST_ONLY) {
+            // Observers that only keep the latest value should not cause x-axis misalignment.
+            // Replace the last y-value for the current tick (or append if empty).
+            return MergeOp.REPLACE_LAST;
+        }
+        return MergeOp.APPEND;
     }
 
     @Override
@@ -70,12 +101,17 @@ public class RunProgressObserver<S> implements Observer<S> {
         int evaluation = log.getEvaluations().get(logIndex);
 
         Map<String, Object> seriesDelta = new LinkedHashMap<>();
+        Map<String, MergeOp> seriesMerge = new LinkedHashMap<>();
+
         for (Map.Entry<String, LoggedSeries<?>> entry : log.getSeries().entrySet()) {
+            String key = entry.getKey();
             LoggedSeries<?> loggedSeries = entry.getValue();
             if (loggedSeries == null) continue;
             List<?> values = loggedSeries.getValues();
             if (values == null || values.isEmpty()) continue;
-            seriesDelta.put(entry.getKey(), values.getLast());
+
+            seriesDelta.put(key, values.getLast());
+            seriesMerge.put(key, seriesMergeOp(loggedSeries));
         }
 
         wsSender.sendToRun(
@@ -85,6 +121,10 @@ public class RunProgressObserver<S> implements Observer<S> {
                 runIndex,
                 seed,
                 problemId,
+                nextSequenceId(),
+                MergeOp.APPEND,
+                MergeOp.APPEND,
+                seriesMerge,
                 iteration,
                 evaluation,
                 null,

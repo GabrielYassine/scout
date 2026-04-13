@@ -1,7 +1,8 @@
 import { useEffect } from "react";
 import { Client } from "@stomp/stompjs";
 
-import { normalizeBatch, normalizeSeriesMap } from "@/features/run/utils/runData.js";
+import { normalizeBatch } from "@/features/run/utils/runData.js";
+import { createOrderedProgressApplier } from "@/features/run/utils/orderedProgress.js";
 
 export function useRunWebSocket({
   enabled,
@@ -26,32 +27,36 @@ export function useRunWebSocket({
       reconnectDelay: 0,
     });
 
-    const appendSeriesValue = (series, key, value) => {
-      if (value === undefined) return series;
+    const mergeList = (prevList, op, incomingSingle, incomingList) => {
+      const prev = Array.isArray(prevList) ? prevList : [];
+      if (!op) return prev;
 
-      const next = { ...series };
-      const list = Array.isArray(next[key]) ? [...next[key]] : [];
+      if (op === "REPLACE") {
+        if (Array.isArray(incomingList)) return [...incomingList];
+        // If backend says REPLACE but we only got a single, treat it as singleton.
+        if (incomingSingle != null) return [incomingSingle];
+        return [];
+      }
 
-      if (key === "tspCities") {
-        next[key] = [value];
+      if (op === "APPEND") {
+        if (Array.isArray(incomingList)) return [...prev, ...incomingList];
+        if (incomingSingle != null) return [...prev, incomingSingle];
+        return prev;
+      }
+
+      if (op === "REPLACE_LAST") {
+        if (Array.isArray(incomingList)) {
+          // For REPLACE_LAST, list payloads mean "replace entire list" (rare, but deterministic).
+          return [...incomingList];
+        }
+        if (incomingSingle == null) return prev;
+        if (prev.length === 0) return [incomingSingle];
+        const next = [...prev];
+        next[next.length - 1] = incomingSingle;
         return next;
       }
 
-      if (key === "tspTour" || key === "pheromoneHeatmap") {
-        list.push(value);
-        next[key] = list;
-        return next;
-      }
-
-      if (Array.isArray(value)) {
-        list.push(value);
-        next[key] = list;
-        return next;
-      }
-
-      list.push(value);
-      next[key] = list;
-      return next;
+      return prev;
     };
 
     const mergeProgress = (prev, update) => {
@@ -79,29 +84,32 @@ export function useRunWebSocket({
               finalEvaluations: 0,
             };
 
-      if (Array.isArray(update.iterations)) {
-        run.iterations = [...update.iterations];
-      } else if (update.iteration != null) {
-        run.iterations = [...run.iterations, update.iteration];
-      }
+      // Merge x-values strictly by explicit op.
+      run.iterations = mergeList(run.iterations, update.iterationsMerge, update.iteration, update.iterations);
+      run.evaluations = mergeList(run.evaluations, update.evaluationsMerge, update.evaluation, update.evaluations);
 
-      if (Array.isArray(update.evaluations)) {
-        run.evaluations = [...update.evaluations];
-      } else if (update.evaluation != null) {
-        run.evaluations = [...run.evaluations, update.evaluation];
-      }
-
+      // Merge Y series strictly by per-key op.
       const seriesDelta = update.seriesDelta ?? {};
-      const seriesValues = Object.values(seriesDelta);
-      const hasSeriesSnapshot = seriesValues.length > 0 && seriesValues.every(Array.isArray);
+      const seriesMerge = update.seriesMerge ?? {};
 
-      if (hasSeriesSnapshot) {
-        run.series = normalizeSeriesMap(seriesDelta);
-      } else {
-        run.series = Object.entries(seriesDelta).reduce(
-          (acc, [key, value]) => appendSeriesValue(acc, key, value),
-          run.series ?? {}
-        );
+      const nextSeries = { ...(run.series ?? {}) };
+      for (const [key, value] of Object.entries(seriesDelta)) {
+        const op = seriesMerge[key] ?? "APPEND";
+        nextSeries[key] = mergeList(nextSeries[key], op, value, Array.isArray(value) ? value : null);
+      }
+      run.series = nextSeries;
+
+      // Alignment safety: for APPEND series we expect at most one y per tick.
+      // If a series gets ahead of x-values due to old data or misconfigured observer,
+      // clamp it to keep plotting deterministic.
+      const xLen = Math.min(run.evaluations.length, run.iterations.length || run.evaluations.length);
+      for (const [key, op] of Object.entries(seriesMerge)) {
+        if (op === "APPEND") {
+          const arr = run.series?.[key];
+          if (Array.isArray(arr) && arr.length > xLen) {
+            run.series[key] = arr.slice(0, xLen);
+          }
+        }
       }
 
       runsList[runIndex >= 0 ? runIndex : runsList.length] = run;
@@ -116,13 +124,19 @@ export function useRunWebSocket({
       return { ...base, batches: nextBatches };
     };
 
+    const ordered = createOrderedProgressApplier({
+      applyPacket: (packet) => {
+        setLoading(false);
+        setBatch((prev) => mergeProgress(prev, packet));
+      },
+    });
+
     client.onConnect = () => {
       client.subscribe(`/topic/run/${runId}`, (message) => {
         const data = JSON.parse(message.body);
 
         if (data.type === "RUN_PROGRESS") {
-          setLoading(false);
-          setBatch((prev) => mergeProgress(prev, data));
+          ordered.ingest(data);
           return;
         }
 
