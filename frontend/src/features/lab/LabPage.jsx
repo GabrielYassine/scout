@@ -10,7 +10,6 @@ import "./LabPage.css";
 
 import { usePuzzleConfig } from "@/shared/contexts/usePuzzleConfig.js";
 import { useLocalStorageState } from "@/shared/hooks/useLocalStorageState.js";
-import { startRun } from "@/shared/api/run.js";
 
 export default function LabPage({
   catalog,
@@ -39,7 +38,6 @@ export default function LabPage({
   const navigate = useNavigate();
   const [, setSavedRun] = useLocalStorageState("scout:lastRun", null);
 
-
   useEffect(() => {
     return () => {
       if (toastTimeoutRef.current) {
@@ -61,31 +59,31 @@ export default function LabPage({
   }
 
   function getCatalogItem(type, id) {
-      if (!catalog || !id) return null;
+    if (!catalog || !id) return null;
 
-      const map = {
-        searchSpace: catalog.searchSpaces,
-        problem: catalog.problems,
-        generator: catalog.generators,
-        selection: catalog.selectionRules,
-        parentSelectionRule: catalog.parentSelectionRules,
-        crossover: catalog.crossovers,
-        populationModel: catalog.populationModels,
-        stopCondition: catalog.stopConditions,
-        observer: catalog.observers,
-      };
+    const map = {
+      searchSpace: catalog.searchSpaces,
+      problem: catalog.problems,
+      generator: catalog.generators,
+      selection: catalog.selectionRules,
+      parentSelectionRule: catalog.parentSelectionRules,
+      crossover: catalog.crossovers,
+      populationModel: catalog.populationModels,
+      stopCondition: catalog.stopConditions,
+      observer: catalog.observers,
+    };
 
-      return (map[type] ?? []).find((x) => x.id === id) ?? null;
+    return (map[type] ?? []).find((x) => x.id === id) ?? null;
   }
 
   function handlePieceHover(type, id) {
-      const item = getCatalogItem(type, id);
-      if (!item) return;
-      setHoverInfo({ title: item.displayName, description: item.description });
+    const item = getCatalogItem(type, id);
+    if (!item) return;
+    setHoverInfo({ title: item.displayName, description: item.description });
   }
 
   function clearHover() {
-      setHoverInfo(null);
+    setHoverInfo(null);
   }
 
   const parseProblemSizes = (text) =>
@@ -94,7 +92,7 @@ export default function LabPage({
       .map((s) => Number(s.trim()))
       .filter((n) => Number.isInteger(n) && n > 0);
 
- async function onRun() {
+  async function onRun() {
     try {
       const experimentType = params.global?.experimentType ?? "run";
       const seed = params.global?.seed ?? Date.now();
@@ -103,33 +101,37 @@ export default function LabPage({
       const sessionId = (() => {
         const existing = window.sessionStorage?.getItem(sessionStorageKey);
         if (existing) return existing;
+
         const next = window.crypto?.randomUUID
           ? window.crypto.randomUUID()
           : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
         try {
           window.sessionStorage?.setItem(sessionStorageKey, next);
         } catch {
-          // ignore storage errors; request will fail if backend requires sessionId
+          // ignore storage errors
         }
+
         return next;
       })();
 
       const problemList = Array.isArray(puzzleConfig.problem) ? puzzleConfig.problem : [];
       const problemParams = { ...params.problem };
 
-      if (tspInstance && tspInstance.cities && tspInstance.cities.length > 0) {
+      if (tspInstance?.cities?.length > 0) {
         problemParams.tspInstance = tspInstance;
       }
 
+      const isTspProblem = problemList.some((p) => p.id === "tsp");
       const isVrpProblem = problemList.some((p) => p.id === "vrp");
+
       if (isVrpProblem && vrpInstance) {
         problemParams.vrpInstance = vrpInstance;
       }
 
       const searchSpaceParams = { ...params.searchSpace };
-      const isTSPProblem = problemList.some((p) => p.id === "tsp");
 
-      if (isTSPProblem && tspInstance && tspInstance.cities && tspInstance.cities.length > 0) {
+      if (isTspProblem && tspInstance?.cities?.length > 0) {
         searchSpaceParams.n = tspInstance.cities.length;
       }
 
@@ -172,6 +174,7 @@ export default function LabPage({
           repetitionsPerSize,
           wsUpdateEverySizes,
         };
+
         setSavedRun({
           pageMode: "runtimeStudy",
           loading: true,
@@ -186,80 +189,88 @@ export default function LabPage({
           savedAt: Date.now(),
         });
 
+        navigate("/run", {
+          state: {
+            pageMode: "runtimeStudy",
+            loading: true,
+            puzzleConfig,
+            params,
+            tspInstance,
+            vrpInstance,
+            studyId,
+            runtimeStudyRequest: body,
+          },
+        });
+        return;
+      }
 
-       navigate("/run", {
-         state: {
-           pageMode: "runtimeStudy",
-           loading: true,
-           puzzleConfig,
-           params,
-           tspInstance,
-           vrpInstance,
-           studyId,
-           runtimeStudyRequest: body,
-         },
-       });
-       return;
-     }
+      const runTimes = params.global?.runTimes ?? 1;
+      const logEveryIterations = params.global?.logEveryIterations ?? 100;
+      const wsUpdateEveryIterations = params.global?.wsUpdateEveryIterations ?? 100;
 
-     const runTimes = params.global?.runTimes ?? 1;
-     const logEveryIterations = params.global?.logEveryIterations ?? 100;
-     const wsUpdateEveryIterations = params.global?.wsUpdateEveryIterations ?? 100;
+      const runId = window.crypto?.randomUUID
+        ? window.crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
-     const runId = window.crypto?.randomUUID? window.crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      const body = {
+        searchSpaceId: puzzleConfig.searchSpace?.[0]?.id ?? null,
+        searchSpaceParams,
+        problemIds: puzzleConfig.problem?.map((x) => x.id) ?? [],
+        problemParams,
+        generatorId: puzzleConfig.generator?.[0]?.id ?? null,
+        generatorParams: params.generator,
+        selectionRuleId: puzzleConfig.selection?.[0]?.id ?? null,
+        selectionRuleParams: params.selection,
+        populationModelId: puzzleConfig.populationModel?.[0]?.id ?? null,
+        populationModelParams: params.populationModel,
+        parentSelectionRuleId: puzzleConfig.parentSelectionRule?.[0]?.id ?? null,
+        parentSelectionRuleParams: params.parentSelectionRule,
+        crossoverId: puzzleConfig.crossover?.[0]?.id ?? null,
+        crossoverParams: params.crossover,
+        stopConditionIds: puzzleConfig.stopCondition?.map((x) => x.id) ?? [],
+        stopConditionParams: params.stopCondition,
+        observerIds: puzzleConfig.observer?.map((x) => x.id) ?? [],
+        observerParams: params.observer,
+        seed,
+        runTimes,
+        sessionId,
+        runId,
+        logEveryIterations,
+        wsUpdateEveryIterations,
+      };
 
-     const body = {
-       searchSpaceId: puzzleConfig.searchSpace?.[0]?.id ?? null,
-       searchSpaceParams,
-       problemIds: puzzleConfig.problem?.map((x) => x.id) ?? [],
-       problemParams,
-       generatorId: puzzleConfig.generator?.[0]?.id ?? null,
-       generatorParams: params.generator,
-       selectionRuleId: puzzleConfig.selection?.[0]?.id ?? null,
-       selectionRuleParams: params.selection,
-       populationModelId: puzzleConfig.populationModel?.[0]?.id ?? null,
-       populationModelParams: params.populationModel,
-       parentSelectionRuleId: puzzleConfig.parentSelectionRule?.[0]?.id ?? null,
-       parentSelectionRuleParams: params.parentSelectionRule,
-       crossoverId: puzzleConfig.crossover?.[0]?.id ?? null,
-       crossoverParams: params.crossover,
-       stopConditionIds: puzzleConfig.stopCondition?.map((x) => x.id) ?? [],
-       stopConditionParams: params.stopCondition,
-       observerIds: puzzleConfig.observer?.map((x) => x.id) ?? [],
-       observerParams: params.observer,
-       seed,
-       runTimes,
-       sessionId,
-       runId,
-       logEveryIterations,
-       wsUpdateEveryIterations,
-     };
+      setSavedRun({
+        pageMode: "run",
+        loading: true,
+        runId,
+        studyId: null,
+        batch: null,
+        studyPoints: [],
+        puzzleConfig,
+        params,
+        tspInstance,
+        vrpInstance,
+        selectedRunKey: "0",
+        savedAt: Date.now(),
+      });
 
-     // Navigate immediately so the Run page can subscribe before progress rolls in.
-     setSavedRun({
-       pageMode: "run",
-       loading: true,
-       runId,
-       studyId: null,
-       batch: null,
-       studyPoints: [],
-       puzzleConfig,
-       params,
-       tspInstance,
-       vrpInstance,
-       selectedRunKey: "0",
-       savedAt: Date.now(),
-     });
+      navigate("/run", {
+        state: {
+          pageMode: "run",
+          loading: true,
+          puzzleConfig,
+          params,
+          tspInstance,
+          vrpInstance,
+          runId,
+          startRequest: body,
+        },
+      });
+    } catch (err) {
+      showToast(err.message || "Failed to start run");
+    }
+  }
 
-     navigate("/run", {
-       state: { pageMode: "run", loading: true, puzzleConfig, params, tspInstance, vrpInstance, runId },
-     });
-
-     await startRun(body);
-   } catch (err) {
-     showToast(err.message || "Failed to start run");
-   }
- }
   function onApplyTemplate(templateId) {
     if (!catalog || !templateId) return;
     const tpl = (templates ?? []).find((t) => t.id === templateId);
@@ -274,28 +285,27 @@ export default function LabPage({
           {toastMessage}
         </div>
       )}
+
       <LabLeftbar
-          puzzleConfig={puzzleConfig}
-          params={params}
-          onParamChange={handleParamChange}
-          onReset={handleReset}
-          onRun={onRun}
-          catalog={catalog}
-          catalogLoading={catalogLoading}
-          catalogError={catalogError}
-          templates={templates}
-          templatesLoading={templatesLoading}
-          templatesError={templatesError}
-          onApplyTemplate={onApplyTemplate}
+        puzzleConfig={puzzleConfig}
+        params={params}
+        onParamChange={handleParamChange}
+        onReset={handleReset}
+        onRun={onRun}
+        catalog={catalog}
+        catalogLoading={catalogLoading}
+        catalogError={catalogError}
+        templates={templates}
+        templatesLoading={templatesLoading}
+        templatesError={templatesError}
+        onApplyTemplate={onApplyTemplate}
       />
+
       <div className="lab-page-content">
         <div className="selector-timeline">
-          <RunConfigPuzzle
-            onPieceHover={handlePieceHover}
-            onPieceLeave={clearHover}
-          />
+          <RunConfigPuzzle onPieceHover={handlePieceHover} onPieceLeave={clearHover} />
         </div>
-        <hr className="rounded"/>
+        <hr className="rounded" />
         <div className="chosen-selector-container">
           <Selector
             catalog={catalog}
@@ -306,6 +316,7 @@ export default function LabPage({
           />
         </div>
       </div>
+
       <LabRightbar
         hoverInfo={hoverInfo}
         tspInstance={tspInstance}

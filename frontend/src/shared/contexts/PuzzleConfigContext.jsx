@@ -67,11 +67,31 @@ export function PuzzleConfigProvider({ children }) {
   const setParams = (updater) => updateActiveConfig("params", updater);
   const setTspInstance = (updater) => updateActiveConfig("tspInstance", updater);
   const setVrpInstance = (updater) => updateActiveConfig("vrpInstance", updater);
+  function getNextConfigName(configs) {
+    const safeConfigs = Array.isArray(configs) ? configs : [];
 
+    const maxNumber = safeConfigs.reduce((max, config) => {
+      const match = String(config?.name ?? "").match(/^Config\s+(\d+)$/i);
+      if (!match) return max;
+
+      const value = Number(match[1]);
+      return Number.isFinite(value) ? Math.max(max, value) : max;
+    }, 0);
+
+    return `Config ${maxNumber + 1}`;
+  }
   const addNewConfig = () => {
     const newId = `config-${Date.now()}`;
-    const newConfig = createDefaultConfig(newId, `Config ${normalizedConfigs.length + 1}`);
-    setConfigs((prev) => [...(Array.isArray(prev) ? prev.map(normalizeStoredConfig) : []), newConfig]);
+
+    setConfigs((prev) => {
+      const safePrev = Array.isArray(prev)
+        ? prev.map(normalizeStoredConfig)
+        : [];
+
+      const newConfig = createDefaultConfig(newId, getNextConfigName(safePrev));
+      return [...safePrev, newConfig];
+    });
+
     setActiveConfigId(newId);
   };
 
