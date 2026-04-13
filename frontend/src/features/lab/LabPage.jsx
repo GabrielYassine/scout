@@ -10,6 +10,7 @@ import "./LabPage.css";
 
 import { usePuzzleConfig } from "@/shared/contexts/usePuzzleConfig.js";
 import { useLocalStorageState } from "@/shared/hooks/useLocalStorageState.js";
+import { startRun } from "@/shared/api/run.js";
 
 export default function LabPage({
   catalog,
@@ -109,7 +110,7 @@ export default function LabPage({
         try {
           window.sessionStorage?.setItem(sessionStorageKey, next);
         } catch {
-          // ignore storage errors
+          // ignore storage errors; request will fail if backend requires sessionId
         }
 
         return next;
@@ -263,9 +264,10 @@ export default function LabPage({
           tspInstance,
           vrpInstance,
           runId,
-          startRequest: body,
         },
       });
+
+      await startRun(body);
     } catch (err) {
       showToast(err.message || "Failed to start run");
     }
@@ -303,7 +305,10 @@ export default function LabPage({
 
       <div className="lab-page-content">
         <div className="selector-timeline">
-          <RunConfigPuzzle onPieceHover={handlePieceHover} onPieceLeave={clearHover} />
+          <RunConfigPuzzle
+            onPieceHover={handlePieceHover}
+            onPieceLeave={clearHover}
+          />
         </div>
         <hr className="rounded" />
         <div className="chosen-selector-container">
