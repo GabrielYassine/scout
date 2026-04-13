@@ -5,6 +5,7 @@ import java.util.Map;
 
 public record RuntimeStudyRequest(
         String studyId,
+        String sessionId,
         String searchSpaceId,
         Map<String, Object> searchSpaceParams,
         String problemId,

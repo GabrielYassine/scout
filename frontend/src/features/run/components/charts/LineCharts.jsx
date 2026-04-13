@@ -254,12 +254,12 @@ function LineCharts({
               xAxisIndex: 0,
               bottom: 16,
               height: 24,
-              filterMode: "filter",
+              filterMode: "none",
             },
             {
               type: "inside",
               xAxisIndex: 0,
-              filterMode: "filter",
+              filterMode: "none",
             },
           ]
         : [],

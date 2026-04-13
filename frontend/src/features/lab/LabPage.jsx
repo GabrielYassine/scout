@@ -153,6 +153,7 @@ export default function LabPage({
 
         const body = {
           studyId,
+          sessionId,
           searchSpaceId: puzzleConfig.searchSpace?.[0]?.id ?? null,
           searchSpaceParams,
           problemId: puzzleConfig.problem?.[0]?.id ?? null,

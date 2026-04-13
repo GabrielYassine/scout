@@ -23,7 +23,7 @@ import java.util.concurrent.*;
 @Service
 public class RunOrchestratorService {
 
-    private record ActiveRun(String runId, Future<?> future) {}
+    private record ActiveTask(String id, Future<?> future) {}
 
     private final RunRequestValidator runRequestValidator;
     private final RunExecutor runExecutor;
@@ -34,7 +34,7 @@ public class RunOrchestratorService {
     /**
      * Active run per client session (tab-scoped).
      */
-    private final ConcurrentHashMap<String, ActiveRun> activeBySession = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, ActiveTask> activeBySession = new ConcurrentHashMap<>();
 
     public RunOrchestratorService(
             RunRequestValidator runRequestValidator,
@@ -59,14 +59,14 @@ public class RunOrchestratorService {
         }
         String runId = request.runId();
 
-        ActiveRun previous = activeBySession.get(sessionId);
+        ActiveTask previous = activeBySession.get(sessionId);
         if (previous != null) {
             previous.future.cancel(true);
         }
 
         Future<?> future = requestExecutor.submit(() -> run(request));
 
-        ActiveRun current = new ActiveRun(runId, future);
+        ActiveTask current = new ActiveTask(runId, future);
         activeBySession.put(sessionId, current);
 
         // Cleanup: remove only if this run is still the active one for the session.
@@ -80,7 +80,7 @@ public class RunOrchestratorService {
             } catch (ExecutionException ignored) {
                 // run() already emitted failed payload if needed
             } finally {
-                activeBySession.computeIfPresent(sessionId, (sid, active) -> runId.equals(active.runId()) ? null : active);
+                activeBySession.computeIfPresent(sessionId, (sid, active) -> runId.equals(active.id()) ? null : active);
             }
         });
     }
@@ -108,14 +108,36 @@ public class RunOrchestratorService {
 
     public void startRuntimeStudy(RuntimeStudyRequest request) {
         runRequestValidator.runtimeStudyRequestValidator(request);
-        System.out.println("Starting runtime study with ID: " + request.studyId());
-        CompletableFuture.runAsync(() -> runRuntimeStudy(request), requestExecutor).exceptionally(ex -> {
-            wsSender.sendToStudy(
-                    request.studyId(),
-                    RuntimeStudyWsPayload.failed(request.studyId(), ex.getMessage())
-            );
-            ex.printStackTrace();
-            return null;
+
+        String sessionId = request.sessionId();
+        if (sessionId == null || sessionId.isBlank()) {
+            throw new IllegalArgumentException("sessionId is required");
+        }
+        String studyId = request.studyId();
+
+        ActiveTask previous = activeBySession.get(sessionId);
+        if (previous != null) {
+            previous.future.cancel(true);
+        }
+
+        Future<?> future = requestExecutor.submit(() -> runRuntimeStudy(request));
+
+        ActiveTask current = new ActiveTask(studyId, future);
+        activeBySession.put(sessionId, current);
+
+        // Cleanup: remove only if this run is still the active one for the session.
+        requestExecutor.execute(() -> {
+            try {
+                future.get();
+            } catch (CancellationException ignored) {
+                // cancelled
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            } catch (ExecutionException ignored) {
+                // run() already emitted failed payload if needed
+            } finally {
+                activeBySession.computeIfPresent(sessionId, (sid, active) -> studyId.equals(active.id()) ? null : active);
+            }
         });
     }
 
