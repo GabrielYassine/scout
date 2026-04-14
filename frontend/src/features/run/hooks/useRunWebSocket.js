@@ -226,17 +226,15 @@ export function useRunWebSocket({
         }
 
         if (data.type === "RUN_CONNECTED") {
+          console.log("Run WebSocket connected", { runId: data.runId, message: data.message });
           return;
         }
 
         if (data.type === "RUN_FINISHED") {
-          // Flush any outstanding progress before marking complete.
           flushProgressQueue();
 
           console.log("Run WebSocket finished", { runId: data.runId, message: data.message });
           setLoading(false);
-
-          // Terminal packet can add end-only information (e.g., summary/averages) without replacing batches.
           setBatch((prev) => {
               const next = applyCompletedRuns(prev, data.completedRuns, data.summary);
               latestBatchRef.current = next;
