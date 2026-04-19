@@ -177,7 +177,7 @@ public class MuLambdaPopulationModel<S> implements PopulationModel<S> {
                 evaluations,
                 new EvaluatedSolution<>(current, currentFitness),
                 new EvaluatedSolution<>(best, bestFitness),
-                false
+                true
         );
 
         MuLambdaState<S> state = new MuLambdaState<>(

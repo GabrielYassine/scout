@@ -135,7 +135,7 @@ public class IslandModel<S> implements PopulationModel<S> {
                 evaluations,
                 new EvaluatedSolution<>(global.current, global.currentFitness),
                 new EvaluatedSolution<>(global.best, global.bestFitness),
-                false
+                true
         );
         Map<String, Object> stateVariables = Map.of(
                 StateKeys.CURRENT, global.current,
