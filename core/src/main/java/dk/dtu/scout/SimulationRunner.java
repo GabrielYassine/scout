@@ -48,18 +48,26 @@ public class SimulationRunner {
             List<Observer<S>> observers,
             int logEveryIterations
     ) {
+        // #1 Create the per-run output log and shared runtime state.
         RunLog log = new RunLog();
         State sharedState = new State();
+
+        // #2 Seed the shared state with core invariants that other components may need.
         sharedState.update(Map.of(
                 StateKeys.PROBLEM, problem,
                 StateKeys.DIMENSION, space.dimension(),
                 StateKeys.SEARCH_SPACE_ID, space.id()
         ));
 
+        // #3 Collect all components that participate in shared initialization/state publication.
         List<ScoutComponent> sharedComponents = new ArrayList<>();
+
+        // Must have components:
         sharedComponents.add(selection);
         sharedComponents.add(space);
         sharedComponents.add(problem);
+
+        // Optional components:
         if(crossover != null) {
             sharedComponents.add(crossover);
         }
@@ -73,77 +81,86 @@ public class SimulationRunner {
             sharedComponents.addAll(observers);
         }
 
+        // #4 Initialize all shared components with the shared run state.
         for (ScoutComponent component : sharedComponents) {
             component.init(sharedState);
         }
 
+        // #5 Build the immutable dependency bundle passed into the population model.
         PopulationModelContext<S> context = new PopulationModelContext<>(
-                generatorFactory,
-                parentSelection,
-                crossover,
-                selection,
-                space,
-                problem,
-                rng,
-                sharedState
+            generatorFactory,
+            parentSelection,
+            crossover,
+            selection,
+            space,
+            problem,
+            rng,
+            sharedState
         );
 
+        // #6 Ask the population model to initialize its internal state and public initial snapshot.
         PopulationInitialization<S> initialization = populationModel.initialize(context);
         PopulationState<S> populationState = initialization.state();
         IterationSnapshot<S> currentState = initialization.initialState();
         int evaluations = initialization.evaluations();
 
+        // #7 Build the complete list of components that may publish runtime state variables.
         List<ScoutComponent> stateComponents = new ArrayList<>(sharedComponents);
         if (initialization.stateComponents() != null) {
             stateComponents.addAll(initialization.stateComponents());
         }
 
+        // #8 Merge any shared-state values produced during initialization.
         updateSharedState(sharedState, initialization.sharedStateVariables());
         updateComponentStateVariables(sharedState, stateComponents);
 
+        // #9 Notify observers that the run has started.
         notifyOnStart(observers, currentState, log);
-        if (Thread.currentThread().isInterrupted()) {
-            throw new java.util.concurrent.CancellationException("Run cancelled");
-        }
+
+        // #11 Record the initial tick and notify observers of the initial visible state.
         log.tick(currentState.iteration(), currentState.evaluations() - 1);
         notifyOnStep(observers, currentState, log);
 
         int iteration = currentState.iteration();
 
+        // #12 Main execution loop:
+        // keep iterating until one of the configured stop conditions becomes true.
         while (!shouldStop(stopConditions, iteration, evaluations, currentState.bestFitness(), currentState.bestSolution())) {
+
+            // #13 Check for thread interruption and abort.
             if (Thread.currentThread().isInterrupted()) {
                 throw new java.util.concurrent.CancellationException("Run cancelled");
             }
 
+            // #14 Delegate one algorithmic step to the selected population model.
             PopulationStepResult<S> stepResult = populationModel.step(context, populationState, iteration, evaluations);
+
+            // #15 Update the global evaluation count and current public iteration snapshot.
             evaluations += stepResult.evaluationsDelta();
             currentState = stepResult.runState();
 
+            // #16 Merge runtime state published by the step and by participating components.
             updateSharedState(sharedState, stepResult.sharedStateVariables());
             updateComponentStateVariables(sharedState, stateComponents);
 
+            // #17 Only log/notify observers at the configured cadence.
             if ((currentState.iteration() + 1) % logEveryIterations == 0) {
-                if (Thread.currentThread().isInterrupted()) {
-                    throw new java.util.concurrent.CancellationException("Run cancelled");
-                }
+                // #18 Record a visible tick and let observers write their data series into the log.
                 log.tick(currentState.iteration(), currentState.evaluations() - 1);
                 notifyOnStep(observers, currentState, log);
             }
 
+            // #19 Advance the runner’s loop counter.
             iteration++;
         }
 
+        // #20 If the run stopped between logging points, ensure the terminal state is still logged.
         if (((currentState.iteration() + 1) % logEveryIterations) != 0) {
-            if (Thread.currentThread().isInterrupted()) {
-                throw new java.util.concurrent.CancellationException("Run cancelled");
-            }
             log.tick(currentState.iteration(), currentState.evaluations() - 1);
             notifyOnStep(observers, currentState, log);
         }
 
-        if (Thread.currentThread().isInterrupted()) {
-            throw new java.util.concurrent.CancellationException("Run cancelled");
-        }
+        // #22 Notify observers that the run has ended and return the final accumulated log.
         notifyOnEnd(observers, currentState, log);
         return log;
     }
