@@ -186,7 +186,6 @@ public class IslandModel<S> implements PopulationModel<S> {
                 evaluationsDelta++;
             }
 
-            double previousCurrentFitness = isl.currentFitness;
             S previousCurrent = isl.current;
 
             List<EvaluatedSolution<S>> parentsEvaluated = List.of(
