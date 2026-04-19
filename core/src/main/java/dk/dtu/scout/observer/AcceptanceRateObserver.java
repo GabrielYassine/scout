@@ -2,7 +2,6 @@ package dk.dtu.scout.observer;
 
 import dk.dtu.scout.dto.Parameter;
 import dk.dtu.scout.logging.RunLog;
-import dk.dtu.scout.logging.RunState;
 import dk.dtu.scout.logging.SeriesMode;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -40,7 +39,7 @@ public class AcceptanceRateObserver<S> implements Observer<S> {
     }
 
     @Override
-    public void onStep(RunState<S> state, RunLog log) {
+    public void onStep(IterationSnapshot<S> state, RunLog log) {
         totalCount++;
         if (state.accepted()) {
             acceptedCount++;

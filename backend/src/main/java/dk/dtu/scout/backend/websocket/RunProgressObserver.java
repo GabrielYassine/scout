@@ -2,7 +2,6 @@ package dk.dtu.scout.backend.websocket;
 
 import dk.dtu.scout.dto.Parameter;
 import dk.dtu.scout.logging.RunLog;
-import dk.dtu.scout.logging.RunState;
 import dk.dtu.scout.observer.Observer;
 import dk.dtu.scout.logging.LoggedSeries;
 import dk.dtu.scout.logging.SeriesMode;
@@ -85,7 +84,7 @@ public class RunProgressObserver<S> implements Observer<S> {
     }
 
     @Override
-    public void onStep(RunState<S> state, RunLog log) {
+    public void onStep(IterationSnapshot<S> state, RunLog log) {
         if (wsUpdateEveryIterations <= 0) return;
         int logIndex = log.getIterations().size() - 1;
         if (logIndex < 0) return;
@@ -138,7 +137,7 @@ public class RunProgressObserver<S> implements Observer<S> {
     }
 
     @Override
-    public void onEnd(RunState<S> state, RunLog log) {
+    public void onEnd(IterationSnapshot<S> state, RunLog log) {
         int logIndex = log.getIterations().size() - 1;
         if (logIndex < 0) return;
         if (logIndex <= lastSentLogIndex) return;

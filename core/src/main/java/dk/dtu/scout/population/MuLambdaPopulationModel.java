@@ -4,7 +4,6 @@ import dk.dtu.scout.dto.EvaluatedSolution;
 import dk.dtu.scout.dto.Parameter;
 import dk.dtu.scout.datatypes.StateKeys;
 import dk.dtu.scout.generator.Generator;
-import dk.dtu.scout.logging.RunState;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -172,7 +171,13 @@ public class MuLambdaPopulationModel<S> implements PopulationModel<S> {
                 generationEvaluated
         );
 
-        RunState<S> initial = new RunState<>(iteration, evaluations, current, currentFitness, best, bestFitness, false);
+        IterationSnapshot<S> initial = new IterationSnapshot<>(
+                iteration,
+                evaluations,
+                new EvaluatedSolution<>(current, currentFitness),
+                new EvaluatedSolution<>(best, bestFitness),
+                false
+        );
         MuLambdaState<S> state = new MuLambdaState<>(
                 generator,
                 parentsEvaluated,
@@ -224,7 +229,7 @@ public class MuLambdaPopulationModel<S> implements PopulationModel<S> {
             muState.generationEvaluated.add(new EvaluatedSolution<>(child, childFitness));
         }
 
-        double previousCurrentFitness = muState.currentFitness;
+        S previousCurrent = muState.current;
 
         List<EvaluatedSolution<S>> nextParentsEvaluated = context.selection().select(
                 muState.parentsEvaluated,
@@ -251,9 +256,9 @@ public class MuLambdaPopulationModel<S> implements PopulationModel<S> {
         muState.current = representative.value();
         muState.currentFitness = representative.fitness();
 
-        // accepted here no longer means pairwise accept/reject as in classical SA.
-        // It now simply indicates whether the representative became no worse.
-        boolean nonWorsening = muState.currentFitness >= previousCurrentFitness;
+        // accepted should mean a new solution was accepted (representative changed),
+        // not merely that the fitness was non-worsening.
+        boolean accepted = previousCurrent != muState.current;
 
         // Global best-so-far must be updated separately from current,
         // because current may worsen under non-elitist selection.
@@ -272,14 +277,12 @@ public class MuLambdaPopulationModel<S> implements PopulationModel<S> {
         );
 
         int newEvaluations = evaluations + evaluationsDelta;
-        RunState<S> runState = new RunState<>(
+        IterationSnapshot<S> runState = new IterationSnapshot<>(
                 iteration,
                 newEvaluations,
-                muState.current,
-                muState.currentFitness,
-                muState.best,
-                muState.bestFitness,
-                nonWorsening
+                new EvaluatedSolution<>(muState.current, muState.currentFitness),
+                new EvaluatedSolution<>(muState.best, muState.bestFitness),
+                accepted
         );
 
         return new PopulationStepResult<>(runState, evaluationsDelta, stateVariables);

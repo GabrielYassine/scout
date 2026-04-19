@@ -5,7 +5,6 @@ import dk.dtu.scout.crossover.Crossover;
 import dk.dtu.scout.datatypes.StateKeys;
 import dk.dtu.scout.generator.Generator;
 import dk.dtu.scout.logging.RunLog;
-import dk.dtu.scout.logging.RunState;
 import dk.dtu.scout.observer.Observer;
 import dk.dtu.scout.parentSelectionRule.ParentSelectionRule;
 import dk.dtu.scout.population.PopulationInitialization;
@@ -90,7 +89,7 @@ public class SimulationRunner {
 
         PopulationInitialization<S> initialization = populationModel.initialize(context);
         PopulationState<S> populationState = initialization.state();
-        RunState<S> currentState = initialization.initialState();
+        IterationSnapshot<S> currentState = initialization.initialState();
         int evaluations = initialization.evaluations();
 
         List<ScoutComponent> stateComponents = new ArrayList<>(sharedComponents);
@@ -184,7 +183,7 @@ public class SimulationRunner {
         return false;
     }
 
-    private <S> void notifyOnStart(List<Observer<S>> observers, RunState<S> state, RunLog log) {
+    private <S> void notifyOnStart(List<Observer<S>> observers, IterationSnapshot<S> state, RunLog log) {
         if (observers == null) {
             return;
         }
@@ -193,7 +192,7 @@ public class SimulationRunner {
         }
     }
 
-    private <S> void notifyOnStep(List<Observer<S>> observers, RunState<S> state, RunLog log) {
+    private <S> void notifyOnStep(List<Observer<S>> observers, IterationSnapshot<S> state, RunLog log) {
         if (observers == null) {
             return;
         }
@@ -202,7 +201,7 @@ public class SimulationRunner {
         }
     }
 
-    private <S> void notifyOnEnd(List<Observer<S>> observers, RunState<S> state, RunLog log) {
+    private <S> void notifyOnEnd(List<Observer<S>> observers, IterationSnapshot<S> state, RunLog log) {
         if (observers == null) {
             return;
         }

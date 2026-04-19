@@ -95,14 +95,11 @@ public class RunOrchestratorService {
             if (request.runId() != null) {
                 List<RunFinalResponse> completedRuns = response.batches().stream()
                         .flatMap(batch -> batch.runs().stream().map(run ->
-                                new RunFinalResponse(batch.runIndex(), run.problemId(), run.runtimeMs()))
-                        )
-                        .toList();
+                                new RunFinalResponse(batch.runIndex(), run.problemId(), run.runtimeMs()))).toList();
                 wsSender.sendToRun(request.runId(), RunWsPayload.finished(request.runId(), response.summary(),completedRuns));
             }
             return response;
         } catch (CancellationException ex) {
-            // Task was superseded/cancelled. Don't emit failed; client should ignore stale runIds.
             throw ex;
         } catch (Exception ex) {
             if (request.runId() != null) {

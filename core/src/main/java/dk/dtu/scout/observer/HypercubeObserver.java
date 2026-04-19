@@ -2,7 +2,6 @@ package dk.dtu.scout.observer;
 
 import dk.dtu.scout.dto.Parameter;
 import dk.dtu.scout.logging.RunLog;
-import dk.dtu.scout.logging.RunState;
 import dk.dtu.scout.logging.SeriesMode;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -32,7 +31,7 @@ public class HypercubeObserver implements Observer<boolean[]> {
     }
 
     @Override
-    public void onStep(RunState<boolean[]> state, RunLog log) {
+    public void onStep(IterationSnapshot<boolean[]> state, RunLog log) {
         Point2D p = map(state.currentSolution());
         log.putSeries("hypercubeX", p.x(), SeriesMode.ALL);
         log.putSeries("hypercubeY", p.y(), SeriesMode.ALL);

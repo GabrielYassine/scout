@@ -6,7 +6,6 @@ import dk.dtu.scout.datatypes.StateKeys;
 import dk.dtu.scout.datatypes.TSPInstance;
 import dk.dtu.scout.datatypes.VRPInstance;
 import dk.dtu.scout.logging.RunLog;
-import dk.dtu.scout.logging.RunState;
 import dk.dtu.scout.logging.SeriesMode;
 import dk.dtu.scout.problems.TSPProblem;
 import dk.dtu.scout.problems.VRPProblem;
@@ -90,7 +89,7 @@ public class TourObserver implements Observer<Object> {
     }
 
     @Override
-    public void onStart(RunState<Object> state, RunLog log) {
+    public void onStart(IterationSnapshot<Object> state, RunLog log) {
         if (!citiesLogged && cities != null) {
             log.putSeries("tspCities", cities, SeriesMode.LATEST_ONLY);
             citiesLogged = true;
@@ -100,12 +99,12 @@ public class TourObserver implements Observer<Object> {
     }
 
     @Override
-    public void onStep(RunState<Object> state, RunLog log) {
+    public void onStep(IterationSnapshot<Object> state, RunLog log) {
         logTourSnapshot(state, log);
         logPheromoneHeatmap(log);
     }
 
-    private void logTourSnapshot(RunState<Object> state, RunLog log) {
+    private void logTourSnapshot(IterationSnapshot<Object> state, RunLog log) {
         Object solution;
         try {
             solution = state.currentSolution();

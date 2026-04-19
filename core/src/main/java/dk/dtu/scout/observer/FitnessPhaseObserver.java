@@ -2,7 +2,6 @@ package dk.dtu.scout.observer;
 
 import dk.dtu.scout.dto.Parameter;
 import dk.dtu.scout.logging.RunLog;
-import dk.dtu.scout.logging.RunState;
 import dk.dtu.scout.logging.SeriesMode;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -81,7 +80,7 @@ public class FitnessPhaseObserver<S> implements Observer<S> {
     }
 
     @Override
-    public void onStart(RunState<S> state, RunLog log) {
+    public void onStart(IterationSnapshot<S> state, RunLog log) {
         fitnessBlock.clear();
         iterationBlock.clear();
         evaluationBlock.clear();
@@ -90,7 +89,7 @@ public class FitnessPhaseObserver<S> implements Observer<S> {
     }
 
     @Override
-    public void onStep(RunState<S> state, RunLog log) {
+    public void onStep(IterationSnapshot<S> state, RunLog log) {
         double fitness = state.currentFitness();
         int iteration = state.iteration();
         int evaluation = Math.max(0, state.evaluations() - 1);
@@ -138,7 +137,7 @@ public class FitnessPhaseObserver<S> implements Observer<S> {
     }
 
     @Override
-    public void onEnd(RunState<S> state, RunLog log) {
+    public void onEnd(IterationSnapshot<S> state, RunLog log) {
         // even if the last block is not full, we can still classify and emit it
         if (fitnessBlock.isEmpty()) {
             return;

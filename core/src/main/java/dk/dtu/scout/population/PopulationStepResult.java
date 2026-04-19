@@ -1,7 +1,5 @@
 package dk.dtu.scout.population;
 
-import dk.dtu.scout.logging.RunState;
-
 import java.util.Map;
 
 /**
@@ -13,7 +11,7 @@ import java.util.Map;
  * @param <S> solution type
  */
 public record PopulationStepResult<S>(
-        RunState<S> runState,
+        IterationSnapshot<S> runState,
         int evaluationsDelta,
         Map<String, Object> sharedStateVariables
 ) {

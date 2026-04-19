@@ -1,7 +1,6 @@
 package dk.dtu.scout.population;
 
 import dk.dtu.scout.ScoutComponent;
-import dk.dtu.scout.logging.RunState;
 
 /**
  * Population model contract for one evolutionary algorithm variant.
@@ -12,7 +11,7 @@ import dk.dtu.scout.logging.RunState;
  *
  * <p>On each step, the model must return:
  * <ul>
- *   <li>a {@link RunState} snapshot for logging/observers/stop conditions,</li>
+ *   <li>a {@link IterationSnapshot} snapshot for logging/observers/stop conditions,</li>
  *   <li>the number of evaluations performed in that step,</li>
  *   <li>optional shared state variables for cross-component communication.</li>
  * </ul>

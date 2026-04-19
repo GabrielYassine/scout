@@ -6,7 +6,6 @@ import dk.dtu.scout.ScoutComponent;
 import dk.dtu.scout.State;
 import dk.dtu.scout.datatypes.StateKeys;
 import dk.dtu.scout.generator.Generator;
-import dk.dtu.scout.logging.RunState;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -130,7 +129,13 @@ public class IslandModel<S> implements PopulationModel<S> {
         int evaluations = numIslands;
         int iteration = 0;
 
-        RunState<S> initial = new RunState<>(iteration, evaluations, global.current, global.currentFitness, global.best, global.bestFitness, false);
+        IterationSnapshot<S> initial = new IterationSnapshot<>(
+                iteration,
+                evaluations,
+                new EvaluatedSolution<>(global.current, global.currentFitness),
+                new EvaluatedSolution<>(global.best, global.bestFitness),
+                false
+        );
         Map<String, Object> stateVariables = Map.of(
                 StateKeys.CURRENT, global.current,
                 StateKeys.CURRENT_FITNESS, global.currentFitness,
@@ -181,6 +186,7 @@ public class IslandModel<S> implements PopulationModel<S> {
             }
 
             double previousCurrentFitness = isl.currentFitness;
+            S previousCurrent = isl.current;
 
             List<EvaluatedSolution<S>> parentsEvaluated = List.of(
                     new EvaluatedSolution<>(isl.current, isl.currentFitness)
@@ -206,7 +212,8 @@ public class IslandModel<S> implements PopulationModel<S> {
             isl.current = representative.value();
             isl.currentFitness = representative.fitness();
 
-            boolean accepted = isl.currentFitness >= previousCurrentFitness;
+            // accepted should mean the current solution changed (a new solution was accepted)
+            boolean accepted = previousCurrent != isl.current;
             anyAccepted |= accepted;
 
             if (isl.currentFitness > isl.bestFitness) {
@@ -224,13 +231,11 @@ public class IslandModel<S> implements PopulationModel<S> {
         IslandState<S> global = globalBestIsland(islands);
         int newEvaluations = evaluations + evaluationsDelta;
 
-        RunState<S> runState = new RunState<>(
+        IterationSnapshot<S> runState = new IterationSnapshot<>(
                 iteration,
                 newEvaluations,
-                global.current,
-                global.currentFitness,
-                global.best,
-                global.bestFitness,
+                new EvaluatedSolution<>(global.current, global.currentFitness),
+                new EvaluatedSolution<>(global.best, global.bestFitness),
                 anyAccepted
         );
 
