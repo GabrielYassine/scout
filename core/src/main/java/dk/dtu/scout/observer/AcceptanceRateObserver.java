@@ -2,6 +2,7 @@ package dk.dtu.scout.observer;
 
 import dk.dtu.scout.dto.Parameter;
 import dk.dtu.scout.logging.RunLog;
+import dk.dtu.scout.logging.IterationSnapshot;
 import dk.dtu.scout.logging.SeriesMode;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;

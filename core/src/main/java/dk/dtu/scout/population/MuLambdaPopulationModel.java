@@ -4,6 +4,7 @@ import dk.dtu.scout.dto.EvaluatedSolution;
 import dk.dtu.scout.dto.Parameter;
 import dk.dtu.scout.datatypes.StateKeys;
 import dk.dtu.scout.generator.Generator;
+import dk.dtu.scout.logging.IterationSnapshot;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -178,6 +179,7 @@ public class MuLambdaPopulationModel<S> implements PopulationModel<S> {
                 new EvaluatedSolution<>(best, bestFitness),
                 false
         );
+
         MuLambdaState<S> state = new MuLambdaState<>(
                 generator,
                 parentsEvaluated,

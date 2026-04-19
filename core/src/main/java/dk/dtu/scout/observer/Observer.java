@@ -1,6 +1,7 @@
 package dk.dtu.scout.observer;
 
 import dk.dtu.scout.ScoutComponent;
+import dk.dtu.scout.logging.IterationSnapshot;
 import dk.dtu.scout.logging.RunLog;
 
 /**

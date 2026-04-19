@@ -1,6 +1,7 @@
 package dk.dtu.scout.population;
 
 import dk.dtu.scout.ScoutComponent;
+import dk.dtu.scout.logging.IterationSnapshot;
 
 import java.util.List;
 import java.util.Map;

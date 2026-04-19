@@ -4,6 +4,7 @@ import dk.dtu.scout.acceptance.SelectionRule;
 import dk.dtu.scout.crossover.Crossover;
 import dk.dtu.scout.datatypes.StateKeys;
 import dk.dtu.scout.generator.Generator;
+import dk.dtu.scout.logging.IterationSnapshot;
 import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.observer.Observer;
 import dk.dtu.scout.parentSelectionRule.ParentSelectionRule;

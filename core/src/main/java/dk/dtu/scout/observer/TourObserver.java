@@ -9,6 +9,7 @@ import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.logging.SeriesMode;
 import dk.dtu.scout.problems.TSPProblem;
 import dk.dtu.scout.problems.VRPProblem;
+import dk.dtu.scout.logging.IterationSnapshot;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 

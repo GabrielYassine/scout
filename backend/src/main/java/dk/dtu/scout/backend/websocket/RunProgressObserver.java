@@ -1,6 +1,7 @@
 package dk.dtu.scout.backend.websocket;
 
 import dk.dtu.scout.dto.Parameter;
+import dk.dtu.scout.logging.IterationSnapshot;
 import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.observer.Observer;
 import dk.dtu.scout.logging.LoggedSeries;

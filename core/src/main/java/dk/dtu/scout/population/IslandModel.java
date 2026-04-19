@@ -6,6 +6,7 @@ import dk.dtu.scout.ScoutComponent;
 import dk.dtu.scout.State;
 import dk.dtu.scout.datatypes.StateKeys;
 import dk.dtu.scout.generator.Generator;
+import dk.dtu.scout.logging.IterationSnapshot;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
