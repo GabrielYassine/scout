@@ -1,8 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Client } from "@stomp/stompjs";
 
-import { startRuntimeStudy } from "@/shared/api/run.js";
-
 export function useRuntimeStudyWebSocket({
   enabled,
   studyId,
@@ -16,11 +14,15 @@ export function useRuntimeStudyWebSocket({
   setStudyPoints,
   setSavedRun,
 }) {
-  const studyStartedRef = useRef(false);
+  const readySentRef = useRef(false);
+  const startSentRef = useRef(false);
 
   useEffect(() => {
     if (!enabled) return;
     if (!studyId || !runtimeStudyRequest) return;
+
+    readySentRef.current = false;
+    startSentRef.current = false;
 
     const wsUrl = `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}/ws`;
 
@@ -29,14 +31,33 @@ export function useRuntimeStudyWebSocket({
       reconnectDelay: 0,
     });
 
-    client.onConnect = async () => {
+    client.onConnect = () => {
       client.subscribe(`/topic/study/${studyId}`, (message) => {
-        const data = JSON.parse(message.body);
+        let data;
+        try {
+          data = JSON.parse(message.body);
+        } catch {
+          return;
+        }
+
+        if (!data?.studyId || data.studyId !== studyId) return;
+
+        if (data.type === "STUDY_CONNECTED") {
+          if (!startSentRef.current) {
+            startSentRef.current = true;
+            client.publish({
+              destination: `/app/study/${studyId}/start`,
+              body: JSON.stringify(runtimeStudyRequest),
+            });
+          }
+          return;
+        }
 
         if (data.type === "STUDY_FINISHED") {
           const sortedPoints = [...(data.study?.points ?? [])].sort(
             (a, b) => Number(a.problemSize) - Number(b.problemSize)
           );
+
           setLoading(false);
           setStudyPoints(sortedPoints);
           setSavedRun({
@@ -48,8 +69,10 @@ export function useRuntimeStudyWebSocket({
             params,
             tspInstance,
             vrpInstance,
+            runtimeStudyRequest,
             savedAt: Date.now(),
           });
+
           client.deactivate();
           return;
         }
@@ -61,15 +84,12 @@ export function useRuntimeStudyWebSocket({
         }
       });
 
-      if (!studyStartedRef.current) {
-        studyStartedRef.current = true;
-        try {
-          console.log("POST /api/runtime-study payload:", runtimeStudyRequest);
-          await startRuntimeStudy(runtimeStudyRequest);
-        } catch (err) {
-          setLoading(false);
-          setError(err.message || "Failed to start runtime study");
-        }
+      if (!readySentRef.current) {
+        readySentRef.current = true;
+        client.publish({
+          destination: `/app/study/${studyId}/ready`,
+          body: JSON.stringify({ studyId }),
+        });
       }
     };
 

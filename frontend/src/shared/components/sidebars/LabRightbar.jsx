@@ -145,7 +145,9 @@ const LabRightbar = ({
       if (detectedType === "VRP") {
         const parsed = parseVrpContent(content);
         const name = parsed.name || file.name.replace(/\.[^/.]+$/, "");
+
         setInstanceType("VRP");
+        onTspInstanceChange?.(null);
         onVrpInstanceChange?.({
           ...parsed,
           name: name || CUSTOM_INSTANCE_NAME,
@@ -154,7 +156,9 @@ const LabRightbar = ({
       } else {
         const parsed = parseTspContent(content);
         const name = parsed.name || file.name.replace(/\.[^/.]+$/, "");
+
         setInstanceType("TSP");
+        onVrpInstanceChange?.(null);
         onTspInstanceChange?.({
           ...parsed,
           name: name || CUSTOM_INSTANCE_NAME,
@@ -273,12 +277,15 @@ const LabRightbar = ({
 
   const handleTypeChange = (value) => {
     if (value === instanceType) return;
-    const nodes = view.nodes;
 
+    const nodes = view.nodes;
     setInstanceType(value);
+
     if (value === "VRP") {
+      onTspInstanceChange?.(null);
       syncCitiesToVrp(nodes);
     } else {
+      onVrpInstanceChange?.(null);
       syncCitiesToTsp(nodes);
     }
   };

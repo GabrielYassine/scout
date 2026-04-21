@@ -102,14 +102,33 @@ export default function LabPage({
       const existingSessionId = window.sessionStorage?.getItem(sessionStorageKey) ?? null;
 
       const problemList = Array.isArray(puzzleConfig.problem) ? puzzleConfig.problem : [];
+
+      const isTspProblem = problemList.some((p) => p.id === "tsp");
+      const isVrpProblem = problemList.some((p) => p.id === "vrp");
+
+      const hasValidTspInstance =
+        Array.isArray(tspInstance?.cities) && tspInstance.cities.length > 0;
+
+      const hasValidVrpInstance =
+        Array.isArray(vrpInstance?.customers) &&
+        vrpInstance.customers.length > 0 &&
+        vrpInstance?.depot != null;
+
+      if (isTspProblem && !hasValidTspInstance) {
+        showToast("Please upload or create a TSP instance before running a TSP problem.");
+        return;
+      }
+
+      if (isVrpProblem && !hasValidVrpInstance) {
+        showToast("Please upload or create a VRP instance before running a VRP problem.");
+        return;
+      }
+
       const problemParams = { ...params.problem };
 
       if (tspInstance?.cities?.length > 0) {
         problemParams.tspInstance = tspInstance;
       }
-
-      const isTspProblem = problemList.some((p) => p.id === "tsp");
-      const isVrpProblem = problemList.some((p) => p.id === "vrp");
 
       if (isVrpProblem && vrpInstance) {
         problemParams.vrpInstance = vrpInstance;

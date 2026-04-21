@@ -42,9 +42,10 @@ public class RunOrchestratorService {
     private final ConcurrentHashMap<String, ActiveTask> activeBySession = new ConcurrentHashMap<>();
 
     /**
-     * Guards against duplicate websocket start messages for the same runId.
+     * Guards against duplicate websocket start messages for the same run or study, which can happen when a client reconnects.
      */
     private final ConcurrentHashMap<String, Boolean> startedRunIds = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Boolean> startedStudyIds = new ConcurrentHashMap<>();
 
     public RunOrchestratorService(
             RunRequestValidator runRequestValidator,
@@ -150,17 +151,25 @@ public class RunOrchestratorService {
         }
     }
 
-    public void startRuntimeStudy(RuntimeStudyRequest request) {
+    public boolean startRuntimeStudy(RuntimeStudyRequest request) {
         runRequestValidator.runtimeStudyRequestValidator(request);
 
         String sessionId = request.sessionId();
         if (sessionId == null || sessionId.isBlank()) {
             throw new IllegalArgumentException("sessionId is required");
         }
+
         String studyId = request.studyId();
+        if (studyId == null || studyId.isBlank()) {
+            throw new IllegalArgumentException("studyId is required");
+        }
+
+        if (startedStudyIds.putIfAbsent(studyId, Boolean.TRUE) != null) {
+            return false;
+        }
 
         ActiveTask previous = activeBySession.get(sessionId);
-        if (previous != null) {
+        if (previous != null && previous.future != null) {
             previous.future.cancel(true);
         }
 
@@ -177,34 +186,43 @@ public class RunOrchestratorService {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             } catch (ExecutionException ignored) {
-                // run() already emitted failed payload if needed
+                // runRuntimeStudy already emits failed payload if needed
             } finally {
+                startedStudyIds.remove(studyId);
                 activeBySession.computeIfPresent(
                         sessionId,
                         (sid, active) -> studyId.equals(active.id()) ? null : active
                 );
             }
         });
+
+        return true;
     }
 
     public RuntimeStudyResponse runRuntimeStudy(RuntimeStudyRequest request) {
         runRequestValidator.runtimeStudyRequestValidator(request);
+        try {
+            List<RuntimeStudyPointResponse> points = new ArrayList<>();
+            List<Integer> sizes = request.problemSizes();
 
-        List<RuntimeStudyPointResponse> points = new ArrayList<>();
-        List<Integer> sizes = request.problemSizes();
+            for (int i = 0; i < sizes.size(); i++) {
+                int n = sizes.get(i);
+                RunRequest runRequest = buildRunRequestForSize(request, n, i);
+                int logEvery = runRequestValidator.resolveLogEveryIterations(runRequest);
+                BatchRunResponse batch = runExecutor.executeBatch(runRequest, logEvery, 0);
+                RuntimeStudyPointResponse point = statisticsService.toRuntimeStudyPoint(n, batch);
+                points.add(point);
+            }
 
-        for (int i = 0; i < sizes.size(); i++) {
-            int n = sizes.get(i);
-            RunRequest runRequest = buildRunRequestForSize(request, n, i);
-            int logEvery = runRequestValidator.resolveLogEveryIterations(runRequest);
-            BatchRunResponse batch = runExecutor.executeBatch(runRequest, logEvery, 0);
-            RuntimeStudyPointResponse point = statisticsService.toRuntimeStudyPoint(n, batch);
-            points.add(point);
+            RuntimeStudyResponse response = new RuntimeStudyResponse(request.studyId(), points);
+            wsSender.sendToStudy(request.studyId(), RuntimeStudyWsPayload.finished(request.studyId(), response));
+            return response;
+        } catch (CancellationException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            wsSender.sendToStudy(request.studyId(), RuntimeStudyWsPayload.failed(request.studyId(), ex.getMessage()));
+            throw ex;
         }
-
-        RuntimeStudyResponse response = new RuntimeStudyResponse(request.studyId(), points);
-        wsSender.sendToStudy(request.studyId(), RuntimeStudyWsPayload.finished(request.studyId(), response));
-        return response;
     }
 
     private RunRequest buildRunRequestForSize(RuntimeStudyRequest request, int problemSize, int sizeIndex) {
