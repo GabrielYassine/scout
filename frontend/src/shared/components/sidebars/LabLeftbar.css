@@ -31,42 +31,6 @@
   flex-shrink: 0;
 }
 
-.ll-section {
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-.ll-section-header {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: var(--color-panel-drop);
-  border: none;
-  cursor: pointer;
-}
-
-.ll-section-title {
-  font-weight: 700;
-}
-
-.ll-triangle {
-  font-size: 1.5rem;
-  transition: transform 0.15s ease;
-}
-
-.ll-triangle.open {
-  transform: rotate(90deg);
-}
-
-.ll-section-body {
-  padding: var(--spacing-md);
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
-}
-
-
 .ll-actions {
   display: flex;
   gap: var(--spacing-md);
@@ -115,8 +79,9 @@
 }
 
 .mode-confirm-modal {
- width: 90vw;
-  max-width: 460px;  padding: 20px;
+  width: 90vw;
+  max-width: 460px;
+  padding: 20px;
   background: var(--color-panel);
   border: 1px solid var(--color-border);
   border-radius: 14px;

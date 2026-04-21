@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 
-import Section from "./Section.jsx";
+import SidebarSection from "./SidebarSection.jsx";
 import ParamField from "./ParamField.jsx";
 
 import "./LabLeftbar.css";
@@ -16,8 +16,6 @@ const parseValue = (type, raw) => {
 
   return raw;
 };
-
-// Left sidebar for the lab page, containing configuration for each puzzle piece
 
 export default function LabLeftbar({
   puzzleConfig,
@@ -81,19 +79,22 @@ export default function LabLeftbar({
   }, [puzzleConfig]);
 
   const allPiecesPlaced = useMemo(() => {
-    return (
-      puzzleConfig.searchSpace &&
-      puzzleConfig.problem &&
-      puzzleConfig.generator &&
-      puzzleConfig.selection &&
-      puzzleConfig.populationModel &&
-      puzzleConfig.parentSelectionRule &&
-      puzzleConfig.crossover &&
-      puzzleConfig.stopCondition &&
-      puzzleConfig.observer
+    const requiredTypes = [
+      "searchSpace",
+      "problem",
+      "generator",
+      "selection",
+      "populationModel",
+      "parentSelectionRule",
+      "crossover",
+      "stopCondition",
+      "observer",
+    ];
+
+    return requiredTypes.every(
+      (type) => Array.isArray(puzzleConfig?.[type]) && puzzleConfig[type].length > 0
     );
   }, [puzzleConfig]);
-
 
   function setParam(type, def, rawValue) {
     const currentParams = params[type] ?? {};
@@ -146,7 +147,7 @@ export default function LabLeftbar({
     if (pieces.length === 0) return null;
 
     return (
-      <Section
+      <SidebarSection
         key={type}
         title={title}
         isOpen={open[type]}
@@ -159,7 +160,9 @@ export default function LabLeftbar({
           return (
             <div key={`${piece.id}-${index}`} className="ll-piece-container">
               <div className="ll-selected-piece">
-                {pieces.length > 1 && <span className="ll-piece-number">{index + 1}.</span>}
+                {pieces.length > 1 && (
+                  <span className="ll-piece-number">{index + 1}.</span>
+                )}
                 {piece.label}
               </div>
 
@@ -183,7 +186,7 @@ export default function LabLeftbar({
             </div>
           );
         })}
-      </Section>
+      </SidebarSection>
     );
   };
 
@@ -193,10 +196,12 @@ export default function LabLeftbar({
         <div className="ll-title">Configuration</div>
 
         {!readOnly && (
-          <Section
+          <SidebarSection
             title="Templates"
             isOpen={open.templates ?? true}
-            onToggle={() => setOpen((o) => ({ ...o, templates: !(o.templates ?? true) }))}
+            onToggle={() =>
+              setOpen((o) => ({ ...o, templates: !(o.templates ?? true) }))
+            }
           >
             <div className="ll-subsection">
               <select
@@ -214,7 +219,7 @@ export default function LabLeftbar({
               </select>
 
               <button
-                className="btn btn--green .ll-subsection"
+                className="btn btn--green"
                 type="button"
                 disabled={disabled || !selectedTemplateId}
                 onClick={() => {
@@ -231,11 +236,10 @@ export default function LabLeftbar({
                 </div>
               )}
             </div>
-          </Section>
+          </SidebarSection>
         )}
 
-        {/* Global Settings Section */}
-        <Section
+        <SidebarSection
           title="Global Settings"
           isOpen={open.global}
           onToggle={() => setOpen((o) => ({ ...o, global: !o.global }))}
@@ -263,7 +267,9 @@ export default function LabLeftbar({
               }}
               disabled={disabled}
               value={params.global?.seed}
-              onValueChange={(v) => setParam("global", { key: "seed", type: "long" }, v)}
+              onValueChange={(v) =>
+                setParam("global", { key: "seed", type: "long" }, v)
+              }
             />
 
             {runMode === "run" && (
@@ -275,7 +281,7 @@ export default function LabLeftbar({
                   min: 1,
                 }}
                 disabled={disabled}
-                value={params.global?.runTimes }
+                value={params.global?.runTimes}
                 onValueChange={(v) =>
                   setParam("global", { key: "runTimes", type: "int" }, v)
                 }
@@ -325,7 +331,11 @@ export default function LabLeftbar({
                 disabled={disabled}
                 value={params.global?.wsUpdateEveryIterations}
                 onValueChange={(v) =>
-                  setParam("global", { key: "wsUpdateEveryIterations", type: "int" }, v)
+                  setParam(
+                    "global",
+                    { key: "wsUpdateEveryIterations", type: "int" },
+                    v
+                  )
                 }
               />
             )}
@@ -345,11 +355,11 @@ export default function LabLeftbar({
               />
             )}
           </div>
-        </Section>
+        </SidebarSection>
 
         {renderPieceSection("searchSpace", "Search Space")}
         {renderPieceSection("problem", "Problem")}
-        {renderPieceSection("generator", "Mutation")}
+        {renderPieceSection("generator", "Generator")}
         {renderPieceSection("selection", "Selection Rule")}
         {renderPieceSection("populationModel", "Population Model")}
         {renderPieceSection("parentSelectionRule", "Parent Selection")}
@@ -373,33 +383,33 @@ export default function LabLeftbar({
         </button>
       </div>
 
-     {showModeConfirm && (
-       <div className="mode-confirm-overlay">
-         <div className="mode-confirm-modal" role="dialog" aria-modal="true">
-           <h3>Switch to Runtime Study?</h3>
-           <p>Switching to Runtime Study will reset your current puzzle configuration.</p>
-           <p>All selected puzzle pieces and their parameter setup will be removed.</p>
-           <p>Are you sure you want to continue?</p>
+      {showModeConfirm && (
+        <div className="mode-confirm-overlay">
+          <div className="mode-confirm-modal" role="dialog" aria-modal="true">
+            <h3>Switch to Runtime Study?</h3>
+            <p>Switching to Runtime Study will reset your current puzzle configuration.</p>
+            <p>All selected puzzle pieces and their parameter setup will be removed.</p>
+            <p>Are you sure you want to continue?</p>
 
-           <div className="mode-confirm-actions">
-             <button
-               type="button"
-               className="btn btn--red"
-               onClick={cancelModeChange}
-             >
-               Cancel
-             </button>
-             <button
-               type="button"
-               className="btn btn--green"
-               onClick={confirmModeChange}
-             >
-               Yes, reset and continue
-             </button>
-           </div>
-         </div>
-       </div>
-     )}
+            <div className="mode-confirm-actions">
+              <button
+                type="button"
+                className="btn btn--red"
+                onClick={cancelModeChange}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn--green"
+                onClick={confirmModeChange}
+              >
+                Yes, reset and continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

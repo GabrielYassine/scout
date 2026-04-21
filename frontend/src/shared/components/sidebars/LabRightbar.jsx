@@ -31,6 +31,10 @@ const LabRightbar = ({
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [open, setOpen] = useState({
+    description: true,
+    instance: true,
+  });
   const fileInputRef = useRef(null);
 
   const initialType = vrpInstance ? "VRP" : "TSP";
@@ -431,7 +435,11 @@ const LabRightbar = ({
   return (
     <section className="lab-rightbar">
       <div className="lr-content">
-        <SidebarSection title="Description" collapsible={false}>
+        <SidebarSection
+          title="Description"
+          isOpen={open.description}
+          onToggle={() => setOpen((o) => ({ ...o, description: !o.description }))}
+        >
           <div className="lr-description-body">
             {hoverInfo ? (
               <>
@@ -446,7 +454,11 @@ const LabRightbar = ({
           </div>
         </SidebarSection>
 
-        <SidebarSection title="Problem Instance" collapsible={false}>
+        <SidebarSection
+          title="Problem Instance"
+          isOpen={open.instance}
+          onToggle={() => setOpen((o) => ({ ...o, instance: !o.instance }))}
+        >
           <div className="tsp-upload-section">
             <input
               ref={fileInputRef}
@@ -482,15 +494,19 @@ const LabRightbar = ({
 
           <div className="instance-fields">
             <span className="instance-summary-label">Name:</span>
-            <span className="instance-summary-value">{view.name || CUSTOM_INSTANCE_NAME}</span>
+            <span className="instance-summary-value">
+              {view.name || CUSTOM_INSTANCE_NAME}
+            </span>
+
             <span className="instance-summary-label">Comment:</span>
             <span className="instance-summary-value">
-              {view.comment || "-"}
+              {view.comment || "No comment"}
             </span>
+
             <span className="instance-summary-label">Dimension:</span>
             <span className="instance-summary-value">{dimension}</span>
 
-            <FieldRow label="Type">
+            <FieldRow label="Instance Type">
               <select
                 className="field-input"
                 value={instanceType}
@@ -502,7 +518,13 @@ const LabRightbar = ({
             </FieldRow>
 
             <ParamField
-              def={{ key: "capacity", label: "Capacity", type: "double", min: 0, defaultValue: 0 }}
+              def={{
+                key: "capacity",
+                label: "Capacity",
+                type: "double",
+                min: 0,
+                defaultValue: 0,
+              }}
               value={view.capacity}
               disabled={instanceType === "TSP"}
               onValueChange={(v) => handleCapacityChange(v)}
@@ -557,4 +579,3 @@ const LabRightbar = ({
 };
 
 export default LabRightbar;
-

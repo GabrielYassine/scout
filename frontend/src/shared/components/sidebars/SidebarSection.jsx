@@ -1,10 +1,5 @@
-import Section from "./Section.jsx";
+import "./SidebarSections.css";
 
-/**
- * Generic collapsible section used by both sidebars.
- *
- * If `collapsible` is false, it renders a static header + body without needing local state.
- */
 export default function SidebarSection({
   title,
   children,
@@ -14,14 +9,37 @@ export default function SidebarSection({
 }) {
   if (!collapsible) {
     return (
-      <div className="ll-section">
-        <div className="ll-section-header" aria-expanded={true}>
-          <span className="ll-section-title">{title}</span>
+      <div className="sidebar-section">
+        <div className="sidebar-section-header" aria-expanded={true}>
+          <span className="sidebar-section-title">{title}</span>
+          <span className="sidebar-section-triangle open">▸</span>
         </div>
-        <div className="ll-section-body">{children}</div>
+        <div className="sidebar-section-body">{children}</div>
       </div>
     );
   }
 
-  return <Section title={title} isOpen={isOpen} onToggle={onToggle} children={children} />;
+  return (
+    <div className="sidebar-section">
+      <button
+        type="button"
+        className="sidebar-section-header"
+        onClick={onToggle}
+        aria-expanded={isOpen}
+      >
+        <span className="sidebar-section-title">{title}</span>
+        <span
+          className={
+            isOpen
+              ? "sidebar-section-triangle open"
+              : "sidebar-section-triangle"
+          }
+        >
+          ▸
+        </span>
+      </button>
+
+      {isOpen && <div className="sidebar-section-body">{children}</div>}
+    </div>
+  );
 }
