@@ -13,28 +13,79 @@
 }
 
 .run-page-content {
-  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
   min-width: 0;
-  padding: 16px;
+  flex: 1 1 auto;
+  padding: var(--spacing-md);
+  gap: var(--spacing-md);
   overflow-x: hidden;
   overflow-y: scroll;
+}
+
+.run-page-controls {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.run-speed-control {
+  display: flex;
+  align-items: center;
+  padding: var(--spacing-md);
+}
+
+.run-speed-slider-group {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.run-speed-slider {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.run-speed-value {
+  flex: 0 0 auto;
+  min-width: 3.5rem;
+}
+
+.run-playback-button {
+  flex: 0 0 10%;
+}
+
+.run-selection-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
 }
 
 .run-selector {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  margin-bottom: var(--spacing-md);
-  padding: var(--spacing-md);
-  background: var(--color-panel);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0;
+}
+
+.run-selector .field-input {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .run-layout-toggle {
   display: flex;
   gap: var(--spacing-sm);
-  margin-bottom: var(--spacing-md);
+  flex: 0 0 auto;
+  width: auto;
 }
 
 .run-stack {
@@ -70,27 +121,6 @@
 
 .run-chart-title {
   font-weight: 700;
-}
-
-.run-speed-control {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  margin-bottom: var(--spacing-md);
-  padding: var(--spacing-md);
-  background: var(--color-panel);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-}
-
-.reset-playback-button {
-  padding: 8px 12px;
-  border: 1px solid #b91c1c;
-  background: #dc2626;
-  color: white;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  font-weight: 600;
 }
 
 .run-loading {
