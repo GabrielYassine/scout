@@ -86,9 +86,7 @@ export default function LabLeftbar({
       "selection",
       "populationModel",
       "parentSelectionRule",
-      "crossover",
       "stopCondition",
-      "observer",
     ];
 
     return requiredTypes.every(

@@ -57,6 +57,7 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
   const [studyPoints, setStudyPoints] = useState(() => restoredRun?.studyPoints ?? []);
   const [loading, setLoading] = useState(!!initialLoading);
   const [error, setError] = useState(initialError ?? null);
+  const [layoutMode, setLayoutMode] = useState("stack");
 
   const batches = batch?.batches ?? [];
   const averageByProblem = batch?.summary?.averageByProblem ?? {};
@@ -246,7 +247,28 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
                   </div>
                 )}
 
-                <div className="run-stack">
+                <div className="run-layout-toggle">
+                  <button
+                    type="button"
+                    className={`btn ${layoutMode === "stack" ? "btn--green" : ""}`}
+                    onClick={() => setLayoutMode("stack")}
+                  >
+                    Stacked
+                  </button>
+                  <button
+                    type="button"
+                    className={`btn ${layoutMode === "grid" ? "btn--green" : ""}`}
+                    onClick={() => setLayoutMode("grid")}
+                  >
+                    Grid
+                  </button>
+                </div>
+
+                <div
+                  className={`run-stack ${
+                    layoutMode === "grid" ? "run-stack--grid" : "run-stack--stack"
+                  }`}
+                >
                   {runs.map((run, idx) => (
                     <RunChart
                       key={`${effectiveSelectedRunKey}-${idx}`}
