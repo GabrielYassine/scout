@@ -1,20 +1,24 @@
 package dk.dtu.scout.backend.service;
 
+import dk.dtu.scout.backend.dto.PrepareRunResponse;
 import dk.dtu.scout.backend.dto.RunRequest;
 import dk.dtu.scout.backend.dto.RuntimeStudyRequest;
 import dk.dtu.scout.backend.dto.run.BatchRunResponse;
 import dk.dtu.scout.backend.dto.run.RunFinalResponse;
 import dk.dtu.scout.backend.dto.study.RuntimeStudyPointResponse;
 import dk.dtu.scout.backend.dto.study.RuntimeStudyResponse;
-import dk.dtu.scout.backend.websocket.*;
+import dk.dtu.scout.backend.websocket.RunWsPayload;
+import dk.dtu.scout.backend.websocket.RuntimeStudyWsPayload;
+import dk.dtu.scout.backend.websocket.WsSender;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.stereotype.Service;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.*;
 
 /**
@@ -37,6 +41,11 @@ public class RunOrchestratorService {
      */
     private final ConcurrentHashMap<String, ActiveTask> activeBySession = new ConcurrentHashMap<>();
 
+    /**
+     * Guards against duplicate websocket start messages for the same runId.
+     */
+    private final ConcurrentHashMap<String, Boolean> startedRunIds = new ConcurrentHashMap<>();
+
     public RunOrchestratorService(
             RunRequestValidator runRequestValidator,
             RunExecutor runExecutor,
@@ -51,17 +60,35 @@ public class RunOrchestratorService {
         this.requestExecutor = (ThreadPoolTaskExecutor) requestExecutor;
     }
 
-    public void startRun(RunRequest request) {
+    public PrepareRunResponse prepareRun(String requestedSessionId) {
+        String sessionId =
+                requestedSessionId != null && !requestedSessionId.isBlank()
+                        ? requestedSessionId
+                        : UUID.randomUUID().toString();
+
+        String runId = UUID.randomUUID().toString();
+        return new PrepareRunResponse(sessionId, runId);
+    }
+
+    public boolean startRun(RunRequest request) {
         runRequestValidator.runRequestValidator(request);
 
         String sessionId = request.sessionId();
         if (sessionId == null || sessionId.isBlank()) {
             throw new IllegalArgumentException("sessionId is required");
         }
+
         String runId = request.runId();
+        if (runId == null || runId.isBlank()) {
+            throw new IllegalArgumentException("runId is required");
+        }
+
+        if (startedRunIds.putIfAbsent(runId, Boolean.TRUE) != null) {
+            return false;
+        }
 
         ActiveTask previous = activeBySession.get(sessionId);
-        if (previous != null) {
+        if (previous != null && previous.future != null) {
             previous.future.cancel(true);
         }
 
@@ -70,7 +97,6 @@ public class RunOrchestratorService {
         ActiveTask current = new ActiveTask(runId, future);
         activeBySession.put(sessionId, current);
 
-        // Cleanup: remove only if this run is still the active one for the session.
         requestExecutor.execute(() -> {
             try {
                 future.get();
@@ -81,22 +107,37 @@ public class RunOrchestratorService {
             } catch (ExecutionException ignored) {
                 // run() already emitted failed payload if needed
             } finally {
-                activeBySession.computeIfPresent(sessionId, (sid, active) -> runId.equals(active.id()) ? null : active);
+                startedRunIds.remove(runId);
+                activeBySession.computeIfPresent(
+                        sessionId,
+                        (sid, active) -> runId.equals(active.id()) ? null : active
+                );
             }
         });
+
+        return true;
     }
 
     public BatchRunResponse run(RunRequest request) {
         runRequestValidator.runRequestValidator(request);
-        int logEvery = runRequestValidator.resolveLogEveryIterations(request); // When we log progress in the backend
-        int wsUpdateEvery = request.wsUpdateEveryIterations() > 0 ? request.wsUpdateEveryIterations() : logEvery; // When we update frontend
+        int logEvery = runRequestValidator.resolveLogEveryIterations(request);
+        int wsUpdateEvery =
+                request.wsUpdateEveryIterations() > 0
+                        ? request.wsUpdateEveryIterations()
+                        : logEvery;
+
         try {
             BatchRunResponse response = runExecutor.executeBatch(request, logEvery, wsUpdateEvery);
             if (request.runId() != null) {
                 List<RunFinalResponse> completedRuns = response.batches().stream()
                         .flatMap(batch -> batch.runs().stream().map(run ->
-                                new RunFinalResponse(batch.runIndex(), run.problemId(), run.runtimeMs()))).toList();
-                wsSender.sendToRun(request.runId(), RunWsPayload.finished(request.runId(), response.summary(),completedRuns));
+                                new RunFinalResponse(batch.runIndex(), run.problemId(), run.runtimeMs())))
+                        .toList();
+
+                wsSender.sendToRun(
+                        request.runId(),
+                        RunWsPayload.finished(request.runId(), response.summary(), completedRuns)
+                );
             }
             return response;
         } catch (CancellationException ex) {
@@ -128,7 +169,6 @@ public class RunOrchestratorService {
         ActiveTask current = new ActiveTask(studyId, future);
         activeBySession.put(sessionId, current);
 
-        // Cleanup: remove only if this run is still the active one for the session.
         requestExecutor.execute(() -> {
             try {
                 future.get();
@@ -139,7 +179,10 @@ public class RunOrchestratorService {
             } catch (ExecutionException ignored) {
                 // run() already emitted failed payload if needed
             } finally {
-                activeBySession.computeIfPresent(sessionId, (sid, active) -> studyId.equals(active.id()) ? null : active);
+                activeBySession.computeIfPresent(
+                        sessionId,
+                        (sid, active) -> studyId.equals(active.id()) ? null : active
+                );
             }
         });
     }
@@ -158,6 +201,7 @@ public class RunOrchestratorService {
             RuntimeStudyPointResponse point = statisticsService.toRuntimeStudyPoint(n, batch);
             points.add(point);
         }
+
         RuntimeStudyResponse response = new RuntimeStudyResponse(request.studyId(), points);
         wsSender.sendToStudy(request.studyId(), RuntimeStudyWsPayload.finished(request.studyId(), response));
         return response;
@@ -198,5 +242,4 @@ public class RunOrchestratorService {
                 0
         );
     }
-
 }

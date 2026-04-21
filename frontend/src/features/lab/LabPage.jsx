@@ -10,6 +10,7 @@ import "./LabPage.css";
 
 import { usePuzzleConfig } from "@/shared/contexts/usePuzzleConfig.js";
 import { useLocalStorageState } from "@/shared/hooks/useLocalStorageState.js";
+import { prepareRun } from "@/shared/api/run.js";
 
 export default function LabPage({
   catalog,
@@ -98,22 +99,7 @@ export default function LabPage({
       const seed = params.global?.seed ?? Date.now();
 
       const sessionStorageKey = "scout:sessionId";
-      const sessionId = (() => {
-        const existing = window.sessionStorage?.getItem(sessionStorageKey);
-        if (existing) return existing;
-
-        const next = window.crypto?.randomUUID
-          ? window.crypto.randomUUID()
-          : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-
-        try {
-          window.sessionStorage?.setItem(sessionStorageKey, next);
-        } catch {
-          // ignore storage errors; request will fail if backend requires sessionId
-        }
-
-        return next;
-      })();
+      const existingSessionId = window.sessionStorage?.getItem(sessionStorageKey) ?? null;
 
       const problemList = Array.isArray(puzzleConfig.problem) ? puzzleConfig.problem : [];
       const problemParams = { ...params.problem };
@@ -140,6 +126,22 @@ export default function LabPage({
       }
 
       if (experimentType === "runtimeStudy") {
+        const sessionId = (() => {
+          if (existingSessionId) return existingSessionId;
+
+          const next = window.crypto?.randomUUID
+            ? window.crypto.randomUUID()
+            : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+          try {
+            window.sessionStorage?.setItem(sessionStorageKey, next);
+          } catch {
+            // ignore storage errors; request will fail if backend requires sessionId
+          }
+
+          return next;
+        })();
+
         const repetitionsPerSize = params.global?.repetitionsPerSize ?? 30;
         const problemSizes = parseProblemSizes(params.global?.problemSizes);
         const wsUpdateEverySizes = params.global?.wsUpdateEverySizes ?? 1;
@@ -205,15 +207,25 @@ export default function LabPage({
         return;
       }
 
+      const prep = await prepareRun({ sessionId: existingSessionId });
+      const sessionId = prep?.sessionId ?? existingSessionId;
+      const runId = prep?.runId;
+
+      if (!sessionId || !runId) {
+        throw new Error("Backend did not return sessionId and runId");
+      }
+
+      try {
+        window.sessionStorage?.setItem(sessionStorageKey, sessionId);
+      } catch {
+        // ignore
+      }
+
       const runTimes = params.global?.runTimes ?? 1;
       const logEveryIterations = params.global?.logEveryIterations ?? 100;
       const wsUpdateEveryIterations = params.global?.wsUpdateEveryIterations ?? 100;
 
-      const runId = window.crypto?.randomUUID
-        ? window.crypto.randomUUID()
-        : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-
-      const body = {
+      const runRequest = {
         searchSpaceId: puzzleConfig.searchSpace?.[0]?.id ?? null,
         searchSpaceParams,
         problemIds: puzzleConfig.problem?.map((x) => x.id) ?? [],
@@ -240,7 +252,6 @@ export default function LabPage({
         wsUpdateEveryIterations,
       };
 
-      // WS-first: Run page will start the backend run after the /topic/run/{runId} subscription is active.
       setSavedRun({
         pageMode: "run",
         loading: true,
@@ -252,15 +263,23 @@ export default function LabPage({
         params,
         tspInstance,
         vrpInstance,
+        runRequest,
         selectedRunKey: "0",
         savedAt: Date.now(),
       });
 
       navigate("/run", {
-        state: { pageMode: "run", loading: true, puzzleConfig, params, tspInstance, vrpInstance, runId },
+        state: {
+          pageMode: "run",
+          loading: true,
+          puzzleConfig,
+          params,
+          tspInstance,
+          vrpInstance,
+          runId,
+          runRequest,
+        },
       });
-
-      // Important: don't call startRun(body) here;
     } catch (err) {
       showToast(err.message || "Failed to start run");
     }

@@ -1,5 +1,7 @@
 package dk.dtu.scout.backend.controller;
 
+import dk.dtu.scout.backend.dto.PrepareRunRequest;
+import dk.dtu.scout.backend.dto.PrepareRunResponse;
 import dk.dtu.scout.backend.dto.RunRequest;
 import dk.dtu.scout.backend.dto.RuntimeStudyRequest;
 import dk.dtu.scout.backend.service.RunOrchestratorService;
@@ -18,6 +20,14 @@ public class RunController {
 
     public RunController(RunOrchestratorService runOrchestratorService) {
         this.runOrchestratorService = runOrchestratorService;
+    }
+
+    @PostMapping("/run/prepare")
+    public ResponseEntity<PrepareRunResponse> prepareRun(
+            @RequestBody(required = false) PrepareRunRequest request
+    ) {
+        String requestedSessionId = request != null ? request.sessionId() : null;
+        return ResponseEntity.ok(runOrchestratorService.prepareRun(requestedSessionId));
     }
 
     @PostMapping("/run")

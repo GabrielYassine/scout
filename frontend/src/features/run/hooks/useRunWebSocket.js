@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Client } from "@stomp/stompjs";
+import { createOrderedProgressApplier } from "@/features/run/utils/orderedProgress.js";
 
 function applyCompletedRuns(prev, completedRuns, summary) {
   if (!prev) {
@@ -7,11 +8,9 @@ function applyCompletedRuns(prev, completedRuns, summary) {
   }
 
   const metaByKey = new Map(
-    (completedRuns ?? []).map((item) => [
-      `${item.runIndex}::${item.problemId}`,
-      item,
-    ])
+    (completedRuns ?? []).map((item) => [`${item.runIndex}::${item.problemId}`, item])
   );
+
   const nextBatches = (prev.batches ?? []).map((batch) => ({
     ...batch,
     runs: (batch.runs ?? []).map((run) => {
@@ -20,8 +19,8 @@ function applyCompletedRuns(prev, completedRuns, summary) {
 
       return {
         ...run,
-        runtimeMs: meta.runtimeMs
-              };
+        runtimeMs: meta.runtimeMs,
+      };
     }),
   }));
 
@@ -31,9 +30,11 @@ function applyCompletedRuns(prev, completedRuns, summary) {
     summary: summary ?? prev.summary ?? null,
   };
 }
+
 export function useRunWebSocket({
   enabled,
   runId,
+  runRequest,
   puzzleConfig,
   params,
   tspInstance,
@@ -42,25 +43,35 @@ export function useRunWebSocket({
   setError,
   setBatch,
   setSavedRun,
-  onReady,
 }) {
   const activeRunIdRef = useRef(null);
-  const readyFiredRef = useRef(false);
+  const readySentRef = useRef(false);
+  const startSentRef = useRef(false);
 
-  const progressQueueRef = useRef([]);
   const flushTimerRef = useRef(null);
   const latestBatchRef = useRef(null);
+  const readyProgressQueueRef = useRef([]);
+  const orderedApplierRef = useRef(null);
 
   useEffect(() => {
     if (!enabled) return;
     if (!runId) return;
 
     activeRunIdRef.current = runId;
-    readyFiredRef.current = false;
-    progressQueueRef.current = [];
+    readySentRef.current = false;
+    startSentRef.current = false;
     latestBatchRef.current = null;
+    readyProgressQueueRef.current = [];
 
-    const wsUrl = `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}/ws`;
+    orderedApplierRef.current = createOrderedProgressApplier({
+      applyPacket: (packet) => {
+        readyProgressQueueRef.current.push(packet);
+      },
+    });
+
+    const wsUrl = `${
+      window.location.protocol === "https:" ? "wss" : "ws"
+    }://${window.location.host}/ws`;
 
     const client = new Client({
       brokerURL: wsUrl,
@@ -128,6 +139,7 @@ export function useRunWebSocket({
         update.iteration,
         update.iterations
       );
+
       run.evaluations = mergeList(
         run.evaluations,
         update.evaluationsMerge,
@@ -176,25 +188,18 @@ export function useRunWebSocket({
       return { ...base, batches: nextBatches };
     };
 
-    const sortBySequence = (packets) =>
-      [...packets].sort((a, b) => {
-        const aSeq = a.sequenceId ?? 0;
-        const bSeq = b.sequenceId ?? 0;
-        return aSeq - bSeq;
-      });
-
     const flushProgressQueue = () => {
       if (!enabled) return;
-      const queued = progressQueueRef.current;
+
+      const queued = readyProgressQueueRef.current;
       if (!queued.length) return;
 
-      progressQueueRef.current = [];
-      const orderedPackets = sortBySequence(queued);
+      readyProgressQueueRef.current = [];
 
       setLoading(false);
       setBatch((prev) => {
         let next = prev;
-        for (const pkt of orderedPackets) {
+        for (const pkt of queued) {
           if (!pkt?.runId) continue;
           if (activeRunIdRef.current && pkt.runId !== activeRunIdRef.current) continue;
           next = mergeProgress(next, pkt);
@@ -221,29 +226,35 @@ export function useRunWebSocket({
         if (activeRunIdRef.current && data.runId !== activeRunIdRef.current) return;
 
         if (data.type === "RUN_PROGRESS") {
-          progressQueueRef.current.push(data);
+          orderedApplierRef.current?.ingest(data);
           return;
         }
 
         if (data.type === "RUN_CONNECTED") {
-          console.log("Run WebSocket connected", { runId: data.runId, message: data.message });
+          if (!startSentRef.current && runRequest) {
+            startSentRef.current = true;
+            client.publish({
+              destination: `/app/run/${runId}/start`,
+              body: JSON.stringify(runRequest),
+            });
+          }
           return;
         }
 
         if (data.type === "RUN_FINISHED") {
           flushProgressQueue();
 
-          console.log("Run WebSocket finished", { runId: data.runId, message: data.message });
           setLoading(false);
           setBatch((prev) => {
-              const next = applyCompletedRuns(prev, data.completedRuns, data.summary);
-              latestBatchRef.current = next;
-              return next;
-            });
-
+            const next = applyCompletedRuns(prev, data.completedRuns, data.summary);
+            latestBatchRef.current = next;
+            return next;
+          });
 
           setSavedRun(() => ({
             pageMode: "run",
+            runId,
+            runRequest,
             batch: latestBatchRef.current,
             studyPoints: [],
             loading: false,
@@ -251,7 +262,7 @@ export function useRunWebSocket({
             params,
             tspInstance,
             vrpInstance,
-            selectedRunKey: 0,
+            selectedRunKey: "0",
             savedAt: Date.now(),
           }));
 
@@ -267,18 +278,12 @@ export function useRunWebSocket({
         }
       });
 
-      client.publish({
-        destination: `/app/run/${runId}/connect`,
-        body: JSON.stringify({}),
-      });
-
-      if (!readyFiredRef.current) {
-        readyFiredRef.current = true;
-        try {
-          onReady?.();
-        } catch (e) {
-          console.error("onReady handler failed", e);
-        }
+      if (!readySentRef.current) {
+        readySentRef.current = true;
+        client.publish({
+          destination: `/app/run/${runId}/ready`,
+          body: JSON.stringify({ runId }),
+        });
       }
     };
 
@@ -291,8 +296,9 @@ export function useRunWebSocket({
           flushTimerRef.current = null;
         }
 
-        progressQueueRef.current = [];
+        readyProgressQueueRef.current = [];
         latestBatchRef.current = null;
+        orderedApplierRef.current?.resetAll?.();
         client.deactivate();
       } catch (e) {
         console.error("Failed to close run WebSocket", e);
@@ -301,6 +307,7 @@ export function useRunWebSocket({
   }, [
     enabled,
     runId,
+    runRequest,
     puzzleConfig,
     params,
     tspInstance,
@@ -309,6 +316,5 @@ export function useRunWebSocket({
     setError,
     setBatch,
     setSavedRun,
-    onReady,
   ]);
 }

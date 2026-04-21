@@ -1,4 +1,4 @@
-import { useMemo, useState, useRef, useCallback } from "react";
+import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import LabLeftbar from "@/shared/components/sidebars/LabLeftbar.jsx";
@@ -18,7 +18,6 @@ import {
 import { usePlayback } from "@/features/run/hooks/usePlayback.js";
 import { useRunWebSocket } from "@/features/run/hooks/useRunWebSocket.js";
 import { useRuntimeStudyWebSocket } from "@/features/run/hooks/useRuntimeStudyWebSocket.js";
-import { startRun } from "@/shared/api/run.js";
 
 export default function RunPage({ catalog, catalogLoading, catalogError }) {
   const location = useLocation();
@@ -39,7 +38,9 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
     (locationState.studyId ? "runtimeStudy" : null) ??
     restoredRun?.pageMode ??
     "run";
-  const runId = locationState.runId ?? null;
+
+  const runRequest = locationState.runRequest ?? restoredRun?.runRequest ?? null;
+  const runId = locationState.runId ?? runRequest?.runId ?? restoredRun?.runId ?? null;
   const studyId = locationState.studyId ?? null;
 
   const batchResponse = locationState.batch ?? restoredRun?.batch ?? null;
@@ -121,94 +122,10 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
     initialSpeed: 50,
   });
 
-  const startSentRef = useRef(false);
-
-  const sessionId = useMemo(() => {
-    const key = "scout:sessionId";
-    const existing = window.sessionStorage?.getItem(key);
-    if (existing) return existing;
-    const next = window.crypto?.randomUUID
-      ? window.crypto.randomUUID()
-      : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-    try {
-      window.sessionStorage?.setItem(key, next);
-    } catch {
-      // ignore
-    }
-    return next;
-  }, []);
-
-  const onRunWsReady = useCallback(async () => {
-    if (startSentRef.current) return;
-    if (pageMode !== "run") return;
-    if (!runId) return;
-
-    startSentRef.current = true;
-
-    try {
-      setLoading(true);
-      setError(null);
-
-      const runTimes = params.global?.runTimes ?? 1;
-      const logEveryIterations = params.global?.logEveryIterations ?? 100;
-      const wsUpdateEveryIterations = params.global?.wsUpdateEveryIterations ?? 100;
-
-      const searchSpaceParams = { ...(params.searchSpace ?? {}) };
-      const problemParams = { ...(params.problem ?? {}) };
-
-      const problemList = Array.isArray(puzzleConfig.problem) ? puzzleConfig.problem : [];
-      const isTSPProblem = problemList.some((p) => p.id === "tsp");
-      const isVrpProblem = problemList.some((p) => p.id === "vrp");
-
-      if (isTSPProblem && tspInstance?.cities?.length) {
-        problemParams.tspInstance = tspInstance;
-        searchSpaceParams.n = tspInstance.cities.length;
-      }
-
-      if (isVrpProblem && vrpInstance) {
-        problemParams.vrpInstance = vrpInstance;
-        searchSpaceParams.vrpInstance = vrpInstance;
-      }
-
-      const body = {
-        searchSpaceId: puzzleConfig.searchSpace?.[0]?.id ?? null,
-        searchSpaceParams,
-        problemIds: puzzleConfig.problem?.map((x) => x.id) ?? [],
-        problemParams,
-        generatorId: puzzleConfig.generator?.[0]?.id ?? null,
-        generatorParams: params.generator ?? {},
-        selectionRuleId: puzzleConfig.selection?.[0]?.id ?? null,
-        selectionRuleParams: params.selection ?? {},
-        populationModelId: puzzleConfig.populationModel?.[0]?.id ?? null,
-        populationModelParams: params.populationModel ?? {},
-        parentSelectionRuleId: puzzleConfig.parentSelectionRule?.[0]?.id ?? null,
-        parentSelectionRuleParams: params.parentSelectionRule ?? {},
-        crossoverId: puzzleConfig.crossover?.[0]?.id ?? null,
-        crossoverParams: params.crossover ?? {},
-        stopConditionIds: puzzleConfig.stopCondition?.map((x) => x.id) ?? [],
-        stopConditionParams: params.stopCondition ?? {},
-        observerIds: puzzleConfig.observer?.map((x) => x.id) ?? [],
-        observerParams: params.observer ?? {},
-        seed: params.global?.seed ?? Date.now(),
-        runTimes,
-        sessionId,
-        runId,
-        logEveryIterations,
-        wsUpdateEveryIterations,
-      };
-
-      await startRun(body);
-      // Keep loading state until we receive progress/finished/failed.
-    } catch (e) {
-      startSentRef.current = false;
-      setLoading(false);
-      setError(e?.message || "Failed to start run");
-    }
-  }, [pageMode, runId, params, puzzleConfig, tspInstance, vrpInstance, sessionId]);
-
   useRunWebSocket({
     enabled: pageMode === "run",
     runId,
+    runRequest,
     puzzleConfig,
     params,
     tspInstance,
@@ -217,7 +134,6 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
     setError,
     setBatch,
     setSavedRun,
-    onReady: onRunWsReady,
   });
 
   useRuntimeStudyWebSocket({

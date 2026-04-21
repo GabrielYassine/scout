@@ -1,5 +1,5 @@
 /**
- * Small API wrapper for starting runs and runtime studies.
+ * Small API wrapper for preparing and starting runs/runtime studies.
  * Keeps fetch/error parsing consistent across pages.
  */
 
@@ -12,6 +12,22 @@ const parseErrorMessage = async (res, fallback) => {
   }
   return fallback;
 };
+
+export async function prepareRun(body = {}) {
+  const res = await fetch("/api/run/prepare", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body ?? {}),
+  });
+
+  if (!res.ok) {
+    throw new Error(
+      await parseErrorMessage(res, `Run preparation failed with status ${res.status}`)
+    );
+  }
+
+  return await res.json();
+}
 
 export async function startRun(body) {
   const res = await fetch("/api/run", {
