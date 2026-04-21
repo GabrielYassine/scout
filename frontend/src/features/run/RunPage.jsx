@@ -253,6 +253,13 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
                       run={run}
                       runIndex={selectedBatch?.runIndex ?? "average"}
                       visibleCount={visibleCount}
+                      instanceName={
+                        run.problemId === "tsp"
+                          ? tspInstance?.name ?? null
+                          : run.problemId === "vrp"
+                            ? vrpInstance?.name ?? null
+                            : null
+                      }
                       bestFitnessBoxPlot={
                         effectiveSelectedRunKey === "average"
                           ? bestFitnessBoxPlotsByProblem[run.problemId] ?? null

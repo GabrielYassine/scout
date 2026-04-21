@@ -62,3 +62,8 @@
   font-size: 0.95rem;
   margin-bottom: 10px;
 }
+
+.chart-instance-name {
+  font-weight: 500;
+  opacity: 0.75;
+}

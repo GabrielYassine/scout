@@ -9,7 +9,7 @@ const HYPERCUBE_KEY = "__hypercube__";
 const TSP_TOUR_KEY = "__tsp-tour__";
 const BEST_FITNESS_BOXPLOT_KEY = "__boxplot__:bestFitness";
 
-function RunChart({ run, runIndex, visibleCount, bestFitnessBoxPlot = null }) {
+function RunChart({ run, runIndex, visibleCount, instanceName = null, bestFitnessBoxPlot = null }) {
   const evaluations = run?.evaluations ?? [];
   const iterations = run?.iterations ?? [];
   const series = run?.series ?? {};
@@ -239,7 +239,10 @@ function RunChart({ run, runIndex, visibleCount, bestFitnessBoxPlot = null }) {
 
   return (
     <div className="chart-panel">
-      <div className="chart-title">{run.problemId}</div>
+      <div className="chart-title">
+        {run.problemId}
+        {instanceName && <span className="chart-instance-name"> — {instanceName}</span>}
+      </div>
       {runtimeMs != null && (
         <div className="run-chart-subtitle">
           Runtime: {runtimeMs.toFixed(2)} ms
