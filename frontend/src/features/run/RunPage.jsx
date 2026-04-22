@@ -59,7 +59,10 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
   const [error, setError] = useState(initialError ?? null);
   const [layoutMode, setLayoutMode] = useState("stack");
 
-  const batches = batch?.batches ?? [];
+  const batches = useMemo(
+    () => [...(batch?.batches ?? [])].sort((a, b) => a.runIndex - b.runIndex),
+    [batch]
+  );
   const averageByProblem = batch?.summary?.averageByProblem ?? {};
   const bestFitnessBoxPlotsByProblem = batch?.summary?.bestFitnessBoxPlotsByProblem ?? {};
   const averageRunTimeByProblem = batch?.summary?.averageRunTimeByProblem ?? {};
@@ -81,7 +84,7 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
     if (restoredRun?.selectedRunKey != null) {
       return restoredRun.selectedRunKey;
     }
-    return Object.keys(averageByProblem).length > 0 ? "average" : "0";
+    return Object.keys(averageByProblem).length > 0 ? "average" : null;
   });
 
   function handleSelectedRunChange(value) {
@@ -103,7 +106,9 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
   );
 
   const selectedBatch =
-    effectiveSelectedRunKey === "average" ? null : batches[Number(effectiveSelectedRunKey)];
+    effectiveSelectedRunKey === "average"
+      ? null
+      : batches.find((b) => String(b.runIndex) === String(effectiveSelectedRunKey)) ?? null;
 
   const runs = effectiveSelectedRunKey === "average" ? averageRuns : selectedBatch?.runs ?? [];
 
@@ -244,9 +249,9 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
                         disabled={averageRuns.length === 0 && batches.length <= 1}
                       >
                         {averageRuns.length > 0 && <option value="average">Average</option>}
-                        {batches.map((batchItem, idx) => (
-                          <option key={idx} value={String(idx)}>
-                            Run {batchItem.runIndex} (Seed: {batchItem.seed})
+                        {batches.map((batchItem) => (
+                          <option key={batchItem.runIndex} value={String(batchItem.runIndex)}>
+                            Run {batchItem.runIndex + 1} (Seed: {batchItem.seed})
                           </option>
                         ))}
                         {averageRuns.length === 0 && batches.length === 0 && (

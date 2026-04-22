@@ -9,7 +9,6 @@
 
 .run-sidebar--disabled {
   opacity: 0.5;
-  pointer-events: none;
 }
 
 .run-page-content {

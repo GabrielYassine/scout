@@ -256,11 +256,6 @@ function LineCharts({
               height: 24,
               filterMode: "none",
             },
-            {
-              type: "inside",
-              xAxisIndex: 0,
-              filterMode: "none",
-            },
           ]
         : [],
       series: [

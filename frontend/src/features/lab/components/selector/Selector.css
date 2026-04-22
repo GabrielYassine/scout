@@ -58,6 +58,14 @@
     font-weight: 600;
 }
 
+.tab-button--placeholder {
+    background: var(--color-panel);
+    border: 3px solid var(--color-border);
+    border-top: none;
+    pointer-events: none;
+    cursor: default;
+}
+
 .option-list {
     display: flex;
     flex-direction: row;

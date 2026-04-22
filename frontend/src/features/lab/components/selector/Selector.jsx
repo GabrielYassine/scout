@@ -51,6 +51,8 @@ export default function Selector({
 
     const activeType = componentTypesAll.find((type) => type.key === currentActiveTab);
     const items = activeType ? (catalog?.[activeType.catalogKey] ?? []) : [];
+    const columns = 5;
+    const fillerCount = (columns - (componentTypesAll.length % columns)) % columns;
 
     const getCount = (key) => {
         if (!puzzleConfig || !puzzleConfig[key]) return 0;
@@ -195,6 +197,13 @@ export default function Selector({
                         </button>
                     );
                 })}
+                {Array.from({ length: fillerCount }).map((_, index) => (
+                  <div
+                    key={`tab-filler-${index}`}
+                    className="tab-button tab-button--placeholder"
+                    aria-hidden="true"
+                  />
+                ))}
             </div>
 
             <div className="option-list-outer">
