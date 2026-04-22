@@ -333,6 +333,10 @@ function RunChart({
     return chartPoints.slice(0, visibleCount);
   }, [chartPoints, visibleCount]);
 
+ useEffect(() => {
+   setLineChartWindowRange(null);
+ }, [effectiveObserver]);
+
   const statsVisiblePoints = useMemo(() => {
     if (!lineChartWindowRange) return visibleChartPoints;
 
@@ -412,6 +416,7 @@ function RunChart({
           />
         ) : (
           <LineCharts
+            key={`line-${run.problemId}-${runIndex}-${effectiveObserver}`}
             seriesName={effectiveObserver}
             chartPoints={visibleChartPoints}
             searchSpaceId={run?.searchSpaceId}
