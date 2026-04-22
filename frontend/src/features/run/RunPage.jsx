@@ -5,11 +5,11 @@ import LabLeftbar from "@/shared/components/sidebars/LabLeftbar.jsx";
 import LabRightbar from "@/shared/components/sidebars/LabRightbar.jsx";
 import RunChart from "@/features/run/components/charts/RunChart.jsx";
 import RuntimeStudyChart from "@/features/run/components/charts/RuntimeStudyChart.jsx";
+import RunControls from "@/features/run/components/runcontrols/RunControls.jsx";
 
 import "./RunPage.css";
 
 import { useLocalStorageState } from "@/shared/hooks/useLocalStorageState.js";
-
 import {
   computeAnimationLength,
   normalizeBatch,
@@ -19,13 +19,7 @@ import { usePlayback } from "@/features/run/hooks/usePlayback.js";
 import { useRunWebSocket } from "@/features/run/hooks/useRunWebSocket.js";
 import { useRuntimeStudyWebSocket } from "@/features/run/hooks/useRuntimeStudyWebSocket.js";
 
-export default function RunPage({ catalog, catalogLoading, catalogError }) {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const [savedRun, setSavedRun] = useLocalStorageState("scout:lastRun", null);
-
-  const locationState = location.state ?? {};
-
+function resolveRunPageState(locationState, savedRun) {
   const incomingRunId =
     locationState.runId ?? locationState.runRequest?.runId ?? null;
   const incomingStudyId =
@@ -66,45 +60,94 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
   const runId = locationState.runId ?? runRequest?.runId ?? restoredRun?.runId ?? null;
   const studyId = locationState.studyId ?? restoredRun?.studyId ?? null;
 
-  const batchResponse = locationState.batch ?? restoredRun?.batch ?? null;
-  const initialLoading =
-    shouldIgnoreIncomingState
+  return {
+    pageMode,
+    runId,
+    studyId,
+    runRequest,
+    runtimeStudyRequest:
+      locationState.runtimeStudyRequest ?? restoredRun?.runtimeStudyRequest ?? null,
+    puzzleConfig: locationState.puzzleConfig ?? restoredRun?.puzzleConfig ?? [],
+    params: locationState.params ?? restoredRun?.params ?? [],
+    tspInstance: locationState.tspInstance ?? restoredRun?.tspInstance ?? null,
+    vrpInstance: locationState.vrpInstance ?? restoredRun?.vrpInstance ?? null,
+    batchResponse: locationState.batch ?? restoredRun?.batch ?? null,
+    studyPoints: restoredRun?.studyPoints ?? [],
+    loading: shouldIgnoreIncomingState
       ? restoredRun?.loading ?? false
-      : locationState.loading ?? restoredRun?.loading ?? false;
-  const initialError = locationState.error ?? restoredRun?.error ?? null;
-  const puzzleConfig = locationState.puzzleConfig ?? restoredRun?.puzzleConfig ?? [];
-  const runtimeStudyRequest =
-    locationState.runtimeStudyRequest ?? restoredRun?.runtimeStudyRequest ?? null;
-  const params = locationState.params ?? restoredRun?.params ?? [];
-  const initialTspInstance = locationState.tspInstance ?? restoredRun?.tspInstance ?? null;
-  const initialVrpInstance = locationState.vrpInstance ?? restoredRun?.vrpInstance ?? null;
+      : locationState.loading ?? restoredRun?.loading ?? false,
+    error: locationState.error ?? restoredRun?.error ?? null,
+    restoredRun,
+    liveExecution: hasIncomingExecution,
+  };
+}
+
+function buildAverageRuns(averageByProblem, averageRunTimeByProblem) {
+  return Object.entries(averageByProblem).map(([problemId, avg]) => ({
+    problemId,
+    iterations: avg.iterations ?? [],
+    evaluations: avg.evaluations ?? [],
+    series: avg.series ?? {},
+    runtimeMs: averageRunTimeByProblem[problemId] ?? null,
+    isAverage: true,
+  }));
+}
+
+function renderNoDataPanel(title, message) {
+  return (
+    <div className="run-chart-panel">
+      <div className="run-chart-title">{title}</div>
+      <div>{message}</div>
+    </div>
+  );
+}
+
+export default function RunPage({ catalog, catalogLoading, catalogError }) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [savedRun, setSavedRun] = useLocalStorageState("scout:lastRun", null);
+
+  const locationState = location.state ?? {};
+  const resolvedState = useMemo(
+    () => resolveRunPageState(locationState, savedRun),
+    [locationState, savedRun]
+  );
+
+  const {
+    pageMode,
+    runId,
+    studyId,
+    runRequest,
+    runtimeStudyRequest,
+    puzzleConfig,
+    params,
+    tspInstance,
+    vrpInstance,
+    batchResponse,
+    studyPoints: initialStudyPoints,
+    loading: initialLoading,
+    error: initialError,
+    restoredRun,
+    liveExecution,
+  } = resolvedState;
 
   const [batch, setBatch] = useState(() => normalizeBatch(batchResponse ?? null));
-  const [studyPoints, setStudyPoints] = useState(() => restoredRun?.studyPoints ?? []);
+  const [studyPoints, setStudyPoints] = useState(() => initialStudyPoints);
   const [loading, setLoading] = useState(!!initialLoading);
   const [error, setError] = useState(initialError ?? null);
   const [layoutMode, setLayoutMode] = useState("stack");
-
-  const liveExecution = useMemo(() => hasIncomingExecution, [hasIncomingExecution]);
 
   const batches = useMemo(
     () => [...(batch?.batches ?? [])].sort((a, b) => a.runIndex - b.runIndex),
     [batch]
   );
+
   const averageByProblem = batch?.summary?.averageByProblem ?? {};
   const bestFitnessBoxPlotsByProblem = batch?.summary?.bestFitnessBoxPlotsByProblem ?? {};
   const averageRunTimeByProblem = batch?.summary?.averageRunTimeByProblem ?? {};
 
   const averageRuns = useMemo(
-    () =>
-      Object.entries(averageByProblem).map(([problemId, avg]) => ({
-        problemId,
-        iterations: avg.iterations ?? [],
-        evaluations: avg.evaluations ?? [],
-        series: avg.series ?? {},
-        runtimeMs: averageRunTimeByProblem[problemId] ?? null,
-        isAverage: true,
-      })),
+    () => buildAverageRuns(averageByProblem, averageRunTimeByProblem),
     [averageByProblem, averageRunTimeByProblem]
   );
 
@@ -136,12 +179,13 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
   const selectedBatch =
     effectiveSelectedRunKey === "average"
       ? null
-      : batches.find((b) => String(b.runIndex) === String(effectiveSelectedRunKey)) ?? null;
+      : batches.find((batchItem) => String(batchItem.runIndex) === String(effectiveSelectedRunKey)) ??
+        null;
 
-  const runs = effectiveSelectedRunKey === "average" ? averageRuns : selectedBatch?.runs ?? [];
-
-  const tspInstance = initialTspInstance;
-  const vrpInstance = initialVrpInstance;
+  const runs =
+    effectiveSelectedRunKey === "average"
+      ? averageRuns
+      : selectedBatch?.runs ?? [];
 
   const runtimeStudyProblemId =
     runtimeStudyRequest?.problemId ?? puzzleConfig?.problem?.[0]?.id ?? null;
@@ -207,134 +251,61 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
             <div>Preparing run...</div>
           </div>
         ) : error ? (
-          <div className="run-chart-panel">
-            <div className="run-chart-title">Run failed</div>
-            <div>{error}</div>
-          </div>
+          renderNoDataPanel("Run failed", error)
+        ) : pageMode === "runtimeStudy" ? (
+          studyPoints.length === 0 ? (
+            renderNoDataPanel("No runtime study data", "No study points to plot.")
+          ) : (
+            <RuntimeStudyChart
+              studyTitle="Runtime Study"
+              problemId={runtimeStudyProblemId}
+              points={studyPoints}
+              visibleCount={visibleCount}
+            />
+          )
+        ) : batches.length === 0 ? (
+          renderNoDataPanel("No run data", "No data to plot.")
         ) : (
           <>
-            {pageMode === "runtimeStudy" ? (
-              studyPoints.length === 0 ? (
-                <div className="run-chart-panel">
-                  <div className="run-chart-title">No runtime study data</div>
-                  <div>No study points to plot.</div>
-                </div>
-              ) : (
-                <RuntimeStudyChart
-                  studyTitle="Runtime Study"
-                  problemId={runtimeStudyProblemId}
-                  points={studyPoints}
+            <RunControls
+              currentAnimationLength={currentAnimationLength}
+              playbackSpeed={playbackSpeed}
+              setPlaybackSpeed={setPlaybackSpeed}
+              resetPlayback={resetPlayback}
+              averageRuns={averageRuns}
+              batches={batches}
+              effectiveSelectedRunKey={effectiveSelectedRunKey}
+              onSelectedRunChange={handleSelectedRunChange}
+              layoutMode={layoutMode}
+              setLayoutMode={setLayoutMode}
+            />
+
+            <div
+              className={`run-stack ${
+                layoutMode === "grid" ? "run-stack--grid" : "run-stack--stack"
+              }`}
+            >
+              {runs.map((run, idx) => (
+                <RunChart
+                  key={`${effectiveSelectedRunKey}-${idx}`}
+                  run={run}
+                  runIndex={selectedBatch?.runIndex ?? "average"}
                   visibleCount={visibleCount}
+                  instanceName={
+                    run.problemId === "tsp"
+                      ? tspInstance?.name ?? null
+                      : run.problemId === "vrp"
+                        ? vrpInstance?.name ?? null
+                        : null
+                  }
+                  bestFitnessBoxPlot={
+                    effectiveSelectedRunKey === "average"
+                      ? bestFitnessBoxPlotsByProblem[run.problemId] ?? null
+                      : null
+                  }
                 />
-              )
-            ) : batches.length === 0 ? (
-              <div className="run-chart-panel">
-                <div className="run-chart-title">No run data</div>
-                <div>No data to plot.</div>
-              </div>
-            ) : (
-              <>
-                <div className="run-page-controls">
-                  {!loading && !error && currentAnimationLength > 0 && (
-                    <div className="run-speed-control">
-                      <label htmlFor="playback-speed" className="field-label">
-                        Graph speed:
-                      </label>
-
-                      <div className="run-speed-slider-group">
-                        <input
-                          id="playback-speed"
-                          className="field-input run-speed-slider"
-                          type="range"
-                          min="1"
-                          max="1000"
-                          value={playbackSpeed}
-                          onChange={(e) => setPlaybackSpeed(Number(e.target.value))}
-                        />
-                        <span className="run-speed-value">{playbackSpeed}</span>
-                      </div>
-
-                      <button
-                        type="button"
-                        className="btn btn--red run-playback-button"
-                        onClick={resetPlayback}
-                      >
-                        Playback
-                      </button>
-                    </div>
-                  )}
-
-                  <div className="run-selection-row">
-                    <div className="run-selector">
-                      <label htmlFor="batch-select" className="field-label">
-                        Select Run:
-                      </label>
-                      <select
-                        id="batch-select"
-                        className="field-input"
-                        value={effectiveSelectedRunKey ?? ""}
-                        onChange={(e) => handleSelectedRunChange(e.target.value)}
-                        disabled={averageRuns.length === 0 && batches.length <= 1}
-                      >
-                        {averageRuns.length > 0 && <option value="average">Average</option>}
-                        {batches.map((batchItem) => (
-                          <option key={batchItem.runIndex} value={String(batchItem.runIndex)}>
-                            Run {batchItem.runIndex + 1} (Seed: {batchItem.seed})
-                          </option>
-                        ))}
-                        {averageRuns.length === 0 && batches.length === 0 && (
-                          <option value="0">No runs available</option>
-                        )}
-                      </select>
-                    </div>
-
-                    <div className="run-layout-toggle">
-                      <button
-                        type="button"
-                        className="btn btn--green"
-                        onClick={() => setLayoutMode("stack")}
-                      >
-                        Stacked
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn--green"
-                        onClick={() => setLayoutMode("grid")}
-                      >
-                        Grid
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  className={`run-stack ${
-                    layoutMode === "grid" ? "run-stack--grid" : "run-stack--stack"
-                  }`}
-                >
-                  {runs.map((run, idx) => (
-                    <RunChart
-                      key={`${effectiveSelectedRunKey}-${idx}`}
-                      run={run}
-                      runIndex={selectedBatch?.runIndex ?? "average"}
-                      visibleCount={visibleCount}
-                      instanceName={
-                        run.problemId === "tsp"
-                          ? tspInstance?.name ?? null
-                          : run.problemId === "vrp"
-                            ? vrpInstance?.name ?? null
-                            : null
-                      }
-                      bestFitnessBoxPlot={
-                        effectiveSelectedRunKey === "average"
-                          ? bestFitnessBoxPlotsByProblem[run.problemId] ?? null
-                          : null
-                      }
-                    />
-                  ))}
-                </div>
-              </>
-            )}
+              ))}
+            </div>
           </>
         )}
       </div>

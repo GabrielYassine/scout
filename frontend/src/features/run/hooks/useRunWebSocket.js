@@ -2,22 +2,32 @@ import { useEffect, useRef } from "react";
 import { Client } from "@stomp/stompjs";
 import { createOrderedProgressApplier } from "@/features/run/utils/orderedProgress.js";
 
-function applyCompletedRuns(prev, completedRuns, summary, runId) {
-  const base = prev ?? { runId: runId ?? null, batches: [], summary: null };
+const FLUSH_INTERVAL_MS = 75;
 
-  const metaByKey = new Map(
+function createEmptyBatch(runId = null) {
+  return {
+    runId,
+    batches: [],
+    summary: null,
+  };
+}
+
+function applyCompletedRuns(prevBatch, completedRuns, summary, runId) {
+  const base = prevBatch ?? createEmptyBatch(runId);
+
+  const completedByKey = new Map(
     (completedRuns ?? []).map((item) => [`${item.runIndex}::${item.problemId}`, item])
   );
 
-  const nextBatches = (base.batches ?? []).map((batch) => ({
+  const batches = (base.batches ?? []).map((batch) => ({
     ...batch,
     runs: (batch.runs ?? []).map((run) => {
-      const meta = metaByKey.get(`${batch.runIndex}::${run.problemId}`);
-      if (!meta) return run;
+      const completed = completedByKey.get(`${batch.runIndex}::${run.problemId}`);
+      if (!completed) return run;
 
       return {
         ...run,
-        runtimeMs: meta.runtimeMs,
+        runtimeMs: completed.runtimeMs,
       };
     }),
   }));
@@ -25,9 +35,132 @@ function applyCompletedRuns(prev, completedRuns, summary, runId) {
   return {
     ...base,
     runId: base.runId ?? runId ?? null,
-    batches: nextBatches,
+    batches,
     summary: summary ?? base.summary ?? null,
   };
+}
+
+function mergeList(prevList, operation, incomingSingle, incomingList) {
+  const prev = Array.isArray(prevList) ? prevList : [];
+  if (!operation) return prev;
+
+  if (operation === "REPLACE") {
+    if (Array.isArray(incomingList)) return [...incomingList];
+    if (incomingSingle != null) return [incomingSingle];
+    return [];
+  }
+
+  if (operation === "APPEND") {
+    if (Array.isArray(incomingList)) return [...prev, ...incomingList];
+    if (incomingSingle != null) return [...prev, incomingSingle];
+    return prev;
+  }
+
+  if (operation === "REPLACE_LAST") {
+    if (Array.isArray(incomingList)) return [...incomingList];
+    if (incomingSingle == null) return prev;
+    if (prev.length === 0) return [incomingSingle];
+
+    const next = [...prev];
+    next[next.length - 1] = incomingSingle;
+    return next;
+  }
+
+  return prev;
+}
+
+function mergeSeries(existingSeries, seriesDelta, seriesMerge) {
+  const nextSeries = { ...(existingSeries ?? {}) };
+
+  for (const [key, value] of Object.entries(seriesDelta ?? {})) {
+    const operation = seriesMerge?.[key] ?? "APPEND";
+    nextSeries[key] = mergeList(
+      nextSeries[key],
+      operation,
+      value,
+      Array.isArray(value) ? value : null
+    );
+  }
+
+  return nextSeries;
+}
+
+function trimAppendedSeriesToXAxisLength(run, seriesMerge) {
+  const xLength = Math.min(
+    run.evaluations.length,
+    run.iterations.length || run.evaluations.length
+  );
+
+  for (const [key, operation] of Object.entries(seriesMerge ?? {})) {
+    if (operation !== "APPEND") continue;
+
+    const values = run.series?.[key];
+    if (Array.isArray(values) && values.length > xLength) {
+      run.series[key] = values.slice(0, xLength);
+    }
+  }
+}
+
+function mergeProgress(prevBatch, update) {
+  const base = prevBatch ?? createEmptyBatch(update.runId);
+  const nextBatches = [...(base.batches ?? [])];
+
+  const batchIndex = nextBatches.findIndex((batch) => batch.runIndex === update.runIndex);
+  const nextBatch =
+    batchIndex >= 0
+      ? { ...nextBatches[batchIndex] }
+      : { runIndex: update.runIndex, seed: update.seed, runs: [] };
+
+  const nextRuns = [...(nextBatch.runs ?? [])];
+  const runIndex = nextRuns.findIndex((run) => run.problemId === update.problemId);
+
+  const nextRun =
+    runIndex >= 0
+      ? { ...nextRuns[runIndex] }
+      : {
+          problemId: update.problemId,
+          iterations: [],
+          evaluations: [],
+          series: {},
+          runtimeMs: null,
+          finalEvaluations: 0,
+        };
+
+  nextRun.iterations = mergeList(
+    nextRun.iterations,
+    update.iterationsMerge,
+    update.iteration,
+    update.iterations
+  );
+
+  nextRun.evaluations = mergeList(
+    nextRun.evaluations,
+    update.evaluationsMerge,
+    update.evaluation,
+    update.evaluations
+  );
+
+  nextRun.series = mergeSeries(nextRun.series, update.seriesDelta, update.seriesMerge);
+  trimAppendedSeriesToXAxisLength(nextRun, update.seriesMerge);
+
+  nextRuns[runIndex >= 0 ? runIndex : nextRuns.length] = nextRun;
+  nextBatch.runs = nextRuns;
+
+  if (batchIndex >= 0) {
+    nextBatches[batchIndex] = nextBatch;
+  } else {
+    nextBatches.push(nextBatch);
+  }
+
+  return {
+    ...base,
+    batches: nextBatches,
+  };
+}
+
+function createWebSocketUrl() {
+  const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+  return `${protocol}://${window.location.host}/ws`;
 }
 
 export function useRunWebSocket({
@@ -53,8 +186,7 @@ export function useRunWebSocket({
   const orderedApplierRef = useRef(null);
 
   useEffect(() => {
-    if (!enabled) return;
-    if (!runId) return;
+    if (!enabled || !runId) return;
 
     activeRunIdRef.current = runId;
     readySentRef.current = false;
@@ -68,218 +200,118 @@ export function useRunWebSocket({
       },
     });
 
-    const wsUrl = `${
-      window.location.protocol === "https:" ? "wss" : "ws"
-    }://${window.location.host}/ws`;
-
     const client = new Client({
-      brokerURL: wsUrl,
+      brokerURL: createWebSocketUrl(),
       reconnectDelay: 0,
     });
-
-    const FLUSH_INTERVAL_MS = 75;
-
-    const mergeList = (prevList, op, incomingSingle, incomingList) => {
-      const prev = Array.isArray(prevList) ? prevList : [];
-      if (!op) return prev;
-
-      if (op === "REPLACE") {
-        if (Array.isArray(incomingList)) return [...incomingList];
-        if (incomingSingle != null) return [incomingSingle];
-        return [];
-      }
-
-      if (op === "APPEND") {
-        if (Array.isArray(incomingList)) return [...prev, ...incomingList];
-        if (incomingSingle != null) return [...prev, incomingSingle];
-        return prev;
-      }
-
-      if (op === "REPLACE_LAST") {
-        if (Array.isArray(incomingList)) return [...incomingList];
-        if (incomingSingle == null) return prev;
-        if (prev.length === 0) return [incomingSingle];
-        const next = [...prev];
-        next[next.length - 1] = incomingSingle;
-        return next;
-      }
-
-      return prev;
-    };
-
-    const mergeProgress = (prev, update) => {
-      const base = prev ?? { runId: update.runId, batches: [], summary: null };
-      const nextBatches = [...(base.batches ?? [])];
-
-      const batchIndex = nextBatches.findIndex((b) => b.runIndex === update.runIndex);
-      const runGroup =
-        batchIndex >= 0
-          ? { ...nextBatches[batchIndex] }
-          : { runIndex: update.runIndex, seed: update.seed, runs: [] };
-
-      const runsList = [...(runGroup.runs ?? [])];
-      const runIndex = runsList.findIndex((r) => r.problemId === update.problemId);
-
-      const run =
-        runIndex >= 0
-          ? { ...runsList[runIndex] }
-          : {
-              problemId: update.problemId,
-              iterations: [],
-              evaluations: [],
-              series: {},
-              runtimeMs: null,
-              finalEvaluations: 0,
-            };
-
-      run.iterations = mergeList(
-        run.iterations,
-        update.iterationsMerge,
-        update.iteration,
-        update.iterations
-      );
-
-      run.evaluations = mergeList(
-        run.evaluations,
-        update.evaluationsMerge,
-        update.evaluation,
-        update.evaluations
-      );
-
-      const seriesDelta = update.seriesDelta ?? {};
-      const seriesMerge = update.seriesMerge ?? {};
-
-      const nextSeries = { ...(run.series ?? {}) };
-      for (const [key, value] of Object.entries(seriesDelta)) {
-        const op = seriesMerge[key] ?? "APPEND";
-        nextSeries[key] = mergeList(
-          nextSeries[key],
-          op,
-          value,
-          Array.isArray(value) ? value : null
-        );
-      }
-      run.series = nextSeries;
-
-      const xLen = Math.min(
-        run.evaluations.length,
-        run.iterations.length || run.evaluations.length
-      );
-
-      for (const [key, op] of Object.entries(seriesMerge)) {
-        if (op === "APPEND") {
-          const arr = run.series?.[key];
-          if (Array.isArray(arr) && arr.length > xLen) {
-            run.series[key] = arr.slice(0, xLen);
-          }
-        }
-      }
-
-      runsList[runIndex >= 0 ? runIndex : runsList.length] = run;
-      runGroup.runs = runsList;
-
-      if (batchIndex >= 0) {
-        nextBatches[batchIndex] = runGroup;
-      } else {
-        nextBatches.push(runGroup);
-      }
-
-      return { ...base, batches: nextBatches };
-    };
 
     const flushProgressQueue = () => {
       if (!enabled) return;
 
-      const queued = readyProgressQueueRef.current;
-      if (!queued.length) return;
+      const queuedPackets = readyProgressQueueRef.current;
+      if (!queuedPackets.length) return;
 
       readyProgressQueueRef.current = [];
 
-      let next = latestBatchRef.current ?? null;
+      let nextBatch = latestBatchRef.current ?? null;
 
-      for (const pkt of queued) {
-        if (!pkt?.runId) continue;
-        if (activeRunIdRef.current && pkt.runId !== activeRunIdRef.current) continue;
-        next = mergeProgress(next, pkt);
+      for (const packet of queuedPackets) {
+        if (!packet?.runId) continue;
+        if (activeRunIdRef.current && packet.runId !== activeRunIdRef.current) continue;
+        nextBatch = mergeProgress(nextBatch, packet);
       }
 
-      latestBatchRef.current = next;
+      latestBatchRef.current = nextBatch;
       setLoading(false);
-      setBatch(next);
+      setBatch(nextBatch);
     };
 
-    flushTimerRef.current = setInterval(flushProgressQueue, FLUSH_INTERVAL_MS);
+    const handleRunConnected = () => {
+      if (startSentRef.current || !runRequest) return;
+
+      startSentRef.current = true;
+      client.publish({
+        destination: `/app/run/${runId}/start`,
+        body: JSON.stringify(runRequest),
+      });
+    };
+
+    const handleRunFinished = (message) => {
+      flushProgressQueue();
+
+      const finishedBatch = applyCompletedRuns(
+        latestBatchRef.current,
+        message.completedRuns,
+        message.summary,
+        message.runId ?? runId
+      );
+
+      latestBatchRef.current = finishedBatch;
+      setLoading(false);
+      setBatch(finishedBatch);
+
+      setSavedRun(() => ({
+        pageMode: "run",
+        runId,
+        runRequest,
+        batch: finishedBatch,
+        studyPoints: [],
+        loading: false,
+        puzzleConfig,
+        params,
+        tspInstance,
+        vrpInstance,
+        selectedRunKey: "0",
+        savedAt: Date.now(),
+      }));
+
+      client.deactivate();
+    };
+
+    const handleRunFailed = (message) => {
+      flushProgressQueue();
+      setLoading(false);
+      setError(message.message || "Run failed");
+      client.deactivate();
+    };
+
+    const handleSocketMessage = (rawMessage) => {
+      let message;
+      try {
+        message = JSON.parse(rawMessage.body);
+      } catch {
+        return;
+      }
+
+      if (!message?.runId) return;
+      if (activeRunIdRef.current && message.runId !== activeRunIdRef.current) return;
+
+      switch (message.type) {
+        case "RUN_PROGRESS":
+          orderedApplierRef.current?.ingest(message);
+          return;
+
+        case "RUN_CONNECTED":
+          handleRunConnected();
+          return;
+
+        case "RUN_FINISHED":
+          handleRunFinished(message);
+          return;
+
+        case "RUN_FAILED":
+          handleRunFailed(message);
+          return;
+
+        default:
+          return;
+      }
+    };
 
     client.onConnect = () => {
       activeRunIdRef.current = runId;
 
-      client.subscribe(`/topic/run/${runId}`, (message) => {
-        let data;
-        try {
-          data = JSON.parse(message.body);
-        } catch {
-          return;
-        }
-
-        if (!data?.runId) return;
-        if (activeRunIdRef.current && data.runId !== activeRunIdRef.current) return;
-
-        if (data.type === "RUN_PROGRESS") {
-          orderedApplierRef.current?.ingest(data);
-          return;
-        }
-
-        if (data.type === "RUN_CONNECTED") {
-          if (!startSentRef.current && runRequest) {
-            startSentRef.current = true;
-            client.publish({
-              destination: `/app/run/${runId}/start`,
-              body: JSON.stringify(runRequest),
-            });
-          }
-          return;
-        }
-
-        if (data.type === "RUN_FINISHED") {
-          flushProgressQueue();
-
-          const finishedBatch = applyCompletedRuns(
-            latestBatchRef.current,
-            data.completedRuns,
-            data.summary,
-            data.runId ?? runId
-          );
-
-          latestBatchRef.current = finishedBatch;
-          setLoading(false);
-          setBatch(finishedBatch);
-
-          setSavedRun(() => ({
-            pageMode: "run",
-            runId,
-            runRequest,
-            batch: finishedBatch,
-            studyPoints: [],
-            loading: false,
-            puzzleConfig,
-            params,
-            tspInstance,
-            vrpInstance,
-            selectedRunKey: "0",
-            savedAt: Date.now(),
-          }));
-
-          client.deactivate();
-          return;
-        }
-
-        if (data.type === "RUN_FAILED") {
-          flushProgressQueue();
-          setLoading(false);
-          setError(data.message || "Run failed");
-          client.deactivate();
-        }
-      });
+      client.subscribe(`/topic/run/${runId}`, handleSocketMessage);
 
       if (!readySentRef.current) {
         readySentRef.current = true;
@@ -290,6 +322,7 @@ export function useRunWebSocket({
       }
     };
 
+    flushTimerRef.current = setInterval(flushProgressQueue, FLUSH_INTERVAL_MS);
     client.activate();
 
     return () => {
