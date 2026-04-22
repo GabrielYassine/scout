@@ -31,23 +31,34 @@ function BoxPlotChart({
 
     const displaySeriesName = isPermutationFitness ? "tourLength" : seriesName;
     const resolvedYAxisLabel = yAxisLabel ?? displaySeriesName;
+    const entries = xValues
+     .map((x, i) => {
+       const row = rawBoxplots[i];
+       if (!Array.isArray(row) || row.length !== 5) return null;
 
-    const boxplots = rawBoxplots
-      .map((row) => {
-        if (!Array.isArray(row) || row.length !== 5) return null;
+       const values = row.map(Number);
+       if (!values.every(Number.isFinite)) return null;
 
-        const values = row.map(Number);
-        if (!values.every(Number.isFinite)) return null;
+       const normalized = isPermutationFitness
+         ? [-values[4], -values[3], -values[2], -values[1], -values[0]]
+         : values;
 
-        if (!isPermutationFitness) return values;
+       const [min, q1, median, q3, max] = normalized;
 
-        return [-values[4], -values[3], -values[2], -values[1], -values[0]];
-      })
-      .filter(Boolean);
+       return {
+         label: String(x),
+         item: {
+           value: normalized,
+           rawStats: { min, q1, median, q3, max },
+         },
+       };
+     })
+     .filter(Boolean);
 
-    if (!boxplots.length) return null;
+    if (!entries.length) return null;
 
-    const labels = xValues.slice(0, boxplots.length).map(String);
+    const labels = entries.map((entry) => entry.label);
+    const seriesData = entries.map((entry) => entry.item);
 
     return {
       animation: false,
@@ -58,21 +69,22 @@ function BoxPlotChart({
         left: 64,
         containLabel: true,
       },
-      tooltip: {
-        trigger: "item",
-        formatter: (params) => {
-          const value = params?.data ?? [];
-          return [
-            displaySeriesName,
-            `${xAxisLabel}: ${params?.name ?? "-"}`,
-            `Min: ${value[0] ?? "-"}`,
-            `Q1: ${value[1] ?? "-"}`,
-            `Median: ${value[2] ?? "-"}`,
-            `Q3: ${value[3] ?? "-"}`,
-            `Max: ${value[4] ?? "-"}`,
-          ].join("<br/>");
-        },
-      },
+    tooltip: {
+       trigger: "item",
+       formatter: (params) => {
+         const { min, q1, median, q3, max } = params?.data?.rawStats ?? {};
+
+         return [
+           displaySeriesName,
+           `${xAxisLabel}: ${params?.name ?? "-"}`,
+           `Min: ${Number.isFinite(min) ? min : "-"}`,
+           `Q1: ${Number.isFinite(q1) ? q1 : "-"}`,
+           `Median: ${Number.isFinite(median) ? median : "-"}`,
+           `Q3: ${Number.isFinite(q3) ? q3 : "-"}`,
+           `Max: ${Number.isFinite(max) ? max : "-"}`,
+         ].join("<br/>");
+       },
+     },
       xAxis: {
         type: "category",
         data: labels,
@@ -94,7 +106,7 @@ function BoxPlotChart({
         {
           name: `${displaySeriesName} boxplot`,
           type: "boxplot",
-          data: boxplots,
+          data: seriesData,
         },
       ],
     };
