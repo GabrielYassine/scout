@@ -18,7 +18,7 @@ export function useLocalStorageState(key, initialValue) {
         localStorage.setItem(key, JSON.stringify(value));
       }
     } catch {
-      console.warn(`Could not store localStorage item with key "${key}"`);
+      // ignore storage errors
     }
   }, [key, value]);
 

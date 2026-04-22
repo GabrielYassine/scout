@@ -14,9 +14,7 @@ export function useSessionStorageState(key, initialValue) {
     try {
       sessionStorage.setItem(key, JSON.stringify(value));
     } catch {
-      console.warn(
-        `Could not store sessionStorage item with key "${key}"`
-      );
+      // ignore storage errors
     }
   }, [key, value]);
 

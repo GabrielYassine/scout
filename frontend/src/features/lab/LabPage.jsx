@@ -12,6 +12,176 @@ import { usePuzzleConfig } from "@/shared/contexts/usePuzzleConfig.js";
 import { useLocalStorageState } from "@/shared/hooks/useLocalStorageState.js";
 import { prepareRun } from "@/shared/api/run.js";
 
+const SESSION_STORAGE_KEY = "scout:sessionId";
+
+function generateId() {
+  return window.crypto?.randomUUID
+    ? window.crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function parseProblemSizes(text) {
+  return String(text ?? "")
+    .split(",")
+    .map((s) => Number(s.trim()))
+    .filter((n) => Number.isInteger(n) && n > 0);
+}
+
+function getProblemFlags(problemList) {
+  return {
+    isTspProblem: problemList.some((p) => p.id === "tsp"),
+    isVrpProblem: problemList.some((p) => p.id === "vrp"),
+  };
+}
+
+function validateProblemInstances({ problemList, tspInstance, vrpInstance }) {
+  const { isTspProblem, isVrpProblem } = getProblemFlags(problemList);
+
+  const hasValidTspInstance =
+    Array.isArray(tspInstance?.cities) && tspInstance.cities.length > 0;
+
+  const hasValidVrpInstance =
+    Array.isArray(vrpInstance?.customers) &&
+    vrpInstance.customers.length > 0 &&
+    vrpInstance?.depot != null;
+
+  if (isTspProblem && !hasValidTspInstance) {
+    throw new Error("Please upload or create a TSP instance before running a TSP problem.");
+  }
+
+  if (isVrpProblem && !hasValidVrpInstance) {
+    throw new Error("Please upload or create a VRP instance before running a VRP problem.");
+  }
+
+  return { isTspProblem, isVrpProblem };
+}
+
+function buildProblemParams({ baseProblemParams, tspInstance, vrpInstance, isVrpProblem }) {
+  const problemParams = { ...baseProblemParams };
+
+  if (tspInstance?.cities?.length > 0) {
+    problemParams.tspInstance = tspInstance;
+  }
+
+  if (isVrpProblem && vrpInstance) {
+    problemParams.vrpInstance = vrpInstance;
+  }
+
+  return problemParams;
+}
+
+function buildSearchSpaceParams({
+  baseSearchSpaceParams,
+  tspInstance,
+  vrpInstance,
+  isTspProblem,
+  isVrpProblem,
+}) {
+  const searchSpaceParams = { ...baseSearchSpaceParams };
+
+  if (isTspProblem && tspInstance?.cities?.length > 0) {
+    searchSpaceParams.n = tspInstance.cities.length;
+  }
+
+  if (isVrpProblem && vrpInstance) {
+    searchSpaceParams.vrpInstance = vrpInstance;
+  }
+
+  return searchSpaceParams;
+}
+
+function getExistingSessionId() {
+  return window.sessionStorage?.getItem(SESSION_STORAGE_KEY) ?? null;
+}
+
+function persistSessionId(sessionId) {
+  try {
+    window.sessionStorage?.setItem(SESSION_STORAGE_KEY, sessionId);
+  } catch {
+    // ignore storage errors
+  }
+}
+
+function ensureSessionId(existingSessionId) {
+  if (existingSessionId) return existingSessionId;
+  const next = generateId();
+  persistSessionId(next);
+  return next;
+}
+
+function buildRuntimeStudyRequest({
+  studyId,
+  sessionId,
+  puzzleConfig,
+  params,
+  searchSpaceParams,
+  problemParams,
+  seed,
+  problemSizes,
+}) {
+  return {
+    studyId,
+    sessionId,
+    searchSpaceId: puzzleConfig.searchSpace?.[0]?.id ?? null,
+    searchSpaceParams,
+    problemId: puzzleConfig.problem?.[0]?.id ?? null,
+    problemParams,
+    generatorId: puzzleConfig.generator?.[0]?.id ?? null,
+    generatorParams: params.generator,
+    selectionRuleId: puzzleConfig.selection?.[0]?.id ?? null,
+    selectionRuleParams: params.selection,
+    populationModelId: puzzleConfig.populationModel?.[0]?.id ?? null,
+    populationModelParams: params.populationModel,
+    parentSelectionRuleId: puzzleConfig.parentSelectionRule?.[0]?.id ?? null,
+    parentSelectionRuleParams: params.parentSelectionRule,
+    crossoverId: puzzleConfig.crossover?.[0]?.id ?? null,
+    crossoverParams: params.crossover,
+    stopConditionIds: puzzleConfig.stopCondition?.map((x) => x.id) ?? [],
+    stopConditionParams: params.stopCondition,
+    seed,
+    problemSizes,
+    repetitionsPerSize: params.global?.repetitionsPerSize ?? 30,
+    wsUpdateEverySizes: params.global?.wsUpdateEverySizes ?? 1,
+  };
+}
+
+function buildRunRequest({
+  runId,
+  sessionId,
+  puzzleConfig,
+  params,
+  searchSpaceParams,
+  problemParams,
+  seed,
+}) {
+  return {
+    searchSpaceId: puzzleConfig.searchSpace?.[0]?.id ?? null,
+    searchSpaceParams,
+    problemIds: puzzleConfig.problem?.map((x) => x.id) ?? [],
+    problemParams,
+    generatorId: puzzleConfig.generator?.[0]?.id ?? null,
+    generatorParams: params.generator,
+    selectionRuleId: puzzleConfig.selection?.[0]?.id ?? null,
+    selectionRuleParams: params.selection,
+    populationModelId: puzzleConfig.populationModel?.[0]?.id ?? null,
+    populationModelParams: params.populationModel,
+    parentSelectionRuleId: puzzleConfig.parentSelectionRule?.[0]?.id ?? null,
+    parentSelectionRuleParams: params.parentSelectionRule,
+    crossoverId: puzzleConfig.crossover?.[0]?.id ?? null,
+    crossoverParams: params.crossover,
+    stopConditionIds: puzzleConfig.stopCondition?.map((x) => x.id) ?? [],
+    stopConditionParams: params.stopCondition,
+    observerIds: puzzleConfig.observer?.map((x) => x.id) ?? [],
+    observerParams: params.observer,
+    seed,
+    runTimes: params.global?.runTimes ?? 1,
+    sessionId,
+    runId,
+    logEveryIterations: params.global?.logEveryIterations ?? 100,
+    wsUpdateEveryIterations: params.global?.wsUpdateEveryIterations ?? 100,
+  };
+}
+
 export default function LabPage({
   catalog,
   catalogLoading,
@@ -48,12 +218,13 @@ export default function LabPage({
   }, []);
 
   function showToast(message) {
-    if (toastVisible) return;
     setToastMessage(message);
     setToastVisible(true);
+
     if (toastTimeoutRef.current) {
       clearTimeout(toastTimeoutRef.current);
     }
+
     toastTimeoutRef.current = setTimeout(() => {
       setToastVisible(false);
     }, 3500);
@@ -87,115 +258,53 @@ export default function LabPage({
     setHoverInfo(null);
   }
 
-  const parseProblemSizes = (text) =>
-    String(text ?? "")
-      .split(",")
-      .map((s) => Number(s.trim()))
-      .filter((n) => Number.isInteger(n) && n > 0);
-
   async function onRun() {
     try {
       const experimentType = params.global?.experimentType ?? "run";
       const seed = params.global?.seed ?? Date.now();
-
-      const sessionStorageKey = "scout:sessionId";
-      const existingSessionId = window.sessionStorage?.getItem(sessionStorageKey) ?? null;
+      const existingSessionId = getExistingSessionId();
 
       const problemList = Array.isArray(puzzleConfig.problem) ? puzzleConfig.problem : [];
+      const { isTspProblem, isVrpProblem } = validateProblemInstances({
+        problemList,
+        tspInstance,
+        vrpInstance,
+      });
 
-      const isTspProblem = problemList.some((p) => p.id === "tsp");
-      const isVrpProblem = problemList.some((p) => p.id === "vrp");
+      const problemParams = buildProblemParams({
+        baseProblemParams: params.problem,
+        tspInstance,
+        vrpInstance,
+        isVrpProblem,
+      });
 
-      const hasValidTspInstance =
-        Array.isArray(tspInstance?.cities) && tspInstance.cities.length > 0;
-
-      const hasValidVrpInstance =
-        Array.isArray(vrpInstance?.customers) &&
-        vrpInstance.customers.length > 0 &&
-        vrpInstance?.depot != null;
-
-      if (isTspProblem && !hasValidTspInstance) {
-        showToast("Please upload or create a TSP instance before running a TSP problem.");
-        return;
-      }
-
-      if (isVrpProblem && !hasValidVrpInstance) {
-        showToast("Please upload or create a VRP instance before running a VRP problem.");
-        return;
-      }
-
-      const problemParams = { ...params.problem };
-
-      if (tspInstance?.cities?.length > 0) {
-        problemParams.tspInstance = tspInstance;
-      }
-
-      if (isVrpProblem && vrpInstance) {
-        problemParams.vrpInstance = vrpInstance;
-      }
-
-      const searchSpaceParams = { ...params.searchSpace };
-
-      if (isTspProblem && tspInstance?.cities?.length > 0) {
-        searchSpaceParams.n = tspInstance.cities.length;
-      }
-
-      if (isVrpProblem && vrpInstance) {
-        searchSpaceParams.vrpInstance = vrpInstance;
-      }
+      const searchSpaceParams = buildSearchSpaceParams({
+        baseSearchSpaceParams: params.searchSpace,
+        tspInstance,
+        vrpInstance,
+        isTspProblem,
+        isVrpProblem,
+      });
 
       if (experimentType === "runtimeStudy") {
-        const sessionId = (() => {
-          if (existingSessionId) return existingSessionId;
-
-          const next = window.crypto?.randomUUID
-            ? window.crypto.randomUUID()
-            : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-
-          try {
-            window.sessionStorage?.setItem(sessionStorageKey, next);
-          } catch {
-            // ignore storage errors; request will fail if backend requires sessionId
-          }
-
-          return next;
-        })();
-
-        const repetitionsPerSize = params.global?.repetitionsPerSize ?? 30;
+        const sessionId = ensureSessionId(existingSessionId);
         const problemSizes = parseProblemSizes(params.global?.problemSizes);
-        const wsUpdateEverySizes = params.global?.wsUpdateEverySizes ?? 1;
-        const studyId = window.crypto?.randomUUID
-          ? window.crypto.randomUUID()
-          : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
         if (problemSizes.length === 0) {
           throw new Error("Please enter at least one valid problem size");
         }
 
-        const body = {
+        const studyId = generateId();
+        const runtimeStudyRequest = buildRuntimeStudyRequest({
           studyId,
           sessionId,
-          searchSpaceId: puzzleConfig.searchSpace?.[0]?.id ?? null,
+          puzzleConfig,
+          params,
           searchSpaceParams,
-          problemId: puzzleConfig.problem?.[0]?.id ?? null,
           problemParams,
-          generatorId: puzzleConfig.generator?.[0]?.id ?? null,
-          generatorParams: params.generator,
-          selectionRuleId: puzzleConfig.selection?.[0]?.id ?? null,
-          selectionRuleParams: params.selection,
-          populationModelId: puzzleConfig.populationModel?.[0]?.id ?? null,
-          populationModelParams: params.populationModel,
-          parentSelectionRuleId: puzzleConfig.parentSelectionRule?.[0]?.id ?? null,
-          parentSelectionRuleParams: params.parentSelectionRule,
-          crossoverId: puzzleConfig.crossover?.[0]?.id ?? null,
-          crossoverParams: params.crossover,
-          stopConditionIds: puzzleConfig.stopCondition?.map((x) => x.id) ?? [],
-          stopConditionParams: params.stopCondition,
           seed,
           problemSizes,
-          repetitionsPerSize,
-          wsUpdateEverySizes,
-        };
+        });
 
         setSavedRun({
           pageMode: "runtimeStudy",
@@ -207,7 +316,7 @@ export default function LabPage({
           params,
           tspInstance,
           vrpInstance,
-          runtimeStudyRequest: body,
+          runtimeStudyRequest,
           savedAt: Date.now(),
         });
 
@@ -220,7 +329,7 @@ export default function LabPage({
             tspInstance,
             vrpInstance,
             studyId,
-            runtimeStudyRequest: body,
+            runtimeStudyRequest,
           },
         });
         return;
@@ -234,42 +343,17 @@ export default function LabPage({
         throw new Error("Backend did not return sessionId and runId");
       }
 
-      try {
-        window.sessionStorage?.setItem(sessionStorageKey, sessionId);
-      } catch {
-        // ignore
-      }
+      persistSessionId(sessionId);
 
-      const runTimes = params.global?.runTimes ?? 1;
-      const logEveryIterations = params.global?.logEveryIterations ?? 100;
-      const wsUpdateEveryIterations = params.global?.wsUpdateEveryIterations ?? 100;
-
-      const runRequest = {
-        searchSpaceId: puzzleConfig.searchSpace?.[0]?.id ?? null,
-        searchSpaceParams,
-        problemIds: puzzleConfig.problem?.map((x) => x.id) ?? [],
-        problemParams,
-        generatorId: puzzleConfig.generator?.[0]?.id ?? null,
-        generatorParams: params.generator,
-        selectionRuleId: puzzleConfig.selection?.[0]?.id ?? null,
-        selectionRuleParams: params.selection,
-        populationModelId: puzzleConfig.populationModel?.[0]?.id ?? null,
-        populationModelParams: params.populationModel,
-        parentSelectionRuleId: puzzleConfig.parentSelectionRule?.[0]?.id ?? null,
-        parentSelectionRuleParams: params.parentSelectionRule,
-        crossoverId: puzzleConfig.crossover?.[0]?.id ?? null,
-        crossoverParams: params.crossover,
-        stopConditionIds: puzzleConfig.stopCondition?.map((x) => x.id) ?? [],
-        stopConditionParams: params.stopCondition,
-        observerIds: puzzleConfig.observer?.map((x) => x.id) ?? [],
-        observerParams: params.observer,
-        seed,
-        runTimes,
-        sessionId,
+      const runRequest = buildRunRequest({
         runId,
-        logEveryIterations,
-        wsUpdateEveryIterations,
-      };
+        sessionId,
+        puzzleConfig,
+        params,
+        searchSpaceParams,
+        problemParams,
+        seed,
+      });
 
       setSavedRun({
         pageMode: "run",
