@@ -138,6 +138,10 @@ function RunChart({ run, runIndex, visibleCount, instanceName = null, bestFitnes
 
   const [lineChartWindowRange, setLineChartWindowRange] = useState(null);
 
+ useEffect(() => {
+   setLineChartWindowRange(null);
+ }, [effectiveObserver]);
+
   const statsVisiblePoints = useMemo(() => {
     if (!lineChartWindowRange) return visibleData;
     return visibleData.filter(([x]) => x >= lineChartWindowRange.min && x <= lineChartWindowRange.max);
@@ -266,6 +270,7 @@ function RunChart({ run, runIndex, visibleCount, instanceName = null, bestFitnes
           />
         ) : (
           <LineCharts
+            key={`line-${run.problemId}-${runIndex}-${effectiveObserver}`}
             seriesName={effectiveObserver}
             chartPoints={visibleData}
             searchSpaceId={run?.searchSpaceId}
@@ -314,4 +319,3 @@ function RunChart({ run, runIndex, visibleCount, instanceName = null, bestFitnes
 }
 
 export default memo(RunChart);
-

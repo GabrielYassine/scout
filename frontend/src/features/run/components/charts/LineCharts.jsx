@@ -150,6 +150,7 @@ function LineCharts({
 }) {
   const echartsRef = useRef(null);
   const chartInstanceRef = useRef(null);
+  const userHasZoomedRef = useRef(false);
   const [windowRange, setWindowRange] = useState(null);
 
   const isPermutationFitness = useMemo(() => {
@@ -204,11 +205,63 @@ function LineCharts({
     }
     const xs = displayChartPoints.map(([x]) => Number(x)).filter(Number.isFinite);
     if (!xs.length) return null;
-    return { min: Math.min(...xs), max: Math.max(...xs) };
+
+    return {
+      min: Math.min(...xs),
+      max: Math.max(...xs),
+    };
   }, [displayChartPoints]);
 
-  // Stable base option: keep structure stable so ECharts can diff efficiently.
-  // Data and markArea are applied via setOption in effects.
+  const rangesEqual = useCallback((a, b) => {
+    if (!a || !b) return false;
+    return Math.abs(a.min - b.min) < 1e-9 && Math.abs(a.max - b.max) < 1e-9;
+  }, []);
+
+  const clampRange = useCallback((range, fullRange) => {
+    if (!range || !fullRange) return fullRange ?? null;
+    return {
+      min: Math.max(fullRange.min, Math.min(range.min, fullRange.max)),
+      max: Math.max(fullRange.min, Math.min(range.max, fullRange.max)),
+    };
+  }, []);
+
+  const resolveZoomRange = useCallback((zoom, fullRange) => {
+    if (!fullRange) return null;
+    if (!zoom) return fullRange;
+
+    const startValue = Number(zoom.startValue);
+    const endValue = Number(zoom.endValue);
+
+    if (Number.isFinite(startValue) && Number.isFinite(endValue)) {
+      return clampRange(
+        {
+          min: Math.min(startValue, endValue),
+          max: Math.max(startValue, endValue),
+        },
+        fullRange
+      );
+    }
+
+    const startPercent = Number(zoom.start);
+    const endPercent = Number(zoom.end);
+
+    if (Number.isFinite(startPercent) && Number.isFinite(endPercent)) {
+      const startPct = Math.min(startPercent, endPercent) / 100;
+      const endPct = Math.max(startPercent, endPercent) / 100;
+      const span = fullRange.max - fullRange.min;
+
+      return clampRange(
+        {
+          min: fullRange.min + startPct * span,
+          max: fullRange.min + endPct * span,
+        },
+        fullRange
+      );
+    }
+
+    return fullRange;
+  }, [clampRange]);
+
   const baseOption = useMemo(() => {
     if (!seriesName) return null;
 
@@ -279,8 +332,7 @@ function LineCharts({
 
   const applySeriesPatch = useCallback(
     (chartInstance) => {
-      if (!chartInstance) return;
-      if (!seriesName) return;
+      if (!chartInstance || !seriesName) return;
 
       const seriesPatch = {
         name: displaySeriesName,
@@ -323,21 +375,25 @@ function LineCharts({
 
   // Keep windowRange in sync when new points arrive.
   useEffect(() => {
-    if (!dataXRange) return;
-    if (!windowRange) {
-      setWindowRange(dataXRange);
-      onWindowRangeChange?.(dataXRange);
+    userHasZoomedRef.current = false;
+    setWindowRange(null);
+    onWindowRangeChange?.(null);
+  }, [seriesName, onWindowRangeChange]);
+
+  useEffect(() => {
+    if (!dataXRange) {
+      setWindowRange(null);
+      onWindowRangeChange?.(null);
       return;
     }
-    const next = {
-      min: Math.min(windowRange.min, dataXRange.min),
-      max: Math.max(windowRange.max, dataXRange.max),
-    };
-    if (next.min !== windowRange.min || next.max !== windowRange.max) {
-      setWindowRange(next);
-      onWindowRangeChange?.(next);
+
+    if (!userHasZoomedRef.current) {
+      if (!windowRange || !rangesEqual(windowRange, dataXRange)) {
+        setWindowRange(dataXRange);
+        onWindowRangeChange?.(dataXRange);
+      }
     }
-  }, [dataXRange, windowRange, onWindowRangeChange]);
+  }, [dataXRange, windowRange, rangesEqual, onWindowRangeChange]);
 
   const visiblePoints = useMemo(() => {
     if (!windowRange || !displayChartPoints.length) return displayChartPoints;
@@ -346,40 +402,54 @@ function LineCharts({
 
   const updateRangeFromInstance = useCallback(
     (chartInstance) => {
-      if (!chartInstance) return;
-      const optionRef = chartInstance.getOption?.();
-      const zoom = optionRef?.dataZoom?.[0];
-      const start = Number(zoom?.startValue ?? zoom?.start);
-      const end = Number(zoom?.endValue ?? zoom?.end);
-      if (Number.isFinite(start) && Number.isFinite(end)) {
-        const range = { min: Math.min(start, end), max: Math.max(start, end) };
-        setWindowRange(range);
-        onWindowRangeChange?.(range);
-        return;
-      }
+      if (!chartInstance || !dataXRange) return;
 
-      if (dataXRange) {
-        setWindowRange(dataXRange);
-        onWindowRangeChange?.(dataXRange);
+      const optionRef = chartInstance.getOption?.();
+      const zoomEntries = optionRef?.dataZoom ?? [];
+      const zoom =
+        zoomEntries.find((z) => Number(z?.xAxisIndex ?? 0) === 0) ??
+        zoomEntries[0] ??
+        null;
+
+      const nextRange = resolveZoomRange(zoom, dataXRange);
+      if (!nextRange) return;
+
+      const zoomedAwayFromFull = !rangesEqual(nextRange, dataXRange);
+      userHasZoomedRef.current = zoomedAwayFromFull;
+
+      if (!windowRange || !rangesEqual(windowRange, nextRange)) {
+        setWindowRange(nextRange);
+        onWindowRangeChange?.(nextRange);
       }
     },
-    [dataXRange, onWindowRangeChange]
+    [dataXRange, windowRange, resolveZoomRange, rangesEqual, onWindowRangeChange]
   );
 
   const handleChartReady = useCallback(
     (chartInstance) => {
       chartInstanceRef.current = chartInstance;
 
-      // Apply current series data immediately to avoid a hydration race
-      // where the effect runs before onChartReady and the chart stays blank.
+      // Apply current series data immediately
       applySeriesPatch(chartInstance);
 
+      // Sync initial visible range
       updateRangeFromInstance(chartInstance);
-      chartInstance.off?.("datazoom");
-      chartInstance.on?.("datazoom", () => updateRangeFromInstance(chartInstance));
     },
     [applySeriesPatch, updateRangeFromInstance]
   );
+  useEffect(() => {
+    const chartInstance = chartInstanceRef.current;
+    if (!chartInstance) return;
+
+    const handler = () => updateRangeFromInstance(chartInstance);
+
+    chartInstance.off?.("datazoom");
+    chartInstance.on?.("datazoom", handler);
+
+    return () => {
+      chartInstance.off?.("datazoom", handler);
+    };
+  }, [updateRangeFromInstance]);
 
   if (!baseOption || !seriesName) {
     return <div>No chart data.</div>;
@@ -411,4 +481,3 @@ function LineCharts({
 }
 
 export default memo(LineCharts);
-
