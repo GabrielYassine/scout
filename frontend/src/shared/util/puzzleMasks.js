@@ -25,54 +25,47 @@ import _1222 from "@/assets/puzzlePNG/0flat/1222.png";
 import _2222 from "@/assets/puzzlePNG/0flat/2222.png";
 
 export const PUZZLE_MASKS = {
-    "0000": _0000,
+  "0000": _0000,
 
-    "1000": _1000,
-    "2000": _2000,
+  "1000": _1000,
+  "2000": _2000,
 
-    "1010": _1010,
-    "1020": _1020,
-    "1100": _1100,
-    "1200": _1200,
-    "2020": _2020,
-    "2200": _2200,
+  "1010": _1010,
+  "1020": _1020,
+  "1100": _1100,
+  "1200": _1200,
+  "2020": _2020,
+  "2200": _2200,
 
-    "1110": _1110,
-    "1120": _1120,
-    "1210": _1210,
-    "2120": _2120,
-    "2210": _2210,
-    "2220": _2220,
+  "1110": _1110,
+  "1120": _1120,
+  "1210": _1210,
+  "2120": _2120,
+  "2210": _2210,
+  "2220": _2220,
 
-    "1111": _1111,
-    "1112": _1112,
-    "1122": _1122,
-    "1212": _1212,
-    "1222": _1222,
-    "2222": _2222,
+  "1111": _1111,
+  "1112": _1112,
+  "1122": _1122,
+  "1212": _1212,
+  "1222": _1222,
+  "2222": _2222,
 };
 
-const warned = new Set();
+function buildMaskStyle(url) {
+  return {
+    WebkitMaskImage: `url(${url})`,
+    maskImage: `url(${url})`,
+    WebkitMaskRepeat: "no-repeat",
+    maskRepeat: "no-repeat",
+    WebkitMaskSize: "100% 100%",
+    maskSize: "100% 100%",
+    WebkitMaskPosition: "center",
+    maskPosition: "center",
+  };
+}
 
 export function maskStyle(key) {
-    const url = PUZZLE_MASKS[key];
-
-    if (!url) {
-        if (!warned.has(key)) {
-            console.warn(`No puzzle mask found for key "${key}"`);
-            warned.add(key);
-        }
-        return maskStyle("0000"); // SAFE fallback
-    }
-
-    return {
-        WebkitMaskImage: `url(${url})`,
-        maskImage: `url(${url})`,
-        WebkitMaskRepeat: "no-repeat",
-        maskRepeat: "no-repeat",
-        WebkitMaskSize: "100% 100%",
-        maskSize: "100% 100%",
-        WebkitMaskPosition: "center",
-        maskPosition: "center",
-    };
+  const url = PUZZLE_MASKS[key] ?? PUZZLE_MASKS["0000"];
+  return buildMaskStyle(url);
 }
