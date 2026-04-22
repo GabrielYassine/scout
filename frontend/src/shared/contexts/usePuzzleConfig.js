@@ -1,8 +1,10 @@
 import { useContext } from "react";
-import { PuzzleConfigContext } from "./PuzzleConfigContextInternal.js";
+import { PuzzleConfigContext } from "./PuzzleConfigContext.jsx";
 
 export const usePuzzleConfig = () => {
   const context = useContext(PuzzleConfigContext);
-  if (!context) throw new Error("usePuzzleConfig must be used within PuzzleConfigProvider");
+  if (!context) {
+    throw new Error("usePuzzleConfig must be used within PuzzleConfigProvider");
+  }
   return context;
 };

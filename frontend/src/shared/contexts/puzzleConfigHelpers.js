@@ -18,7 +18,7 @@ export const cloneTspInstance = (tsp) =>
   tsp
     ? {
         ...tsp,
-        cities: (tsp.cities ?? []).map((c) => ({ ...c })),
+        cities: (tsp.cities ?? []).map((city) => ({ ...city })),
       }
     : null;
 
@@ -27,7 +27,7 @@ export const cloneVrpInstance = (vrp) =>
     ? {
         ...vrp,
         depot: vrp.depot ? { ...vrp.depot } : null,
-        customers: (vrp.customers ?? []).map((c) => ({ ...c })),
+        customers: (vrp.customers ?? []).map((customer) => ({ ...customer })),
       }
     : null;
 
@@ -74,58 +74,56 @@ export const createDefaultConfig = (id, name) => ({
   vrpInstance: null,
 });
 
-export function flattenGroupedPuzzleConfig(groupedConfig) {
-  const grouped = groupedConfig ?? createEmptyPuzzleConfig();
-  return componentTypes.flatMap((type) =>
-    (Array.isArray(grouped[type]) ? grouped[type] : []).map((piece) => ({
-      id: piece.id,
-      label: piece.label,
-      type: piece.type ?? type,
-      puzzleData: piece.puzzleData,
-    }))
-  );
-}
-
-export function normalizeStoredConfig(config, fallbackIndex = 0) {
-  const base = {
-    id: config?.id ?? `config-${fallbackIndex + 1}`,
-    name: config?.name ?? `Config ${fallbackIndex + 1}`,
-    params: config?.params ?? createEmptyParams(),
-    tspInstance: config?.tspInstance ? cloneTspInstance(config.tspInstance) : null,
-    vrpInstance: config?.vrpInstance ? cloneVrpInstance(config.vrpInstance) : null,
-  };
-
-  if (Array.isArray(config?.placedPieces)) {
-    return {
-      ...base,
-      placedPieces: config.placedPieces.map((piece) => ({
-        id: piece.id,
-        label: piece.label,
-        type: piece.type,
-        puzzleData: piece.puzzleData,
-      })),
-    };
-  }
-
+function clonePlacedPiece(piece) {
   return {
-    ...base,
-    placedPieces: flattenGroupedPuzzleConfig(config?.puzzleConfig),
+    id: piece.id,
+    label: piece.label,
+    type: piece.type,
+    puzzleData: piece.puzzleData,
   };
 }
 
-function getEdge(piece, direction) {
+function normalizeIds(value, single = false) {
+  if (value == null) return [];
+  const ids = Array.isArray(value) ? value : [value];
+  return single ? ids.slice(0, 1) : ids;
+}
+
+function mapIdsToPieces(ids, catalogItems, pieceType, single = false) {
+  return normalizeIds(ids, single)
+    .map((id) => {
+      const item = catalogItems.find((x) => x.id === id);
+      return item ? { id: item.id, label: item.displayName, type: pieceType } : null;
+    })
+    .filter(Boolean);
+}
+
+function buildGlobalParamsFromRunRequest(runRequest) {
+  return {
+    experimentType: "run",
+    seed: runRequest.seed || Date.now(),
+    runTimes: runRequest.runTimes || 1,
+    logEveryIterations: runRequest.logEveryIterations || 100,
+    wsUpdateEveryIterations: runRequest.wsUpdateEveryIterations || 100,
+    problemSizes: "100, 200, 400, 800",
+    repetitionsPerSize: 10,
+    wsUpdateEverySizes: 1,
+  };
+}
+
+function getPuzzleEdge(piece, direction) {
   const key = piece?.puzzleData?.logicalKey;
   if (!key) return null;
 
   switch (direction) {
     case "N":
-      return parseInt(key[0], 10);
+      return Number(key[0]);
     case "E":
-      return parseInt(key[1], 10);
+      return Number(key[1]);
     case "S":
-      return parseInt(key[2], 10);
+      return Number(key[2]);
     case "W":
-      return parseInt(key[3], 10);
+      return Number(key[3]);
     default:
       return null;
   }
@@ -145,29 +143,61 @@ function buildGridNeighbors(pieces, index, totalCols = GRID_COLUMNS) {
       leftIndex === null
         ? { kind: "wall" }
         : pieces[leftIndex]
-          ? { kind: "piece", edge: getEdge(pieces[leftIndex], "E") }
+          ? { kind: "piece", edge: getPuzzleEdge(pieces[leftIndex], "E") }
           : { kind: "empty" },
 
     right:
       rightIndex === null
         ? { kind: "wall" }
         : pieces[rightIndex]
-          ? { kind: "piece", edge: getEdge(pieces[rightIndex], "W") }
+          ? { kind: "piece", edge: getPuzzleEdge(pieces[rightIndex], "W") }
           : { kind: "empty" },
 
     top:
       topIndex === null
         ? { kind: "wall" }
         : pieces[topIndex]
-          ? { kind: "piece", edge: getEdge(pieces[topIndex], "S") }
+          ? { kind: "piece", edge: getPuzzleEdge(pieces[topIndex], "S") }
           : { kind: "empty" },
 
     bottom:
       bottomIndex === null
         ? { kind: "empty" }
         : pieces[bottomIndex]
-          ? { kind: "piece", edge: getEdge(pieces[bottomIndex], "N") }
+          ? { kind: "piece", edge: getPuzzleEdge(pieces[bottomIndex], "N") }
           : { kind: "empty" },
+  };
+}
+
+export function flattenGroupedPuzzleConfig(groupedConfig) {
+  const grouped = groupedConfig ?? createEmptyPuzzleConfig();
+
+  return componentTypes.flatMap((type) =>
+    (Array.isArray(grouped[type]) ? grouped[type] : []).map((piece) => ({
+      id: piece.id,
+      label: piece.label,
+      type: piece.type ?? type,
+      puzzleData: piece.puzzleData,
+    }))
+  );
+}
+
+export function normalizeStoredConfig(config, fallbackIndex = 0) {
+  const base = {
+    id: config?.id ?? `config-${fallbackIndex + 1}`,
+    name: config?.name ?? `Config ${fallbackIndex + 1}`,
+    params: config?.params ?? createEmptyParams(),
+    tspInstance: config?.tspInstance ? cloneTspInstance(config.tspInstance) : null,
+    vrpInstance: config?.vrpInstance ? cloneVrpInstance(config.vrpInstance) : null,
+  };
+
+  const placedPieces = Array.isArray(config?.placedPieces)
+    ? config.placedPieces.map(clonePlacedPiece)
+    : flattenGroupedPuzzleConfig(config?.puzzleConfig);
+
+  return {
+    ...base,
+    placedPieces,
   };
 }
 
@@ -205,22 +235,13 @@ export function deriveGroupedPuzzleConfig(placedPieces) {
   return grouped;
 }
 
-export function applyTemplateRunRequestToState({ runRequest, catalog, setPlacedPieces, setParams }) {
+export function applyTemplateRunRequestToState({
+  runRequest,
+  catalog,
+  setPlacedPieces,
+  setParams,
+}) {
   if (!runRequest || !catalog) return;
-
-  const normalizeIds = (value, single) => {
-    if (value == null) return [];
-    const ids = Array.isArray(value) ? value : [value];
-    return single ? ids.slice(0, 1) : ids;
-  };
-
-  const mapIdsToPieces = (ids, catalogItems, pieceType, single = false) =>
-    normalizeIds(ids, single)
-      .map((id) => {
-        const item = catalogItems.find((x) => x.id === id);
-        return item ? { id: item.id, label: item.displayName, type: pieceType } : null;
-      })
-      .filter(Boolean);
 
   const componentMapping = [
     { type: "searchSpace", catalogKey: "searchSpaces", requestKey: "searchSpaceId", single: true },
@@ -234,23 +255,17 @@ export function applyTemplateRunRequestToState({ runRequest, catalog, setPlacedP
     { type: "observer", catalogKey: "observers", requestKey: "observerIds" },
   ];
 
-  const flattenedPieces = componentMapping.flatMap(({ type, catalogKey, requestKey, single }) =>
-    catalog[catalogKey] ? mapIdsToPieces(runRequest[requestKey], catalog[catalogKey], type, single) : []
+  const flattenedPieces = componentMapping.flatMap(
+    ({ type, catalogKey, requestKey, single }) =>
+      catalog[catalogKey]
+        ? mapIdsToPieces(runRequest[requestKey], catalog[catalogKey], type, single)
+        : []
   );
 
   setPlacedPieces(rekeyGrid(flattenedPieces, 0));
 
   setParams({
-    global: {
-      experimentType: "run",
-      seed: runRequest.seed || Date.now(),
-      runTimes: runRequest.runTimes || 1,
-      logEveryIterations: runRequest.logEveryIterations || 100,
-      wsUpdateEveryIterations: runRequest.wsUpdateEveryIterations || 100,
-      problemSizes: "100, 200, 400, 800",
-      repetitionsPerSize: 10,
-      wsUpdateEverySizes: 1,
-    },
+    global: buildGlobalParamsFromRunRequest(runRequest),
     searchSpace: runRequest.searchSpaceParams || {},
     problem: runRequest.problemParams || {},
     generator: runRequest.generatorParams || {},

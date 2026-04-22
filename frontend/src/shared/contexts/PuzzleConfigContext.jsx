@@ -1,7 +1,6 @@
-import { useMemo, useState } from "react";
+import { createContext, useMemo, useState } from "react";
 import { DndContext, DragOverlay, rectIntersection } from "@dnd-kit/core";
 
-import { PuzzleConfigContext } from "@/shared/contexts/PuzzleConfigContextInternal.js";
 import { useSessionStorageState } from "@/shared/hooks/useSessionStorageState.js";
 import { maskStyle } from "@/shared/util/puzzleMasks.js";
 
@@ -17,30 +16,58 @@ import {
   applyTemplateRunRequestToState,
 } from "@/shared/contexts/puzzleConfigHelpers.js";
 
-import "@/features/lab/components/selector/PuzzlePiece.css";
+import "@/features/lab/components/PuzzlePiece.css";
+
+export const PuzzleConfigContext = createContext(null);
+
+const DEFAULT_CONFIG_ID = "config-1";
+const DEFAULT_CONFIG_NAME = "Config 1";
+
+function createFallbackConfig() {
+  return createDefaultConfig(DEFAULT_CONFIG_ID, DEFAULT_CONFIG_NAME);
+}
+
+function normalizeConfigList(configs, fallbackToDefault = true) {
+  if (Array.isArray(configs)) {
+    return configs.map(normalizeStoredConfig);
+  }
+
+  return fallbackToDefault ? [createFallbackConfig()] : [];
+}
+
+function getNextConfigName(configs) {
+  const safeConfigs = Array.isArray(configs) ? configs : [];
+
+  const maxNumber = safeConfigs.reduce((max, config) => {
+    const match = String(config?.name ?? "").match(/^Config\s+(\d+)$/i);
+    if (!match) return max;
+
+    const value = Number(match[1]);
+    return Number.isFinite(value) ? Math.max(max, value) : max;
+  }, 0);
+
+  return `Config ${maxNumber + 1}`;
+}
 
 export function PuzzleConfigProvider({ children }) {
   const [configs, setConfigs] = useSessionStorageState("scout:runConfigs", [
-    createDefaultConfig("config-1", "Config 1"),
+    createFallbackConfig(),
   ]);
 
   const normalizedConfigs = useMemo(
-    () =>
-      Array.isArray(configs)
-        ? configs.map(normalizeStoredConfig)
-        : [createDefaultConfig("config-1", "Config 1")],
+    () => normalizeConfigList(configs, true),
     [configs]
   );
 
   const [activeConfigId, setActiveConfigId] = useSessionStorageState(
     "scout:activeConfigId",
-    "config-1"
+    DEFAULT_CONFIG_ID
   );
 
   const [activeDrag, setActiveDrag] = useState(null);
 
   const activeConfig = useMemo(
-    () => normalizedConfigs.find((c) => c.id === activeConfigId) || normalizedConfigs[0],
+    () => normalizedConfigs.find((config) => config.id === activeConfigId) ?? normalizedConfigs[0],
     [normalizedConfigs, activeConfigId]
   );
 
@@ -50,70 +77,62 @@ export function PuzzleConfigProvider({ children }) {
   const tspInstance = activeConfig?.tspInstance ? cloneTspInstance(activeConfig.tspInstance) : null;
   const vrpInstance = activeConfig?.vrpInstance ? cloneVrpInstance(activeConfig.vrpInstance) : null;
 
-  const updateActiveConfig = (key, updater) => {
+  function updateActiveConfig(key, updater) {
     setConfigs((prev) => {
-      const safePrev = Array.isArray(prev)
-        ? prev.map(normalizeStoredConfig)
-        : [createDefaultConfig("config-1", "Config 1")];
+      const safePrev = normalizeConfigList(prev, true);
+
       return safePrev.map((config) =>
         config.id === activeConfigId
-          ? { ...config, [key]: typeof updater === "function" ? updater(config[key]) : updater }
+          ? {
+              ...config,
+              [key]: typeof updater === "function" ? updater(config[key]) : updater,
+            }
           : config
       );
     });
-  };
+  }
 
   const setPlacedPieces = (updater) => updateActiveConfig("placedPieces", updater);
   const setParams = (updater) => updateActiveConfig("params", updater);
   const setTspInstance = (updater) => updateActiveConfig("tspInstance", updater);
   const setVrpInstance = (updater) => updateActiveConfig("vrpInstance", updater);
-  function getNextConfigName(configs) {
-    const safeConfigs = Array.isArray(configs) ? configs : [];
 
-    const maxNumber = safeConfigs.reduce((max, config) => {
-      const match = String(config?.name ?? "").match(/^Config\s+(\d+)$/i);
-      if (!match) return max;
-
-      const value = Number(match[1]);
-      return Number.isFinite(value) ? Math.max(max, value) : max;
-    }, 0);
-
-    return `Config ${maxNumber + 1}`;
-  }
-  const addNewConfig = () => {
+  function addNewConfig() {
     const newId = `config-${Date.now()}`;
 
     setConfigs((prev) => {
-      const safePrev = Array.isArray(prev)
-        ? prev.map(normalizeStoredConfig)
-        : [];
-
+      const safePrev = normalizeConfigList(prev, false);
       const newConfig = createDefaultConfig(newId, getNextConfigName(safePrev));
       return [...safePrev, newConfig];
     });
 
     setActiveConfigId(newId);
-  };
+  }
 
-  const deleteConfig = (configId) => {
+  function deleteConfig(configId) {
     setConfigs((prev) => {
-      const safePrev = Array.isArray(prev) ? prev.map(normalizeStoredConfig) : [];
-      if (safePrev.length === 1) return safePrev;
+      const safePrev = normalizeConfigList(prev, false);
+      if (safePrev.length <= 1) return safePrev;
 
-      const next = safePrev.filter((c) => c.id !== configId);
+      const next = safePrev.filter((config) => config.id !== configId);
+
       if (activeConfigId === configId) {
-        setActiveConfigId(next[0]?.id ?? "config-1");
+        setActiveConfigId(next[0]?.id ?? DEFAULT_CONFIG_ID);
       }
+
       return next;
     });
-  };
+  }
 
-  const renameConfig = (configId, newName) => {
+  function renameConfig(configId, newName) {
     setConfigs((prev) => {
-      const safePrev = Array.isArray(prev) ? prev.map(normalizeStoredConfig) : [];
-      return safePrev.map((c) => (c.id === configId ? { ...c, name: newName } : c));
+      const safePrev = normalizeConfigList(prev, false);
+
+      return safePrev.map((config) =>
+        config.id === configId ? { ...config, name: newName } : config
+      );
     });
-  };
+  }
 
   function handleDragStart({ active }) {
     setActiveDrag({
@@ -171,7 +190,8 @@ export function PuzzleConfigProvider({ children }) {
       const previousMode = params?.global?.experimentType ?? "run";
       const nextMode = newParams?.experimentType ?? previousMode;
 
-      const switchedToRuntimeStudy = previousMode !== "runtimeStudy" && nextMode === "runtimeStudy";
+      const switchedToRuntimeStudy =
+        previousMode !== "runtimeStudy" && nextMode === "runtimeStudy";
 
       if (switchedToRuntimeStudy) {
         setPlacedPieces([]);
@@ -246,20 +266,24 @@ export function PuzzleConfigProvider({ children }) {
         <DragOverlay>
           {activeDrag ? (
             <div
-              className="selector-item-wrapper selector-item-wrapper--overlay"
+              className="puzzle-piece-wrapper puzzle-piece-wrapper--selector"
               style={{
                 "--puzzle-piece-size": "clamp(6rem, 12vw, var(--puzzle-piece-max-size))",
-                "--overlay-bg": overlayBg,
               }}
             >
               <div
-                className="selector-item selector-item--overlay"
+                className="puzzle-piece-shape"
                 style={{
                   ...maskStyle("0000"),
+                  background: overlayBg,
                   cursor: "grabbing",
+                  boxShadow: "0 8px 24px rgba(0, 0, 0, 0.3)",
                 }}
-              >
-                <div className="selector-item-title">{activeDrag.label}</div>
+              />
+              <div className="puzzle-piece-content puzzle-piece-content--selector">
+                <div className="puzzle-piece-title puzzle-piece-title--selector">
+                  {activeDrag.label}
+                </div>
               </div>
             </div>
           ) : null}

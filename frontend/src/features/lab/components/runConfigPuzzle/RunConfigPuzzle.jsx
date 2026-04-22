@@ -1,7 +1,7 @@
 import { useDroppable } from "@dnd-kit/core";
 import { useState } from "react";
 
-import DroppedPiece from "./DroppedPiece.jsx";
+import PuzzlePiece from "../PuzzlePiece.jsx";
 import { usePuzzleConfig } from "@/shared/contexts/usePuzzleConfig.js";
 
 import "./RunConfigPuzzle.css";
@@ -14,7 +14,6 @@ export default function RunConfigPuzzle({ onPieceHover, onPieceLeave }) {
     addNewConfig,
     deleteConfig,
     renameConfig,
-    handleRemovePiece,
     placedPieces,
   } = usePuzzleConfig();
 
@@ -26,38 +25,25 @@ export default function RunConfigPuzzle({ onPieceHover, onPieceLeave }) {
   const [editingTabId, setEditingTabId] = useState(null);
   const [editingName, setEditingName] = useState("");
 
-  const handleTabClick = (configId) => {
-    setActiveConfigId(configId);
-  };
-
-  const handleTabDoubleClick = (configId, currentName) => {
+  const startEditingTab = (configId, currentName) => {
     setEditingTabId(configId);
     setEditingName(currentName);
   };
 
-  const handleNameChange = (e) => {
-    setEditingName(e.target.value);
-  };
-
-  const handleNameBlur = () => {
-    if (editingTabId && editingName.trim()) {
-      renameConfig(editingTabId, editingName.trim());
-    }
+  const stopEditingTab = () => {
     setEditingTabId(null);
     setEditingName("");
   };
 
-  const handleNameKeyDown = (e) => {
-    if (e.key === "Enter") {
-      handleNameBlur();
-    } else if (e.key === "Escape") {
-      setEditingTabId(null);
-      setEditingName("");
+  const commitTabName = () => {
+    if (editingTabId && editingName.trim()) {
+      renameConfig(editingTabId, editingName.trim());
     }
+    stopEditingTab();
   };
 
-  const handleDeleteTab = (e, configId) => {
-    e.stopPropagation();
+  const handleDeleteTab = (event, configId) => {
+    event.stopPropagation();
     if (configs.length > 1) {
       deleteConfig(configId);
     }
@@ -66,31 +52,38 @@ export default function RunConfigPuzzle({ onPieceHover, onPieceLeave }) {
   return (
     <div className="run-config-puzzle">
       <div className="config-tab-buttons-row">
-        {configs.map((cfg) => (
+        {configs.map((config) => (
           <div
-            key={cfg.id}
-            className={`config-tab-button ${cfg.id === activeConfigId ? "active" : ""}`}
-            onClick={() => handleTabClick(cfg.id)}
-            onDoubleClick={() => handleTabDoubleClick(cfg.id, cfg.name)}
+            key={config.id}
+            className={`config-tab-button ${config.id === activeConfigId ? "active" : ""}`}
+            onClick={() => setActiveConfigId(config.id)}
+            onDoubleClick={() => startEditingTab(config.id, config.name)}
           >
-            {editingTabId === cfg.id ? (
+            {editingTabId === config.id ? (
               <input
                 type="text"
                 className="config-tab-input"
                 value={editingName}
-                onChange={handleNameChange}
-                onBlur={handleNameBlur}
-                onKeyDown={handleNameKeyDown}
+                onChange={(event) => setEditingName(event.target.value)}
+                onBlur={commitTabName}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    commitTabName();
+                  } else if (event.key === "Escape") {
+                    stopEditingTab();
+                  }
+                }}
                 autoFocus
-                onClick={(e) => e.stopPropagation()}
+                onClick={(event) => event.stopPropagation()}
               />
             ) : (
-              <span className="config-tab-name">{cfg.name}</span>
+              <span className="config-tab-name">{config.name}</span>
             )}
+
             {configs.length > 1 && (
               <button
                 className="config-tab-close"
-                onClick={(e) => handleDeleteTab(e, cfg.id)}
+                onClick={(event) => handleDeleteTab(event, config.id)}
                 title="Delete config"
               >
                 ×
@@ -98,7 +91,12 @@ export default function RunConfigPuzzle({ onPieceHover, onPieceLeave }) {
             )}
           </div>
         ))}
-        <button className="config-tab-button config-tab-add" onClick={addNewConfig} title="Add new config">
+
+        <button
+          className="config-tab-button config-tab-add"
+          onClick={addNewConfig}
+          title="Add new config"
+        >
           +
         </button>
       </div>
@@ -108,14 +106,14 @@ export default function RunConfigPuzzle({ onPieceHover, onPieceLeave }) {
         className={`shared-drop-area ${isOver ? "drop-area-over" : ""}`}
       >
         {placedPieces.map((piece, index) => (
-          <DroppedPiece
+          <PuzzlePiece
             key={`${piece.id}-${index}`}
             id={piece.id}
             label={piece.label}
             type={piece.type}
             index={index}
             puzzleData={piece.puzzleData}
-            onRemove={() => handleRemovePiece(index)}
+            mode="placed"
             onHover={onPieceHover}
             onLeave={onPieceLeave}
           />

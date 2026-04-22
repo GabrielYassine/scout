@@ -1,4 +1,4 @@
-.selector-item-wrapper {
+.puzzle-piece-wrapper {
     width: var(--puzzle-piece-size);
     height: var(--puzzle-piece-size);
     position: relative;
@@ -6,25 +6,33 @@
     justify-content: center;
     align-items: center;
     user-select: none;
-    position: relative;
+}
+
+.puzzle-piece-wrapper--selector {
     overflow: visible;
 }
 
-.selector-item-wrapper:hover .selector-item {
+.puzzle-piece-wrapper--placed {
+    overflow: hidden;
+}
+
+.puzzle-piece-wrapper--selector:hover .puzzle-piece-shape {
     transform: scale(1.05);
     transition: transform 0.15s ease;
 }
 
-.selector-item-wrapper.dragging .selector-item {
-    opacity: 0.3;
-    cursor: grabbing;
+.puzzle-piece-wrapper.dragging {
+    opacity: 0;
+    pointer-events: none;
 }
 
-.selector-item-wrapper.disabled {
+.puzzle-piece-wrapper.disabled {
     cursor: not-allowed;
 }
 
-.selector-item {
+.puzzle-piece-shape {
+    position: absolute;
+    inset: 0;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -34,23 +42,47 @@
     transition: box-shadow 0.15s ease, background 0.15s ease, opacity 0.15s ease, transform 0.15s ease;
 }
 
-.selector-item-wrapper--overlay .selector-item--overlay {
-    background: var(--overlay-bg, var(--color-border-highlight));
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+.puzzle-piece-content {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    pointer-events: none;
 }
 
-.selector-item-title {
+.puzzle-piece-content--selector {
+    inset: 0;
+}
+
+.puzzle-piece-content--placed {
+    inset: 12% 12%;
+}
+
+.puzzle-piece-title {
     display: flex;
     align-items: center;
     justify-content: center;
     text-align: center;
     font-weight: 600;
+    box-sizing: border-box;
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+
+.puzzle-piece-title--selector {
     font-size: var(--font-sm);
     height: 60%;
     width: 50%;
 }
 
-.selector-item-wrapper.disabled::after {
+.puzzle-piece-title--placed {
+    font-size: clamp(0.65rem, calc(var(--puzzle-piece-size) * 0.09), 1rem);
+    width: 65%;
+    height: 65%;
+}
+
+.puzzle-piece-wrapper.disabled::after {
     content: attr(data-disabled-reason);
     position: absolute;
     left: 50%;
@@ -74,6 +106,6 @@
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
 }
 
-.selector-item-wrapper.disabled:hover::after {
+.puzzle-piece-wrapper.disabled:hover::after {
     opacity: 1;
 }
