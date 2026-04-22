@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 
+const PLAYBACK_TICK_MS = 30;
+const PLAYBACK_DIVISOR = 15;
+
 /**
  * Drives the animation progress used by charts.
  */
@@ -10,19 +13,24 @@ export function usePlayback({ length, initialSpeed = 50 }) {
   useEffect(() => {
     if (!length) return;
 
-    const stepSize = Math.max(1, Math.floor(playbackSpeed / 15));
+    const stepSize = Math.max(1, Math.floor(playbackSpeed / PLAYBACK_DIVISOR));
 
-    const interval = setInterval(() => {
-      setVisibleCount((prev) => {
-        if (prev >= length) return prev;
-        return Math.min(prev + stepSize, length);
+    const intervalId = setInterval(() => {
+      setVisibleCount((previousCount) => {
+        if (previousCount >= length) {
+          return previousCount;
+        }
+
+        return Math.min(previousCount + stepSize, length);
       });
-    }, 30);
+    }, PLAYBACK_TICK_MS);
 
-    return () => clearInterval(interval);
+    return () => clearInterval(intervalId);
   }, [length, playbackSpeed]);
 
-  const resetPlayback = () => setVisibleCount(1);
+  const resetPlayback = () => {
+    setVisibleCount(1);
+  };
 
   return {
     playbackSpeed,

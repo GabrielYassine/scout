@@ -28,6 +28,7 @@ function applyCompletedRuns(prevBatch, completedRuns, summary, runId) {
       return {
         ...run,
         runtimeMs: completed.runtimeMs,
+        status: "FINISHED",
       };
     }),
   }));
@@ -124,6 +125,7 @@ function mergeProgress(prevBatch, update) {
           series: {},
           runtimeMs: null,
           finalEvaluations: 0,
+          status: "ONGOING",
         };
 
   nextRun.iterations = mergeList(
@@ -142,6 +144,7 @@ function mergeProgress(prevBatch, update) {
 
   nextRun.series = mergeSeries(nextRun.series, update.seriesDelta, update.seriesMerge);
   trimAppendedSeriesToXAxisLength(nextRun, update.seriesMerge);
+  nextRun.status = "ONGOING";
 
   nextRuns[runIndex >= 0 ? runIndex : nextRuns.length] = nextRun;
   nextBatch.runs = nextRuns;

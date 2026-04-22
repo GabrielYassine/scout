@@ -4,79 +4,110 @@ export function makeStreamKey({ runId, problemId, seed }) {
 
 /**
  * Creates a per-stream ordered packet applier.
- * Contract:
- * - Packets have { runId, problemId, seed, sequenceId }.
- * - Applies packet only if sequenceId === lastAppliedSequenceId + 1.
- * - Ignores stale/duplicate packets (sequenceId <= lastAppliedSequenceId).
- * - Buffers future packets and flushes contiguous sequence when gaps fill.
+ *
+ * Packet contract:
+ * - Packets contain { runId, problemId, seed, sequenceId }.
+ * - A packet is applied only when its sequenceId is exactly the next expected one.
+ * - Older or duplicate packets are ignored.
+ * - Future packets are buffered until missing sequence numbers arrive.
  */
-export function createOrderedProgressApplier({ applyPacket, maxPending = 5000 } = {}) {
+export function createOrderedProgressApplier({
+  applyPacket,
+  maxPending = 5000,
+} = {}) {
   if (typeof applyPacket !== "function") {
     throw new Error("createOrderedProgressApplier requires applyPacket(packet)");
   }
 
-  const stateByStream = new Map();
+  const streamStateByKey = new Map();
 
-  function getState(streamKey) {
-    let s = stateByStream.get(streamKey);
-    if (!s) {
-      s = { lastAppliedSequenceId: 0, pending: new Map() };
-      stateByStream.set(streamKey, s);
+  function getOrCreateStreamState(streamKey) {
+    let streamState = streamStateByKey.get(streamKey);
+
+    if (!streamState) {
+      streamState = {
+        lastAppliedSequenceId: 0,
+        pendingBySequenceId: new Map(),
+      };
+      streamStateByKey.set(streamKey, streamState);
     }
-    return s;
+
+    return streamState;
   }
 
-  function flush(streamKey, s) {
+  function trimPendingPackets(streamState) {
+    if (streamState.pendingBySequenceId.size <= maxPending) {
+      return;
+    }
+
+    const sequenceIdsDescending = Array.from(streamState.pendingBySequenceId.keys()).sort(
+      (a, b) => b - a
+    );
+
+    for (const sequenceId of sequenceIdsDescending) {
+      if (streamState.pendingBySequenceId.size <= maxPending) {
+        break;
+      }
+      streamState.pendingBySequenceId.delete(sequenceId);
+    }
+  }
+
+  function flushContiguousPackets(streamState) {
     while (true) {
-      const nextSeq = s.lastAppliedSequenceId + 1;
-      const nextPacket = s.pending.get(nextSeq);
-      if (!nextPacket) return;
-      s.pending.delete(nextSeq);
+      const nextSequenceId = streamState.lastAppliedSequenceId + 1;
+      const nextPacket = streamState.pendingBySequenceId.get(nextSequenceId);
+
+      if (!nextPacket) {
+        return;
+      }
+
+      streamState.pendingBySequenceId.delete(nextSequenceId);
       applyPacket(nextPacket);
-      s.lastAppliedSequenceId = nextSeq;
+      streamState.lastAppliedSequenceId = nextSequenceId;
     }
   }
 
   function ingest(packet) {
     const { runId, problemId, seed, sequenceId } = packet ?? {};
-    if (!runId || !problemId || seed == null) return;
-    if (sequenceId == null) return;
 
-    const streamKey = makeStreamKey({ runId, problemId, seed });
-    const s = getState(streamKey);
-
-    if (sequenceId <= s.lastAppliedSequenceId) {
-      return; // stale/duplicate
-    }
-
-    if (sequenceId === s.lastAppliedSequenceId + 1) {
-      applyPacket(packet);
-      s.lastAppliedSequenceId = sequenceId;
-      flush(streamKey, s);
+    if (!runId || !problemId || seed == null || sequenceId == null) {
       return;
     }
 
-    // out-of-order ahead: buffer
-    if (!s.pending.has(sequenceId)) {
-      s.pending.set(sequenceId, packet);
-      // safety valve against unbounded growth
-      if (s.pending.size > maxPending) {
-        // Drop the farthest-ahead packet(s) to keep memory bounded.
-        const keys = Array.from(s.pending.keys()).sort((a, b) => b - a);
-        for (let i = 0; i < keys.length && s.pending.size > maxPending; i += 1) {
-          s.pending.delete(keys[i]);
-        }
-      }
+    const streamKey = makeStreamKey({ runId, problemId, seed });
+    const streamState = getOrCreateStreamState(streamKey);
+
+    if (sequenceId <= streamState.lastAppliedSequenceId) {
+      return;
+    }
+
+    const expectedSequenceId = streamState.lastAppliedSequenceId + 1;
+
+    if (sequenceId === expectedSequenceId) {
+      applyPacket(packet);
+      streamState.lastAppliedSequenceId = sequenceId;
+      flushContiguousPackets(streamState);
+      return;
+    }
+
+    if (!streamState.pendingBySequenceId.has(sequenceId)) {
+      streamState.pendingBySequenceId.set(sequenceId, packet);
+      trimPendingPackets(streamState);
     }
   }
 
   function resetStream({ runId, problemId, seed }) {
-    stateByStream.delete(makeStreamKey({ runId, problemId, seed }));
+    const streamKey = makeStreamKey({ runId, problemId, seed });
+    streamStateByKey.delete(streamKey);
   }
 
   function resetAll() {
-    stateByStream.clear();
+    streamStateByKey.clear();
   }
 
-  return { ingest, resetStream, resetAll };
+  return {
+    ingest,
+    resetStream,
+    resetAll,
+  };
 }
