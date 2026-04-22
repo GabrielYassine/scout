@@ -111,7 +111,7 @@ function buildGlobalParamsFromRunRequest(runRequest) {
   };
 }
 
-function getPuzzleEdge(piece, direction) {
+function getEdge(piece, direction) {
   const key = piece?.puzzleData?.logicalKey;
   if (!key) return null;
 
@@ -136,36 +136,28 @@ function buildGridNeighbors(pieces, index, totalCols = GRID_COLUMNS) {
   const leftIndex = col > 0 ? index - 1 : null;
   const rightIndex = col < totalCols - 1 ? index + 1 : null;
   const topIndex = row > 0 ? index - totalCols : null;
-  const bottomIndex = index + totalCols < pieces.length ? index + totalCols : null;
 
   return {
     left:
       leftIndex === null
         ? { kind: "wall" }
         : pieces[leftIndex]
-          ? { kind: "piece", edge: getPuzzleEdge(pieces[leftIndex], "E") }
+          ? { kind: "piece", edge: getEdge(pieces[leftIndex], "E") }
           : { kind: "empty" },
 
     right:
       rightIndex === null
         ? { kind: "wall" }
-        : pieces[rightIndex]
-          ? { kind: "piece", edge: getPuzzleEdge(pieces[rightIndex], "W") }
-          : { kind: "empty" },
+        : { kind: "empty" },
 
     top:
       topIndex === null
         ? { kind: "wall" }
         : pieces[topIndex]
-          ? { kind: "piece", edge: getPuzzleEdge(pieces[topIndex], "S") }
+          ? { kind: "piece", edge: getEdge(pieces[topIndex], "S") }
           : { kind: "empty" },
 
-    bottom:
-      bottomIndex === null
-        ? { kind: "empty" }
-        : pieces[bottomIndex]
-          ? { kind: "piece", edge: getPuzzleEdge(pieces[bottomIndex], "N") }
-          : { kind: "empty" },
+    bottom: { kind: "empty" },
   };
 }
 
@@ -201,10 +193,10 @@ export function normalizeStoredConfig(config, fallbackIndex = 0) {
   };
 }
 
-export function rekeyGrid(pieces, startIndex = 0, totalCols = GRID_COLUMNS) {
+export function rekeyGrid(pieces, _startIndex = 0, totalCols = GRID_COLUMNS) {
   const next = Array.isArray(pieces) ? [...pieces] : [];
 
-  for (let i = Math.max(0, startIndex); i < next.length; i++) {
+  for (let i = 0; i < next.length; i++) {
     const col = i % totalCols;
     const row = Math.floor(i / totalCols);
     const neighbors = buildGridNeighbors(next, i, totalCols);

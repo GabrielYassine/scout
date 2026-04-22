@@ -117,22 +117,21 @@ export function generatePuzzleKey({ col, row, totalCols, neighbors = {} }) {
   let south = null;
   let west = null;
 
+  // Only true walls may create flats
   if (row === 0 || neighbors.top?.kind === "wall") north = FLAT;
-  if (col === totalCols - 1 || neighbors.right?.kind === "wall") east = FLAT;
   if (col === 0 || neighbors.left?.kind === "wall") west = FLAT;
+  if (col === totalCols - 1 || neighbors.right?.kind === "wall") east = FLAT;
 
-  if (neighbors.top?.kind === "piece" && neighbors.top.edge != null) {
-    north = complement(neighbors.top.edge);
-  }
-  if (neighbors.right?.kind === "piece" && neighbors.right.edge != null) {
-    east = complement(neighbors.right.edge);
-  }
-  if (neighbors.bottom?.kind === "piece" && neighbors.bottom.edge != null) {
-    south = complement(neighbors.bottom.edge);
-  }
+  // Only use already-determined neighbors (left and top)
   if (neighbors.left?.kind === "piece" && neighbors.left.edge != null) {
     west = complement(neighbors.left.edge);
   }
+  if (neighbors.top?.kind === "piece" && neighbors.top.edge != null) {
+    north = complement(neighbors.top.edge);
+  }
+
+  // Never read right/bottom neighbors here.
+  // Those pieces are future pieces when we generate left-to-right, top-to-bottom.
 
   if (north === null) north = randomEdge();
   if (east === null) east = randomEdge();

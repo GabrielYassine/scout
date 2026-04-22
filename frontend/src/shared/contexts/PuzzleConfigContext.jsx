@@ -148,7 +148,7 @@ export function PuzzleConfigProvider({ children }) {
 
     setPlacedPieces((prev) => {
       const next = (Array.isArray(prev) ? prev : []).filter((_, i) => i !== index);
-      return rekeyGrid(next, Math.max(0, index - GRID_COLUMNS));
+      return rekeyGrid(next);
     });
   }
 
@@ -181,7 +181,8 @@ export function PuzzleConfigProvider({ children }) {
           type: pieceType,
         },
       ];
-      return rekeyGrid(nextPieces, nextPieces.length - 1);
+
+      return rekeyGrid(nextPieces);
     });
   }
 
