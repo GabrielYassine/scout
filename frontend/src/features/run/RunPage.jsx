@@ -25,10 +25,33 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
   const [savedRun, setSavedRun] = useLocalStorageState("scout:lastRun", null);
 
   const locationState = location.state ?? {};
+
+  const incomingRunId =
+    locationState.runId ?? locationState.runRequest?.runId ?? null;
+  const incomingStudyId =
+    locationState.studyId ?? locationState.runtimeStudyRequest?.studyId ?? null;
+
+  const savedMatchesIncomingRun =
+    savedRun?.pageMode === "run" &&
+    savedRun?.loading === false &&
+    !!incomingRunId &&
+    savedRun?.runId === incomingRunId;
+
+  const savedMatchesIncomingStudy =
+    savedRun?.pageMode === "runtimeStudy" &&
+    savedRun?.loading === false &&
+    !!incomingStudyId &&
+    savedRun?.studyId === incomingStudyId;
+
+  const shouldIgnoreIncomingState =
+    locationState.loading === true &&
+    (savedMatchesIncomingRun || savedMatchesIncomingStudy);
+
   const hasIncomingExecution =
-    Boolean(locationState.runId) ||
-    Boolean(locationState.studyId) ||
-    locationState.loading === true;
+    !shouldIgnoreIncomingState &&
+    (Boolean(locationState.runId) ||
+      Boolean(locationState.studyId) ||
+      locationState.loading === true);
 
   const restoredRun = hasIncomingExecution ? null : savedRun;
 
@@ -41,11 +64,14 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
 
   const runRequest = locationState.runRequest ?? restoredRun?.runRequest ?? null;
   const runId = locationState.runId ?? runRequest?.runId ?? restoredRun?.runId ?? null;
-  const studyId = locationState.studyId ?? null;
+  const studyId = locationState.studyId ?? restoredRun?.studyId ?? null;
 
   const batchResponse = locationState.batch ?? restoredRun?.batch ?? null;
-  const initialLoading = locationState.loading ?? restoredRun?.loading ?? false;
-  const initialError = locationState.error ?? null;
+  const initialLoading =
+    shouldIgnoreIncomingState
+      ? restoredRun?.loading ?? false
+      : locationState.loading ?? restoredRun?.loading ?? false;
+  const initialError = locationState.error ?? restoredRun?.error ?? null;
   const puzzleConfig = locationState.puzzleConfig ?? restoredRun?.puzzleConfig ?? [];
   const runtimeStudyRequest =
     locationState.runtimeStudyRequest ?? restoredRun?.runtimeStudyRequest ?? null;
@@ -58,6 +84,8 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
   const [loading, setLoading] = useState(!!initialLoading);
   const [error, setError] = useState(initialError ?? null);
   const [layoutMode, setLayoutMode] = useState("stack");
+
+  const liveExecution = useMemo(() => hasIncomingExecution, [hasIncomingExecution]);
 
   const batches = useMemo(
     () => [...(batch?.batches ?? [])].sort((a, b) => a.runIndex - b.runIndex),
@@ -116,7 +144,7 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
   const vrpInstance = initialVrpInstance;
 
   const runtimeStudyProblemId =
-    location.state?.runtimeStudyRequest?.problemId ?? puzzleConfig?.problem?.[0]?.id ?? null;
+    runtimeStudyRequest?.problemId ?? puzzleConfig?.problem?.[0]?.id ?? null;
 
   const currentAnimationLength = useMemo(
     () => computeAnimationLength({ pageMode, studyPoints, runs }),
@@ -129,7 +157,7 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
   });
 
   useRunWebSocket({
-    enabled: pageMode === "run",
+    enabled: liveExecution && pageMode === "run",
     runId,
     runRequest,
     puzzleConfig,
@@ -143,7 +171,7 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
   });
 
   useRuntimeStudyWebSocket({
-    enabled: pageMode === "runtimeStudy",
+    enabled: liveExecution && pageMode === "runtimeStudy",
     studyId,
     runtimeStudyRequest,
     puzzleConfig,
@@ -244,7 +272,7 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
                       <select
                         id="batch-select"
                         className="field-input"
-                        value={effectiveSelectedRunKey}
+                        value={effectiveSelectedRunKey ?? ""}
                         onChange={(e) => handleSelectedRunChange(e.target.value)}
                         disabled={averageRuns.length === 0 && batches.length <= 1}
                       >
@@ -259,6 +287,7 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
                         )}
                       </select>
                     </div>
+
                     <div className="run-layout-toggle">
                       <button
                         type="button"

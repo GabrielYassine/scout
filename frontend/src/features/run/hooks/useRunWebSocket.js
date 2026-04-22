@@ -2,16 +2,14 @@ import { useEffect, useRef } from "react";
 import { Client } from "@stomp/stompjs";
 import { createOrderedProgressApplier } from "@/features/run/utils/orderedProgress.js";
 
-function applyCompletedRuns(prev, completedRuns, summary) {
-  if (!prev) {
-    return { runId: null, batches: [], summary: summary ?? null };
-  }
+function applyCompletedRuns(prev, completedRuns, summary, runId) {
+  const base = prev ?? { runId: runId ?? null, batches: [], summary: null };
 
   const metaByKey = new Map(
     (completedRuns ?? []).map((item) => [`${item.runIndex}::${item.problemId}`, item])
   );
 
-  const nextBatches = (prev.batches ?? []).map((batch) => ({
+  const nextBatches = (base.batches ?? []).map((batch) => ({
     ...batch,
     runs: (batch.runs ?? []).map((run) => {
       const meta = metaByKey.get(`${batch.runIndex}::${run.problemId}`);
@@ -25,9 +23,10 @@ function applyCompletedRuns(prev, completedRuns, summary) {
   }));
 
   return {
-    ...prev,
+    ...base,
+    runId: base.runId ?? runId ?? null,
     batches: nextBatches,
-    summary: summary ?? prev.summary ?? null,
+    summary: summary ?? base.summary ?? null,
   };
 }
 
@@ -196,17 +195,17 @@ export function useRunWebSocket({
 
       readyProgressQueueRef.current = [];
 
+      let next = latestBatchRef.current ?? null;
+
+      for (const pkt of queued) {
+        if (!pkt?.runId) continue;
+        if (activeRunIdRef.current && pkt.runId !== activeRunIdRef.current) continue;
+        next = mergeProgress(next, pkt);
+      }
+
+      latestBatchRef.current = next;
       setLoading(false);
-      setBatch((prev) => {
-        let next = prev;
-        for (const pkt of queued) {
-          if (!pkt?.runId) continue;
-          if (activeRunIdRef.current && pkt.runId !== activeRunIdRef.current) continue;
-          next = mergeProgress(next, pkt);
-        }
-        latestBatchRef.current = next;
-        return next;
-      });
+      setBatch(next);
     };
 
     flushTimerRef.current = setInterval(flushProgressQueue, FLUSH_INTERVAL_MS);
@@ -244,18 +243,22 @@ export function useRunWebSocket({
         if (data.type === "RUN_FINISHED") {
           flushProgressQueue();
 
+          const finishedBatch = applyCompletedRuns(
+            latestBatchRef.current,
+            data.completedRuns,
+            data.summary,
+            data.runId ?? runId
+          );
+
+          latestBatchRef.current = finishedBatch;
           setLoading(false);
-          setBatch((prev) => {
-            const next = applyCompletedRuns(prev, data.completedRuns, data.summary);
-            latestBatchRef.current = next;
-            return next;
-          });
+          setBatch(finishedBatch);
 
           setSavedRun(() => ({
             pageMode: "run",
             runId,
             runRequest,
-            batch: latestBatchRef.current,
+            batch: finishedBatch,
             studyPoints: [],
             loading: false,
             puzzleConfig,
@@ -300,8 +303,8 @@ export function useRunWebSocket({
         latestBatchRef.current = null;
         orderedApplierRef.current?.resetAll?.();
         client.deactivate();
-      } catch (e) {
-        console.error("Failed to close run WebSocket", e);
+      } catch {
+        // ignore cleanup errors
       }
     };
   }, [

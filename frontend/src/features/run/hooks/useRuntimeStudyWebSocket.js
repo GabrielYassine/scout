@@ -93,21 +93,13 @@ export function useRuntimeStudyWebSocket({
       }
     };
 
-    client.onStompError = (frame) => {
-      console.error("Study WebSocket STOMP error", frame.headers["message"], frame.body);
-    };
-
-    client.onWebSocketError = (event) => {
-      console.error("Study WebSocket transport error", event);
-    };
-
     client.activate();
 
     return () => {
       try {
         client.deactivate();
-      } catch (e) {
-        console.error("Failed to close study WebSocket", e);
+      } catch {
+        // ignore cleanup errors
       }
     };
   }, [
