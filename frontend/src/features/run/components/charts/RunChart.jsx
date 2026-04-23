@@ -402,12 +402,7 @@ function RunChart({
             <span className="run-status-dot" />
           </div>
         </div>
-
-        {runtimeMs != null && (
-          <div className="run-chart-subtitle">
-            Runtime: {runtimeMs.toFixed(2)} ms
-          </div>
-        )}
+        <div className="run-chart-subtitle">Runtime: {runtimeMs != null ? `${runtimeMs.toFixed(2)} ms` : "Not Finished Yet"}</div>
       </div>
 
       <div className="run-chart-inner">
