@@ -155,10 +155,10 @@ function LineCharts({
 
   const isPermutationFitness = useMemo(() => {
     return (
-      invertPermutationFitness &&
-      searchSpaceId === "permutation" &&
-      (seriesName === "fitness" || seriesName === "bestFitness")
-    );
+        invertPermutationFitness &&
+        (seriesName === "fitness" || seriesName === "bestFitness") &&
+        (searchSpaceId === "permutation" || searchSpaceId === "route-list")
+      );
   }, [invertPermutationFitness, searchSpaceId, seriesName]);
 
   const displaySeriesName = isPermutationFitness ? "tourLength" : seriesName;

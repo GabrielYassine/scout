@@ -26,7 +26,7 @@ function BoxPlotChart({
 
     const isPermutationFitness =
       invertPermutationFitness &&
-      searchSpaceId === "permutation" &&
+      (searchSpaceId === "permutation" || searchSpaceId === "route-list") &&
       (seriesName === "fitness" || seriesName === "bestFitness");
 
     const displaySeriesName = isPermutationFitness ? "tourLength" : seriesName;

@@ -6,6 +6,7 @@ import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.observer.Observer;
 import dk.dtu.scout.logging.LoggedSeries;
 import dk.dtu.scout.logging.SeriesMode;
+import dk.dtu.scout.searchSpace.SearchSpace;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -22,6 +23,7 @@ public class RunProgressObserver<S> implements Observer<S> {
     private final int runIndex;
     private final long seed;
     private final String problemId;
+    private final String searchSpaceId;
     private final int wsUpdateEveryIterations;
 
     private final String streamKey;
@@ -33,6 +35,7 @@ public class RunProgressObserver<S> implements Observer<S> {
         String runId,
         int runIndex,
         long seed,
+        String searchSpaceId,
         String problemId,
         int wsUpdateEveryIterations
     ) {
@@ -41,6 +44,7 @@ public class RunProgressObserver<S> implements Observer<S> {
         this.runIndex = runIndex;
         this.seed = seed;
         this.problemId = problemId;
+        this.searchSpaceId = searchSpaceId;
         this.wsUpdateEveryIterations = wsUpdateEveryIterations;
 
         this.streamKey = streamKey(runId, problemId, seed);
@@ -123,6 +127,7 @@ public class RunProgressObserver<S> implements Observer<S> {
                 runId,
                 runIndex,
                 seed,
+                searchSpaceId,
                 problemId,
                 nextSequenceId(),
                 MergeOp.APPEND,
@@ -167,6 +172,7 @@ public class RunProgressObserver<S> implements Observer<S> {
                 runId,
                 runIndex,
                 seed,
+                searchSpaceId,
                 problemId,
                 nextSequenceId(),
                 MergeOp.APPEND,

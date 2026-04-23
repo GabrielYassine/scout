@@ -120,6 +120,7 @@ function mergeProgress(prevBatch, update) {
       ? { ...nextRuns[runIndex] }
       : {
           problemId: update.problemId,
+          searchSpaceId: update.searchSpaceId,
           iterations: [],
           evaluations: [],
           series: {},
@@ -127,7 +128,9 @@ function mergeProgress(prevBatch, update) {
           finalEvaluations: 0,
           status: "ONGOING",
         };
-
+  if (update.searchSpaceId != null) {
+    nextRun.searchSpaceId = update.searchSpaceId;
+  }
   nextRun.iterations = mergeList(
     nextRun.iterations,
     update.iterationsMerge,
@@ -242,12 +245,15 @@ export function useRunWebSocket({
     const handleRunFinished = (message) => {
       flushProgressQueue();
 
-      const finishedBatch = applyCompletedRuns(
+      const finishedBatch ={
+      ...applyCompletedRuns(
         latestBatchRef.current,
         message.completedRuns,
         message.summary,
         message.runId ?? runId
-      );
+      ),
+      searchSpaceId: message.searchSpaceId ?? null,
+    };
 
       latestBatchRef.current = finishedBatch;
       setLoading(false);

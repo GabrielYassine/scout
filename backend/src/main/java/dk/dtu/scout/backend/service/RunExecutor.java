@@ -201,7 +201,7 @@ public class RunExecutor {
             Crossover<S> crossover = factory.createOptionalCrossover(request.crossoverId(), request.crossoverParams());
             ParentSelectionRule<S> parentSelection = factory.createParentSelectionRule(request.parentSelectionRuleId(), request.parentSelectionRuleParams());
             if (request.runId() != null && wsUpdateEveryIterations > 0) {
-                observers.add(new RunProgressObserver<>(wsSender, request.runId(), runIndex, runSeed, pid, wsUpdateEveryIterations));
+                observers.add(new RunProgressObserver<>(wsSender, request.runId(), runIndex, runSeed,  ss.id(), pid, wsUpdateEveryIterations));
             }
             long startTime = System.nanoTime();
 

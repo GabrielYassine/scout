@@ -12,6 +12,7 @@ public record RunWsPayload(
     String message,
     Integer runIndex,
     Long seed,
+    String searchSpaceId,
     String problemId,
     Long sequenceId,
     MergeOp iterationsMerge,
@@ -29,13 +30,14 @@ public record RunWsPayload(
         return status("RUN_CONNECTED", runId, "Run session connected");
     }
 
-    public static RunWsPayload finished(String runId, BatchSummaryResponse summary, List<RunFinalResponse> completedRuns) {
+    public static RunWsPayload finished(String runId, String searchSpaceId, BatchSummaryResponse summary, List<RunFinalResponse> completedRuns) {
         return new RunWsPayload(
             "RUN_FINISHED",
             runId,
             "Run finished",
             null,
             null,
+            searchSpaceId,
             null,
             null,
             null,
@@ -59,6 +61,7 @@ public record RunWsPayload(
         String runId,
         int runIndex,
         long seed,
+        String searchSpaceId,
         String problemId,
         long sequenceId,
         MergeOp iterationsMerge,
@@ -76,6 +79,7 @@ public record RunWsPayload(
             "Run progress update",
             runIndex,
             seed,
+            searchSpaceId,
             problemId,
             sequenceId,
             iterationsMerge,
@@ -96,6 +100,7 @@ public record RunWsPayload(
             type,
             runId,
             message,
+            null,
             null,
             null,
             null,

@@ -332,18 +332,27 @@ function RunChart({
   const visibleChartPoints = useMemo(() => {
     return chartPoints.slice(0, visibleCount);
   }, [chartPoints, visibleCount]);
+  const statsChartPoints = useMemo(() => {
+    const isMinimizationFitness =
+      (effectiveObserver === "fitness" || effectiveObserver === "bestFitness") &&
+      (run?.searchSpaceId === "permutation" || run?.searchSpaceId === "route-list");
+
+    if (!isMinimizationFitness) return visibleChartPoints;
+
+    return visibleChartPoints.map(([x, y]) => [x, -y]);
+  }, [visibleChartPoints, effectiveObserver, run?.searchSpaceId]);
 
  useEffect(() => {
    setLineChartWindowRange(null);
  }, [effectiveObserver]);
 
   const statsVisiblePoints = useMemo(() => {
-    if (!lineChartWindowRange) return visibleChartPoints;
+    if (!lineChartWindowRange) return statsChartPoints;
 
-    return visibleChartPoints.filter(
+    return statsChartPoints.filter(
       ([x]) => x >= lineChartWindowRange.min && x <= lineChartWindowRange.max
     );
-  }, [visibleChartPoints, lineChartWindowRange]);
+  }, [statsChartPoints, lineChartWindowRange]);
 
   const phaseRanges = useMemo(() => {
     return buildPhaseRanges(series.fitnessPhaseIntervals ?? [], iterations, evaluations);

@@ -137,7 +137,7 @@ public class RunOrchestratorService {
 
                 wsSender.sendToRun(
                         request.runId(),
-                        RunWsPayload.finished(request.runId(), response.summary(), completedRuns)
+                        RunWsPayload.finished(request.runId(),request.searchSpaceId(), response.summary(), completedRuns)
                 );
             }
             return response;

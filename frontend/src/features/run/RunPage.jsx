@@ -82,9 +82,10 @@ function resolveRunPageState(locationState, savedRun) {
   };
 }
 
-function buildAverageRuns(averageByProblem, averageRunTimeByProblem) {
+function buildAverageRuns(averageByProblem, averageRunTimeByProblem, searchSpaceId) {
   return Object.entries(averageByProblem).map(([problemId, avg]) => ({
     problemId,
+    searchSpaceId,
     iterations: avg.iterations ?? [],
     evaluations: avg.evaluations ?? [],
     series: avg.series ?? {},
@@ -147,8 +148,8 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
   const averageRunTimeByProblem = batch?.summary?.averageRunTimeByProblem ?? {};
 
   const averageRuns = useMemo(
-    () => buildAverageRuns(averageByProblem, averageRunTimeByProblem),
-    [averageByProblem, averageRunTimeByProblem]
+    () => buildAverageRuns(averageByProblem, averageRunTimeByProblem, batch?.searchSpaceId),
+    [averageByProblem, averageRunTimeByProblem,batch]
   );
 
   const [selectedRunKey, setSelectedRunKey] = useState(() => {
