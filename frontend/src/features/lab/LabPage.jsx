@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useDndMonitor } from "@dnd-kit/core";
 
 import LabLeftbar from "@/shared/components/sidebars/LabLeftbar.jsx";
 import LabRightbar from "@/shared/components/sidebars/LabRightbar.jsx";
@@ -13,6 +14,7 @@ import { useLocalStorageState } from "@/shared/hooks/useLocalStorageState.js";
 import { prepareRun } from "@/shared/api/run.js";
 
 const SESSION_STORAGE_KEY = "scout:sessionId";
+const SHARED_DROP_AREA_ID = "shared-drop-area";
 
 function generateId() {
   return window.crypto?.randomUUID
@@ -205,9 +207,32 @@ export default function LabPage({
   const [hoverInfo, setHoverInfo] = useState(null);
   const [toastMessage, setToastMessage] = useState("");
   const [toastVisible, setToastVisible] = useState(false);
+  const [showRemoveDropZone, setShowRemoveDropZone] = useState(false);
   const toastTimeoutRef = useRef(null);
   const navigate = useNavigate();
   const [, setSavedRun] = useLocalStorageState("scout:lastRun", null);
+
+  useDndMonitor({
+    onDragStart(event) {
+      const isPlacedPiece = event.active?.data?.current?.fromIndex != null;
+      setShowRemoveDropZone(isPlacedPiece);
+    },
+    onDragOver(event) {
+      const isPlacedPiece = event.active?.data?.current?.fromIndex != null;
+      if (!isPlacedPiece) {
+        setShowRemoveDropZone(false);
+        return;
+      }
+
+      setShowRemoveDropZone(event.over?.id !== SHARED_DROP_AREA_ID);
+    },
+    onDragEnd() {
+      setShowRemoveDropZone(false);
+    },
+    onDragCancel() {
+      setShowRemoveDropZone(false);
+    },
+  });
 
   useEffect(() => {
     return () => {
@@ -397,6 +422,8 @@ export default function LabPage({
 
   return (
     <div className="lab-page">
+      {showRemoveDropZone && <div className="lab-remove-overlay" />}
+
       {toastVisible && (
         <div className="lab-toast" role="status" aria-live="polite">
           {toastMessage}
@@ -425,7 +452,9 @@ export default function LabPage({
             onPieceLeave={clearHover}
           />
         </div>
+
         <hr className="rounded" />
+
         <div className="chosen-selector-container">
           <Selector
             catalog={catalog}
