@@ -10,9 +10,9 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class StatisticsServiceTest {
+class RunStatisticsServiceTest {
 
-    private final StatsService service = new StatsService();
+    private final SeriesStatsService service = new SeriesStatsService();
 
     @Test
     void computeSeriesWindowStats_returnsSummaryForMatchingWindow() {

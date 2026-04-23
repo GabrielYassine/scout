@@ -31,7 +31,7 @@ public class RunOrchestratorService {
 
     private final RunRequestValidator runRequestValidator;
     private final RunExecutor runExecutor;
-    private final StatisticsService statisticsService;
+    private final RunStatisticsService runStatisticsService;
     private final WsSender wsSender;
     private final ThreadPoolTaskExecutor requestExecutor;
 
@@ -49,13 +49,13 @@ public class RunOrchestratorService {
     public RunOrchestratorService(
         RunRequestValidator runRequestValidator,
         RunExecutor runExecutor,
-        StatisticsService statisticsService,
+        RunStatisticsService runStatisticsService,
         WsSender wsSender,
         @Qualifier("requestExecutor") Executor requestExecutor
     ) {
         this.runRequestValidator = runRequestValidator;
         this.runExecutor = runExecutor;
-        this.statisticsService = statisticsService;
+        this.runStatisticsService = runStatisticsService;
         this.wsSender = wsSender;
         this.requestExecutor = (ThreadPoolTaskExecutor) requestExecutor;
     }
@@ -184,7 +184,7 @@ public class RunOrchestratorService {
                 RunRequest runRequest = buildRunRequestForSize(request, n, i);
                 int logEvery = runRequestValidator.resolveLogEveryIterations(runRequest);
                 BatchRunResponse batch = runExecutor.executeBatch(runRequest, logEvery, 0);
-                RuntimeStudyPointResponse point = statisticsService.toRuntimeStudyPoint(n, batch);
+                RuntimeStudyPointResponse point = runStatisticsService.toRuntimeStudyPoint(n, batch);
                 points.add(point);
             }
 

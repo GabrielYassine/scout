@@ -49,18 +49,18 @@ public class RunExecutor {
     private static final Logger logger = LoggerFactory.getLogger(RunExecutor.class);
 
     private final RunComponentFactory factory;
-    private final StatisticsService statisticsService;
+    private final RunStatisticsService runStatisticsService;
     private final WsSender wsSender;
     private final ThreadPoolTaskExecutor runExecutor;
 
     public RunExecutor(
             RunComponentFactory factory,
-            StatisticsService statisticsService,
+            RunStatisticsService runStatisticsService,
             WsSender wsSender,
             @Qualifier("runTaskExecutor") Executor runExecutor
     ) {
         this.factory = factory;
-        this.statisticsService = statisticsService;
+        this.runStatisticsService = runStatisticsService;
         this.wsSender = wsSender;
         this.runExecutor = (ThreadPoolTaskExecutor) runExecutor;
     }
@@ -135,7 +135,7 @@ public class RunExecutor {
 
             logger.info("run-batch-execution-time runId={} searchSpaceId={} runtimes={} batchExecutionTimeMs={}", runId, request.searchSpaceId(), runtimes, batchExecutionTimeMs);
 
-            BatchSummaryResponse summary = statisticsService.calculateSummary(batches);
+            BatchSummaryResponse summary = runStatisticsService.calculateSummary(batches);
             BatchRunResponse response = ViewMapper.toBatchRunResponse(runId, batches, summary);
             logExecutorStats("run-batch-end", runtimes, runId);
             return response;

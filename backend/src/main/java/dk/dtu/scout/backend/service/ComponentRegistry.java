@@ -4,9 +4,9 @@ import dk.dtu.scout.ScoutComponent;
 import dk.dtu.scout.backend.exception.BadRequestException;
 import org.springframework.context.ApplicationContext;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public class ComponentRegistry<T extends ScoutComponent> {
 
@@ -15,17 +15,17 @@ public class ComponentRegistry<T extends ScoutComponent> {
 
     public ComponentRegistry(List<T> components, ApplicationContext applicationContext) {
         this.applicationContext = applicationContext;
-        this.componentClassById = components.stream()
-            .collect(Collectors.toMap(
-                ScoutComponent::id,
-                component -> (Class<? extends T>) component.getClass(),
-                (c1, c2) -> {
-                    throw new IllegalStateException(
-                        "Duplicate component ID between classes: " +
-                        c1.getSimpleName() + " and " + c2.getSimpleName()
-                    );
-                }
-            ));
+        this.componentClassById = new LinkedHashMap<>();
+
+        for (T component : components) {
+            String id = component.id();
+            @SuppressWarnings("unchecked") // Safe because we only put classes of T in the map
+            Class<? extends T> componentClass = (Class<? extends T>) component.getClass();
+            Class<? extends T> existingClass = componentClassById.putIfAbsent(id, componentClass);
+            if (existingClass != null) {
+                throw new IllegalStateException("Duplicate component ID between classes: " + existingClass.getSimpleName() + " and " + componentClass.getSimpleName());
+            }
+        }
     }
 
     public T create(String id) {
