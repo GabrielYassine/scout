@@ -1,131 +1,135 @@
 .selector-container {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .option-list-outer {
-    --puzzle-piece-size: clamp(6rem, 12vw, var(--puzzle-piece-max-size));
-
-    border: 3px solid var(--color-border);
-    border-top: none;
-    background: var(--color-panel);
-    position: relative;
-    overflow: hidden;
-    flex: 1;
-    min-height: 0;
+  --puzzle-piece-size: clamp(6rem, 12vw, var(--puzzle-piece-max-size));
+  border: 3px solid var(--color-border);
+  border-top: none;
+  background: var(--color-panel);
+  position: relative;
+  overflow: hidden;
+  flex: 1;
+  min-height: 0;
 }
 
 .tab-buttons-row {
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    flex-shrink: 0;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  flex-shrink: 0;
 }
 
 .tab-button {
-    flex: unset;
-    width: 100%;
-    padding: var(--spacing-sm);
-    background: var(--color-panel);
-    border: 3px solid var(--color-border);
-    cursor: pointer;
-    font-size: var(--font-sm);
-    font-weight: 500;
-    color: var(--color-text);
-    transition: all 0.2s ease;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 0.5rem;
-    min-width: 0;
+  flex: unset;
+  width: 100%;
+  padding: var(--spacing-sm);
+  background: var(--color-panel);
+  border: 3px solid var(--color-border);
+  cursor: pointer;
+  font-size: var(--font-sm);
+  font-weight: 500;
+  color: var(--color-text);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--spacing-sm);
+  min-width: 0;
+}
+
+.tab-button:hover {
+  background: var(--color-panel-hover);
 }
 
 .tab-button:nth-child(n + 6) {
-    border-top: none;
+  border-top: none;
 }
 
 .tab-button:not(:nth-child(5n)):not(:last-child) {
-    border-right: none;
+  border-right: none;
 }
 
 .tab-button.active {
-    color: white;
-    font-weight: 600;
+  background: var(--color-panel-active);
+  color: white;
+  font-weight: 600;
+  z-index: 1;
 }
 
 .tab-button--placeholder {
-    background: var(--color-panel);
-    border: 3px solid var(--color-border);
-    border-top: none;
-    pointer-events: none;
-    cursor: default;
+  background: var(--color-panel);
+  border: 3px solid var(--color-border);
+  border-top: none;
+  pointer-events: none;
+  cursor: default;
 }
 
 .option-list {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-content: flex-start;
-    justify-content: center;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  justify-content: center;
 
-    height: 100%;
-    overflow-y: auto;
-    overflow-x: hidden;
-    min-height: 0;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
 }
 
 .option-list > * {
-    flex: 0 0 auto;
+  flex: 0 0 auto;
 }
 
 .count-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 1.5rem;
-    height: 1.5rem;
-    border-radius: 50%;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: white;
-    padding: 0 0.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: white;
+  padding: 0 0.25rem;
 }
 
 .count-badge-searchSpace {
-    background-color: var(--color-searchSpace);
+  background-color: var(--color-searchSpace);
 }
 
 .count-badge-problem {
-    background-color: var(--color-problem);
+  background-color: var(--color-problem);
 }
 
 .count-badge-algorithm {
-    background-color: var(--color-algorithm);
+  background-color: var(--color-algorithm);
 }
 
 .count-badge-generator {
-    background-color: var(--color-generator);
+  background-color: var(--color-generator);
 }
 
 .count-badge-selection {
-    background-color: var(--color-selection);
+  background-color: var(--color-selection);
 }
 
 .count-badge-populationModel {
-    background-color: var(--color-populationModel);
+  background-color: var(--color-populationModel);
 }
 
 .count-badge-stopCondition {
-    background-color: var(--color-stopCondition);
+  background-color: var(--color-stopCondition);
 }
 
 .count-badge-observer {
-    background-color: var(--color-observer);
+  background-color: var(--color-observer);
 }
 
 .count-badge-parentSelectionRule {
