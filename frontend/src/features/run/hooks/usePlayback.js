@@ -16,21 +16,17 @@ export function usePlayback({ length, initialSpeed = 50 }) {
     const stepSize = Math.max(1, Math.floor(playbackSpeed / PLAYBACK_DIVISOR));
 
     const intervalId = setInterval(() => {
-      setVisibleCount((previousCount) => {
-        if (previousCount >= length) {
-          return previousCount;
-        }
-
-        return Math.min(previousCount + stepSize, length);
-      });
+      setVisibleCount((previousCount) =>
+        previousCount >= length? previousCount : Math.min(previousCount + stepSize, length)
+      );
     }, PLAYBACK_TICK_MS);
 
     return () => clearInterval(intervalId);
   }, [length, playbackSpeed]);
 
-  const resetPlayback = () => {
+  function resetPlayback() {
     setVisibleCount(1);
-  };
+  }
 
   return {
     playbackSpeed,

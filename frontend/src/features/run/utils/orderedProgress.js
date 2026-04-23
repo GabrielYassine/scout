@@ -36,32 +36,27 @@ export function createOrderedProgressApplier({
   }
 
   function trimPendingPackets(streamState) {
-    if (streamState.pendingBySequenceId.size <= maxPending) {
-      return;
-    }
+    const pendingBySequenceId = streamState.pendingBySequenceId;
+    if (pendingBySequenceId.size <= maxPending) return;
 
-    const sequenceIdsDescending = Array.from(streamState.pendingBySequenceId.keys()).sort(
-      (a, b) => b - a
-    );
+    const sequenceIdsDescending = [...pendingBySequenceId.keys()].sort((a, b) => b - a);
 
     for (const sequenceId of sequenceIdsDescending) {
-      if (streamState.pendingBySequenceId.size <= maxPending) {
-        break;
-      }
-      streamState.pendingBySequenceId.delete(sequenceId);
+      if (pendingBySequenceId.size <= maxPending) break;
+      pendingBySequenceId.delete(sequenceId);
     }
   }
 
   function flushContiguousPackets(streamState) {
+    const pendingBySequenceId = streamState.pendingBySequenceId;
+
     while (true) {
       const nextSequenceId = streamState.lastAppliedSequenceId + 1;
-      const nextPacket = streamState.pendingBySequenceId.get(nextSequenceId);
+      const nextPacket = pendingBySequenceId.get(nextSequenceId);
 
-      if (!nextPacket) {
-        return;
-      }
+      if (!nextPacket) return;
 
-      streamState.pendingBySequenceId.delete(nextSequenceId);
+      pendingBySequenceId.delete(nextSequenceId);
       applyPacket(nextPacket);
       streamState.lastAppliedSequenceId = nextSequenceId;
     }
@@ -69,17 +64,12 @@ export function createOrderedProgressApplier({
 
   function ingest(packet) {
     const { runId, problemId, seed, sequenceId } = packet ?? {};
-
-    if (!runId || !problemId || seed == null || sequenceId == null) {
-      return;
-    }
+    if (!runId || !problemId || seed == null || sequenceId == null) return;
 
     const streamKey = makeStreamKey({ runId, problemId, seed });
     const streamState = getOrCreateStreamState(streamKey);
 
-    if (sequenceId <= streamState.lastAppliedSequenceId) {
-      return;
-    }
+    if (sequenceId <= streamState.lastAppliedSequenceId) return;
 
     const expectedSequenceId = streamState.lastAppliedSequenceId + 1;
 
@@ -97,8 +87,7 @@ export function createOrderedProgressApplier({
   }
 
   function resetStream({ runId, problemId, seed }) {
-    const streamKey = makeStreamKey({ runId, problemId, seed });
-    streamStateByKey.delete(streamKey);
+    streamStateByKey.delete(makeStreamKey({ runId, problemId, seed }));
   }
 
   function resetAll() {

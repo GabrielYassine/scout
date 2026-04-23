@@ -22,22 +22,15 @@ const SPECIAL_SERIES_KEYS = new Set([
 function getRunStatusMeta(run) {
   const rawStatus = String(run?.status ?? "").toUpperCase();
 
-  switch (rawStatus) {
-    case "FINISHED":
-    case "COMPLETED":
-    case "DONE":
-      return { label: "Finished", className: "finished" };
-
-    case "FAILED":
-    case "ERROR":
-      return { label: "Failed", className: "failed" };
-
-    case "ONGOING":
-    case "RUNNING":
-    case "IN_PROGRESS":
-    default:
-      return { label: "Running", className: "ongoing" };
+  if (rawStatus === "FINISHED") {
+    return { label: "Finished", className: "finished" };
   }
+
+  if (rawStatus === "FAILED") {
+    return { label: "Failed", className: "failed" };
+  }
+
+  return { label: "Running", className: "ongoing" };
 }
 
 function getObserverDisplayName(observerKey) {

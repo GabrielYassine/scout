@@ -14,31 +14,28 @@ function createEmptyBatch(runId = null) {
 
 function mergeList(prevList, operation, incomingSingle, incomingList) {
   const prev = Array.isArray(prevList) ? prevList : [];
-  if (!operation) return prev;
 
-  if (operation === "REPLACE") {
-    if (Array.isArray(incomingList)) return [...incomingList];
-    if (incomingSingle != null) return [incomingSingle];
-    return [];
+  switch (operation) {
+    case "REPLACE":
+      if (Array.isArray(incomingList)) return [...incomingList];
+      if (incomingSingle != null) return [incomingSingle];
+      return [];
+
+    case "APPEND":
+      if (Array.isArray(incomingList)) return [...prev, ...incomingList];
+      if (incomingSingle != null) return [...prev, incomingSingle];
+      return prev;
+
+    case "REPLACE_LAST":
+      if (Array.isArray(incomingList)) return [...incomingList];
+      if (incomingSingle == null) return prev;
+      if (prev.length === 0) return [incomingSingle];
+
+      return [...prev.slice(0, -1), incomingSingle];
+
+    default:
+      return prev;
   }
-
-  if (operation === "APPEND") {
-    if (Array.isArray(incomingList)) return [...prev, ...incomingList];
-    if (incomingSingle != null) return [...prev, incomingSingle];
-    return prev;
-  }
-
-  if (operation === "REPLACE_LAST") {
-    if (Array.isArray(incomingList)) return [...incomingList];
-    if (incomingSingle == null) return prev;
-    if (prev.length === 0) return [incomingSingle];
-
-    const next = [...prev];
-    next[next.length - 1] = incomingSingle;
-    return next;
-  }
-
-  return prev;
 }
 
 function mergeSeries(existingSeries, seriesDelta, seriesMerge) {
@@ -84,11 +81,11 @@ function mergeProgress(prevBatch, update) {
       : { runIndex: update.runIndex, seed: update.seed, runs: [] };
 
   const nextRuns = [...(nextBatch.runs ?? [])];
-  const runIndex = nextRuns.findIndex((run) => run.problemId === update.problemId);
+  const existingRunIndex = nextRuns.findIndex((run) => run.problemId === update.problemId);
 
   const nextRun =
-    runIndex >= 0
-      ? { ...nextRuns[runIndex] }
+    existingRunIndex >= 0
+      ? { ...nextRuns[existingRunIndex] }
       : {
           problemId: update.problemId,
           searchSpaceId: update.searchSpaceId,
@@ -127,11 +124,9 @@ function mergeProgress(prevBatch, update) {
 
   if (typeof update.status === "string" && update.status.trim() !== "") {
     nextRun.status = update.status;
-  } else if (!nextRun.status) {
-    nextRun.status = "ONGOING";
   }
 
-  nextRuns[runIndex >= 0 ? runIndex : nextRuns.length] = nextRun;
+  nextRuns[existingRunIndex >= 0 ? existingRunIndex : nextRuns.length] = nextRun;
   nextBatch.runs = nextRuns;
 
   if (batchIndex >= 0) {
@@ -151,6 +146,14 @@ function createWebSocketUrl() {
   return `${protocol}://${window.location.host}/ws`;
 }
 
+function parseSocketMessage(rawMessage) {
+  try {
+    return JSON.parse(rawMessage.body);
+  } catch {
+    return null;
+  }
+}
+
 export function useRunWebSocket({
   enabled,
   runId,
@@ -167,7 +170,6 @@ export function useRunWebSocket({
   const activeRunIdRef = useRef(null);
   const readySentRef = useRef(false);
   const startSentRef = useRef(false);
-
   const flushTimerRef = useRef(null);
   const latestBatchRef = useRef(null);
   const readyProgressQueueRef = useRef([]);
@@ -194,11 +196,9 @@ export function useRunWebSocket({
     });
 
     const flushProgressQueue = () => {
-      if (!enabled) return;
+      if (!enabled || readyProgressQueueRef.current.length === 0) return;
 
       const queuedPackets = readyProgressQueueRef.current;
-      if (!queuedPackets.length) return;
-
       readyProgressQueueRef.current = [];
 
       let nextBatch = latestBatchRef.current ?? null;
@@ -238,7 +238,7 @@ export function useRunWebSocket({
       setLoading(false);
       setBatch(finishedBatch);
 
-      setSavedRun(() => ({
+      setSavedRun({
         pageMode: "run",
         runId,
         runRequest,
@@ -251,7 +251,7 @@ export function useRunWebSocket({
         vrpInstance,
         selectedRunKey: "0",
         savedAt: Date.now(),
-      }));
+      });
 
       client.deactivate();
     };
@@ -264,13 +264,7 @@ export function useRunWebSocket({
     };
 
     const handleSocketMessage = (rawMessage) => {
-      let message;
-      try {
-        message = JSON.parse(rawMessage.body);
-      } catch {
-        return;
-      }
-
+      const message = parseSocketMessage(rawMessage);
       if (!message?.runId) return;
       if (activeRunIdRef.current && message.runId !== activeRunIdRef.current) return;
 
@@ -301,13 +295,13 @@ export function useRunWebSocket({
 
       client.subscribe(`/topic/run/${runId}`, handleSocketMessage);
 
-      if (!readySentRef.current) {
-        readySentRef.current = true;
-        client.publish({
-          destination: `/app/run/${runId}/ready`,
-          body: JSON.stringify({ runId }),
-        });
-      }
+      if (readySentRef.current) return;
+
+      readySentRef.current = true;
+      client.publish({
+        destination: `/app/run/${runId}/ready`,
+        body: JSON.stringify({ runId }),
+      });
     };
 
     flushTimerRef.current = setInterval(flushProgressQueue, FLUSH_INTERVAL_MS);

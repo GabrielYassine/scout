@@ -1,7 +1,3 @@
-/**
- * Pure helpers for run data normalization and selection.
- */
-
 function normalizeSeriesValues(value) {
   if (value && typeof value === "object" && Array.isArray(value.values)) {
     return value.values;
@@ -46,15 +42,15 @@ export function normalizeBatch(batch) {
 }
 
 export function normalizeSelectedRunKey(selectedKey, averageRuns, batches) {
-  const hasAverage = averageRuns.length > 0;
   const numericKey = Number(selectedKey);
+  const hasAverage = averageRuns.length > 0;
 
-  const isValidNumericKey =
+  const isValidBatchIndex =
     Number.isInteger(numericKey) &&
     numericKey >= 0 &&
     numericKey < batches.length;
 
-  if (isValidNumericKey) {
+  if (isValidBatchIndex) {
     return String(numericKey);
   }
 
@@ -78,8 +74,8 @@ function getRunAnimationLength(run) {
   return Math.max(
     hypercubeLength,
     tspTourLength,
-    ...standardSeriesLengths,
-    run.evaluations?.length ?? 0
+    run.evaluations?.length ?? 0,
+    ...standardSeriesLengths
   );
 }
 
@@ -88,7 +84,7 @@ export function computeAnimationLength({ pageMode, studyPoints, runs }) {
     return studyPoints.length;
   }
 
-  if (!runs.length) {
+  if (runs.length === 0) {
     return 0;
   }
 
