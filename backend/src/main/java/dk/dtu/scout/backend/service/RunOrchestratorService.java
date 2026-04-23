@@ -67,7 +67,7 @@ public class RunOrchestratorService {
     }
 
     public void startRun(RunRequest request) {
-        runRequestValidator.runRequestValidator(request);
+        runRequestValidator.validateRunRequest(request);
 
         String sessionId = request.sessionId();
         if (sessionId == null || sessionId.isBlank()) {
@@ -107,11 +107,10 @@ public class RunOrchestratorService {
                 activeBySession.computeIfPresent(sessionId, (sid, active) -> runId.equals(active.id()) ? null : active);
             }
         });
-
     }
 
     public BatchRunResponse run(RunRequest request) {
-        runRequestValidator.runRequestValidator(request);
+        runRequestValidator.validateRunRequest(request);
         int logEvery = runRequestValidator.resolveLogEveryIterations(request);
         int wsUpdateEvery = request.wsUpdateEveryIterations() > 0 ? request.wsUpdateEveryIterations() : logEvery;
 
@@ -132,7 +131,7 @@ public class RunOrchestratorService {
     }
 
     public void startRuntimeStudy(RuntimeStudyRequest request) {
-        runRequestValidator.runtimeStudyRequestValidator(request);
+        runRequestValidator.validateRuntimeStudyRequest(request);
 
         String sessionId = request.sessionId();
         if (sessionId == null || sessionId.isBlank()) {
@@ -172,11 +171,10 @@ public class RunOrchestratorService {
                 activeBySession.computeIfPresent(sessionId, (sid, active) -> studyId.equals(active.id()) ? null : active);
             }
         });
-
     }
 
     public RuntimeStudyResponse runRuntimeStudy(RuntimeStudyRequest request) {
-        runRequestValidator.runtimeStudyRequestValidator(request);
+        runRequestValidator.validateRuntimeStudyRequest(request);
         try {
             List<RuntimeStudyPointResponse> points = new ArrayList<>();
             List<Integer> sizes = request.problemSizes();

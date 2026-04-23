@@ -15,7 +15,7 @@ import java.util.Map;
 @Service
 public class RunRequestValidator {
 
-    public void runRequestValidator(RunRequest request) {
+    public void validateRunRequest(RunRequest request) {
         if (request == null) {
             throw new BadRequestException("Request must be provided");
         }
@@ -53,7 +53,7 @@ public class RunRequestValidator {
         validateProblemInstances(request.problemIds(), request.problemParams());
     }
 
-    public void runtimeStudyRequestValidator(RuntimeStudyRequest request) {
+    public void validateRuntimeStudyRequest(RuntimeStudyRequest request) {
         if (request == null) {
             throw new BadRequestException("Request must be provided");
         }
@@ -134,11 +134,6 @@ public class RunRequestValidator {
         }
     }
 
-    /**
-     * Derives the logging interval based on a fraction of max iterations.
-     * @param request The run request containing stop condition parameters
-     * @return The number of iterations between log updates, defaulting to 10 or 0.1% of max iterations
-     */
     public int resolveLogEveryIterations(RunRequest request) {
         return request.logEveryIterations() > 0 ? request.logEveryIterations() : 10;
     }

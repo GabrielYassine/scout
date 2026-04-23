@@ -9,7 +9,7 @@ import java.util.Map;
  * Result of a single run for a single problem.
  */
 public record RunResponse(
-    String SearchSpaceId,
+    String searchSpaceId,
     String problemId,
     List<Integer> iterations,
     List<Integer> evaluations,

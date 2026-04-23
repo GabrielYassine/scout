@@ -1,11 +1,9 @@
 package dk.dtu.scout.backend.service;
 
-import java.util.List;
-
+import dk.dtu.scout.ScoutComponent;
+import dk.dtu.scout.acceptance.SelectionRule;
 import dk.dtu.scout.backend.dto.catalog.ComponentDef;
 import dk.dtu.scout.backend.util.ViewMapper;
-
-import dk.dtu.scout.acceptance.SelectionRule;
 import dk.dtu.scout.crossover.Crossover;
 import dk.dtu.scout.generator.Generator;
 import dk.dtu.scout.observer.Observer;
@@ -14,15 +12,15 @@ import dk.dtu.scout.population.PopulationModel;
 import dk.dtu.scout.problems.Problem;
 import dk.dtu.scout.searchSpace.SearchSpace;
 import dk.dtu.scout.stopcondition.StopCondition;
-
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 public class CatalogService {
 
     private final List<SearchSpace<?>> searchSpaces;
     private final List<Problem<?>> problems;
-
     private final List<Generator<?>> generators;
     private final List<SelectionRule> selectionRules;
     private final List<PopulationModel<?>> populationModels;
@@ -41,7 +39,7 @@ public class CatalogService {
         List<Crossover> crossovers,
         List<StopCondition<?>> stopConditions,
         List<Observer<?>> observers
-        ) {
+    ) {
         this.searchSpaces = searchSpaces;
         this.problems = problems;
         this.generators = generators;
@@ -53,37 +51,43 @@ public class CatalogService {
         this.observers = observers;
     }
 
+    private <T extends ScoutComponent> List<ComponentDef> toComponentDefs(String type, List<T> components) {
+        return components.stream().map(component -> ViewMapper.toComponentDef(type, component)).toList();
+    }
+
     public List<ComponentDef> searchSpaces() {
-        return searchSpaces.stream().map(c -> ViewMapper.toComponentDef("searchSpace", c)).toList();
+        return toComponentDefs("searchSpace", searchSpaces);
     }
 
     public List<ComponentDef> problems() {
-        return problems.stream().map(c -> ViewMapper.toComponentDef("problem", c)).toList();
+        return toComponentDefs("problem", problems);
     }
 
     public List<ComponentDef> generators() {
-        return generators.stream().map(c -> ViewMapper.toComponentDef("generator", c)).toList();
+        return toComponentDefs("generator", generators);
     }
 
     public List<ComponentDef> selectionRules() {
-        return selectionRules.stream().map(c -> ViewMapper.toComponentDef("selectionRule", c)).toList();
+        return toComponentDefs("selectionRule", selectionRules);
     }
 
     public List<ComponentDef> populationModels() {
-        return populationModels.stream().map(c -> ViewMapper.toComponentDef("populationModel", c)).toList();
+        return toComponentDefs("populationModel", populationModels);
     }
+
     public List<ComponentDef> parentSelectionRules() {
-        return parentSelectionRules.stream().map(c -> ViewMapper.toComponentDef("parentSelectionRule", c)).toList();
+        return toComponentDefs("parentSelectionRule", parentSelectionRules);
     }
+
     public List<ComponentDef> crossovers() {
-        return crossovers.stream().map(c -> ViewMapper.toComponentDef("crossover", c)).toList();
+        return toComponentDefs("crossover", crossovers);
     }
 
     public List<ComponentDef> stopConditions() {
-        return stopConditions.stream().map(c -> ViewMapper.toComponentDef("stopCondition", c)).toList();
+        return toComponentDefs("stopCondition", stopConditions);
     }
 
     public List<ComponentDef> observers() {
-        return observers.stream().map(c -> ViewMapper.toComponentDef("observer", c)).toList();
+        return toComponentDefs("observer", observers);
     }
 }

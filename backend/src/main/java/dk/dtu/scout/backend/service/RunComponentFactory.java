@@ -35,15 +35,15 @@ public class RunComponentFactory {
     private final ComponentRegistry<Observer> observerRegistry;
 
     public RunComponentFactory(
-            ComponentRegistry<Generator> mutationRegistry,
-            ComponentRegistry<SelectionRule> selectionRegistry,
-            ComponentRegistry<PopulationModel> populationModelRegistry,
-            ComponentRegistry<Problem> problemRegistry,
-            ComponentRegistry<SearchSpace> searchSpaceRegistry,
-            ComponentRegistry<ParentSelectionRule> parentSelectionRegistry,
-            ComponentRegistry<Crossover> crossoverRegistry,
-            ComponentRegistry<StopCondition> stopConditionRegistry,
-            ComponentRegistry<Observer> observerRegistry
+        ComponentRegistry<Generator> mutationRegistry,
+        ComponentRegistry<SelectionRule> selectionRegistry,
+        ComponentRegistry<PopulationModel> populationModelRegistry,
+        ComponentRegistry<Problem> problemRegistry,
+        ComponentRegistry<SearchSpace> searchSpaceRegistry,
+        ComponentRegistry<ParentSelectionRule> parentSelectionRegistry,
+        ComponentRegistry<Crossover> crossoverRegistry,
+        ComponentRegistry<StopCondition> stopConditionRegistry,
+        ComponentRegistry<Observer> observerRegistry
     ) {
         this.mutationRegistry = mutationRegistry;
         this.selectionRegistry = selectionRegistry;
@@ -56,32 +56,12 @@ public class RunComponentFactory {
         this.observerRegistry = observerRegistry;
     }
 
-    private <T extends ScoutComponent> T createAndConfigure(
-            ComponentRegistry<T> registry,
-            String id,
-            String componentType,
-            Map<String, Object> params
-    ) {
+    private <T extends ScoutComponent> T createAndConfigure(ComponentRegistry<T> registry, String id, String componentType, Map<String, Object> params) {
         if (id == null || id.isBlank()) {
             throw new BadRequestException(componentType + " must be specified");
         }
 
         T component = registry.create(id);
-        component.configure(params != null ? params : Map.of());
-        return component;
-    }
-
-    private <T extends ScoutComponent> T createAndConfigure(
-            ComponentRegistry<T> registry,
-            List<String> ids,
-            String componentType,
-            Map<String, Object> params
-    ) {
-        if (ids == null || ids.isEmpty()) {
-            throw new BadRequestException(componentType + " must be specified");
-        }
-
-        T component = registry.create(ids.getFirst());
         component.configure(params != null ? params : Map.of());
         return component;
     }
@@ -105,11 +85,8 @@ public class RunComponentFactory {
     public <S> Generator<S> createGenerator(String id, Map<String, Object> params, String searchSpaceId) {
         Generator<S> generator = createAndConfigure(mutationRegistry, id, "Generator", params);
 
-        if (!generator.supportedSearchSpaces().isEmpty() &&
-                !generator.supportedSearchSpaces().contains(searchSpaceId)) {
-            throw new BadRequestException(
-                    "Generator '" + id + "' does not support search space '" + searchSpaceId + "'"
-            );
+        if (!generator.supportedSearchSpaces().isEmpty() && !generator.supportedSearchSpaces().contains(searchSpaceId)) {
+            throw new BadRequestException("Generator '" + id + "' does not support search space '" + searchSpaceId + "'");
         }
         return generator;
     }
@@ -126,24 +103,25 @@ public class RunComponentFactory {
         if (ids == null || ids.isEmpty()) {
             throw new BadRequestException("Stop condition must be specified");
         }
-        final Map<String, Object> p = (params == null) ? Map.of() : params;
-        return ids.stream()
-                .map(id -> (StopCondition<S>) createAndConfigure(stopConditionRegistry, List.of(id), "Stop condition", p))
-                .toList();
+
+        Map<String, Object> effectiveParams = params != null ? params : Map.of();
+        return ids.stream().map(id -> (StopCondition<S>) createAndConfigure(stopConditionRegistry, id, "Stop condition", effectiveParams)).toList();
     }
 
     public <S> List<Observer<S>> createObservers(List<String> ids, Map<String, Object> params) {
-        if (ids == null || ids.isEmpty()) return List.of();
-        final Map<String, Object> p = (params == null) ? Map.of() : params;
-        return ids.stream()
-                .map(id -> (Observer<S>) createAndConfigure(observerRegistry, List.of(id), "Observer", p))
-                .toList();
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+
+        Map<String, Object> effectiveParams = params != null ? params : Map.of();
+        return ids.stream().map(id -> (Observer<S>) createAndConfigure(observerRegistry, id, "Observer", effectiveParams)).toList();
     }
 
     public <S> Crossover<S> createOptionalCrossover(String id, Map<String, Object> params) {
         if (id == null || id.isBlank()) {
             return null;
         }
+
         return createAndConfigure(crossoverRegistry, id, "Crossover", params);
     }
 
@@ -156,11 +134,8 @@ public class RunComponentFactory {
     }
 
     public <S> void validateProblemSearchSpaceCompatibility(Problem<S> problem, String problemId, String searchSpaceId) {
-        if (!problem.supportedSearchSpaces().isEmpty() &&
-                !problem.supportedSearchSpaces().contains(searchSpaceId)) {
-            throw new BadRequestException(
-                    "Problem '" + problemId + "' does not support search space '" + searchSpaceId + "'"
-            );
+        if (!problem.supportedSearchSpaces().isEmpty() && !problem.supportedSearchSpaces().contains(searchSpaceId)) {
+            throw new BadRequestException("Problem '" + problemId + "' does not support search space '" + searchSpaceId + "'");
         }
     }
 }
