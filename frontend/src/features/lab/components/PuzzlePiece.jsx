@@ -75,8 +75,6 @@ export default function PuzzlePiece({
           transform,
           transformOrigin: "center",
           background: `var(--color-${type}, var(--color-border-highlight))`,
-          opacity: !isPlaced && isDisabled ? 0.58 : 1,
-          cursor: !isPlaced && isDisabled ? "not-allowed" : "grab",
         }}
       />
 

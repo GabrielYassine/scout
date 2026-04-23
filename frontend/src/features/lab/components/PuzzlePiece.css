@@ -30,6 +30,15 @@
     cursor: not-allowed;
 }
 
+.puzzle-piece-wrapper.disabled .puzzle-piece-shape {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.puzzle-piece-wrapper.disabled .puzzle-piece-title {
+    opacity: 0.3;
+}
+
 .puzzle-piece-shape {
     position: absolute;
     inset: 0;
@@ -40,6 +49,7 @@
     width: var(--puzzle-piece-size);
     height: var(--puzzle-piece-size);
     transition: box-shadow 0.15s ease, background 0.15s ease, opacity 0.15s ease, transform 0.15s ease;
+    cursor: grab;
 }
 
 .puzzle-piece-content {
@@ -68,6 +78,7 @@
     box-sizing: border-box;
     word-break: break-word;
     overflow-wrap: break-word;
+    transition: opacity 0.15s ease;
 }
 
 .puzzle-piece-title--selector {
@@ -80,32 +91,4 @@
     font-size: clamp(0.65rem, calc(var(--puzzle-piece-size) * 0.09), 1rem);
     width: 65%;
     height: 65%;
-}
-
-.puzzle-piece-wrapper.disabled::after {
-    content: attr(data-disabled-reason);
-    position: absolute;
-    left: 50%;
-    bottom: calc(100% + 0.5rem);
-    transform: translateX(-50%);
-    background: #111;
-    color: white;
-    border: 1px solid var(--color-border);
-    border-radius: 0.4rem;
-    padding: 0.5rem 0.7rem;
-    font-size: 0.85rem;
-    line-height: 1.2;
-    white-space: normal;
-    width: max-content;
-    max-width: 16rem;
-    text-align: center;
-    opacity: 0;
-    pointer-events: none;
-    z-index: 9000;
-    transition: opacity 0.15s ease;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
-}
-
-.puzzle-piece-wrapper.disabled:hover::after {
-    opacity: 1;
 }
