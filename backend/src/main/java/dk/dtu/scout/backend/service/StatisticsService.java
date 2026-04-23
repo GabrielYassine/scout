@@ -20,7 +20,7 @@ import java.util.Map;
 public class StatisticsService {
     private static final int MAX_BOX_PLOTS = 50;
     private static final double TREND_THRESHOLD = 0.0001;
-
+    private static final java.util.Set<String> AVERAGE_SERIES_WHITELIST = java.util.Set.of("fitness", "bestFitness");
     /**
      * Builds the normal run summary used by the regular run page.
      *
@@ -108,6 +108,9 @@ public class StatisticsService {
             if (series == null) continue;
 
             for (String seriesName : series.keySet()) {
+                if (!AVERAGE_SERIES_WHITELIST.contains(seriesName)) {
+                    continue;
+                }
                 AlignedSeries aligned = extractAlignedSeries(run, seriesName);
                 if (aligned == null) continue;
 
