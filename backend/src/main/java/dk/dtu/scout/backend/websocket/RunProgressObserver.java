@@ -2,11 +2,10 @@ package dk.dtu.scout.backend.websocket;
 
 import dk.dtu.scout.dto.Parameter;
 import dk.dtu.scout.logging.IterationSnapshot;
-import dk.dtu.scout.logging.RunLog;
-import dk.dtu.scout.observer.Observer;
 import dk.dtu.scout.logging.LoggedSeries;
+import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.logging.SeriesMode;
-import dk.dtu.scout.searchSpace.SearchSpace;
+import dk.dtu.scout.observer.Observer;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -55,8 +54,13 @@ public class RunProgressObserver<S> implements Observer<S> {
         return runId + ":" + problemId + ":" + seed;
     }
 
+    public static long nextSequenceIdFor(String runId, String problemId, long seed) {
+        String streamKey = streamKey(runId, problemId, seed);
+        return SEQUENCE_BY_STREAM.computeIfAbsent(streamKey, k -> new AtomicLong(0)).incrementAndGet();
+    }
+
     private long nextSequenceId() {
-        return SEQUENCE_BY_STREAM.get(streamKey).incrementAndGet();
+        return nextSequenceIdFor(runId, problemId, seed);
     }
 
     private static MergeOp seriesMergeOp(LoggedSeries<?> series) {
@@ -91,6 +95,7 @@ public class RunProgressObserver<S> implements Observer<S> {
     @Override
     public void onStep(IterationSnapshot<S> state, RunLog log) {
         if (wsUpdateEveryIterations <= 0) return;
+
         int logIndex = log.getIterations().size() - 1;
         if (logIndex < 0) return;
         if (logIndex <= lastSentLogIndex) return;
@@ -114,6 +119,7 @@ public class RunProgressObserver<S> implements Observer<S> {
             String key = entry.getKey();
             LoggedSeries<?> loggedSeries = entry.getValue();
             if (loggedSeries == null) continue;
+
             List<?> values = loggedSeries.getValues();
             if (values == null || values.isEmpty()) continue;
 
@@ -137,7 +143,9 @@ public class RunProgressObserver<S> implements Observer<S> {
                 evaluation,
                 null,
                 null,
-                seriesDelta
+                seriesDelta,
+                "ONGOING",
+                null
             )
         );
     }
@@ -147,6 +155,7 @@ public class RunProgressObserver<S> implements Observer<S> {
         int logIndex = log.getIterations().size() - 1;
         if (logIndex < 0) return;
         if (logIndex <= lastSentLogIndex) return;
+
         lastSentLogIndex = logIndex;
 
         int iteration = log.getIterations().get(logIndex);
@@ -159,6 +168,7 @@ public class RunProgressObserver<S> implements Observer<S> {
             String key = entry.getKey();
             LoggedSeries<?> loggedSeries = entry.getValue();
             if (loggedSeries == null) continue;
+
             List<?> values = loggedSeries.getValues();
             if (values == null || values.isEmpty()) continue;
 
@@ -182,7 +192,9 @@ public class RunProgressObserver<S> implements Observer<S> {
                 evaluation,
                 null,
                 null,
-                seriesDelta
+                seriesDelta,
+                "ONGOING",
+                null
             )
         );
     }

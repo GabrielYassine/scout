@@ -128,9 +128,11 @@ function mergeProgress(prevBatch, update) {
           finalEvaluations: 0,
           status: "ONGOING",
         };
+
   if (update.searchSpaceId != null) {
     nextRun.searchSpaceId = update.searchSpaceId;
   }
+
   nextRun.iterations = mergeList(
     nextRun.iterations,
     update.iterationsMerge,
@@ -147,7 +149,16 @@ function mergeProgress(prevBatch, update) {
 
   nextRun.series = mergeSeries(nextRun.series, update.seriesDelta, update.seriesMerge);
   trimAppendedSeriesToXAxisLength(nextRun, update.seriesMerge);
-  nextRun.status = "ONGOING";
+
+  if (typeof update.runtimeMs === "number" && Number.isFinite(update.runtimeMs)) {
+    nextRun.runtimeMs = update.runtimeMs;
+  }
+
+  if (typeof update.status === "string" && update.status.trim() !== "") {
+    nextRun.status = update.status;
+  } else if (!nextRun.status) {
+    nextRun.status = "ONGOING";
+  }
 
   nextRuns[runIndex >= 0 ? runIndex : nextRuns.length] = nextRun;
   nextBatch.runs = nextRuns;
@@ -245,15 +256,15 @@ export function useRunWebSocket({
     const handleRunFinished = (message) => {
       flushProgressQueue();
 
-      const finishedBatch ={
-      ...applyCompletedRuns(
-        latestBatchRef.current,
-        message.completedRuns,
-        message.summary,
-        message.runId ?? runId
-      ),
-      searchSpaceId: message.searchSpaceId ?? null,
-    };
+      const finishedBatch = {
+        ...applyCompletedRuns(
+          latestBatchRef.current,
+          message.completedRuns,
+          message.summary,
+          message.runId ?? runId
+        ),
+        searchSpaceId: message.searchSpaceId ?? null,
+      };
 
       latestBatchRef.current = finishedBatch;
       setLoading(false);

@@ -26,7 +26,7 @@ function getRunStatusMeta(run) {
     case "FINISHED":
     case "COMPLETED":
     case "DONE":
-      return { label: "Received final package", className: "finished" };
+      return { label: "Finished", className: "finished" };
 
     case "FAILED":
     case "ERROR":
@@ -36,7 +36,7 @@ function getRunStatusMeta(run) {
     case "RUNNING":
     case "IN_PROGRESS":
     default:
-      return { label: "Awaiting final package", className: "ongoing" };
+      return { label: "Running", className: "ongoing" };
   }
 }
 
@@ -332,6 +332,7 @@ function RunChart({
   const visibleChartPoints = useMemo(() => {
     return chartPoints.slice(0, visibleCount);
   }, [chartPoints, visibleCount]);
+
   const statsChartPoints = useMemo(() => {
     const isMinimizationFitness =
       (effectiveObserver === "fitness" || effectiveObserver === "bestFitness") &&
@@ -342,9 +343,9 @@ function RunChart({
     return visibleChartPoints.map(([x, y]) => [x, -y]);
   }, [visibleChartPoints, effectiveObserver, run?.searchSpaceId]);
 
- useEffect(() => {
-   setLineChartWindowRange(null);
- }, [effectiveObserver]);
+  useEffect(() => {
+    setLineChartWindowRange(null);
+  }, [effectiveObserver]);
 
   const statsVisiblePoints = useMemo(() => {
     if (!lineChartWindowRange) return statsChartPoints;
@@ -402,7 +403,9 @@ function RunChart({
             <span className="run-status-dot" />
           </div>
         </div>
-        <div className="run-chart-subtitle">Runtime: {runtimeMs != null ? `${runtimeMs.toFixed(2)} ms` : "Not Finished Yet"}</div>
+        <div className="run-chart-subtitle">
+          Runtime: {runtimeMs != null ? `${runtimeMs.toFixed(2)} ms` : "Running..."}
+        </div>
       </div>
 
       <div className="run-chart-inner">

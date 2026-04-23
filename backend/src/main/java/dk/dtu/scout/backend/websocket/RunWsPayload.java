@@ -23,6 +23,8 @@ public record RunWsPayload(
     List<Integer> iterations,
     List<Integer> evaluations,
     Map<String, Object> seriesDelta,
+    String status,
+    Double runtimeMs,
     BatchSummaryResponse summary,
     List<RunFinalResponse> completedRuns
 ) {
@@ -38,6 +40,8 @@ public record RunWsPayload(
             null,
             null,
             searchSpaceId,
+            null,
+            null,
             null,
             null,
             null,
@@ -71,7 +75,9 @@ public record RunWsPayload(
         Integer evaluation,
         List<Integer> iterations,
         List<Integer> evaluations,
-        Map<String, Object> seriesDelta
+        Map<String, Object> seriesDelta,
+        String status,
+        Double runtimeMs
     ) {
         return new RunWsPayload(
             "RUN_PROGRESS",
@@ -90,8 +96,10 @@ public record RunWsPayload(
             iterations,
             evaluations,
             seriesDelta,
+            status,
+            runtimeMs,
             null,
-                null
+            null
         );
     }
 
@@ -114,7 +122,9 @@ public record RunWsPayload(
             null,
             null,
             null,
-                null
+            null,
+            null,
+            null
         );
     }
 }

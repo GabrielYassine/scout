@@ -7,9 +7,11 @@ import dk.dtu.scout.backend.dto.run.BatchRunResponse;
 import dk.dtu.scout.backend.dto.run.BatchSummaryResponse;
 import dk.dtu.scout.backend.dto.run.RunGroupResponse;
 import dk.dtu.scout.backend.dto.run.RunResponse;
-import dk.dtu.scout.backend.util.ViewMapper;
 import dk.dtu.scout.backend.util.InstanceMapper;
+import dk.dtu.scout.backend.util.ViewMapper;
+import dk.dtu.scout.backend.websocket.MergeOp;
 import dk.dtu.scout.backend.websocket.RunProgressObserver;
+import dk.dtu.scout.backend.websocket.RunWsPayload;
 import dk.dtu.scout.backend.websocket.WsSender;
 import dk.dtu.scout.crossover.Crossover;
 import dk.dtu.scout.generator.Generator;
@@ -20,12 +22,11 @@ import dk.dtu.scout.population.PopulationModel;
 import dk.dtu.scout.problems.Problem;
 import dk.dtu.scout.searchSpace.SearchSpace;
 import dk.dtu.scout.stopcondition.StopCondition;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -126,8 +127,8 @@ public class RunExecutor {
             }
 
             batches = batches.stream()
-                .sorted(Comparator.comparingInt(RunGroupResponse::runIndex))
-                .toList();
+                    .sorted(Comparator.comparingInt(RunGroupResponse::runIndex))
+                    .toList();
 
             long batchEndTime = System.nanoTime();
             double batchExecutionTimeMs = (batchEndTime - batchStartTime) / 1_000_000.0;
@@ -139,7 +140,6 @@ public class RunExecutor {
             logExecutorStats("run-batch-end", runtimes, runId);
             return response;
         } catch (CancellationException ex) {
-            // Best-effort: cancel outstanding child tasks.
             for (Future<RunGroupResponse> f : futures) {
                 f.cancel(true);
             }
@@ -151,8 +151,6 @@ public class RunExecutor {
             throw ex;
         }
     }
-
-
 
     private void logExecutorStats(String phase, int runs, String runId) {
         var pool = runExecutor.getThreadPoolExecutor();
@@ -180,6 +178,7 @@ public class RunExecutor {
         List<RunResponse> perProblemRuns = new ArrayList<>();
         for (String pid : request.problemIds()) {
             checkCancelled();
+
             Map<String, Object> problemParams = request.problemParams() != null
                     ? new LinkedHashMap<>(request.problemParams())
                     : new LinkedHashMap<>();
@@ -200,18 +199,59 @@ public class RunExecutor {
             PopulationModel<S> popModel = factory.createPopulationModel(request.populationModelId(), request.populationModelParams());
             Crossover<S> crossover = factory.createOptionalCrossover(request.crossoverId(), request.crossoverParams());
             ParentSelectionRule<S> parentSelection = factory.createParentSelectionRule(request.parentSelectionRuleId(), request.parentSelectionRuleParams());
+
             if (request.runId() != null && wsUpdateEveryIterations > 0) {
-                observers.add(new RunProgressObserver<>(wsSender, request.runId(), runIndex, runSeed,  ss.id(), pid, wsUpdateEveryIterations));
+                observers.add(new RunProgressObserver<>(wsSender, request.runId(), runIndex, runSeed, ss.id(), pid, wsUpdateEveryIterations));
             }
+
             long startTime = System.nanoTime();
 
             SimulationRunner runner = new SimulationRunner();
-            RunLog log = runner.run(popModel, generatorFactory, crossover, parentSelection, selection, ss, problem, rng, stopConditions, observers, logEveryIterations);
+            RunLog log = runner.run(
+                popModel,
+                generatorFactory,
+                crossover,
+                parentSelection,
+                selection,
+                ss,
+                problem,
+                rng,
+                stopConditions,
+                observers,
+                logEveryIterations
+            );
 
             checkCancelled();
 
             long endTime = System.nanoTime();
             double runtimeMs = (endTime - startTime) / 1_000_000.0;
+
+            if (request.runId() != null && wsUpdateEveryIterations > 0) {
+                int lastIteration = log.getIterations().isEmpty() ? 0 : log.getIterations().getLast();
+                int lastEvaluation = log.getEvaluations().isEmpty() ? 0 : log.getEvaluations().getLast();
+
+                wsSender.sendToRun(
+                    request.runId(),
+                    RunWsPayload.progress(
+                        request.runId(),
+                        runIndex,
+                        runSeed,
+                        ss.id(),
+                        pid,
+                        RunProgressObserver.nextSequenceIdFor(request.runId(), pid, runSeed),
+                        MergeOp.APPEND,
+                        MergeOp.APPEND,
+                        Map.of(),
+                        lastIteration,
+                        lastEvaluation,
+                        null,
+                        null,
+                        Map.of(),
+                        "FINISHED",
+                        runtimeMs
+                    )
+                );
+            }
 
             List<Integer> evaluations = log.getEvaluations();
             int finalEvaluations = evaluations.isEmpty() ? 0 : evaluations.getLast();
