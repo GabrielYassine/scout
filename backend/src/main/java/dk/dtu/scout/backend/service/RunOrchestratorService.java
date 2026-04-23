@@ -4,7 +4,6 @@ import dk.dtu.scout.backend.dto.PrepareRunResponse;
 import dk.dtu.scout.backend.dto.RunRequest;
 import dk.dtu.scout.backend.dto.RuntimeStudyRequest;
 import dk.dtu.scout.backend.dto.run.BatchRunResponse;
-import dk.dtu.scout.backend.dto.run.RunFinalResponse;
 import dk.dtu.scout.backend.dto.study.RuntimeStudyPointResponse;
 import dk.dtu.scout.backend.dto.study.RuntimeStudyResponse;
 import dk.dtu.scout.backend.websocket.RunWsPayload;
@@ -48,11 +47,11 @@ public class RunOrchestratorService {
     private final ConcurrentHashMap<String, Boolean> startedStudyIds = new ConcurrentHashMap<>();
 
     public RunOrchestratorService(
-            RunRequestValidator runRequestValidator,
-            RunExecutor runExecutor,
-            StatisticsService statisticsService,
-            WsSender wsSender,
-            @Qualifier("requestExecutor") Executor requestExecutor
+        RunRequestValidator runRequestValidator,
+        RunExecutor runExecutor,
+        StatisticsService statisticsService,
+        WsSender wsSender,
+        @Qualifier("requestExecutor") Executor requestExecutor
     ) {
         this.runRequestValidator = runRequestValidator;
         this.runExecutor = runExecutor;
@@ -62,16 +61,12 @@ public class RunOrchestratorService {
     }
 
     public PrepareRunResponse prepareRun(String requestedSessionId) {
-        String sessionId =
-                requestedSessionId != null && !requestedSessionId.isBlank()
-                        ? requestedSessionId
-                        : UUID.randomUUID().toString();
-
+        String sessionId = requestedSessionId != null && !requestedSessionId.isBlank() ? requestedSessionId : UUID.randomUUID().toString();
         String runId = UUID.randomUUID().toString();
         return new PrepareRunResponse(sessionId, runId);
     }
 
-    public boolean startRun(RunRequest request) {
+    public void startRun(RunRequest request) {
         runRequestValidator.runRequestValidator(request);
 
         String sessionId = request.sessionId();
@@ -85,7 +80,7 @@ public class RunOrchestratorService {
         }
 
         if (startedRunIds.putIfAbsent(runId, Boolean.TRUE) != null) {
-            return false;
+            return;
         }
 
         ActiveTask previous = activeBySession.get(sessionId);
@@ -109,36 +104,21 @@ public class RunOrchestratorService {
                 // run() already emitted failed payload if needed
             } finally {
                 startedRunIds.remove(runId);
-                activeBySession.computeIfPresent(
-                        sessionId,
-                        (sid, active) -> runId.equals(active.id()) ? null : active
-                );
+                activeBySession.computeIfPresent(sessionId, (sid, active) -> runId.equals(active.id()) ? null : active);
             }
         });
 
-        return true;
     }
 
     public BatchRunResponse run(RunRequest request) {
         runRequestValidator.runRequestValidator(request);
         int logEvery = runRequestValidator.resolveLogEveryIterations(request);
-        int wsUpdateEvery =
-                request.wsUpdateEveryIterations() > 0
-                        ? request.wsUpdateEveryIterations()
-                        : logEvery;
+        int wsUpdateEvery = request.wsUpdateEveryIterations() > 0 ? request.wsUpdateEveryIterations() : logEvery;
 
         try {
             BatchRunResponse response = runExecutor.executeBatch(request, logEvery, wsUpdateEvery);
             if (request.runId() != null) {
-                List<RunFinalResponse> completedRuns = response.batches().stream()
-                        .flatMap(batch -> batch.runs().stream().map(run ->
-                                new RunFinalResponse(batch.runIndex(), run.problemId(), run.runtimeMs())))
-                        .toList();
-
-                wsSender.sendToRun(
-                        request.runId(),
-                        RunWsPayload.finished(request.runId(),request.searchSpaceId(), response.summary(), completedRuns)
-                );
+                wsSender.sendToRun(request.runId(), RunWsPayload.finished(request.runId(), request.searchSpaceId(), response.summary()));
             }
             return response;
         } catch (CancellationException ex) {
@@ -151,7 +131,7 @@ public class RunOrchestratorService {
         }
     }
 
-    public boolean startRuntimeStudy(RuntimeStudyRequest request) {
+    public void startRuntimeStudy(RuntimeStudyRequest request) {
         runRequestValidator.runtimeStudyRequestValidator(request);
 
         String sessionId = request.sessionId();
@@ -165,7 +145,7 @@ public class RunOrchestratorService {
         }
 
         if (startedStudyIds.putIfAbsent(studyId, Boolean.TRUE) != null) {
-            return false;
+            return;
         }
 
         ActiveTask previous = activeBySession.get(sessionId);
@@ -189,14 +169,10 @@ public class RunOrchestratorService {
                 // runRuntimeStudy already emits failed payload if needed
             } finally {
                 startedStudyIds.remove(studyId);
-                activeBySession.computeIfPresent(
-                        sessionId,
-                        (sid, active) -> studyId.equals(active.id()) ? null : active
-                );
+                activeBySession.computeIfPresent(sessionId, (sid, active) -> studyId.equals(active.id()) ? null : active);
             }
         });
 
-        return true;
     }
 
     public RuntimeStudyResponse runRuntimeStudy(RuntimeStudyRequest request) {
@@ -226,38 +202,36 @@ public class RunOrchestratorService {
     }
 
     private RunRequest buildRunRequestForSize(RuntimeStudyRequest request, int problemSize, int sizeIndex) {
-        Map<String, Object> searchSpaceParams = new LinkedHashMap<>(
-                request.searchSpaceParams() != null ? request.searchSpaceParams() : Map.of()
-        );
+        Map<String, Object> searchSpaceParams = new LinkedHashMap<>(request.searchSpaceParams() != null ? request.searchSpaceParams() : Map.of());
         searchSpaceParams.put("n", problemSize);
 
         long seed = request.seed() + (long) sizeIndex * 1_000_000L;
 
         return new RunRequest(
-                request.searchSpaceId(),
-                searchSpaceParams,
-                List.of(request.problemId()),
-                request.problemParams(),
-                request.generatorId(),
-                request.generatorParams(),
-                request.populationModelId(),
-                request.populationModelParams(),
-                request.selectionRuleId(),
-                request.selectionRuleParams(),
-                request.parentSelectionRuleId(),
-                request.parentSelectionRuleParams(),
-                request.crossoverId(),
-                request.crossoverParams(),
-                List.of(),
-                Map.of(),
-                request.stopConditionIds(),
-                request.stopConditionParams(),
-                seed,
-                request.repetitionsPerSize(),
-                null,
-                null,
-                0,
-                0
+            request.searchSpaceId(),
+            searchSpaceParams,
+            List.of(request.problemId()),
+            request.problemParams(),
+            request.generatorId(),
+            request.generatorParams(),
+            request.populationModelId(),
+            request.populationModelParams(),
+            request.selectionRuleId(),
+            request.selectionRuleParams(),
+            request.parentSelectionRuleId(),
+            request.parentSelectionRuleParams(),
+            request.crossoverId(),
+            request.crossoverParams(),
+            List.of(),
+            Map.of(),
+            request.stopConditionIds(),
+            request.stopConditionParams(),
+            seed,
+            request.repetitionsPerSize(),
+            null,
+            null,
+            0,
+            0
         );
     }
 }

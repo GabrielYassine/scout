@@ -12,35 +12,6 @@ function createEmptyBatch(runId = null) {
   };
 }
 
-function applyCompletedRuns(prevBatch, completedRuns, summary, runId) {
-  const base = prevBatch ?? createEmptyBatch(runId);
-
-  const completedByKey = new Map(
-    (completedRuns ?? []).map((item) => [`${item.runIndex}::${item.problemId}`, item])
-  );
-
-  const batches = (base.batches ?? []).map((batch) => ({
-    ...batch,
-    runs: (batch.runs ?? []).map((run) => {
-      const completed = completedByKey.get(`${batch.runIndex}::${run.problemId}`);
-      if (!completed) return run;
-
-      return {
-        ...run,
-        runtimeMs: completed.runtimeMs,
-        status: "FINISHED",
-      };
-    }),
-  }));
-
-  return {
-    ...base,
-    runId: base.runId ?? runId ?? null,
-    batches,
-    summary: summary ?? base.summary ?? null,
-  };
-}
-
 function mergeList(prevList, operation, incomingSingle, incomingList) {
   const prev = Array.isArray(prevList) ? prevList : [];
   if (!operation) return prev;
@@ -257,13 +228,10 @@ export function useRunWebSocket({
       flushProgressQueue();
 
       const finishedBatch = {
-        ...applyCompletedRuns(
-          latestBatchRef.current,
-          message.completedRuns,
-          message.summary,
-          message.runId ?? runId
-        ),
+        ...(latestBatchRef.current ?? createEmptyBatch(message.runId ?? runId)),
+        runId: message.runId ?? runId,
         searchSpaceId: message.searchSpaceId ?? null,
+        summary: message.summary ?? null,
       };
 
       latestBatchRef.current = finishedBatch;
