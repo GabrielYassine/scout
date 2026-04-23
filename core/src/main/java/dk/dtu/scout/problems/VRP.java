@@ -12,7 +12,7 @@ import java.util.Map;
 
 @Component
 @Scope("prototype")
-public class VRPProblem implements Problem<List<List<Integer>>> {
+public class VRP implements Problem<List<List<Integer>>> {
 
     private static final double VEHICLE_PENALTY = 1_000_000.0;
     private static final double CAPACITY_PENALTY = 1_000_000.0;

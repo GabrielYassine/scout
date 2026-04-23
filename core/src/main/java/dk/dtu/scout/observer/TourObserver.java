@@ -7,8 +7,8 @@ import dk.dtu.scout.datatypes.TSPInstance;
 import dk.dtu.scout.datatypes.VRPInstance;
 import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.logging.SeriesMode;
-import dk.dtu.scout.problems.TSPProblem;
-import dk.dtu.scout.problems.VRPProblem;
+import dk.dtu.scout.problems.TSP;
+import dk.dtu.scout.problems.VRP;
 import dk.dtu.scout.logging.IterationSnapshot;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -65,13 +65,13 @@ public class TourObserver implements Observer<Object> {
             return;
         }
         Object problemObj = state.get(StateKeys.PROBLEM);
-        if (problemObj instanceof TSPProblem tspProblem) {
-            this.tspInstance = tspProblem.getInstance();
+        if (problemObj instanceof TSP tsp) {
+            this.tspInstance = tsp.getInstance();
             if (tspInstance != null) {
                 this.cities = TourObserverSupport.buildTspCities(tspInstance);
             }
-        } else if (problemObj instanceof VRPProblem vrpProblem) {
-            this.vrpInstance = vrpProblem.getInstance();
+        } else if (problemObj instanceof VRP vrp) {
+            this.vrpInstance = vrp.getInstance();
             if (vrpInstance != null) {
                 this.cities = TourObserverSupport.buildVrpCities(vrpInstance);
             }

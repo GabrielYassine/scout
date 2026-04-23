@@ -5,7 +5,7 @@ import dk.dtu.scout.dto.Parameter;
 import dk.dtu.scout.State;
 import dk.dtu.scout.datatypes.StateKeys;
 import dk.dtu.scout.datatypes.TSPInstance;
-import dk.dtu.scout.problems.TSPProblem;
+import dk.dtu.scout.problems.TSP;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -32,8 +32,8 @@ public class TspAcoGenerator extends AbstractAcoGenerator<int[]> {
         this.state = state;
         if (state != null) {
             Object problemObj = state.get(StateKeys.PROBLEM);
-            if (problemObj instanceof TSPProblem tspProblem) {
-                this.tspInstance = tspProblem.getInstance();
+            if (problemObj instanceof TSP tsp) {
+                this.tspInstance = tsp.getInstance();
             }
         }
     }

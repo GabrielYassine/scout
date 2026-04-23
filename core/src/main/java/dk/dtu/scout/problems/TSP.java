@@ -11,14 +11,14 @@ import java.util.Map;
 
 @Component
 @Scope("prototype")
-public class TSPProblem implements Problem<int[]> {
+public class TSP implements Problem<int[]> {
 
     private static final String TSP_OPTIMA_RESOURCE = "optima/tsp-optima.properties";
     private static final double EPSILON = 1e-9;
     private static final Map<String, Double> TSP_OPTIMA = OptimaLookup.loadDoubleMap(TSP_OPTIMA_RESOURCE);
     private TSPInstance instance;
 
-    public TSPProblem() {}
+    public TSP() {}
 
     @Override
     public String id() {

@@ -4,7 +4,7 @@ import dk.dtu.scout.dto.Parameter;
 import dk.dtu.scout.State;
 import dk.dtu.scout.datatypes.StateKeys;
 import dk.dtu.scout.problems.Problem;
-import dk.dtu.scout.problems.TSPProblem;
+import dk.dtu.scout.problems.TSP;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -69,7 +69,7 @@ public class TargetReached<S> implements StopCondition<S> {
 
     @Override
     public boolean shouldStop(int iteration, int evaluations, double bestFitness, S bestSolution) {
-        if (problem instanceof TSPProblem) {
+        if (problem instanceof TSP) {
             if (targetIsDistance || targetFitness > 0.0) {
                 return bestFitness >= -targetFitness - EPSILON;
             }
