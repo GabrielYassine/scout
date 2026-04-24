@@ -5,7 +5,6 @@ import dk.dtu.scout.backend.dto.RunRequest;
 import dk.dtu.scout.backend.dto.RuntimeStudyRequest;
 import dk.dtu.scout.backend.dto.run.BatchRunResponse;
 import dk.dtu.scout.backend.dto.study.RuntimeStudyPointResponse;
-import dk.dtu.scout.backend.dto.study.RuntimeStudyResponse;
 import dk.dtu.scout.backend.websocket.RunWsPayload;
 import dk.dtu.scout.backend.websocket.RuntimeStudyWsPayload;
 import dk.dtu.scout.backend.websocket.WsSender;
@@ -173,24 +172,24 @@ public class RunOrchestratorService {
         });
     }
 
-    public RuntimeStudyResponse runRuntimeStudy(RuntimeStudyRequest request) {
+    public void runRuntimeStudy(RuntimeStudyRequest request) {
         runRequestValidator.validateRuntimeStudyRequest(request);
         try {
             List<RuntimeStudyPointResponse> points = new ArrayList<>();
             List<Integer> sizes = request.problemSizes();
 
             for (int i = 0; i < sizes.size(); i++) {
+                System.out.println("Starting runtime study point for size " + sizes.get(i));
                 int n = sizes.get(i);
                 RunRequest runRequest = buildRunRequestForSize(request, n, i);
                 int logEvery = runRequestValidator.resolveLogEveryIterations(runRequest);
                 BatchRunResponse batch = runExecutor.executeBatch(runRequest, logEvery, 0);
                 RuntimeStudyPointResponse point = runStatisticsService.toRuntimeStudyPoint(n, batch);
                 points.add(point);
+                System.out.println("Completed runtime study point for size " + n + ": " + point);
+                wsSender.sendToStudy(request.studyId(), RuntimeStudyWsPayload.progress(request.studyId(), point));
             }
-
-            RuntimeStudyResponse response = new RuntimeStudyResponse(request.studyId(), points);
-            wsSender.sendToStudy(request.studyId(), RuntimeStudyWsPayload.finished(request.studyId(), response));
-            return response;
+            wsSender.sendToStudy(request.studyId(), RuntimeStudyWsPayload.finished(request.studyId()));
         } catch (CancellationException ex) {
             throw ex;
         } catch (Exception ex) {

@@ -6,10 +6,24 @@ import BoxPlotChart from "./BoxPlotChart.jsx";
 const VIEW_LINE = "line";
 const VIEW_BOXPLOT = "boxplot";
 
+function getStudyStatusMeta(studyStatus) {
+  const rawStatus = String(studyStatus ?? "").toUpperCase();
+
+  if (rawStatus === "FINISHED") {
+    return { label: "Finished", className: "finished" };
+  }
+
+  if (rawStatus === "FAILED") {
+    return { label: "Failed", className: "failed" };
+  }
+
+  return { label: "Running", className: "ongoing" };
+}
 function RuntimeStudyChart({
   studyTitle = "Runtime Study",
   problemId = null,
   points = [],
+  studyStatus = "ONGOING",
   visibleCount = null,
 }) {
   const [viewMode, setViewMode] = useState(VIEW_LINE);
@@ -63,12 +77,27 @@ function RuntimeStudyChart({
     boxPlotResponse.boxplots.length > 0;
 
   const title = problemId ? `${studyTitle} - ${problemId}` : studyTitle;
+  const statusMeta = getStudyStatusMeta(studyStatus);
+
 
   if (!hasLineData && !hasBoxPlotData) {
     return (
       <div className="run-chart-panel">
-        <div className="run-chart-title">{title}</div>
-        <div>No study data to plot.</div>
+        <div className="run-chart-header">
+          <div className="chart-title-row">
+            <div className="chart-title">{title}</div>
+            <div className={`run-status-indicator ${statusMeta.className}`}>
+              <span className="run-status-text">{statusMeta.label}</span>
+              <span className="run-status-dot" />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          {statusMeta.className === "ongoing"
+            ? "Waiting for first study point..."
+            : "No study data to plot."}
+        </div>
       </div>
     );
   }
@@ -76,6 +105,11 @@ function RuntimeStudyChart({
   return (
     <div className="chart-panel">
       <div className="chart-title">{title}</div>
+      <div className={`run-status-indicator ${statusMeta.className}`}>
+             <span className="run-status-text">{statusMeta.label}</span>
+            <span className="run-status-dot" />
+      </div>
+
 
       <div className="run-chart-inner">
         {viewMode === VIEW_BOXPLOT ? (

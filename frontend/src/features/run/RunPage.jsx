@@ -143,6 +143,12 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
     [batch]
   );
 
+  const [studyStatus, setStudyStatus] = useState(() => {
+    if (pageMode !== "runtimeStudy") return null;
+    if (initialError) return "FAILED";
+    if (initialLoading) return "ONGOING";
+    return "FINISHED";
+  });
   const averageByProblem = batch?.summary?.averageByProblem ?? {};
   const bestFitnessBoxPlotsByProblem = batch?.summary?.bestFitnessBoxPlotsByProblem ?? {};
   const averageRunTimeByProblem = batch?.summary?.averageRunTimeByProblem ?? {};
@@ -227,6 +233,7 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
     setError,
     setStudyPoints,
     setSavedRun,
+    setStudyStatus,
   });
 
   return (
@@ -253,17 +260,14 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
           </div>
         ) : error ? (
           renderNoDataPanel("Run failed", error)
-        ) : pageMode === "runtimeStudy" ? (
-          studyPoints.length === 0 ? (
-            renderNoDataPanel("No runtime study data", "No study points to plot.")
-          ) : (
+        ) : pageMode === "runtimeStudy" ?(
             <RuntimeStudyChart
               studyTitle="Runtime Study"
               problemId={runtimeStudyProblemId}
               points={studyPoints}
               visibleCount={visibleCount}
+              studyStatus={studyStatus}
             />
-          )
         ) : batches.length === 0 ? (
           renderNoDataPanel("No run data", "No data to plot.")
         ) : (
