@@ -51,6 +51,15 @@ public class CatalogService {
         this.observers = observers;
     }
 
+    /**
+     * Generic helper to convert a list of components to a list of component defs,
+     * which only contain the information needed for the frontend to display them in the selector tabs.
+     * Knows the component list by spring injection, and is used by the individual endpoint methods to convert the components to component defs.
+     * @param type The type of the components, e.g. "problem" or "crossover".
+     * @param components The components to convert.
+     * @return A list of component defs containing the information needed for the frontend to display the components in the selector tabs.
+     * @param <T> The type of the components, which must extend ScoutComponent to be convertible to ComponentDef.
+     */
     private <T extends ScoutComponent> List<ComponentDef> toComponentDefs(String type, List<T> components) {
         return components.stream().map(component -> ViewMapper.toComponentDef(type, component)).toList();
     }

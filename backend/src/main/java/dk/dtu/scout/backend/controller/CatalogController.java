@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * REST endpoint that exposes available components and their parameters.
+ * @author s235257 & Ahmed
  */
 @RestController
 @RequestMapping("/api")
@@ -22,6 +23,10 @@ public class CatalogController {
         this.catalog = catalog;
     }
 
+    /**
+     * This endpoint is called instantly on homepage, and is used to populate the selector tabs
+     * @return a DTO containing all available components and their parameters
+     */
     @GetMapping("/catalog")
     public CatalogResponse catalog() {
         return ViewMapper.toCatalogResponse(

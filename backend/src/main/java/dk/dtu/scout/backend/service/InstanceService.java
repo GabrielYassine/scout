@@ -14,26 +14,35 @@ import java.util.Map;
 @Service
 public class InstanceService {
 
+    /**
+     * Exports an instance in the specified format. Supported formats are TSP and VRP, which are determined by the "exportType" field in the payload.
+     * @param exportType the format to export the instance in, e.g. "TSP" or "VRP"
+     * @param payload data containing instance information.
+     * @return a string containing the instance in the specified format, or an error message if the exportType is invalid or missing
+     */
     public String exportInstance(String exportType, Map<String, Object> payload) {
-        if (exportType == null || exportType.isBlank()) {
-            throw new IllegalArgumentException("exportType must be provided");
-        }
+        Map<String, Object> instanceData = payload == null ? new LinkedHashMap<>() : new LinkedHashMap<>(payload);
+        instanceData.remove("exportType");
 
-        Map<String, Object> sanitized = payload == null ? Map.of() : new LinkedHashMap<>(payload);
-        sanitized.remove("exportType");
+        String comment = extractComment(instanceData);
 
-        String normalized = exportType.trim().toUpperCase(Locale.ROOT);
-        String comment = extractComment(sanitized);
-        return switch (normalized) {
-            case "TSP" -> formatTsp(InstanceMapper.toTspInstance(sanitized), comment);
-            case "VRP" -> formatVrp(InstanceMapper.toVrpInstance(sanitized), comment);
-            default -> throw new IllegalArgumentException("exportType must be TSP or VRP");
+        return switch (exportType) {
+            case "TSP" -> formatTsp(InstanceMapper.toTspInstance(instanceData), comment);
+            case "VRP" -> formatVrp(InstanceMapper.toVrpInstance(instanceData), comment);
+            default -> throw new IllegalArgumentException("Unsupported exportType: " + exportType);
         };
     }
 
+    /**
+     * Formats a TSP instance for proper export. Follows the format of
+     * @param instance the TSP instance to format
+     * @param comment an optional comment to include in the exported instance, can be null or blank
+     * @return a string containing the TSP instance in the proper format for export
+     */
     private String formatTsp(TSPInstance instance, String comment) {
         StringBuilder out = new StringBuilder();
         String name = normalizeName(instance.getName(), "Custom TSP Instance");
+
         out.append("NAME: ").append(name).append("\n");
         out.append("TYPE: TSP\n");
         if (comment != null && !comment.isBlank()) {

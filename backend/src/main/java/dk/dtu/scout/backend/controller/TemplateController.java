@@ -8,6 +8,7 @@ import java.util.List;
 
 /**
  * REST endpoint for run templates.
+ * @author Ahmed
  */
 @RestController
 @RequestMapping("/api")
@@ -20,6 +21,10 @@ public class TemplateController {
         this.templates = templates;
     }
 
+    /**
+     * Endpoint for listing all available run templates.
+     * @return a list of DTOs containing the available run templates for lab page dropdown.
+     */
     @GetMapping("/templates")
     public List<ExperimentTemplateDto> templates() {
         return templates.listTemplates();

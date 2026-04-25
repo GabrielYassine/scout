@@ -13,7 +13,8 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Map;
 
 /**
- * REST endpoint for instance utilities.
+ * REST endpoint for instances. Currently only supports exporting.
+ * @author s235257
  */
 @RestController
 @RequestMapping("/api/instance")
@@ -26,14 +27,17 @@ public class InstanceController {
         this.instanceService = instanceService;
     }
 
+    /**
+     * Endpoint for exporting an instance, importing is FE only.
+     * @param payload a map containing the instance data, and an "exportType" field specifying the format (TSP or VRP)
+     * @return a string containing the instance in the specified format, or an error message if the exportType is invalid or missing
+     */
     @PostMapping("/export")
     public ResponseEntity<String> exportInstance(@RequestBody Map<String, Object> payload) {
         try {
             String exportType = payload == null ? null : String.valueOf(payload.get("exportType"));
             String content = instanceService.exportInstance(exportType, payload);
-            return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_TYPE, "text/plain; charset=utf-8")
-                .body(content);
+            return ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE, "text/plain; charset=utf-8").body(content);
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
         }

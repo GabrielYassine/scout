@@ -46,6 +46,7 @@ public final class InstanceMapper {
         return new TSPInstance(name, coordinates.length, coordinates);
     }
 
+
     public static TSPInstance parseTsplib(String content) throws IOException {
         BufferedReader reader = new BufferedReader(new StringReader(content));
 

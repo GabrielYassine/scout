@@ -11,6 +11,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+
+/**
+ * REST endpoint for computing statistics on runs.
+ * @author s235257
+ */
 @RestController
 @RequestMapping("/api/stats")
 @CrossOrigin
@@ -22,6 +27,11 @@ public class StatsController {
         this.seriesStatsService = seriesStatsService;
     }
 
+    /**
+     * Ending for computing statistics on an interval of a run.
+     * @param request Contains the interval to compute the statistics on.
+     * @return A DTO containing the computed statistics for the specified interval.
+     */
     @PostMapping("/series-window")
     public ResponseEntity<SeriesWindowStatsResponse> seriesWindow(@RequestBody SeriesWindowStatsRequest request) {
         if (request == null) {
