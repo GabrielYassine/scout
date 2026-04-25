@@ -16,16 +16,22 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+/**
+ * Provides the frontend catalog of available Scout components.
+ * Spring injects all registered component beans by interface type, and this service
+ * converts them into ComponentDef DTOs used by the frontend configuration UI.
+ * @author s235257 & Ahmed
+ */
 @Service
 public class CatalogService {
 
     private final List<SearchSpace<?>> searchSpaces;
     private final List<Problem<?>> problems;
     private final List<Generator<?>> generators;
-    private final List<SelectionRule> selectionRules;
+    private final List<SelectionRule<?>> selectionRules;
     private final List<PopulationModel<?>> populationModels;
-    private final List<ParentSelectionRule> parentSelectionRules;
-    private final List<Crossover> crossovers;
+    private final List<ParentSelectionRule<?>> parentSelectionRules;
+    private final List<Crossover<?>> crossovers;
     private final List<StopCondition<?>> stopConditions;
     private final List<Observer<?>> observers;
 
@@ -33,10 +39,10 @@ public class CatalogService {
         List<SearchSpace<?>> searchSpaces,
         List<Problem<?>> problems,
         List<Generator<?>> generators,
-        List<SelectionRule> selectionRules,
+        List<SelectionRule<?>> selectionRules,
         List<PopulationModel<?>> populationModels,
-        List<ParentSelectionRule> parentSelectionRules,
-        List<Crossover> crossovers,
+        List<ParentSelectionRule<?>> parentSelectionRules,
+        List<Crossover<?>> crossovers,
         List<StopCondition<?>> stopConditions,
         List<Observer<?>> observers
     ) {
@@ -52,13 +58,11 @@ public class CatalogService {
     }
 
     /**
-     * Generic helper to convert a list of components to a list of component defs,
-     * which only contain the information needed for the frontend to display them in the selector tabs.
-     * Knows the component list by spring injection, and is used by the individual endpoint methods to convert the components to component defs.
-     * @param type The type of the components, e.g. "problem" or "crossover".
-     * @param components The components to convert.
-     * @return A list of component defs containing the information needed for the frontend to display the components in the selector tabs.
-     * @param <T> The type of the components, which must extend ScoutComponent to be convertible to ComponentDef.
+     * Converts Scout components into frontend catalog definitions.
+     * @param type the frontend component type name
+     * @param components the components to convert
+     * @return component definitions for the frontend catalog
+     * @param <T> the component interface type
      */
     private <T extends ScoutComponent> List<ComponentDef> toComponentDefs(String type, List<T> components) {
         return components.stream().map(component -> ViewMapper.toComponentDef(type, component)).toList();

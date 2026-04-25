@@ -30,15 +30,15 @@ public class CatalogController {
     @GetMapping("/catalog")
     public CatalogResponse catalog() {
         return ViewMapper.toCatalogResponse(
-                catalog.searchSpaces(),
-                catalog.problems(),
-                catalog.generators(),
-                catalog.selectionRules(),
-                catalog.populationModels(),
-                catalog.parentSelectionRules(),
-                catalog.crossovers(),
-                catalog.stopConditions(),
-                catalog.observers()
+            catalog.searchSpaces(),
+            catalog.problems(),
+            catalog.generators(),
+            catalog.selectionRules(),
+            catalog.populationModels(),
+            catalog.parentSelectionRules(),
+            catalog.crossovers(),
+            catalog.stopConditions(),
+            catalog.observers()
         );
     }
 }

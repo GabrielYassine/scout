@@ -18,13 +18,16 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Creates and configures components from registries, enforcing compatibility rules.
+ * Creates configured Scout components for run execution.
+ * Run requests contain component ids and parameter maps. This factory resolves those ids
+ * through ComponentRegistry instances, applies the provided parameters, and performs
+ * compatibility checks that depend on the selected search space or problem.
  */
 @Service
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class RunComponentFactory {
 
-    private final ComponentRegistry<Generator> mutationRegistry;
+    private final ComponentRegistry<Generator> generatorRegistry;
     private final ComponentRegistry<SelectionRule> selectionRegistry;
     private final ComponentRegistry<PopulationModel> populationModelRegistry;
     private final ComponentRegistry<Problem> problemRegistry;
@@ -35,7 +38,7 @@ public class RunComponentFactory {
     private final ComponentRegistry<Observer> observerRegistry;
 
     public RunComponentFactory(
-        ComponentRegistry<Generator> mutationRegistry,
+        ComponentRegistry<Generator> generatorRegistry,
         ComponentRegistry<SelectionRule> selectionRegistry,
         ComponentRegistry<PopulationModel> populationModelRegistry,
         ComponentRegistry<Problem> problemRegistry,
@@ -45,7 +48,7 @@ public class RunComponentFactory {
         ComponentRegistry<StopCondition> stopConditionRegistry,
         ComponentRegistry<Observer> observerRegistry
     ) {
-        this.mutationRegistry = mutationRegistry;
+        this.generatorRegistry = generatorRegistry;
         this.selectionRegistry = selectionRegistry;
         this.populationModelRegistry = populationModelRegistry;
         this.problemRegistry = problemRegistry;
@@ -56,7 +59,21 @@ public class RunComponentFactory {
         this.observerRegistry = observerRegistry;
     }
 
-    private <T extends ScoutComponent> T createAndConfigure(ComponentRegistry<T> registry, String id, String componentType, Map<String, Object> params) {
+    /**
+     * Creates a component from a registry and applies the provided parameter map.
+     * @param registry the registry containing the component category
+     * @param id the selected component id
+     * @param componentType the human-readable component type used in error messages
+     * @param params the parameter map passed to the component
+     * @return the configured component
+     * @param <T> the component interface type
+     */
+    private <T extends ScoutComponent> T createAndConfigure(
+            ComponentRegistry<T> registry,
+            String id,
+            String componentType,
+            Map<String, Object> params
+    ) {
         if (id == null || id.isBlank()) {
             throw new BadRequestException(componentType + " must be specified");
         }
@@ -70,6 +87,10 @@ public class RunComponentFactory {
         return createAndConfigure(searchSpaceRegistry, id, "Search space", params);
     }
 
+    /**
+     * Creates a problem and injects the search-space dimension as parameter "n".
+     * Additional problem parameters may override or extend this map.
+     */
     public <S> Problem<S> createProblem(String id, int n, Map<String, Object> problemParams) {
         Problem<S> problem = (Problem<S>) problemRegistry.create(id);
 
@@ -83,15 +104,16 @@ public class RunComponentFactory {
     }
 
     public <S> Generator<S> createGenerator(String id, Map<String, Object> params, String searchSpaceId) {
-        Generator<S> generator = createAndConfigure(mutationRegistry, id, "Generator", params);
+        Generator<S> generator = createAndConfigure(generatorRegistry, id, "Generator", params);
 
         if (!generator.supportedSearchSpaces().isEmpty() && !generator.supportedSearchSpaces().contains(searchSpaceId)) {
             throw new BadRequestException("Generator '" + id + "' does not support search space '" + searchSpaceId + "'");
         }
+
         return generator;
     }
 
-    public SelectionRule createSelectionRule(String id, Map<String, Object> params) {
+    public <S> SelectionRule<S> createSelectionRule(String id, Map<String, Object> params) {
         return createAndConfigure(selectionRegistry, id, "Selection rule", params);
     }
 
@@ -105,6 +127,7 @@ public class RunComponentFactory {
         }
 
         Map<String, Object> effectiveParams = params != null ? params : Map.of();
+
         return ids.stream().map(id -> (StopCondition<S>) createAndConfigure(stopConditionRegistry, id, "Stop condition", effectiveParams)).toList();
     }
 
@@ -114,6 +137,7 @@ public class RunComponentFactory {
         }
 
         Map<String, Object> effectiveParams = params != null ? params : Map.of();
+
         return ids.stream().map(id -> (Observer<S>) createAndConfigure(observerRegistry, id, "Observer", effectiveParams)).toList();
     }
 
