@@ -13,13 +13,12 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * Service for handling instance import and export. Responsible for parsing, validation, normalization, and formatting of TSP and VRP instances.
- * Used by the InstanceController for REST endpoints and is reused in run execution to ensure consistent handling of instance data.
+ * Service for handling instance import and export.
+ * Responsible for coordinating parsing, validation, normalization, and formatting of TSP and VRP instances.
  * @author s235257
  */
 @Service
 public class InstanceService {
-
 
     /**
      * Handles files of type .vrp and .tsp and converts them into a JSON format for frontend display and run execution.

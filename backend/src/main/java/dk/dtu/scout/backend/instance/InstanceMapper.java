@@ -8,11 +8,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-
 /**
  * Mapper for converting between raw map representations of TSP and VRP instances
- * (as parsed from JSON) and the internal TSPInstance and VRPInstance data types.
- * also responsible for converting TSPInstance and VRPInstance objects back into map format suitable for frontend use and export.
+ * and the internal TSPInstance and VRPInstance data types.
+ * It is also responsible for converting TSPInstance and VRPInstance objects back into map format suitable for frontend use and export.
  * @author s235257
  */
 public final class InstanceMapper {
@@ -23,7 +22,7 @@ public final class InstanceMapper {
     }
 
     /**
-     * Converts a map representing a TSP instance (as parsed from JSON) into a TSPInstance object.
+     * Converts a map representing a TSP instance into a TSPInstance object.
      * @param map the map containing TSP instance data.
      * @return a TSPInstance object constructed from the provided map.
      */
@@ -51,7 +50,6 @@ public final class InstanceMapper {
             @SuppressWarnings("unchecked") // Safe as JSON uses string keys and object values.
             Map<String, Object> city = (Map<String, Object>) cityRaw;
 
-            // Coordinates may arrive as integers, doubles, or numeric strings, so normalize them to double.
             coordinates[i][0] = toDouble(city.get("x"));
             coordinates[i][1] = toDouble(city.get("y"));
         }
@@ -59,9 +57,8 @@ public final class InstanceMapper {
         return new TSPInstance(name, comment, coordinates.length, coordinates);
     }
 
-
     /**
-     * Converts a map representing a VRP instance (as parsed from JSON) into a VRPInstance object.
+     * Converts a map representing a VRP instance into a VRPInstance object.
      * @param map the map containing VRP instance data.
      * @return a VRPInstance object constructed from the provided map.
      */
@@ -72,8 +69,8 @@ public final class InstanceMapper {
 
         String name = map.getOrDefault("name", "Custom VRP Instance").toString();
         String comment = map.getOrDefault("comment", "").toString();
-        double capacity = toDouble(map.getOrDefault("capacity", 0));
-        int numberOfVehicles = Math.max(1, toInt(map.getOrDefault("numberOfVehicles", 1)));
+        double capacity = toDouble(map.get("capacity"));
+        int numberOfVehicles = toInt(map.get("numberOfVehicles"));
 
         double[] depotCoordinates = extractDepot(map);
 
@@ -94,10 +91,9 @@ public final class InstanceMapper {
             @SuppressWarnings("unchecked") // Safe as JSON uses string keys and object values.
             Map<String, Object> customer = (Map<String, Object>) customerRaw;
 
-            // Coordinates and demand may arrive as integers, doubles, or numeric strings, so normalize them to double.
             customerCoordinates[i][0] = toDouble(customer.get("x"));
             customerCoordinates[i][1] = toDouble(customer.get("y"));
-            customerDemands[i] = toDouble(customer.getOrDefault("demand", 0));
+            customerDemands[i] = toDouble(customer.get("demand"));
         }
 
         return new VRPInstance(
@@ -185,7 +181,6 @@ public final class InstanceMapper {
         return payload;
     }
 
-
     /**
      * Extracts depot coordinates from the provided map.
      * @param map the map containing the VRP instance data.
@@ -200,7 +195,10 @@ public final class InstanceMapper {
         @SuppressWarnings("unchecked") // Safe by convention: JSON objects use string keys and object values.
         Map<String, Object> depot = (Map<String, Object>) depotRaw;
 
-        return new double[] {toDouble(depot.get("x")), toDouble(depot.get("y"))};
+        return new double[] {
+                toDouble(depot.get("x")),
+                toDouble(depot.get("y"))
+        };
     }
 
     private static double toDouble(Object value) {

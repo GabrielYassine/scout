@@ -147,7 +147,11 @@ public final class InstanceParser {
             throw new IllegalArgumentException("VRP file must contain NODE_COORD_SECTION");
         }
 
-        List<Integer> resolvedDepotIds = depotIds.isEmpty() ? List.of(1) : depotIds;
+        if (depotIds.isEmpty()) {
+            throw new IllegalArgumentException("VRP file must contain DEPOT_SECTION");
+        }
+
+        List<Integer> resolvedDepotIds = depotIds;
         if (resolvedDepotIds.size() > 1) {
             throw new IllegalArgumentException("Only single-depot CVRP instances are currently supported");
         }
