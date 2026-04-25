@@ -4,12 +4,14 @@ import dk.dtu.scout.util.DistanceUtils;
 
 public class TSPInstance {
     private final String name;
+    private final String comment;
     private final int dimension;
     private final double[][] coordinates;
     private final double[][] distanceMatrix;
 
-    public TSPInstance(String name, int dimension, double[][] coordinates) {
+    public TSPInstance(String name, String comment, int dimension, double[][] coordinates) {
         this.name = name;
+        this.comment = comment;
         this.dimension = dimension;
         this.coordinates = coordinates;
         this.distanceMatrix = computeDistanceMatrix();
@@ -44,6 +46,10 @@ public class TSPInstance {
 
     public String getName() {
         return name;
+    }
+
+    public String getComment() {
+        return comment;
     }
 
     public int getDimension() {

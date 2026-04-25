@@ -1,158 +1,86 @@
 package dk.dtu.scout.backend.service;
 
-import dk.dtu.scout.backend.util.InstanceMapper;
+import dk.dtu.scout.backend.instance.InstanceFormatter;
+import dk.dtu.scout.backend.instance.InstanceMapper;
+import dk.dtu.scout.backend.instance.InstanceParser;
+import dk.dtu.scout.backend.instance.InstanceValidator;
 import dk.dtu.scout.datatypes.TSPInstance;
 import dk.dtu.scout.datatypes.VRPInstance;
 import org.springframework.stereotype.Service;
 
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 
+/**
+ * Service for handling instance import and export. Responsible for parsing, validation, normalization, and formatting of TSP and VRP instances.
+ * Used by the InstanceController for REST endpoints and is reused in run execution to ensure consistent handling of instance data.
+ * @author s235257
+ */
 @Service
 public class InstanceService {
 
+
     /**
-     * Exports an instance in the specified format. Supported formats are TSP and VRP, which are determined by the "exportType" field in the payload.
-     * @param exportType the format to export the instance in, e.g. "TSP" or "VRP"
-     * @param payload data containing instance information.
-     * @return a string containing the instance in the specified format, or an error message if the exportType is invalid or missing
+     * Handles files of type .vrp and .tsp and converts them into a JSON format for frontend display and run execution.
+     * @param content the content of the instance file to import
+     * @return a map containing the instance type and a normalized instance payload ready for use in run execution
      */
-    public String exportInstance(String exportType, Map<String, Object> payload) {
-        Map<String, Object> instanceData = payload == null ? new LinkedHashMap<>() : new LinkedHashMap<>(payload);
-        instanceData.remove("exportType");
+    public Map<String, Object> importInstance(String content) {
+        if (content == null || content.isBlank()) {
+            throw new IllegalArgumentException("Instance file content must be provided");
+        }
 
-        String comment = extractComment(instanceData);
+        String instanceType = InstanceParser.detectInstanceType(content);
 
-        return switch (exportType) {
-            case "TSP" -> formatTsp(InstanceMapper.toTspInstance(instanceData), comment);
-            case "VRP" -> formatVrp(InstanceMapper.toVrpInstance(instanceData), comment);
-            default -> throw new IllegalArgumentException("Unsupported exportType: " + exportType);
+        return switch (instanceType) {
+            case "VRP" -> {
+                Map<String, Object> parsed = InstanceParser.parseVrpContent(content);
+                VRPInstance instance = InstanceMapper.toVrpInstance(parsed);
+                InstanceValidator.validateVrp(instance);
+                yield Map.of("instanceType", "VRP", "instance", InstanceMapper.toVrpPayload(instance));
+            }
+            case "TSP" -> {
+                Map<String, Object> parsed = InstanceParser.parseTspContent(content);
+                TSPInstance instance = InstanceMapper.toTspInstance(parsed);
+                InstanceValidator.validateTsp(instance);
+                yield Map.of("instanceType", "TSP", "instance", InstanceMapper.toTspPayload(instance));
+            }
+            default -> throw new IllegalArgumentException("Unsupported instance type: " + instanceType);
         };
     }
 
     /**
-     * Formats a TSP instance for proper export. Follows the format of
-     * @param instance the TSP instance to format
-     * @param comment an optional comment to include in the exported instance, can be null or blank
-     * @return a string containing the TSP instance in the proper format for export
+     * Converts a TSP or VRP instance from the frontend format back into the standard .tsp or .vrp file format for export.
+     * @param payload the instance data in frontend format, including exportType, which will be normalized and validated before export
+     * @return a string containing the instance in the appropriate file format for download
      */
-    private String formatTsp(TSPInstance instance, String comment) {
-        StringBuilder out = new StringBuilder();
-        String name = normalizeName(instance.getName(), "Custom TSP Instance");
-
-        out.append("NAME: ").append(name).append("\n");
-        out.append("TYPE: TSP\n");
-        if (comment != null && !comment.isBlank()) {
-            out.append("COMMENT: ").append(comment).append("\n");
-        }
-        out.append("DIMENSION: ").append(instance.getDimension()).append("\n");
-        out.append("EDGE_WEIGHT_TYPE: EUC_2D\n");
-        out.append("NODE_COORD_SECTION\n");
-
-        double[][] coords = instance.getCoordinates();
-        for (int i = 0; i < coords.length; i++) {
-            out.append(i + 1)
-                .append(" ")
-                .append(formatNumber(coords[i][0]))
-                .append(" ")
-                .append(formatNumber(coords[i][1]))
-                .append("\n");
-        }
-
-        out.append("EOF\n");
-        return out.toString();
-    }
-
-    private String formatVrp(VRPInstance instance, String comment) {
-        StringBuilder out = new StringBuilder();
-        String name = normalizeName(instance.getName(), "Custom VRP Instance");
-        name = ensureVehicleSuffix(name, instance.getNumberOfVehicles());
-
-        int dimension = instance.getCustomerCount() + 1;
-        out.append("NAME: ").append(name).append("\n");
-        out.append("TYPE: CVRP\n");
-        if (comment != null && !comment.isBlank()) {
-            out.append("COMMENT: ").append(comment).append("\n");
-        }
-        out.append("DIMENSION: ").append(dimension).append("\n");
-        out.append("EDGE_WEIGHT_TYPE: EUC_2D\n");
-        out.append("CAPACITY: ").append(formatInteger(instance.getCapacity())).append("\n");
-        out.append("NODE_COORD_SECTION\n");
-
-        double[] depot = instance.getDepotCoordinates();
-        out.append("1 ")
-            .append(formatInteger(depot[0]))
-            .append(" ")
-            .append(formatInteger(depot[1]))
-            .append("\n");
-
-        double[][] customers = instance.getCustomerCoordinates();
-        for (int i = 0; i < customers.length; i++) {
-            out.append(i + 2)
-                .append(" ")
-                .append(formatInteger(customers[i][0]))
-                .append(" ")
-                .append(formatInteger(customers[i][1]))
-                .append("\n");
-        }
-
-        out.append("DEMAND_SECTION\n");
-        out.append("1 0\n");
-        for (int i = 0; i < customers.length; i++) {
-            out.append(i + 2)
-                .append(" ")
-                .append(formatInteger(instance.getDemand(i)))
-                .append("\n");
-        }
-
-        out.append("DEPOT_SECTION\n");
-        out.append("1\n");
-        out.append("-1\n");
-        out.append("EOF\n");
-        return out.toString();
-    }
-
-    private String normalizeName(String name, String fallback) {
-        if (name == null || name.isBlank()) {
-            return fallback;
-        }
-        return name.trim();
-    }
-
-    private String extractComment(Map<String, Object> payload) {
+    public String exportInstance(Map<String, Object> payload) {
         if (payload == null) {
-            return null;
+            throw new IllegalArgumentException("Export payload must be provided");
         }
-        Object raw = payload.get("comment");
-        if (raw == null) {
-            return null;
-        }
-        String text = raw.toString().trim();
-        if (text.isEmpty()) {
-            return null;
-        }
-        return text.replaceAll("\\s+", " ");
-    }
 
-    private String ensureVehicleSuffix(String name, int vehicleCount) {
-        if (vehicleCount > 0 && !name.matches(".*-k\\d+.*")) {
-            return name + "-k" + vehicleCount;
+        Object rawExportType = payload.get("exportType");
+        if (rawExportType == null || rawExportType.toString().isBlank()) {
+            throw new IllegalArgumentException("exportType must be provided");
         }
-        return name;
-    }
 
-    private String formatNumber(double value) {
-        DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.US);
-        DecimalFormat formatter = new DecimalFormat("0.######", symbols);
-        formatter.setGroupingUsed(false);
-        return formatter.format(value);
-    }
+        Map<String, Object> instanceData = new LinkedHashMap<>(payload);
+        instanceData.remove("exportType");
+        String normalizedType = rawExportType.toString().trim().toUpperCase(Locale.ROOT);
 
-    private String formatInteger(double value) {
-        long rounded = Math.round(value);
-        return Long.toString(rounded);
+        return switch (normalizedType) {
+            case "TSP" -> {
+                TSPInstance instance = InstanceMapper.toTspInstance(instanceData);
+                InstanceValidator.validateTsp(instance);
+                yield InstanceFormatter.formatTsp(instance);
+            }
+            case "VRP" -> {
+                VRPInstance instance = InstanceMapper.toVrpInstance(instanceData);
+                InstanceValidator.validateVrp(instance);
+                yield InstanceFormatter.formatVrp(instance);
+            }
+            default -> throw new IllegalArgumentException("Unsupported exportType: " + rawExportType);
+        };
     }
 }

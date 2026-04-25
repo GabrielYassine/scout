@@ -7,7 +7,7 @@ import dk.dtu.scout.backend.dto.run.BatchRunResponse;
 import dk.dtu.scout.backend.dto.run.BatchSummaryResponse;
 import dk.dtu.scout.backend.dto.run.RunGroupResponse;
 import dk.dtu.scout.backend.dto.run.RunResponse;
-import dk.dtu.scout.backend.util.InstanceMapper;
+import dk.dtu.scout.backend.instance.InstanceMapper;
 import dk.dtu.scout.backend.util.ViewMapper;
 import dk.dtu.scout.backend.websocket.MergeOp;
 import dk.dtu.scout.backend.websocket.RunProgressObserver;
@@ -76,19 +76,17 @@ public class RunExecutor {
         return runBatch(request, logEveryIterations, wsUpdateEveryIterations);
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
     private <S> BatchRunResponse runBatch(RunRequest request, int logEveryIterations, int wsUpdateEveryIterations) {
         checkCancelled();
         long baseSeed = request.seed();
         int runtimes = request.runTimes();
         String runId = request.runId();
 
-        Map<String, Object> searchSpaceParams = request.searchSpaceParams() != null
-                ? new LinkedHashMap<>(request.searchSpaceParams())
-                : new LinkedHashMap<>();
+        Map<String, Object> searchSpaceParams = request.searchSpaceParams() != null ? new LinkedHashMap<>(request.searchSpaceParams()) : new LinkedHashMap<>();
 
         if ("route-list".equals(request.searchSpaceId()) && searchSpaceParams.containsKey("vrpInstance")) {
-            searchSpaceParams.compute("vrpInstance", (k, rawInstance) -> InstanceMapper.toVrpInstance(rawInstance));
+            searchSpaceParams.compute("vrpInstance", (k, rawInstance) ->
+                    InstanceMapper.toVrpInstance(asInstanceMap(rawInstance, "vrpInstance")));
         }
 
         Supplier<SearchSpace<S>> searchSpaceFactory = () -> factory.createSearchSpace(request.searchSpaceId(), searchSpaceParams);
@@ -126,9 +124,7 @@ public class RunExecutor {
                 }
             }
 
-            batches = batches.stream()
-                    .sorted(Comparator.comparingInt(RunGroupResponse::runIndex))
-                    .toList();
+            batches = batches.stream().sorted(Comparator.comparingInt(RunGroupResponse::runIndex)).toList();
 
             long batchEndTime = System.nanoTime();
             double batchExecutionTimeMs = (batchEndTime - batchStartTime) / 1_000_000.0;
@@ -160,7 +156,6 @@ public class RunExecutor {
         logger.info("{} runId={} runs={} activeThreads={} poolSize={} queueDepth={}", phase, runId, runs, active, poolSize, queued);
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
     private <S> RunGroupResponse runSingleIndex(
             RunRequest request,
             int runIndex,
@@ -179,15 +174,15 @@ public class RunExecutor {
         for (String pid : request.problemIds()) {
             checkCancelled();
 
-            Map<String, Object> problemParams = request.problemParams() != null
-                    ? new LinkedHashMap<>(request.problemParams())
-                    : new LinkedHashMap<>();
+            Map<String, Object> problemParams = request.problemParams() != null ? new LinkedHashMap<>(request.problemParams()) : new LinkedHashMap<>();
 
             if ("tsp".equals(pid) && problemParams.containsKey("tspInstance")) {
-                problemParams.compute("tspInstance", (k, rawInstance) -> InstanceMapper.toTspInstance(rawInstance));
+                problemParams.compute("tspInstance", (k, rawInstance) ->
+                        InstanceMapper.toTspInstance(asInstanceMap(rawInstance, "tspInstance")));
             }
             if ("vrp".equals(pid) && problemParams.containsKey("vrpInstance")) {
-                problemParams.compute("vrpInstance", (k, rawInstance) -> InstanceMapper.toVrpInstance(rawInstance));
+                problemParams.compute("vrpInstance", (k, rawInstance) ->
+                        InstanceMapper.toVrpInstance(asInstanceMap(rawInstance, "vrpInstance")));
             }
 
             Problem<S> problem = factory.createProblem(pid, ss.dimension(), problemParams);
@@ -268,5 +263,13 @@ public class RunExecutor {
         }
 
         return ViewMapper.toRunGroupResponse(runIndex, runSeed, perProblemRuns);
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> asInstanceMap(Object value, String label) {
+        if (!(value instanceof Map<?, ?> raw)) {
+            throw new IllegalArgumentException(label + " must be a map");
+        }
+        return (Map<String, Object>) raw;
     }
 }

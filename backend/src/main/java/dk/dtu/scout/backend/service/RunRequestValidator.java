@@ -3,7 +3,8 @@ package dk.dtu.scout.backend.service;
 import dk.dtu.scout.backend.dto.RunRequest;
 import dk.dtu.scout.backend.dto.RuntimeStudyRequest;
 import dk.dtu.scout.backend.exception.BadRequestException;
-import dk.dtu.scout.backend.util.InstanceMapper;
+import dk.dtu.scout.backend.instance.InstanceMapper;
+import dk.dtu.scout.backend.instance.InstanceValidator;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -114,8 +115,11 @@ public class RunRequestValidator {
             if (tspInstance == null) {
                 throw new BadRequestException("TSP problem requires a TSP instance");
             }
+
             try {
-                InstanceMapper.toTspInstance(tspInstance);
+                InstanceValidator.validateTsp(
+                        InstanceMapper.toTspInstance(asInstanceMap(tspInstance, "tspInstance"))
+                );
             } catch (IllegalArgumentException ex) {
                 throw new BadRequestException("Invalid TSP instance: " + ex.getMessage());
             }
@@ -126,12 +130,23 @@ public class RunRequestValidator {
             if (vrpInstance == null) {
                 throw new BadRequestException("VRP problem requires a VRP instance");
             }
+
             try {
-                InstanceMapper.toVrpInstance(vrpInstance);
+                InstanceValidator.validateVrp(
+                        InstanceMapper.toVrpInstance(asInstanceMap(vrpInstance, "vrpInstance"))
+                );
             } catch (IllegalArgumentException ex) {
                 throw new BadRequestException("Invalid VRP instance: " + ex.getMessage());
             }
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> asInstanceMap(Object value, String label) {
+        if (!(value instanceof Map<?, ?> raw)) {
+            throw new IllegalArgumentException(label + " must be a map");
+        }
+        return (Map<String, Object>) raw;
     }
 
     public int resolveLogEveryIterations(RunRequest request) {

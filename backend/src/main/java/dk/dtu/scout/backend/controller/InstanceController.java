@@ -13,7 +13,8 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Map;
 
 /**
- * REST endpoint for instances. Currently only supports exporting.
+ * Controller for handling instance import and export.
+ * Delegates to InstanceService for parsing, validation, normalization, and formatting of TSP and VRP instances.
  * @author s235257
  */
 @RestController
@@ -27,16 +28,23 @@ public class InstanceController {
         this.instanceService = instanceService;
     }
 
-    /**
-     * Endpoint for exporting an instance, importing is FE only.
-     * @param payload a map containing the instance data, and an "exportType" field specifying the format (TSP or VRP)
-     * @return a string containing the instance in the specified format, or an error message if the exportType is invalid or missing
-     */
+    @PostMapping("/import")
+    public ResponseEntity<?> importInstance(@RequestBody Map<String, Object> payload) {
+        try {
+            String content = payload == null ? null : String.valueOf(payload.getOrDefault("content", ""));
+
+            Map<String, Object> response = instanceService.importInstance(content);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+        }
+    }
+
     @PostMapping("/export")
     public ResponseEntity<String> exportInstance(@RequestBody Map<String, Object> payload) {
         try {
-            String exportType = payload == null ? null : String.valueOf(payload.get("exportType"));
-            String content = instanceService.exportInstance(exportType, payload);
+            String content = instanceService.exportInstance(payload);
+
             return ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE, "text/plain; charset=utf-8").body(content);
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());

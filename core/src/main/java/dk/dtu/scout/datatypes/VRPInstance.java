@@ -4,6 +4,7 @@ import dk.dtu.scout.util.DistanceUtils;
 
 public class VRPInstance {
     private final String name;
+    private final String comment;
     private final int customerCount;
     private final double[][] customerCoordinates;
     private final double[] customerDemands;
@@ -12,16 +13,27 @@ public class VRPInstance {
     private final int numberOfVehicles;
     private final double[][] distanceMatrix;
 
-    public VRPInstance(String name, double[] depotCoordinates, double[][] customerCoordinates, double[] customerDemands, double capacity, int numberOfVehicles) {
+    public VRPInstance(
+            String name,
+            String comment,
+            double[] depotCoordinates,
+            double[][] customerCoordinates,
+            double[] customerDemands,
+            double capacity,
+            int numberOfVehicles
+    ) {
         this.name = name;
+        this.comment = comment;
         this.customerCoordinates = customerCoordinates;
         this.customerDemands = customerDemands;
         this.customerCount = customerCoordinates.length;
         this.depotCoordinates = depotCoordinates;
         this.capacity = capacity;
+
         if (numberOfVehicles <= 0) {
             throw new IllegalArgumentException("Number of vehicles must be positive");
         }
+
         this.numberOfVehicles = numberOfVehicles;
         this.distanceMatrix = computeDistanceMatrix();
     }
@@ -29,6 +41,7 @@ public class VRPInstance {
     private double[][] computeDistanceMatrix() {
         int size = customerCount + 1;
         double[][] matrix = new double[size][size];
+
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < size; j++) {
                 if (i == j) {
@@ -38,6 +51,7 @@ public class VRPInstance {
                 }
             }
         }
+
         return matrix;
     }
 
@@ -59,6 +73,10 @@ public class VRPInstance {
 
     public String getName() {
         return name;
+    }
+
+    public String getComment() {
+        return comment;
     }
 
     public double getCapacity() {

@@ -8,7 +8,8 @@ import SidebarSection from "./SidebarSection.jsx";
 import "./FormFields.css";
 import "./LabRightbar.css";
 
-import { detectInstanceType, parseTspContent, parseVrpContent } from "./instanceParsing.js";
+import { importInstanceFile, exportInstanceFile } from "@/shared/api/instance.js";
+
 import {
   applyEditedMetadata,
   buildVrpNodes,
@@ -144,28 +145,32 @@ const LabRightbar = ({
 
     try {
       const content = await file.text();
-      const detectedType = detectInstanceType(file.name, content);
+      const result = await importInstanceFile({
+        fileName: file.name,
+        content,
+      });
 
-      if (detectedType === "VRP") {
-        const parsed = parseVrpContent(content);
-        const name = parsed.name || file.name.replace(/\.[^/.]+$/, "");
+      const importedType = result?.instanceType;
+      const importedInstance = result?.instance;
 
+      if (!importedType || !importedInstance) {
+        throw new Error("Backend returned an invalid import response");
+      }
+
+      if (importedType === "VRP") {
         setInstanceType("VRP");
         onTspInstanceChange?.(null);
         onVrpInstanceChange?.({
-          ...parsed,
-          name: name || CUSTOM_INSTANCE_NAME,
+          ...importedInstance,
+          name: importedInstance.name || file.name.replace(/\.[^/.]+$/, ""),
           source: "import",
         });
       } else {
-        const parsed = parseTspContent(content);
-        const name = parsed.name || file.name.replace(/\.[^/.]+$/, "");
-
         setInstanceType("TSP");
         onVrpInstanceChange?.(null);
         onTspInstanceChange?.({
-          ...parsed,
-          name: name || CUSTOM_INSTANCE_NAME,
+          ...importedInstance,
+          name: importedInstance.name || file.name.replace(/\.[^/.]+$/, ""),
           source: "import",
         });
       }
@@ -236,30 +241,15 @@ const LabRightbar = ({
 
     setExporting(true);
     try {
-      const endpoint = "/api/instance/export";
       const payload = instanceType === "VRP" ? buildVrpExportPayload() : buildTspExportPayload();
       const requestBody = {
         exportType: instanceType,
         ...payload,
       };
 
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requestBody),
-      });
-
-      if (!res.ok) {
-        const message = await res.text();
-        throw new Error(message || "Failed to export instance");
-      }
-
-      const content = await res.text();
+      const content = await exportInstanceFile(requestBody);
       const extension = instanceType === "VRP" ? "vrp" : "tsp";
-      const safeName = String(payload.name || "instance")
-        .trim()
-        .replace(/[^a-zA-Z0-9-_]+/g, "_")
-        .replace(/_+/g, "_");
+      const safeName = String(payload.name || "instance").trim().replace(/[^a-zA-Z0-9-_]+/g, "_").replace(/_+/g, "_");
       const fileName = `${safeName || "instance"}.${extension}`;
 
       const blob = new Blob([content], { type: "text/plain" });
