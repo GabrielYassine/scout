@@ -163,7 +163,7 @@ public final class InstanceParser {
         }
 
         double capacity = requireCapacity(headers);
-        int numberOfVehicles = requireVehicleCount(headers);
+        int numberOfVehicles = resolveVehicleCount(headers);
         validateDemandsExist(coords, demands, resolvedDepotIds);
 
         List<Map<String, Object>> customers = buildCustomers(coords, demands, resolvedDepotIds);
@@ -310,9 +310,9 @@ public final class InstanceParser {
         return toDouble(headers.get("CAPACITY"));
     }
 
-    private static int requireVehicleCount(Map<String, String> headers) {
+    private static int resolveVehicleCount(Map<String, String> headers) {
         if (!headers.containsKey("VEHICLES")) {
-            throw new IllegalArgumentException("VRP file must contain a VEHICLES field");
+            return 1;
         }
 
         int vehicles = toInt(headers.get("VEHICLES"));
@@ -344,14 +344,10 @@ public final class InstanceParser {
     }
 
     private static int resolveDimension(Map<String, String> headers, int actualDimension, String actualDescription) {
-        int dimension = headers.containsKey("DIMENSION")
-                ? toInt(headers.get("DIMENSION"))
-                : actualDimension;
+        int dimension = headers.containsKey("DIMENSION") ? toInt(headers.get("DIMENSION")) : actualDimension;
 
         if (dimension != actualDimension) {
-            throw new IllegalArgumentException(
-                    "DIMENSION is " + dimension + ", but " + actualDescription
-            );
+            throw new IllegalArgumentException("DIMENSION is " + dimension + ", but " + actualDescription);
         }
 
         return dimension;
@@ -364,10 +360,7 @@ public final class InstanceParser {
             return null;
         }
 
-        return new HeaderLine(
-                matcher.group(1).toUpperCase(),
-                matcher.group(2) == null ? "" : matcher.group(2).trim()
-        );
+        return new HeaderLine(matcher.group(1).toUpperCase(), matcher.group(2) == null ? "" : matcher.group(2).trim());
     }
 
     private static boolean isKnownSection(String line) {

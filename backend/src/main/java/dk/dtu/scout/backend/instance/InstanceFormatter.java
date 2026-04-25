@@ -51,13 +51,11 @@ public final class InstanceFormatter {
         StringBuilder out = new StringBuilder();
 
         String name = normalizeName(instance.getName(), "Custom VRP Instance");
-        name = ensureVehicleSuffix(name, instance.getNumberOfVehicles());
 
         appendHeader(out, name, "CVRP", instance.getComment());
         out.append("DIMENSION: ").append(instance.getCustomerCount() + 1).append("\n");
         out.append("EDGE_WEIGHT_TYPE: ").append(EDGE_WEIGHT_TYPE).append("\n");
         out.append("CAPACITY: ").append(formatInteger(instance.getCapacity())).append("\n");
-        out.append("VEHICLES: ").append(instance.getNumberOfVehicles()).append("\n");
         out.append("NODE_COORD_SECTION\n");
 
         double[] depot = instance.getDepotCoordinates();
@@ -116,13 +114,6 @@ public final class InstanceFormatter {
             return null;
         }
         return comment.trim().replaceAll("\\s+", " ");
-    }
-
-    private static String ensureVehicleSuffix(String name, int vehicleCount) {
-        if (vehicleCount > 0 && !name.matches(".*-k\\d+.*")) {
-            return name + "-k" + vehicleCount;
-        }
-        return name;
     }
 
     private static String formatNumber(double value) {

@@ -70,7 +70,7 @@ public final class InstanceMapper {
         String name = map.getOrDefault("name", "Custom VRP Instance").toString();
         String comment = map.getOrDefault("comment", "").toString();
         double capacity = toDouble(map.get("capacity"));
-        int numberOfVehicles = toInt(map.get("numberOfVehicles"));
+        int numberOfVehicles = Math.max(1, toInt(map.getOrDefault("numberOfVehicles", 1)));
 
         double[] depotCoordinates = extractDepot(map);
 
@@ -195,10 +195,7 @@ public final class InstanceMapper {
         @SuppressWarnings("unchecked") // Safe by convention: JSON objects use string keys and object values.
         Map<String, Object> depot = (Map<String, Object>) depotRaw;
 
-        return new double[] {
-                toDouble(depot.get("x")),
-                toDouble(depot.get("y"))
-        };
+        return new double[] {toDouble(depot.get("x")), toDouble(depot.get("y"))};
     }
 
     private static double toDouble(Object value) {
