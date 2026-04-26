@@ -1,3 +1,8 @@
+/**
+ * usePlayback is a custom hook for chart animation.
+ * It controls playback speed, gradually reveals more data points,
+ * and provides a reset function to start the playback over.
+*/
 import { useEffect, useState } from "react";
 
 const PLAYBACK_TICK_MS = 30;

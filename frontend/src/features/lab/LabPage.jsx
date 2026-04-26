@@ -15,12 +15,12 @@ import "./LabPage.css";
 import { usePuzzleConfig } from "@/shared/contexts/usePuzzleConfig.js";
 import { useLocalStorageState } from "@/shared/hooks/useLocalStorageState.js";
 import { prepareRun } from "@/shared/api/run.js";
+import { runTemplates } from "@/features/lab/templates/runTemplates.js";
 
 const SESSION_STORAGE_KEY = "scout:sessionId";
 const SHARED_DROP_AREA_ID = "shared-drop-area";
 const TOAST_DURATION_MS = 3500;
 
-// ---------- Helper functions ----------
 function generateId() {
   return window.crypto?.randomUUID
     ? window.crypto.randomUUID()
@@ -195,9 +195,6 @@ export default function LabPage({
   catalog,
   catalogLoading,
   catalogError,
-  templates,
-  templatesLoading,
-  templatesError,
 }) {
   const {
     puzzleConfig,
@@ -329,11 +326,6 @@ export default function LabPage({
        navigate("/run", { state: navigationState });
   }
 
-  function saveAndNavigate(savedState, navigationState) {
-        setSavedRun(savedState);
-        navigate("/run", { state: navigationState });
-  }
-
   async function startRuntimeStudy() {
     const { seed, existingSessionId, problemParams, searchSpaceParams } =
       buildExecutionContext();
@@ -455,7 +447,7 @@ export default function LabPage({
 
   function onApplyTemplate(templateId) {
     if (!catalog || !templateId) return;
-    const tpl = (templates ?? []).find((t) => t.id === templateId);
+    const tpl = runTemplates.find((t) => t.id === templateId);
     if (!tpl) return;
     applyTemplateRunRequest(tpl.runRequest, catalog);
   }
@@ -480,9 +472,7 @@ export default function LabPage({
         catalog={catalog}
         catalogLoading={catalogLoading}
         catalogError={catalogError}
-        templates={templates}
-        templatesLoading={templatesLoading}
-        templatesError={templatesError}
+        templates={runTemplates}
         onApplyTemplate={onApplyTemplate}
       />
         {/* Main middle content */}

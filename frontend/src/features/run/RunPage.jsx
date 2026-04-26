@@ -1,3 +1,9 @@
+/**
+* usePlayback is a custom hook for chart animation.
+*  It controls playback speed, gradually reveals more data points,
+*  and provides a reset function to start the playback over.
+*/
+
 import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -10,14 +16,13 @@ import RunControls from "@/features/run/components/runcontrols/RunControls.jsx";
 import "./RunPage.css";
 
 import { useLocalStorageState } from "@/shared/hooks/useLocalStorageState.js";
-import {
-  computeAnimationLength,
-  normalizeBatch,
-  normalizeSelectedRunKey,
-} from "@/features/run/utils/runData.js";
+import { computeAnimationLength, normalizeBatch, normalizeSelectedRunKey, } from "@/features/run/utils/runData.js";
 import { usePlayback } from "@/features/run/hooks/usePlayback.js";
 import { useRunWebSocket } from "@/features/run/hooks/useRunWebSocket.js";
 import { useRuntimeStudyWebSocket } from "@/features/run/hooks/useRuntimeStudyWebSocket.js";
+
+
+const INITIAL_SPEED = 50;
 
 function resolveRunPageState(locationState, savedRun) {
   const incomingRunId =
@@ -155,7 +160,7 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
 
   const averageRuns = useMemo(
     () => buildAverageRuns(averageByProblem, averageRunTimeByProblem, batch?.searchSpaceId),
-    [averageByProblem, averageRunTimeByProblem,batch]
+    [averageByProblem, averageRunTimeByProblem,batch?.searchSpaceId]
   );
 
   const [selectedRunKey, setSelectedRunKey] = useState(() => {
@@ -204,7 +209,7 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
 
   const { playbackSpeed, setPlaybackSpeed, visibleCount, resetPlayback } = usePlayback({
     length: currentAnimationLength,
-    initialSpeed: 50,
+    initialSpeed: INITIAL_SPEED,
   });
 
   useRunWebSocket({

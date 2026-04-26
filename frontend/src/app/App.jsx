@@ -27,9 +27,6 @@ export default function App() {
                 catalog={catalog}
                 catalogLoading={catalogLoading}
                 catalogError={catalogError}
-                templates={templates}
-                templatesLoading={templatesLoading}
-                templatesError={templatesError}
               />
             }
           />

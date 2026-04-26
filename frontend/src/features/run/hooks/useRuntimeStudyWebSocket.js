@@ -1,3 +1,10 @@
+/**
+ * Manages the full websocket lifecycle for a runtime study:
+ * connects to the backend, sends "ready" and "start", listens for live study updates,
+ * keeps the newest study points in sync with React state and local storage,
+ * updates the study status (ongoing / finished / failed),
+ * and closes the websocket when the study ends or the component unmounts.
+*/
 import { useEffect, useRef } from "react";
 import { Client } from "@stomp/stompjs";
 
@@ -10,6 +17,14 @@ function sortStudyPoints(points) {
   return [...(points ?? [])].sort(
     (a, b) => Number(a.problemSize) - Number(b.problemSize)
   );
+}
+
+function parseSocketMessage(rawMessage) {
+  try {
+    return JSON.parse(rawMessage.body);
+  } catch {
+    return null;
+  }
 }
 
 export function useRuntimeStudyWebSocket({
@@ -44,8 +59,10 @@ export function useRuntimeStudyWebSocket({
 
     const handleStudyConnected = () => {
       if (startSentRef.current) return;
+
       startSentRef.current = true;
       setStudyStatus("ONGOING");
+
       client.publish({
         destination: `/app/study/${studyId}/start`,
         body: JSON.stringify(runtimeStudyRequest),
@@ -105,7 +122,7 @@ export function useRuntimeStudyWebSocket({
              studyId,
              batch: null,
              studyPoints: nextPoints,
-             loading: true,
+             loading: false,
              puzzleConfig,
              params,
              tspInstance,
@@ -124,13 +141,7 @@ export function useRuntimeStudyWebSocket({
     };
 
     const handleSocketMessage = (rawMessage) => {
-      let message;
-      try {
-        message = JSON.parse(rawMessage.body);
-      } catch {
-        return;
-      }
-
+      const message = parseSocketMessage(rawMessage);
       if (!message?.studyId || message.studyId !== studyId) return;
 
       switch (message.type) {
@@ -139,10 +150,8 @@ export function useRuntimeStudyWebSocket({
           return;
 
         case "STUDY_PROGRESS":
-            console.log("Received study progress:", message);
-            handleStudyProgress(message);
-            return;
-
+          handleStudyProgress(message);
+          return;
         case "STUDY_FINISHED":
           handleStudyFinished(message);
           return;

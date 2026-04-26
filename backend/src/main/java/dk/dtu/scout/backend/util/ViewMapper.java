@@ -8,7 +8,6 @@ import dk.dtu.scout.backend.dto.catalog.ComponentDef;
 import dk.dtu.scout.backend.dto.catalog.ParamDef;
 import dk.dtu.scout.backend.dto.error.ErrorResponse;
 import dk.dtu.scout.backend.dto.run.*;
-import dk.dtu.scout.backend.dto.template.ExperimentTemplateDto;
 import dk.dtu.scout.backend.dto.permutation.CityDto;
 import dk.dtu.scout.backend.dto.permutation.TSPDto;
 import dk.dtu.scout.backend.dto.series.SeriesResponse;
@@ -166,15 +165,6 @@ public final class ViewMapper {
             out.put(entry.getKey(), response);
         }
         return out;
-    }
-
-    public static ExperimentTemplateDto toExperimentTemplateDto(
-        String id,
-        String displayName,
-        String description,
-        Map<String, Object> runRequest
-    ) {
-        return new ExperimentTemplateDto(id, displayName, description, runRequest);
     }
 
     public static RunRequest toRunRequest(
