@@ -12,50 +12,44 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.*;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Future;
 
 /**
- * Facade for run orchestration. Validates requests, triggers async execution,
- * and exposes a synchronous entry point for tests.
+ * Facade for run orchestration.
+ * Validates requests, starts asynchronous execution, sends final websocket status messages,
+ * and exposes synchronous entry points for tests.
+ * @author s235257 & Ahmed
  */
 @Service
 public class RunOrchestratorService {
-
-    private record ActiveTask(String id, Future<?> future) {}
 
     private final RunRequestValidator runRequestValidator;
     private final RunExecutor runExecutor;
     private final RunStatisticsService runStatisticsService;
     private final WsSender wsSender;
+    private final ActiveRunRegistry activeRunRegistry;
     private final ThreadPoolTaskExecutor requestExecutor;
-
-    /**
-     * Active run per client session (tab-scoped).
-     */
-    private final ConcurrentHashMap<String, ActiveTask> activeBySession = new ConcurrentHashMap<>();
-
-    /**
-     * Guards against duplicate websocket start messages for the same run or study, which can happen when a client reconnects.
-     */
-    private final ConcurrentHashMap<String, Boolean> startedRunIds = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, Boolean> startedStudyIds = new ConcurrentHashMap<>();
 
     public RunOrchestratorService(
         RunRequestValidator runRequestValidator,
         RunExecutor runExecutor,
         RunStatisticsService runStatisticsService,
         WsSender wsSender,
+        ActiveRunRegistry activeRunRegistry,
         @Qualifier("requestExecutor") Executor requestExecutor
     ) {
         this.runRequestValidator = runRequestValidator;
         this.runExecutor = runExecutor;
         this.runStatisticsService = runStatisticsService;
         this.wsSender = wsSender;
+        this.activeRunRegistry = activeRunRegistry;
         this.requestExecutor = (ThreadPoolTaskExecutor) requestExecutor;
     }
 
@@ -68,29 +62,15 @@ public class RunOrchestratorService {
     public void startRun(RunRequest request) {
         runRequestValidator.validateRunRequest(request);
 
-        String sessionId = request.sessionId();
-        if (sessionId == null || sessionId.isBlank()) {
-            throw new IllegalArgumentException("sessionId is required");
-        }
+        String sessionId = requireText(request.sessionId(), "sessionId is required");
+        String runId = requireText(request.runId(), "runId is required");
 
-        String runId = request.runId();
-        if (runId == null || runId.isBlank()) {
-            throw new IllegalArgumentException("runId is required");
-        }
-
-        if (startedRunIds.putIfAbsent(runId, Boolean.TRUE) != null) {
+        if (!activeRunRegistry.markRunStarted(runId)) {
             return;
         }
 
-        ActiveTask previous = activeBySession.get(sessionId);
-        if (previous != null && previous.future != null) {
-            previous.future.cancel(true);
-        }
-
         Future<?> future = requestExecutor.submit(() -> run(request));
-
-        ActiveTask current = new ActiveTask(runId, future);
-        activeBySession.put(sessionId, current);
+        activeRunRegistry.register(sessionId, runId, future);
 
         requestExecutor.execute(() -> {
             try {
@@ -102,17 +82,16 @@ public class RunOrchestratorService {
             } catch (ExecutionException ignored) {
                 // run() already emitted failed payload if needed
             } finally {
-                startedRunIds.remove(runId);
-                activeBySession.computeIfPresent(sessionId, (sid, active) -> runId.equals(active.id()) ? null : active);
+                activeRunRegistry.finishRun(sessionId, runId);
             }
         });
     }
 
     public BatchRunResponse run(RunRequest request) {
         runRequestValidator.validateRunRequest(request);
+
         int logEvery = runRequestValidator.resolveLogEveryIterations(request);
         int wsUpdateEvery = request.wsUpdateEveryIterations() > 0 ? request.wsUpdateEveryIterations() : logEvery;
-
         try {
             BatchRunResponse response = runExecutor.executeBatch(request, logEvery, wsUpdateEvery);
             if (request.runId() != null) {
@@ -132,29 +111,15 @@ public class RunOrchestratorService {
     public void startRuntimeStudy(RuntimeStudyRequest request) {
         runRequestValidator.validateRuntimeStudyRequest(request);
 
-        String sessionId = request.sessionId();
-        if (sessionId == null || sessionId.isBlank()) {
-            throw new IllegalArgumentException("sessionId is required");
-        }
+        String sessionId = requireText(request.sessionId(), "sessionId is required");
+        String studyId = requireText(request.studyId(), "studyId is required");
 
-        String studyId = request.studyId();
-        if (studyId == null || studyId.isBlank()) {
-            throw new IllegalArgumentException("studyId is required");
-        }
-
-        if (startedStudyIds.putIfAbsent(studyId, Boolean.TRUE) != null) {
+        if (!activeRunRegistry.markStudyStarted(studyId)) {
             return;
         }
 
-        ActiveTask previous = activeBySession.get(sessionId);
-        if (previous != null && previous.future != null) {
-            previous.future.cancel(true);
-        }
-
         Future<?> future = requestExecutor.submit(() -> runRuntimeStudy(request));
-
-        ActiveTask current = new ActiveTask(studyId, future);
-        activeBySession.put(sessionId, current);
+        activeRunRegistry.register(sessionId, studyId, future);
 
         requestExecutor.execute(() -> {
             try {
@@ -166,8 +131,7 @@ public class RunOrchestratorService {
             } catch (ExecutionException ignored) {
                 // runRuntimeStudy already emits failed payload if needed
             } finally {
-                startedStudyIds.remove(studyId);
-                activeBySession.computeIfPresent(sessionId, (sid, active) -> studyId.equals(active.id()) ? null : active);
+                activeRunRegistry.finishStudy(sessionId, studyId);
             }
         });
     }
@@ -175,18 +139,13 @@ public class RunOrchestratorService {
     public void runRuntimeStudy(RuntimeStudyRequest request) {
         runRequestValidator.validateRuntimeStudyRequest(request);
         try {
-            List<RuntimeStudyPointResponse> points = new ArrayList<>();
             List<Integer> sizes = request.problemSizes();
-
             for (int i = 0; i < sizes.size(); i++) {
-                System.out.println("Starting runtime study point for size " + sizes.get(i));
                 int n = sizes.get(i);
                 RunRequest runRequest = buildRunRequestForSize(request, n, i);
                 int logEvery = runRequestValidator.resolveLogEveryIterations(runRequest);
                 BatchRunResponse batch = runExecutor.executeBatch(runRequest, logEvery, 0);
                 RuntimeStudyPointResponse point = runStatisticsService.toRuntimeStudyPoint(n, batch);
-                points.add(point);
-                System.out.println("Completed runtime study point for size " + n + ": " + point);
                 wsSender.sendToStudy(request.studyId(), RuntimeStudyWsPayload.progress(request.studyId(), point));
             }
             wsSender.sendToStudy(request.studyId(), RuntimeStudyWsPayload.finished(request.studyId()));
@@ -200,6 +159,7 @@ public class RunOrchestratorService {
 
     private RunRequest buildRunRequestForSize(RuntimeStudyRequest request, int problemSize, int sizeIndex) {
         Map<String, Object> searchSpaceParams = new LinkedHashMap<>(request.searchSpaceParams() != null ? request.searchSpaceParams() : Map.of());
+
         searchSpaceParams.put("n", problemSize);
 
         long seed = request.seed() + (long) sizeIndex * 1_000_000L;
@@ -230,5 +190,13 @@ public class RunOrchestratorService {
             0,
             0
         );
+    }
+
+    private String requireText(String value, String message) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException(message);
+        }
+
+        return value;
     }
 }
