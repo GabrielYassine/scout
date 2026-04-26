@@ -1,3 +1,6 @@
+// LabPage is the main page for configuring experiments.
+// It handles puzzle-piece selection, instance validation, request building,
+// and navigation to the run page.
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDndMonitor } from "@dnd-kit/core";
@@ -15,7 +18,9 @@ import { prepareRun } from "@/shared/api/run.js";
 
 const SESSION_STORAGE_KEY = "scout:sessionId";
 const SHARED_DROP_AREA_ID = "shared-drop-area";
+const TOAST_DURATION_MS = 3500;
 
+// ---------- Helper functions ----------
 function generateId() {
   return window.crypto?.randomUUID
     ? window.crypto.randomUUID()
@@ -184,6 +189,8 @@ function buildRunRequest({
   };
 }
 
+
+// ---------- Main component ----------
 export default function LabPage({
   catalog,
   catalogLoading,
@@ -212,6 +219,7 @@ export default function LabPage({
   const navigate = useNavigate();
   const [, setSavedRun] = useLocalStorageState("scout:lastRun", null);
 
+// Listen to drag-and-drop events from dnd-kit to determine when to show the remove drop zone overlay
   useDndMonitor({
     onDragStart(event) {
       const isPlacedPiece = event.active?.data?.current?.fromIndex != null;
@@ -252,7 +260,7 @@ export default function LabPage({
 
     toastTimeoutRef.current = setTimeout(() => {
       setToastVisible(false);
-    }, 3500);
+    }, TOAST_DURATION_MS);
   }
 
   function getCatalogItem(type, id) {
@@ -283,12 +291,9 @@ export default function LabPage({
     setHoverInfo(null);
   }
 
-  async function onRun() {
-    try {
-      const experimentType = params.global?.experimentType ?? "run";
+  function buildExecutionContext() {
       const seed = params.global?.seed ?? Date.now();
       const existingSessionId = getExistingSessionId();
-
       const problemList = Array.isArray(puzzleConfig.problem) ? puzzleConfig.problem : [];
       const { isTspProblem, isVrpProblem } = validateProblemInstances({
         problemList,
@@ -311,76 +316,101 @@ export default function LabPage({
         isVrpProblem,
       });
 
-      if (experimentType === "runtimeStudy") {
-        const sessionId = ensureSessionId(existingSessionId);
-        const problemSizes = parseProblemSizes(params.global?.problemSizes);
+      return {
+        seed,
+        existingSessionId,
+        problemParams,
+        searchSpaceParams,
+      };
+  }
 
-        if (problemSizes.length === 0) {
-          throw new Error("Please enter at least one valid problem size");
-        }
+  function saveAndNavigate(savedState, navigationState) {
+       setSavedRun(savedState);
+       navigate("/run", { state: navigationState });
+  }
 
-        const studyId = generateId();
-        const runtimeStudyRequest = buildRuntimeStudyRequest({
-          studyId,
-          sessionId,
-          puzzleConfig,
-          params,
-          searchSpaceParams,
-          problemParams,
-          seed,
-          problemSizes,
-        });
+  function saveAndNavigate(savedState, navigationState) {
+        setSavedRun(savedState);
+        navigate("/run", { state: navigationState });
+  }
 
-        setSavedRun({
-          pageMode: "runtimeStudy",
-          loading: true,
-          studyId,
-          batch: null,
-          studyPoints: [],
-          puzzleConfig,
-          params,
-          tspInstance,
-          vrpInstance,
-          runtimeStudyRequest,
-          savedAt: Date.now(),
-        });
+  async function startRuntimeStudy() {
+    const { seed, existingSessionId, problemParams, searchSpaceParams } =
+      buildExecutionContext();
 
-        navigate("/run", {
-          state: {
-            pageMode: "runtimeStudy",
-            loading: true,
-            puzzleConfig,
-            params,
-            tspInstance,
-            vrpInstance,
-            studyId,
-            runtimeStudyRequest,
-          },
-        });
-        return;
-      }
+    const sessionId = ensureSessionId(existingSessionId);
+    const problemSizes = parseProblemSizes(params.global?.problemSizes);
 
-      const prep = await prepareRun({ sessionId: existingSessionId });
-      const sessionId = prep?.sessionId ?? existingSessionId;
-      const runId = prep?.runId;
+    if (problemSizes.length === 0) {
+      throw new Error("Please enter at least one valid problem size");
+    }
 
-      if (!sessionId || !runId) {
-        throw new Error("Backend did not return sessionId and runId");
-      }
+    const studyId = generateId();
 
-      persistSessionId(sessionId);
+    const runtimeStudyRequest = buildRuntimeStudyRequest({
+      studyId,
+      sessionId,
+      puzzleConfig,
+      params,
+      searchSpaceParams,
+      problemParams,
+      seed,
+      problemSizes,
+    });
 
-      const runRequest = buildRunRequest({
-        runId,
-        sessionId,
+    saveAndNavigate(
+      {
+        pageMode: "runtimeStudy",
+        loading: true,
+        studyId,
+        batch: null,
+        studyPoints: [],
         puzzleConfig,
         params,
-        searchSpaceParams,
-        problemParams,
-        seed,
-      });
+        tspInstance,
+        vrpInstance,
+        runtimeStudyRequest,
+        savedAt: Date.now(),
+      },
+      {
+        pageMode: "runtimeStudy",
+        loading: true,
+        puzzleConfig,
+        params,
+        tspInstance,
+        vrpInstance,
+        studyId,
+        runtimeStudyRequest,
+      }
+    );
+  }
 
-      setSavedRun({
+  async function startStandardRun() {
+    const { seed, existingSessionId, problemParams, searchSpaceParams } =
+      buildExecutionContext();
+
+    const prep = await prepareRun({ sessionId: existingSessionId });
+    const sessionId = prep?.sessionId ?? existingSessionId;
+    const runId = prep?.runId;
+
+    if (!sessionId || !runId) {
+      throw new Error("Backend did not return sessionId and runId");
+    }
+
+    persistSessionId(sessionId);
+
+    const runRequest = buildRunRequest({
+      runId,
+      sessionId,
+      puzzleConfig,
+      params,
+      searchSpaceParams,
+      problemParams,
+      seed,
+    });
+
+    saveAndNavigate(
+      {
         pageMode: "run",
         loading: true,
         runId,
@@ -394,23 +424,33 @@ export default function LabPage({
         runRequest,
         selectedRunKey: "0",
         savedAt: Date.now(),
-      });
+      },
+      {
+        pageMode: "run",
+        loading: true,
+        puzzleConfig,
+        params,
+        tspInstance,
+        vrpInstance,
+        runId,
+        runRequest,
+      }
+    );
+  }
 
-      navigate("/run", {
-        state: {
-          pageMode: "run",
-          loading: true,
-          puzzleConfig,
-          params,
-          tspInstance,
-          vrpInstance,
-          runId,
-          runRequest,
-        },
-      });
-    } catch (err) {
-      showToast(err.message || "Failed to start run");
-    }
+  async function onRun() {
+     try {
+       const experimentType = params.global?.experimentType ?? "run";
+
+       if (experimentType === "runtimeStudy") {
+         await startRuntimeStudy();
+         return;
+       }
+
+       await startStandardRun();
+     } catch (err) {
+       showToast(err.message || "Failed to start run");
+     }
   }
 
   function onApplyTemplate(templateId) {
@@ -422,14 +462,15 @@ export default function LabPage({
 
   return (
     <div className="lab-page">
+         {/* Overlay shown when dragging a piece from the selector to indicate the remove area */}
       {showRemoveDropZone && <div className="lab-remove-overlay" />}
-
+         {/* Toast message */}
       {toastVisible && (
         <div className="lab-toast" role="status" aria-live="polite">
           {toastMessage}
         </div>
       )}
-
+        {/* Left sidebar: parameters, templates, run/reset buttons */}
       <LabLeftbar
         puzzleConfig={puzzleConfig}
         params={params}
@@ -444,7 +485,7 @@ export default function LabPage({
         templatesError={templatesError}
         onApplyTemplate={onApplyTemplate}
       />
-
+        {/* Main middle content */}
       <div className="lab-page-content">
         <div className="selector-timeline">
           <RunConfigPuzzle
@@ -456,6 +497,7 @@ export default function LabPage({
         <hr className="rounded" />
 
         <div className="chosen-selector-container">
+          {/* Area showing selectable available pieces */}
           <Selector
             catalog={catalog}
             onPieceHover={handlePieceHover}
@@ -465,7 +507,7 @@ export default function LabPage({
           />
         </div>
       </div>
-
+      {/* Right sidebar: hover description + problem instance editor */}
       <LabRightbar
         hoverInfo={hoverInfo}
         tspInstance={tspInstance}

@@ -1,3 +1,8 @@
+
+// Selector is responsible for displaying selectable puzzle pieces in tabs,
+// determining whether each piece should be enabled or disabled,
+// and enforcing runtime study restrictions.
+
 import "./Selector.css";
 import PuzzlePiece from "../PuzzlePiece";
 import { useSessionStorageState } from "@/shared/hooks/useSessionStorageState.js";

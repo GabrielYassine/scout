@@ -1,3 +1,7 @@
+// RunConfigPuzzle is responsible for showing the current puzzle configuration,
+// handling the config tabs,
+// and rendering the shared drop area with the placed puzzle pieces.
+
 import { useDroppable } from "@dnd-kit/core";
 import { useState } from "react";
 
