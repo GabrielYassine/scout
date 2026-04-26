@@ -51,38 +51,27 @@ public class RunExecutor {
     private final ThreadPoolTaskExecutor runExecutor;
 
     public RunExecutor(
-            RunComponentFactory factory,
-            WsSender wsSender,
-            @Qualifier("runTaskExecutor") Executor runExecutor
+        RunComponentFactory factory,
+        WsSender wsSender,
+        @Qualifier("runTaskExecutor") Executor runExecutor
     ) {
         this.factory = factory;
         this.wsSender = wsSender;
         this.runExecutor = (ThreadPoolTaskExecutor) runExecutor;
     }
 
-    /**
-     * Executes a batch of runs and returns the raw run groups.
-     * Statistics are calculated by the caller, depending on whether the caller needs
-     * a normal run summary or runtime-study statistics.
-     * @param request the run request containing all parameters for the runs to execute
-     * @param logEveryIterations how often to log progress in the RunLog for each run
-     * @param wsUpdateEveryIterations how often to send WebSocket progress updates for each run
-     * @return the completed run groups
-     * @param <S> the solution representation type used by the selected search space
-     */
     public <S> List<RunGroupResponse> runBatch(
-            RunRequest request,
-            int logEveryIterations,
-            int wsUpdateEveryIterations
+        RunRequest request,
+        int logEveryIterations,
+        int wsUpdateEveryIterations
     ) {
         checkCancelled();
 
         long baseSeed = request.seed();
         int runtimes = request.runTimes();
 
-        Map<String, Object> searchSpaceParams = prepareSearchSpaceParams(request);
-        Supplier<SearchSpace<S>> searchSpaceFactory =
-                () -> factory.createSearchSpace(request.searchSpaceId(), searchSpaceParams);
+        Map<String, Object> searchSpaceParams = copyParams(request.searchSpaceParams());
+        Supplier<SearchSpace<S>> searchSpaceFactory = () -> factory.createSearchSpace(request.searchSpaceId(), searchSpaceParams);
 
         List<Future<RunGroupResponse>> futures = new ArrayList<>();
 
@@ -94,78 +83,52 @@ public class RunExecutor {
                 long runSeed = baseSeed + i;
 
                 futures.add(runExecutor.submit(() ->
-                        runSingleIndex(
-                                request,
-                                runIndex,
-                                runSeed,
-                                searchSpaceFactory,
-                                logEveryIterations,
-                                wsUpdateEveryIterations
-                        )
+                    runSingleIndex(
+                        request,
+                        runIndex,
+                        runSeed,
+                        searchSpaceFactory,
+                        logEveryIterations,
+                        wsUpdateEveryIterations
+                    )
                 ));
             }
 
-            return collectFinishedRuns(futures).stream()
-                    .sorted(Comparator.comparingInt(RunGroupResponse::runIndex))
-                    .toList();
+            return collectFinishedRuns(futures).stream().sorted(Comparator.comparingInt(RunGroupResponse::runIndex)).toList();
         } catch (RuntimeException ex) {
             cancelAll(futures);
             throw ex;
         }
     }
 
-    private Map<String, Object> prepareSearchSpaceParams(RunRequest request) {
-        Map<String, Object> searchSpaceParams = request.searchSpaceParams() != null
-                ? new LinkedHashMap<>(request.searchSpaceParams())
-                : new LinkedHashMap<>();
-
-        if ("route-list".equals(request.searchSpaceId()) && searchSpaceParams.containsKey("vrpInstance")) {
-            searchSpaceParams.compute(
-                    "vrpInstance",
-                    (key, rawInstance) -> InstanceMapper.toVrpInstance(asInstanceMap(rawInstance, "vrpInstance"))
-            );
-        }
-
-        return searchSpaceParams;
-    }
-
     private Map<String, Object> prepareProblemParams(RunRequest request, String problemId) {
-        Map<String, Object> problemParams = request.problemParams() != null
-                ? new LinkedHashMap<>(request.problemParams())
-                : new LinkedHashMap<>();
+        Map<String, Object> problemParams = copyParams(request.problemParams());
 
         if ("tsp".equals(problemId) && problemParams.containsKey("tspInstance")) {
-            problemParams.compute(
-                    "tspInstance",
-                    (key, rawInstance) -> InstanceMapper.toTspInstance(asInstanceMap(rawInstance, "tspInstance"))
-            );
+            problemParams.compute("tspInstance", (key, rawInstance) -> InstanceMapper.toTspInstance(asInstanceMap(rawInstance, "tspInstance")));
         }
 
         if ("vrp".equals(problemId) && problemParams.containsKey("vrpInstance")) {
-            problemParams.compute(
-                    "vrpInstance",
-                    (key, rawInstance) -> InstanceMapper.toVrpInstance(asInstanceMap(rawInstance, "vrpInstance"))
-            );
+            problemParams.compute("vrpInstance", (key, rawInstance) -> InstanceMapper.toVrpInstance(asInstanceMap(rawInstance, "vrpInstance")));
         }
 
         return problemParams;
     }
 
     private <S> RunGroupResponse runSingleIndex(
-            RunRequest request,
-            int runIndex,
-            long runSeed,
-            Supplier<SearchSpace<S>> searchSpaceFactory,
-            int logEveryIterations,
-            int wsUpdateEveryIterations
+        RunRequest request,
+        int runIndex,
+        long runSeed,
+        Supplier<SearchSpace<S>> searchSpaceFactory,
+        int logEveryIterations,
+        int wsUpdateEveryIterations
     ) {
         checkCancelled();
 
         Random rng = new Random(runSeed);
         SearchSpace<S> searchSpace = searchSpaceFactory.get();
 
-        Supplier<Generator<S>> generatorFactory =
-                () -> factory.createGenerator(request.generatorId(), request.generatorParams(), searchSpace.id());
+        Supplier<Generator<S>> generatorFactory = () -> factory.createGenerator(request.generatorId(), request.generatorParams(), searchSpace.id());
 
         List<RunResponse> perProblemRuns = new ArrayList<>();
 
@@ -177,45 +140,39 @@ public class RunExecutor {
             Problem<S> problem = factory.createProblem(problemId, searchSpace.dimension(), problemParams);
             factory.validateProblemSearchSpaceCompatibility(problem, problemId, searchSpace.id());
 
-            SelectionRule<S> selection =
-                    factory.createSelectionRule(request.selectionRuleId(), request.selectionRuleParams());
-            List<StopCondition<S>> stopConditions =
-                    factory.createStopConditionChain(request.stopConditionIds(), request.stopConditionParams());
-            List<Observer<S>> observers =
-                    new ArrayList<>(factory.createObservers(request.observerIds(), request.observerParams()));
-            PopulationModel<S> populationModel =
-                    factory.createPopulationModel(request.populationModelId(), request.populationModelParams());
-            Crossover<S> crossover =
-                    factory.createOptionalCrossover(request.crossoverId(), request.crossoverParams());
-            ParentSelectionRule<S> parentSelection =
-                    factory.createParentSelectionRule(request.parentSelectionRuleId(), request.parentSelectionRuleParams());
+            SelectionRule<S> selection = factory.createSelectionRule(request.selectionRuleId(), request.selectionRuleParams());
+            List<StopCondition<S>> stopConditions = factory.createStopConditionChain(request.stopConditionIds(), request.stopConditionParams());
+            List<Observer<S>> observers = new ArrayList<>(factory.createObservers(request.observerIds(), request.observerParams()));
+            PopulationModel<S> populationModel = factory.createPopulationModel(request.populationModelId(), request.populationModelParams());
+            Crossover<S> crossover = factory.createOptionalCrossover(request.crossoverId(), request.crossoverParams());
+            ParentSelectionRule<S> parentSelection = factory.createParentSelectionRule(request.parentSelectionRuleId(), request.parentSelectionRuleParams());
 
             if (request.runId() != null && wsUpdateEveryIterations > 0) {
                 observers.add(new RunProgressObserver<>(
-                        wsSender,
-                        request.runId(),
-                        runIndex,
-                        runSeed,
-                        searchSpace.id(),
-                        problemId,
-                        wsUpdateEveryIterations
+                    wsSender,
+                    request.runId(),
+                    runIndex,
+                    runSeed,
+                    searchSpace.id(),
+                    problemId,
+                    wsUpdateEveryIterations
                 ));
             }
 
             long startTime = System.nanoTime();
 
             RunLog log = new SimulationRunner().run(
-                    populationModel,
-                    generatorFactory,
-                    crossover,
-                    parentSelection,
-                    selection,
-                    searchSpace,
-                    problem,
-                    rng,
-                    stopConditions,
-                    observers,
-                    logEveryIterations
+                populationModel,
+                generatorFactory,
+                crossover,
+                parentSelection,
+                selection,
+                searchSpace,
+                problem,
+                rng,
+                stopConditions,
+                observers,
+                logEveryIterations
             );
 
             checkCancelled();
@@ -223,27 +180,27 @@ public class RunExecutor {
             double runtimeMs = (System.nanoTime() - startTime) / 1_000_000.0;
 
             sendFinishedProgressIfNeeded(
-                    request,
-                    runIndex,
-                    runSeed,
-                    searchSpace,
-                    problemId,
-                    log,
-                    wsUpdateEveryIterations,
-                    runtimeMs
+                request,
+                runIndex,
+                runSeed,
+                searchSpace,
+                problemId,
+                log,
+                wsUpdateEveryIterations,
+                runtimeMs
             );
 
             List<Integer> evaluations = log.getEvaluations();
             int finalEvaluations = evaluations.isEmpty() ? 0 : evaluations.getLast();
 
             perProblemRuns.add(ViewMapper.toRunResponse(
-                    searchSpace.id(),
-                    problemId,
-                    log.getIterations(),
-                    evaluations,
-                    log.getSeries(),
-                    runtimeMs,
-                    finalEvaluations
+                searchSpace.id(),
+                problemId,
+                log.getIterations(),
+                evaluations,
+                log.getSeries(),
+                runtimeMs,
+                finalEvaluations
             ));
         }
 
@@ -280,14 +237,14 @@ public class RunExecutor {
     }
 
     private <S> void sendFinishedProgressIfNeeded(
-            RunRequest request,
-            int runIndex,
-            long runSeed,
-            SearchSpace<S> searchSpace,
-            String problemId,
-            RunLog log,
-            int wsUpdateEveryIterations,
-            double runtimeMs
+        RunRequest request,
+        int runIndex,
+        long runSeed,
+        SearchSpace<S> searchSpace,
+        String problemId,
+        RunLog log,
+        int wsUpdateEveryIterations,
+        double runtimeMs
     ) {
         if (request.runId() == null || wsUpdateEveryIterations <= 0) {
             return;
@@ -297,26 +254,30 @@ public class RunExecutor {
         int lastEvaluation = log.getEvaluations().isEmpty() ? 0 : log.getEvaluations().getLast();
 
         wsSender.sendToRun(
+            request.runId(),
+            RunWsPayload.progress(
                 request.runId(),
-                RunWsPayload.progress(
-                        request.runId(),
-                        runIndex,
-                        runSeed,
-                        searchSpace.id(),
-                        problemId,
-                        RunProgressObserver.nextSequenceIdFor(request.runId(), problemId, runSeed),
-                        MergeOp.APPEND,
-                        MergeOp.APPEND,
-                        Map.of(),
-                        lastIteration,
-                        lastEvaluation,
-                        null,
-                        null,
-                        Map.of(),
-                        "FINISHED",
-                        runtimeMs
-                )
+                runIndex,
+                runSeed,
+                searchSpace.id(),
+                problemId,
+                RunProgressObserver.nextSequenceIdFor(request.runId(), problemId, runSeed),
+                MergeOp.APPEND,
+                MergeOp.APPEND,
+                Map.of(),
+                lastIteration,
+                lastEvaluation,
+                null,
+                null,
+                Map.of(),
+                "FINISHED",
+                runtimeMs
+            )
         );
+    }
+
+    private Map<String, Object> copyParams(Map<String, Object> params) {
+        return params != null ? new LinkedHashMap<>(params) : new LinkedHashMap<>();
     }
 
     private void checkCancelled() {

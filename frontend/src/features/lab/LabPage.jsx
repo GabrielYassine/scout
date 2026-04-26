@@ -90,8 +90,8 @@ function buildSearchSpaceParams({
     searchSpaceParams.n = tspInstance.cities.length;
   }
 
-  if (isVrpProblem && vrpInstance) {
-    searchSpaceParams.vrpInstance = vrpInstance;
+  if (isVrpProblem && vrpInstance?.customers?.length > 0) {
+    searchSpaceParams.n = vrpInstance.customers.length;
   }
 
   return searchSpaceParams;
@@ -111,6 +111,7 @@ function persistSessionId(sessionId) {
 
 function ensureSessionId(existingSessionId) {
   if (existingSessionId) return existingSessionId;
+
   const next = generateId();
   persistSessionId(next);
   return next;
@@ -189,8 +190,6 @@ function buildRunRequest({
   };
 }
 
-
-// ---------- Main component ----------
 export default function LabPage({
   catalog,
   catalogLoading,
@@ -212,11 +211,12 @@ export default function LabPage({
   const [toastMessage, setToastMessage] = useState("");
   const [toastVisible, setToastVisible] = useState(false);
   const [showRemoveDropZone, setShowRemoveDropZone] = useState(false);
+
   const toastTimeoutRef = useRef(null);
   const navigate = useNavigate();
   const [, setSavedRun] = useLocalStorageState("scout:lastRun", null);
 
-// Listen to drag-and-drop events from dnd-kit to determine when to show the remove drop zone overlay
+  // Listen to drag-and-drop events from dnd-kit to determine when to show the remove drop zone overlay.
   useDndMonitor({
     onDragStart(event) {
       const isPlacedPiece = event.active?.data?.current?.fromIndex != null;
@@ -281,7 +281,11 @@ export default function LabPage({
   function handlePieceHover(type, id) {
     const item = getCatalogItem(type, id);
     if (!item) return;
-    setHoverInfo({ title: item.displayName, description: item.description });
+
+    setHoverInfo({
+      title: item.displayName,
+      description: item.description,
+    });
   }
 
   function clearHover() {
@@ -289,41 +293,42 @@ export default function LabPage({
   }
 
   function buildExecutionContext() {
-      const seed = params.global?.seed ?? Date.now();
-      const existingSessionId = getExistingSessionId();
-      const problemList = Array.isArray(puzzleConfig.problem) ? puzzleConfig.problem : [];
-      const { isTspProblem, isVrpProblem } = validateProblemInstances({
-        problemList,
-        tspInstance,
-        vrpInstance,
-      });
+    const seed = params.global?.seed ?? Date.now();
+    const existingSessionId = getExistingSessionId();
+    const problemList = Array.isArray(puzzleConfig.problem) ? puzzleConfig.problem : [];
 
-      const problemParams = buildProblemParams({
-        baseProblemParams: params.problem,
-        tspInstance,
-        vrpInstance,
-        isVrpProblem,
-      });
+    const { isTspProblem, isVrpProblem } = validateProblemInstances({
+      problemList,
+      tspInstance,
+      vrpInstance,
+    });
 
-      const searchSpaceParams = buildSearchSpaceParams({
-        baseSearchSpaceParams: params.searchSpace,
-        tspInstance,
-        vrpInstance,
-        isTspProblem,
-        isVrpProblem,
-      });
+    const problemParams = buildProblemParams({
+      baseProblemParams: params.problem,
+      tspInstance,
+      vrpInstance,
+      isVrpProblem,
+    });
 
-      return {
-        seed,
-        existingSessionId,
-        problemParams,
-        searchSpaceParams,
-      };
+    const searchSpaceParams = buildSearchSpaceParams({
+      baseSearchSpaceParams: params.searchSpace,
+      tspInstance,
+      vrpInstance,
+      isTspProblem,
+      isVrpProblem,
+    });
+
+    return {
+      seed,
+      existingSessionId,
+      problemParams,
+      searchSpaceParams,
+    };
   }
 
   function saveAndNavigate(savedState, navigationState) {
-       setSavedRun(savedState);
-       navigate("/run", { state: navigationState });
+    setSavedRun(savedState);
+    navigate("/run", { state: navigationState });
   }
 
   async function startRuntimeStudy() {
@@ -431,38 +436,39 @@ export default function LabPage({
   }
 
   async function onRun() {
-     try {
-       const experimentType = params.global?.experimentType ?? "run";
+    try {
+      const experimentType = params.global?.experimentType ?? "run";
 
-       if (experimentType === "runtimeStudy") {
-         await startRuntimeStudy();
-         return;
-       }
+      if (experimentType === "runtimeStudy") {
+        await startRuntimeStudy();
+        return;
+      }
 
-       await startStandardRun();
-     } catch (err) {
-       showToast(err.message || "Failed to start run");
-     }
+      await startStandardRun();
+    } catch (err) {
+      showToast(err.message || "Failed to start run");
+    }
   }
 
   function onApplyTemplate(templateId) {
     if (!catalog || !templateId) return;
-    const tpl = runTemplates.find((t) => t.id === templateId);
-    if (!tpl) return;
-    applyTemplateRunRequest(tpl.runRequest, catalog);
+
+    const template = runTemplates.find((t) => t.id === templateId);
+    if (!template) return;
+
+    applyTemplateRunRequest(template.runRequest, catalog);
   }
 
   return (
     <div className="lab-page">
-         {/* Overlay shown when dragging a piece from the selector to indicate the remove area */}
       {showRemoveDropZone && <div className="lab-remove-overlay" />}
-         {/* Toast message */}
+
       {toastVisible && (
         <div className="lab-toast" role="status" aria-live="polite">
           {toastMessage}
         </div>
       )}
-        {/* Left sidebar: parameters, templates, run/reset buttons */}
+
       <LabLeftbar
         puzzleConfig={puzzleConfig}
         params={params}
@@ -475,7 +481,7 @@ export default function LabPage({
         templates={runTemplates}
         onApplyTemplate={onApplyTemplate}
       />
-        {/* Main middle content */}
+
       <div className="lab-page-content">
         <div className="selector-timeline">
           <RunConfigPuzzle
@@ -487,7 +493,6 @@ export default function LabPage({
         <hr className="rounded" />
 
         <div className="chosen-selector-container">
-          {/* Area showing selectable available pieces */}
           <Selector
             catalog={catalog}
             onPieceHover={handlePieceHover}
@@ -497,7 +502,7 @@ export default function LabPage({
           />
         </div>
       </div>
-      {/* Right sidebar: hover description + problem instance editor */}
+
       <LabRightbar
         hoverInfo={hoverInfo}
         tspInstance={tspInstance}
