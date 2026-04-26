@@ -11,7 +11,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Validates run requests and derives logging cadence defaults.
+ * Validates run requests, that includes global settings, components, their parameters, and problem instances.
+ * @author s235257 @ Ahmed
  */
 @Service
 public class RunRequestValidator {
@@ -117,9 +118,7 @@ public class RunRequestValidator {
             }
 
             try {
-                InstanceValidator.validateTsp(
-                        InstanceMapper.toTspInstance(asInstanceMap(tspInstance, "tspInstance"))
-                );
+                InstanceValidator.validateTsp(InstanceMapper.toTspInstance(asInstanceMap(tspInstance, "tspInstance")));
             } catch (IllegalArgumentException ex) {
                 throw new BadRequestException("Invalid TSP instance: " + ex.getMessage());
             }
@@ -132,9 +131,7 @@ public class RunRequestValidator {
             }
 
             try {
-                InstanceValidator.validateVrp(
-                        InstanceMapper.toVrpInstance(asInstanceMap(vrpInstance, "vrpInstance"))
-                );
+                InstanceValidator.validateVrp(InstanceMapper.toVrpInstance(asInstanceMap(vrpInstance, "vrpInstance")));
             } catch (IllegalArgumentException ex) {
                 throw new BadRequestException("Invalid VRP instance: " + ex.getMessage());
             }

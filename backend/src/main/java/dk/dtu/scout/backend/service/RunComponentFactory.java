@@ -68,16 +68,10 @@ public class RunComponentFactory {
      * @return the configured component
      * @param <T> the component interface type
      */
-    private <T extends ScoutComponent> T createAndConfigure(
-            ComponentRegistry<T> registry,
-            String id,
-            String componentType,
-            Map<String, Object> params
-    ) {
+    private <T extends ScoutComponent> T createAndConfigure(ComponentRegistry<T> registry, String id, String componentType, Map<String, Object> params) {
         if (id == null || id.isBlank()) {
             throw new BadRequestException(componentType + " must be specified");
         }
-
         T component = registry.create(id);
         component.configure(params != null ? params : Map.of());
         return component;
@@ -87,10 +81,6 @@ public class RunComponentFactory {
         return createAndConfigure(searchSpaceRegistry, id, "Search space", params);
     }
 
-    /**
-     * Creates a problem and injects the search-space dimension as parameter "n".
-     * Additional problem parameters may override or extend this map.
-     */
     public <S> Problem<S> createProblem(String id, int n, Map<String, Object> problemParams) {
         Problem<S> problem = (Problem<S>) problemRegistry.create(id);
 
@@ -125,9 +115,7 @@ public class RunComponentFactory {
         if (ids == null || ids.isEmpty()) {
             throw new BadRequestException("Stop condition must be specified");
         }
-
         Map<String, Object> effectiveParams = params != null ? params : Map.of();
-
         return ids.stream().map(id -> (StopCondition<S>) createAndConfigure(stopConditionRegistry, id, "Stop condition", effectiveParams)).toList();
     }
 
@@ -135,9 +123,7 @@ public class RunComponentFactory {
         if (ids == null || ids.isEmpty()) {
             return List.of();
         }
-
         Map<String, Object> effectiveParams = params != null ? params : Map.of();
-
         return ids.stream().map(id -> (Observer<S>) createAndConfigure(observerRegistry, id, "Observer", effectiveParams)).toList();
     }
 
@@ -145,7 +131,6 @@ public class RunComponentFactory {
         if (id == null || id.isBlank()) {
             return null;
         }
-
         return createAndConfigure(crossoverRegistry, id, "Crossover", params);
     }
 

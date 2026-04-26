@@ -10,30 +10,24 @@ import org.springframework.stereotype.Service;
 import java.util.Comparator;
 import java.util.List;
 
+/**
+ * Computes statistics for a series of (x,y) points within a specified x-range.
+ * @author s235257
+ */
 @Service
 public class SeriesStatsService {
 
     private static final double TREND_THRESHOLD = 0.0001;
 
+    /**
+     * Computes count, min, max, mean, std dev, median, quartiles, IQR, and trend for points in the specified x-range.
+     * @param request the request containing the series points, x-range, and labels
+     * @return the computed statistics for the points in the x-range
+     */
     public SeriesWindowStatsResponse computeSeriesWindowStats(SeriesWindowStatsRequest request) {
-        if (request == null) {
-            throw new BadRequestException("Request body is required.");
-        }
-        if (request.points() == null || request.points().isEmpty()) {
-            throw new BadRequestException("points must not be empty.");
-        }
-        if (!Double.isFinite(request.xMin()) || !Double.isFinite(request.xMax())) {
-            throw new BadRequestException("xMin and xMax must be finite numbers.");
-        }
-        if (request.xMin() > request.xMax()) {
-            throw new BadRequestException("xMin must be less than or equal to xMax.");
-        }
+        validateRequest(request);
 
-        List<SeriesPoint> filtered = request.points().stream()
-                .filter(p -> p != null && Double.isFinite(p.x()) && Double.isFinite(p.y()))
-                .filter(p -> p.x() >= request.xMin() && p.x() <= request.xMax())
-                .sorted(Comparator.comparingDouble(SeriesPoint::x))
-                .toList();
+        List<SeriesPoint> filtered = filterPointsInRange(request);
 
         if (filtered.isEmpty()) {
             throw new BadRequestException("No points fall inside the requested x-range.");
@@ -41,11 +35,11 @@ public class SeriesStatsService {
 
         List<Double> ys = filtered.stream().map(SeriesPoint::y).sorted().toList();
         List<Double> xs = filtered.stream().map(SeriesPoint::x).toList();
-
         int count = ys.size();
-        double mean = ys.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
-        double variance = ys.stream().mapToDouble(y -> (y - mean) * (y - mean)).average().orElse(0.0);
-        double stdDev = Math.sqrt(variance);
+
+        double mean = StatisticsMath.mean(ys);
+        double stdDev = StatisticsMath.standardDeviation(ys, mean);
+
         double min = ys.getFirst();
         double max = ys.getLast();
         double median = StatisticsMath.percentile(ys, 50);
@@ -53,22 +47,9 @@ public class SeriesStatsService {
         double q3 = StatisticsMath.percentile(ys, 75);
         double iqr = q3 - q1;
 
-        double xMean = xs.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
-        double covariance = 0.0;
-        double xVariance = 0.0;
-
-        for (SeriesPoint point : filtered) {
-            double x = point.x();
-            double y = point.y();
-            covariance += (x - xMean) * (y - mean);
-            xVariance += (x - xMean) * (x - xMean);
-        }
-
-        covariance /= count;
-        xVariance /= count;
-
-        double slope = xVariance == 0.0 ? 0.0 : covariance / xVariance;
-        String trend = slope > TREND_THRESHOLD ? "up" : slope < -TREND_THRESHOLD ? "down" : "flat";
+        double xMean = StatisticsMath.mean(xs);
+        double slope = StatisticsMath.slope(filtered, xMean, mean);
+        String trend = StatisticsMath.trendFromSlope(slope, TREND_THRESHOLD);
 
         return new SeriesWindowStatsResponse(
             request.seriesName(),
@@ -88,5 +69,36 @@ public class SeriesStatsService {
             slope,
             trend
         );
+    }
+
+    private void validateRequest(SeriesWindowStatsRequest request) {
+        if (request == null) {
+            throw new BadRequestException("Request body is required.");
+        }
+
+        if (request.points() == null || request.points().isEmpty()) {
+            throw new BadRequestException("points must not be empty.");
+        }
+
+        if (!Double.isFinite(request.xMin()) || !Double.isFinite(request.xMax())) {
+            throw new BadRequestException("xMin and xMax must be finite numbers.");
+        }
+
+        if (request.xMin() > request.xMax()) {
+            throw new BadRequestException("xMin must be less than or equal to xMax.");
+        }
+    }
+
+    /**
+     * Safety filter to ensure we only consider valid points within the specified x-range, and sort them by x-value.
+     * @param request the request containing the series points and x-range
+     * @return the filtered and sorted list of points that fall within the x-range
+     */
+    private List<SeriesPoint> filterPointsInRange(SeriesWindowStatsRequest request) {
+        return request.points().stream()
+            .filter(point -> point != null && Double.isFinite(point.x()) && Double.isFinite(point.y()))
+            .filter(point -> point.x() >= request.xMin() && point.x() <= request.xMax())
+            .sorted(Comparator.comparingDouble(SeriesPoint::x))
+            .toList();
     }
 }

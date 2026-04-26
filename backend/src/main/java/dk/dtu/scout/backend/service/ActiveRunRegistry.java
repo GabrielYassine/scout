@@ -29,6 +29,12 @@ public class ActiveRunRegistry {
         return startedStudyIds.putIfAbsent(studyId, Boolean.TRUE) == null;
     }
 
+    /**
+     * Registers a new active task for the given session and task id, cancelling any previous active task for the same session.
+     * @param sessionId the session id of the task, used to ensure only one active task per session
+     * @param taskId the run or study id of the task, used to guard against duplicate start messages from websocket reconnects
+     * @param future the future representing the asynchronous task, used to cancel the task if a new task is registered for the same session or when the task is finished
+     */
     public void register(String sessionId, String taskId, Future<?> future) {
         ActiveTask previous = activeBySession.get(sessionId);
         if (previous != null && previous.future() != null) {
@@ -38,16 +44,31 @@ public class ActiveRunRegistry {
         activeBySession.put(sessionId, new ActiveTask(taskId, future));
     }
 
+    /**
+     * Removes the active task for the given session and run id, if it matches the currently active task.
+     * @param sessionId the session id of the task to remove
+     * @param runId the run or study id of the task to remove, used to guard against duplicate finish messages from websocket reconnects
+     */
     public void finishRun(String sessionId, String runId) {
         startedRunIds.remove(runId);
         removeActiveTask(sessionId, runId);
     }
 
+    /**
+     * Removes the active task for the given session and study id, if it matches the currently active task.
+     * @param sessionId the session id of the task to remove
+     * @param studyId the run or study id of the task to remove, used to guard against duplicate finish messages from websocket reconnects
+     */
     public void finishStudy(String sessionId, String studyId) {
         startedStudyIds.remove(studyId);
         removeActiveTask(sessionId, studyId);
     }
 
+    /**
+     * Removes the active task for the given session and task id, if it matches the currently active task.
+     * @param sessionId the session id of the task to remove
+     * @param taskId the run or study id of the task to remove, used to guard against duplicate finish messages from websocket reconnects
+     */
     private void removeActiveTask(String sessionId, String taskId) {
         activeBySession.computeIfPresent(sessionId, (sid, active) -> taskId.equals(active.id()) ? null : active);
     }
