@@ -93,7 +93,7 @@ public class RunOrchestratorService {
         int logEvery = runRequestValidator.resolveLogEveryIterations(request);
         int wsUpdateEvery = request.wsUpdateEveryIterations() > 0 ? request.wsUpdateEveryIterations() : logEvery;
         try {
-            BatchRunResponse response = runExecutor.executeBatch(request, logEvery, wsUpdateEvery);
+            BatchRunResponse response = runExecutor.runBatch(request, logEvery, wsUpdateEvery);
             if (request.runId() != null) {
                 wsSender.sendToRun(request.runId(), RunWsPayload.finished(request.runId(), request.searchSpaceId(), response.summary()));
             }
@@ -144,7 +144,8 @@ public class RunOrchestratorService {
                 int n = sizes.get(i);
                 RunRequest runRequest = buildRunRequestForSize(request, n, i);
                 int logEvery = runRequestValidator.resolveLogEveryIterations(runRequest);
-                BatchRunResponse batch = runExecutor.executeBatch(runRequest, logEvery, 0);
+                BatchRunResponse batch = runExecutor.runBatch(runRequest, logEvery, 0);
+
                 RuntimeStudyPointResponse point = runStatisticsService.toRuntimeStudyPoint(n, batch);
                 wsSender.sendToStudy(request.studyId(), RuntimeStudyWsPayload.progress(request.studyId(), point));
             }

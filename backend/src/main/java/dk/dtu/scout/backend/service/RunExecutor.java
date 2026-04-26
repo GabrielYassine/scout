@@ -65,17 +65,17 @@ public class RunExecutor {
     }
 
     /**
-     * Executes all repetitions in a run request and returns the aggregated batch response.
+     * Core method for executing a batch of runs as specified in the RunRequest.
+     * @param request the run request containing all parameters for the runs to execute
+     * @param logEveryIterations how often to log progress in the RunLog for each run.
+     * @param wsUpdateEveryIterations how often to send WebSocket progress updates for each run.
+     * @return a BatchRunResponse containing the results of all runs and a summary
+     * @param <S> the type of solution representation used in the search space and problems
      */
-    public BatchRunResponse executeBatch(RunRequest request, int logEveryIterations, int wsUpdateEveryIterations) {
-        checkCancelled();
-        return runBatch(request, logEveryIterations, wsUpdateEveryIterations);
-    }
-
-    private <S> BatchRunResponse runBatch(RunRequest request, int logEveryIterations, int wsUpdateEveryIterations) {
+    public <S> BatchRunResponse runBatch(RunRequest request, int logEveryIterations, int wsUpdateEveryIterations) {
         checkCancelled();
 
-        long baseSeed = request.seed();
+        long baseSeed = request.seed(); // The seed provided, which will be altered for each run time.
         int runtimes = request.runTimes();
         String runId = request.runId();
 
@@ -84,6 +84,7 @@ public class RunExecutor {
 
         List<Future<RunGroupResponse>> futures = new ArrayList<>();
 
+        // submit each run and collect futures when done
         try {
             for (int i = 0; i < runtimes; i++) {
                 checkCancelled();
@@ -106,7 +107,6 @@ public class RunExecutor {
 
             List<RunGroupResponse> batches = collectFinishedRuns(futures);
             batches = batches.stream().sorted(Comparator.comparingInt(RunGroupResponse::runIndex)).toList();
-
             BatchSummaryResponse summary = runStatisticsService.calculateSummary(batches);
 
             return ViewMapper.toBatchRunResponse(runId, batches, summary);
@@ -117,7 +117,9 @@ public class RunExecutor {
     }
 
     /**
-     * Converts search-space-specific instance payloads from frontend maps into backend instance objects.
+     * Prepares search space parameters, including converting any problem-specific instance payloads from frontend maps into backend instance objects.
+     * @param request the run request containing the search space parameters to prepare
+     * @return a map of prepared search space parameters, ready for use in search space creation, with any instance payloads converted to backend objects
      */
     private Map<String, Object> prepareSearchSpaceParams(RunRequest request) {
         Map<String, Object> searchSpaceParams = request.searchSpaceParams() != null ? new LinkedHashMap<>(request.searchSpaceParams()) : new LinkedHashMap<>();
@@ -130,66 +132,37 @@ public class RunExecutor {
     }
 
     /**
-     * Converts problem-specific instance payloads from frontend maps into backend instance objects.
+     * Prepares problem parameters, including converting any problem-specific instance payloads from frontend maps into backend instance objects.
+     * @param request the run request containing the problem parameters to prepare
+     * @param problemId the ID of the problem for which to prepare parameters, used to determine if any instance payloads need conversion
+     * @return a map of prepared problem parameters, ready for use in problem creation, with any instance payloads converted to backend objects
      */
     private Map<String, Object> prepareProblemParams(RunRequest request, String problemId) {
-        Map<String, Object> problemParams = request.problemParams() != null
-                ? new LinkedHashMap<>(request.problemParams())
-                : new LinkedHashMap<>();
+        Map<String, Object> problemParams = request.problemParams() != null ? new LinkedHashMap<>(request.problemParams()) : new LinkedHashMap<>();
 
         if ("tsp".equals(problemId) && problemParams.containsKey("tspInstance")) {
-            problemParams.compute("tspInstance", (key, rawInstance) -> InstanceMapper.toTspInstance(asInstanceMap(rawInstance, "tspInstance"))
-            );
+            problemParams.compute("tspInstance", (key, rawInstance) -> InstanceMapper.toTspInstance(asInstanceMap(rawInstance, "tspInstance")));
         }
 
         if ("vrp".equals(problemId) && problemParams.containsKey("vrpInstance")) {
-            problemParams.compute("vrpInstance", (key, rawInstance) -> InstanceMapper.toVrpInstance(asInstanceMap(rawInstance, "vrpInstance"))
-            );
+            problemParams.compute("vrpInstance", (key, rawInstance) -> InstanceMapper.toVrpInstance(asInstanceMap(rawInstance, "vrpInstance")));
         }
 
         return problemParams;
     }
 
-    private List<RunGroupResponse> collectFinishedRuns(List<Future<RunGroupResponse>> futures) {
-        List<RunGroupResponse> batches = new ArrayList<>(futures.size());
-
-        for (Future<RunGroupResponse> future : futures) {
-            checkCancelled();
-
-            try {
-                batches.add(future.get());
-            } catch (InterruptedException ex) {
-                Thread.currentThread().interrupt();
-                throw new CancellationException("Run cancelled");
-            } catch (ExecutionException ex) {
-                Throwable cause = ex.getCause();
-
-                if (cause instanceof CancellationException cancellation) {
-                    throw cancellation;
-                }
-
-                if (cause instanceof RuntimeException runtimeException) {
-                    throw runtimeException;
-                }
-
-                throw new RuntimeException(cause);
-            }
-        }
-
-        return batches;
-    }
-
-    private void cancelAll(List<Future<RunGroupResponse>> futures) {
-        for (Future<RunGroupResponse> future : futures) {
-            future.cancel(true);
-        }
-    }
-
-    private void checkCancelled() {
-        if (Thread.currentThread().isInterrupted()) {
-            throw new CancellationException("Run cancelled");
-        }
-    }
+    /**
+     * Executes a single run for a specific run index and seed, across all problems specified in the request,
+     * using the provided search space factory and logging/WebSocket update frequencies.
+     * @param request the run request containing all parameters for the run to execute.
+     * @param runIndex the index of the run being executed, used for logging and WebSocket updates to differentiate between runs in the same batch
+     * @param runSeed the random seed to use for this run, which is derived from the base seed and run index to ensure different seeds for each run in the batch while maintaining reproducibility
+     * @param searchSpaceFactory a supplier that can create a new instance of the search space for this run, ensuring that each run gets a fresh search space instance
+     * @param logEveryIterations how often to log progress in the RunLog for this run, which determines the frequency of logged iterations and evaluations in the run log
+     * @param wsUpdateEveryIterations how often to send WebSocket progress updates for this run, which determines the frequency of progress updates sent to the frontend for this run (if a runId is provided in the request)
+     * @return a RunGroupResponse containing the results of this run across all problems, including logs and runtime information for each problem
+     * @param <S> the type of solution representation used in the search space and problems for this run
+     */
 
     private <S> RunGroupResponse runSingleIndex(
         RunRequest request,
@@ -252,7 +225,7 @@ public class RunExecutor {
                 logEveryIterations
             );
 
-            checkCancelled();
+            checkCancelled(); // if run is cancelled after run is done here, then we just wont send the final update.
 
             double runtimeMs = (System.nanoTime() - startTime) / 1_000_000.0;
 
@@ -270,6 +243,7 @@ public class RunExecutor {
             List<Integer> evaluations = log.getEvaluations();
             int finalEvaluations = evaluations.isEmpty() ? 0 : evaluations.getLast();
 
+            // Populate list of runreponses.
             perProblemRuns.add(ViewMapper.toRunResponse(
                 searchSpace.id(),
                 problemId,
@@ -283,6 +257,42 @@ public class RunExecutor {
 
         return ViewMapper.toRunGroupResponse(runIndex, runSeed, perProblemRuns);
     }
+
+    /**
+     * Collects the results of finished runs from the provided list of futures, while also checking for cancellation and handling exceptions appropriately.
+     * @param futures the list of futures representing the submitted runs, from which to collect results once they are finished
+     * @return a list of RunGroupResponse objects collected from the completed futures, in the order they were submitted
+     */
+    private List<RunGroupResponse> collectFinishedRuns(List<Future<RunGroupResponse>> futures) {
+        List<RunGroupResponse> batches = new ArrayList<>(futures.size());
+
+        for (Future<RunGroupResponse> future : futures) {
+            checkCancelled();
+
+            try {
+                batches.add(future.get());
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
+                throw new CancellationException("Run cancelled");
+            } catch (ExecutionException ex) {
+                Throwable cause = ex.getCause();
+
+                if (cause instanceof CancellationException cancellation) {
+                    throw cancellation;
+                }
+
+                if (cause instanceof RuntimeException runtimeException) {
+                    throw runtimeException;
+                }
+
+                throw new RuntimeException(cause);
+            }
+        }
+
+        return batches;
+    }
+
+
 
     /**
      * Sends a final WebSocket status packet after a single problem run finishes.
@@ -325,6 +335,18 @@ public class RunExecutor {
                 runtimeMs
             )
         );
+    }
+
+    private void checkCancelled() {
+        if (Thread.currentThread().isInterrupted()) {
+            throw new CancellationException("Run cancelled");
+        }
+    }
+
+    private void cancelAll(List<Future<RunGroupResponse>> futures) {
+        for (Future<RunGroupResponse> future : futures) {
+            future.cancel(true);
+        }
     }
 
     @SuppressWarnings("unchecked")
