@@ -138,22 +138,6 @@ public final class ViewMapper {
         return new RunGroupResponse(runIndex, seed, runs);
     }
 
-    public static BatchSummaryResponse toBatchSummaryResponse(
-        Map<String, AverageRunResponse> averageByProblem,
-        Map<String, SeriesBoxPlotResponse> bestFitnessBoxPlotsByProblem,
-        Map<String, Double> averageRunTimeByProblem
-    ) {
-        return new BatchSummaryResponse( averageByProblem, bestFitnessBoxPlotsByProblem, averageRunTimeByProblem);
-    }
-
-    public static BatchRunResponse toBatchRunResponse(
-        String runId,
-        List<RunGroupResponse> batches,
-        BatchSummaryResponse summary
-    ) {
-        return new BatchRunResponse(runId, batches, summary);
-    }
-
     public static AverageRunResponse toAverageRunResponse(
         List<Integer> iterations,
         List<Integer> evaluations,

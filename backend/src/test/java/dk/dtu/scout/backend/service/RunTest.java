@@ -1,7 +1,7 @@
 package dk.dtu.scout.backend.service;
 
 import dk.dtu.scout.backend.dto.RunRequest;
-import dk.dtu.scout.backend.dto.run.BatchRunResponse;
+import dk.dtu.scout.backend.dto.run.RunGroupResponse;
 import dk.dtu.scout.backend.dto.run.RunResponse;
 import dk.dtu.scout.backend.util.ViewMapper;
 import org.junit.jupiter.api.Test;
@@ -21,11 +21,13 @@ import static org.junit.jupiter.api.Assertions.*;
 class RunTest {
 
     @Autowired
-    private RunOrchestratorService runOrchestratorService;
+    private RunExecutor runExecutor;
+
+    @Autowired
+    private RunRequestValidator runRequestValidator;
 
     @Autowired
     private InstanceService instanceService;
-
 
     @SuppressWarnings("unchecked")
     private Map<String, Object> loadTspInstance(String resourceName) throws IOException {
@@ -41,13 +43,22 @@ class RunTest {
         return (Map<String, Object>) response.get("instance");
     }
 
+    private List<RunGroupResponse> executeRunRequest(RunRequest request) {
+        runRequestValidator.validateRunRequest(request);
+
+        int logEvery = runRequestValidator.resolveLogEveryIterations(request);
+        int wsUpdateEvery = request.wsUpdateEveryIterations() > 0 ? request.wsUpdateEveryIterations() : logEvery;
+
+        return runExecutor.runBatch(request, logEvery, wsUpdateEvery);
+    }
+
     /**
      * Helper method to run the (1+1) EA on a given problem and return the median number of evaluations to reach the optimum.
-     * @param problemId - the ID of the problem to run (e.g., "onemax" or "leadingones")
-     * @param n - the problem size (number of bits)
-     * @param seed - the random seed for reproducibility
-     * @param runs - the number of independent runs to perform
-     * @param maxIterations - the maximum number of iterations to allow (should be large enough to reach the optimum in most runs)
+     * @param problemId the ID of the problem to run, e.g. "onemax" or "leadingones"
+     * @param n the problem size
+     * @param seed the random seed
+     * @param runs the number of independent runs
+     * @param maxIterations the maximum number of iterations
      * @return the median number of evaluations to reach the optimum across the runs
      */
     private double runAndGetMedianFinalEvals(String problemId, int n, long seed, int runs, int maxIterations) {
@@ -76,7 +87,7 @@ class RunTest {
             List.of("fitness"),
             Map.of(),
 
-            List.of("max-iterations","optimum-reached"),
+            List.of("max-iterations", "optimum-reached"),
             Map.of("maxIterations", maxIterations),
 
             seed,
@@ -87,18 +98,22 @@ class RunTest {
             0
         );
 
-        BatchRunResponse response = runOrchestratorService.run(request);
-        List<Integer> finalEvals = response.batches().stream()
-            .flatMap((batch) -> batch.runs().stream())
-            .filter((run) -> problemId.equals(run.problemId()))
+        List<RunGroupResponse> batches = executeRunRequest(request);
+
+        List<Integer> finalEvals = batches.stream()
+            .flatMap(batch -> batch.runs().stream())
+            .filter(run -> problemId.equals(run.problemId()))
             .map(RunResponse::finalEvaluations)
-            .sorted().toList();
+            .sorted()
+            .toList();
 
         assertFalse(finalEvals.isEmpty());
+
         int mid = finalEvals.size() / 2;
         if (finalEvals.size() % 2 == 1) {
             return finalEvals.get(mid);
         }
+
         return (finalEvals.get(mid - 1) + finalEvals.get(mid)) / 2.0;
     }
 
@@ -106,20 +121,18 @@ class RunTest {
     @DisplayName("(1+1) EA on OneMax: scaling matches n ln n (ratio test)")
     void testOneMaxRatioScaling() {
         int runs = 20;
-        int n1 = 256, n2 = 512;
+        int n1 = 256;
+        int n2 = 512;
 
         double m1 = runAndGetMedianFinalEvals("onemax", n1, 12345L, runs, 5_000_000);
         double m2 = runAndGetMedianFinalEvals("onemax", n2, 22345L, runs, 10_000_000);
 
         assertTrue(m1 > 0 && m2 > 0);
 
-        double Robs = m2 / m1;
-        double Rpred = (n2 * Math.log(n2)) / (n1 * Math.log(n1));
+        double observedRatio = m2 / m1;
+        double predictedRatio = (n2 * Math.log(n2)) / (n1 * Math.log(n1));
 
-        // Here we check that the observed ratio is within a reasonable range of the predicted ratio
-        // This lets us verify that with increasing n, the evaluation follow the expected n ln n
-        assertTrue(Robs >= 0.9 * Rpred && Robs <= 1.1 * Rpred, "OneMax ratio mismatch: Robs=" + Robs + " Rpred=" + Rpred + " (m1=" + m1 + ", m2=" + m2 + ")");
-        System.out.println("OneMax: m1=" + m1 + ", m2=" + m2 + ", Robs=" + Robs + ", Rpred=" + Rpred);
+        assertTrue(observedRatio >= 0.9 * predictedRatio && observedRatio <= 1.1 * predictedRatio);
 
         assertTrue(m1 < 0.5 * 5_000_000);
         assertTrue(m2 < 0.5 * 10_000_000);
@@ -129,22 +142,18 @@ class RunTest {
     @DisplayName("(1+1) EA on LeadingOnes: scaling matches n^2 (ratio test)")
     void testLeadingOnesRatioScaling() {
         int runs = 5;
-        int n1 = 128, n2 = 256;
+        int n1 = 128;
+        int n2 = 256;
 
-        // Keep iteration caps comfortably above expected runtime for these n values,
-        // but bounded so the test can't run indefinitely on slower machines.
         double m1 = runAndGetMedianFinalEvals("leadingones", n1, 67890L, runs, 5_000_000);
         double m2 = runAndGetMedianFinalEvals("leadingones", n2, 77890L, runs, 20_000_000);
 
         assertTrue(m1 > 0 && m2 > 0);
 
-        double Robs = m2 / m1;
-        double Rpred = Math.pow((double) n2 / n1, 2);
+        double observedRatio = m2 / m1;
+        double predictedRatio = Math.pow((double) n2 / n1, 2);
 
-        // Here we check that the observed ratio is within a reasonable range of the predicted ratio
-        // This lets us verify that with increasing n, the evaluation follow the expected n^2
-        assertTrue(Robs >= 0.9 * Rpred && Robs <= 1.1 * Rpred, "LeadingOnes ratio mismatch: Robs=" + Robs + " Rpred=" + Rpred + " (m1=" + m1 + ", m2=" + m2 + ")");
-        System.out.println("LeadingOnes: m1=" + m1 + ", m2=" + m2 + ", Robs=" + Robs + ", Rpred=" + Rpred);
+        assertTrue(observedRatio >= 0.9 * predictedRatio && observedRatio <= 1.1 * predictedRatio);
 
         assertTrue(m1 < 0.5 * 5_000_000);
         assertTrue(m2 < 0.5 * 20_000_000);
@@ -180,10 +189,11 @@ class RunTest {
             0
         );
 
-        BatchRunResponse response = runOrchestratorService.run(request);
-        assertNotNull(response);
-        assertNotNull(response.batches());
-        assertFalse(response.batches().isEmpty());
+        List<RunGroupResponse> batches = executeRunRequest(request);
+
+        assertNotNull(batches);
+        assertFalse(batches.isEmpty());
+        assertFalse(batches.getFirst().runs().isEmpty());
     }
 
     @Test
@@ -216,14 +226,15 @@ class RunTest {
             0
         );
 
-        BatchRunResponse response = runOrchestratorService.run(request);
-        assertNotNull(response);
-        assertNotNull(response.batches());
-        assertFalse(response.batches().isEmpty());
+        List<RunGroupResponse> batches = executeRunRequest(request);
+
+        assertNotNull(batches);
+        assertFalse(batches.isEmpty());
+        assertFalse(batches.getFirst().runs().isEmpty());
     }
 
     @Test
-    @DisplayName("VRP X-n101-k25 with route-list swap (smoke test)")
+    @DisplayName("VRP X-n101-k25 with route-list relocate (smoke test)")
     void testVrpXn101k25() throws IOException {
         Map<String, Object> vrpInstance = loadVrpInstance("x-n101-k25.vrp");
 
@@ -254,10 +265,11 @@ class RunTest {
             0
         );
 
-        BatchRunResponse response = runOrchestratorService.run(request);
-        RunResponse vrpRun = response.batches().stream()
-            .flatMap((batch) -> batch.runs().stream())
-            .filter((run) -> "vrp".equals(run.problemId()))
+        List<RunGroupResponse> batches = executeRunRequest(request);
+
+        RunResponse vrpRun = batches.stream()
+            .flatMap(batch -> batch.runs().stream())
+            .filter(run -> "vrp".equals(run.problemId()))
             .findFirst()
             .orElseThrow();
 

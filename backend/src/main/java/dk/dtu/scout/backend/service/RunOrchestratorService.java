@@ -3,7 +3,8 @@ package dk.dtu.scout.backend.service;
 import dk.dtu.scout.backend.dto.PrepareRunResponse;
 import dk.dtu.scout.backend.dto.RunRequest;
 import dk.dtu.scout.backend.dto.RuntimeStudyRequest;
-import dk.dtu.scout.backend.dto.run.BatchRunResponse;
+import dk.dtu.scout.backend.dto.run.BatchSummaryResponse;
+import dk.dtu.scout.backend.dto.run.RunGroupResponse;
 import dk.dtu.scout.backend.dto.study.RuntimeStudyPointResponse;
 import dk.dtu.scout.backend.websocket.RunWsPayload;
 import dk.dtu.scout.backend.websocket.RuntimeStudyWsPayload;
@@ -38,12 +39,12 @@ public class RunOrchestratorService {
     private final ThreadPoolTaskExecutor requestExecutor;
 
     public RunOrchestratorService(
-        RunRequestValidator runRequestValidator,
-        RunExecutor runExecutor,
-        RunStatisticsService runStatisticsService,
-        WsSender wsSender,
-        ActiveRunRegistry activeRunRegistry,
-        @Qualifier("requestExecutor") Executor requestExecutor
+            RunRequestValidator runRequestValidator,
+            RunExecutor runExecutor,
+            RunStatisticsService runStatisticsService,
+            WsSender wsSender,
+            ActiveRunRegistry activeRunRegistry,
+            @Qualifier("requestExecutor") Executor requestExecutor
     ) {
         this.runRequestValidator = runRequestValidator;
         this.runExecutor = runExecutor;
@@ -54,7 +55,10 @@ public class RunOrchestratorService {
     }
 
     public PrepareRunResponse prepareRun(String requestedSessionId) {
-        String sessionId = requestedSessionId != null && !requestedSessionId.isBlank() ? requestedSessionId : UUID.randomUUID().toString();
+        String sessionId = requestedSessionId != null && !requestedSessionId.isBlank()
+                ? requestedSessionId
+                : UUID.randomUUID().toString();
+
         String runId = UUID.randomUUID().toString();
         return new PrepareRunResponse(sessionId, runId);
     }
@@ -87,23 +91,26 @@ public class RunOrchestratorService {
         });
     }
 
-    public BatchRunResponse run(RunRequest request) {
+    public void run(RunRequest request) {
         runRequestValidator.validateRunRequest(request);
 
         int logEvery = runRequestValidator.resolveLogEveryIterations(request);
         int wsUpdateEvery = request.wsUpdateEveryIterations() > 0 ? request.wsUpdateEveryIterations() : logEvery;
+
         try {
-            BatchRunResponse response = runExecutor.runBatch(request, logEvery, wsUpdateEvery);
+            List<RunGroupResponse> batches = runExecutor.runBatch(request, logEvery, wsUpdateEvery);
+            BatchSummaryResponse summary = runStatisticsService.calculateSummary(batches);
+
             if (request.runId() != null) {
-                wsSender.sendToRun(request.runId(), RunWsPayload.finished(request.runId(), request.searchSpaceId(), response.summary()));
+                wsSender.sendToRun(request.runId(), RunWsPayload.finished(request.runId(), request.searchSpaceId(), summary));
             }
-            return response;
         } catch (CancellationException ex) {
             throw ex;
         } catch (Exception ex) {
             if (request.runId() != null) {
                 wsSender.sendToRun(request.runId(), RunWsPayload.failed(request.runId(), ex.getMessage()));
             }
+
             throw ex;
         }
     }
@@ -138,58 +145,71 @@ public class RunOrchestratorService {
 
     public void runRuntimeStudy(RuntimeStudyRequest request) {
         runRequestValidator.validateRuntimeStudyRequest(request);
+
         try {
             List<Integer> sizes = request.problemSizes();
+
             for (int i = 0; i < sizes.size(); i++) {
                 int n = sizes.get(i);
                 RunRequest runRequest = buildRunRequestForSize(request, n, i);
                 int logEvery = runRequestValidator.resolveLogEveryIterations(runRequest);
-                BatchRunResponse batch = runExecutor.runBatch(runRequest, logEvery, 0);
 
-                RuntimeStudyPointResponse point = runStatisticsService.toRuntimeStudyPoint(n, batch);
-                wsSender.sendToStudy(request.studyId(), RuntimeStudyWsPayload.progress(request.studyId(), point));
+                List<RunGroupResponse> batches = runExecutor.runBatch(runRequest, logEvery, 0);
+                RuntimeStudyPointResponse point = runStatisticsService.toRuntimeStudyPoint(n, batches);
+
+                wsSender.sendToStudy(
+                        request.studyId(),
+                        RuntimeStudyWsPayload.progress(request.studyId(), point)
+                );
             }
+
             wsSender.sendToStudy(request.studyId(), RuntimeStudyWsPayload.finished(request.studyId()));
         } catch (CancellationException ex) {
             throw ex;
         } catch (Exception ex) {
-            wsSender.sendToStudy(request.studyId(), RuntimeStudyWsPayload.failed(request.studyId(), ex.getMessage()));
+            wsSender.sendToStudy(
+                    request.studyId(),
+                    RuntimeStudyWsPayload.failed(request.studyId(), ex.getMessage())
+            );
+
             throw ex;
         }
     }
 
     private RunRequest buildRunRequestForSize(RuntimeStudyRequest request, int problemSize, int sizeIndex) {
-        Map<String, Object> searchSpaceParams = new LinkedHashMap<>(request.searchSpaceParams() != null ? request.searchSpaceParams() : Map.of());
+        Map<String, Object> searchSpaceParams = new LinkedHashMap<>(
+                request.searchSpaceParams() != null ? request.searchSpaceParams() : Map.of()
+        );
 
         searchSpaceParams.put("n", problemSize);
 
         long seed = request.seed() + (long) sizeIndex * 1_000_000L;
 
         return new RunRequest(
-            request.searchSpaceId(),
-            searchSpaceParams,
-            List.of(request.problemId()),
-            request.problemParams(),
-            request.generatorId(),
-            request.generatorParams(),
-            request.populationModelId(),
-            request.populationModelParams(),
-            request.selectionRuleId(),
-            request.selectionRuleParams(),
-            request.parentSelectionRuleId(),
-            request.parentSelectionRuleParams(),
-            request.crossoverId(),
-            request.crossoverParams(),
-            List.of(),
-            Map.of(),
-            request.stopConditionIds(),
-            request.stopConditionParams(),
-            seed,
-            request.repetitionsPerSize(),
-            null,
-            null,
-            0,
-            0
+                request.searchSpaceId(),
+                searchSpaceParams,
+                List.of(request.problemId()),
+                request.problemParams(),
+                request.generatorId(),
+                request.generatorParams(),
+                request.populationModelId(),
+                request.populationModelParams(),
+                request.selectionRuleId(),
+                request.selectionRuleParams(),
+                request.parentSelectionRuleId(),
+                request.parentSelectionRuleParams(),
+                request.crossoverId(),
+                request.crossoverParams(),
+                List.of(),
+                Map.of(),
+                request.stopConditionIds(),
+                request.stopConditionParams(),
+                seed,
+                request.repetitionsPerSize(),
+                null,
+                null,
+                0,
+                0
         );
     }
 

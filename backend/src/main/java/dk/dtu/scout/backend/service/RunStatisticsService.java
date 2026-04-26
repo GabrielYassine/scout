@@ -1,7 +1,6 @@
 package dk.dtu.scout.backend.service;
 
 import dk.dtu.scout.backend.dto.run.AverageRunResponse;
-import dk.dtu.scout.backend.dto.run.BatchRunResponse;
 import dk.dtu.scout.backend.dto.run.BatchSummaryResponse;
 import dk.dtu.scout.backend.dto.run.RunGroupResponse;
 import dk.dtu.scout.backend.dto.run.RunResponse;
@@ -201,16 +200,16 @@ public class RunStatisticsService {
         return result;
     }
 
-    public RuntimeStudyPointResponse toRuntimeStudyPoint(int problemSize, BatchRunResponse batch) {
+    public RuntimeStudyPointResponse toRuntimeStudyPoint(int problemSize, List<RunGroupResponse> batches) {
         List<Double> values = new ArrayList<>();
-        for (RunGroupResponse group : batch.batches()) {
+
+        for (RunGroupResponse group : batches) {
             for (RunResponse run : group.runs()) {
                 values.add((double) run.finalEvaluations());
             }
         }
 
         values.sort(Double::compareTo);
-
         double mean = values.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
 
         return new RuntimeStudyPointResponse(problemSize, mean, StatisticsMath.fiveNumberSummary(values));
