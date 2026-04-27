@@ -16,6 +16,7 @@ import java.util.Map;
  */
 public final class InstanceMapper {
 
+    // We only support 2D Euclidean instances.
     private static final String EDGE_WEIGHT_TYPE = "EUC_2D";
 
     private InstanceMapper() {

@@ -88,9 +88,7 @@ public class CatalogService {
         return toComponentDefs("populationModel", populationModels);
     }
 
-    public List<ComponentDef> parentSelectionRules() {
-        return toComponentDefs("parentSelectionRule", parentSelectionRules);
-    }
+    public List<ComponentDef> parentSelectionRules() {return toComponentDefs("parentSelectionRule", parentSelectionRules);}
 
     public List<ComponentDef> crossovers() {
         return toComponentDefs("crossover", crossovers);

@@ -26,7 +26,6 @@ public class AsyncExecutorProperties {
         private int corePoolSize;
         private int maxPoolSize;
         private int queueCapacity;
-        private int awaitTerminationSeconds;
 
         public int getCorePoolSize() {
             return corePoolSize;
@@ -50,14 +49,6 @@ public class AsyncExecutorProperties {
 
         public void setQueueCapacity(int queueCapacity) {
             this.queueCapacity = queueCapacity;
-        }
-
-        public int getAwaitTerminationSeconds() {
-            return awaitTerminationSeconds;
-        }
-
-        public void setAwaitTerminationSeconds(int awaitTerminationSeconds) {
-            this.awaitTerminationSeconds = awaitTerminationSeconds;
         }
     }
 }

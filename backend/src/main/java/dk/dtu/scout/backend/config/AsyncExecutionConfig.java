@@ -41,8 +41,6 @@ public class AsyncExecutionConfig {
         executor.setMaxPoolSize(props.getRequest().getMaxPoolSize());
         executor.setQueueCapacity(props.getRequest().getQueueCapacity());
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-        executor.setWaitForTasksToCompleteOnShutdown(true);
-        executor.setAwaitTerminationSeconds(props.getRequest().getAwaitTerminationSeconds());
         executor.initialize();
         return executor;
     }
@@ -60,8 +58,6 @@ public class AsyncExecutionConfig {
         executor.setMaxPoolSize(props.getRun().getMaxPoolSize());
         executor.setQueueCapacity(props.getRun().getQueueCapacity());
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-        executor.setWaitForTasksToCompleteOnShutdown(true);
-        executor.setAwaitTerminationSeconds(props.getRun().getAwaitTerminationSeconds());
         executor.initialize();
         return executor;
     }

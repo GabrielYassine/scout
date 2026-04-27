@@ -67,12 +67,13 @@ public final class InstanceParser {
             }
 
             Map<String, Object> city = new LinkedHashMap<>();
-            city.put("id", cities.size());
+            city.put("id", cities.size()); // We follow 0-based indexing and not the original Ids
             city.put("x", toDouble(parts[1]));
             city.put("y", toDouble(parts[2]));
             cities.add(city);
         }
 
+        // Reason we check again, is because this method can be called directly without calling detectInstanceType first.
         requireType(headers, "TSP");
         requireSupportedEdgeWeightType(headers);
 
@@ -140,7 +141,7 @@ public final class InstanceParser {
             }
         }
 
-        requireVrpType(headers);
+        requireType(headers, "CVRP", "VRP");
         requireSupportedEdgeWeightType(headers);
 
         if (coords.isEmpty()) {
@@ -272,26 +273,21 @@ public final class InstanceParser {
         }
     }
 
-    private static void requireType(Map<String, String> headers, String expectedType) {
+    private static void requireType(Map<String, String> headers, String... expectedTypes) {
         String type = headers.get("TYPE");
         if (type == null || type.isBlank()) {
             throw new IllegalArgumentException("Instance file must contain a TYPE field");
         }
 
-        if (!expectedType.equalsIgnoreCase(type)) {
-            throw new IllegalArgumentException("Expected TYPE: " + expectedType + ", but got: " + type);
-        }
-    }
-
-    private static void requireVrpType(Map<String, String> headers) {
-        String type = headers.get("TYPE");
-        if (type == null || type.isBlank()) {
-            throw new IllegalArgumentException("Instance file must contain a TYPE field");
+        for (String expectedType : expectedTypes) {
+            if (expectedType.equalsIgnoreCase(type)) {
+                return;
+            }
         }
 
-        if (!"CVRP".equalsIgnoreCase(type) && !"VRP".equalsIgnoreCase(type)) {
-            throw new IllegalArgumentException("Expected TYPE: CVRP or VRP, but got: " + type);
-        }
+        throw new IllegalArgumentException(
+                "Expected TYPE: " + String.join(" or ", expectedTypes) + ", but got: " + type
+        );
     }
 
     private static void requireSupportedEdgeWeightType(Map<String, String> headers) {
@@ -323,11 +319,7 @@ public final class InstanceParser {
         return vehicles;
     }
 
-    private static void validateDemandsExist(
-            Map<Integer, double[]> coords,
-            Map<Integer, Double> demands,
-            List<Integer> depotIds
-    ) {
+    private static void validateDemandsExist(Map<Integer, double[]> coords, Map<Integer, Double> demands, List<Integer> depotIds) {
         if (demands.isEmpty()) {
             throw new IllegalArgumentException("VRP file must contain DEMAND_SECTION");
         }
@@ -365,8 +357,8 @@ public final class InstanceParser {
 
     private static boolean isKnownSection(String line) {
         return isSection(line, "NODE_COORD_SECTION")
-                || isSection(line, "DEMAND_SECTION")
-                || isSection(line, "DEPOT_SECTION");
+            || isSection(line, "DEMAND_SECTION")
+            || isSection(line, "DEPOT_SECTION");
     }
 
     private static boolean isSection(String line, String sectionName) {

@@ -45,6 +45,7 @@ public class InstanceController {
         try {
             String content = instanceService.exportInstance(payload);
 
+            // this tells FE to treat it as plain text file and not try to parse it as JSON, and also ensures correct UTF-8 encoding
             return ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE, "text/plain; charset=utf-8").body(content);
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());

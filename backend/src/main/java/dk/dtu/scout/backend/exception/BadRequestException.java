@@ -6,7 +6,6 @@ package dk.dtu.scout.backend.exception;
  * @author Ahmed
  */
 public class BadRequestException extends RuntimeException {
-
     public BadRequestException(String message) {
         super(message);
     }

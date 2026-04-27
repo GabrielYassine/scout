@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.CancellationException;
 import java.util.function.Supplier;
 
 /**
@@ -129,7 +130,7 @@ public class SimulationRunner {
 
             // #13 Check for thread interruption and abort.
             if (Thread.currentThread().isInterrupted()) {
-                throw new java.util.concurrent.CancellationException("Run cancelled");
+                throw new CancellationException("Run cancelled");
             }
 
             // #14 Delegate one algorithmic step to the selected population model.
