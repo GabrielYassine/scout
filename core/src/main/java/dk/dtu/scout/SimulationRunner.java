@@ -118,7 +118,7 @@ public class SimulationRunner {
         notifyOnStart(observers, currentState, log);
 
         // #11 Record the initial tick and notify observers of the initial visible state.
-        log.tick(currentState.iteration(), currentState.evaluations() - 1);
+        log.tick(currentState.evaluations() - 1);
         notifyOnStep(observers, currentState, log);
 
         int iteration = currentState.iteration();
@@ -146,7 +146,7 @@ public class SimulationRunner {
             // #17 Only log/notify observers at the configured cadence.
             if ((currentState.iteration() + 1) % logEveryIterations == 0) {
                 // #18 Record a visible tick and let observers write their data series into the log.
-                log.tick(currentState.iteration(), currentState.evaluations() - 1);
+                log.tick(currentState.evaluations() - 1);
                 notifyOnStep(observers, currentState, log);
             }
 
@@ -156,7 +156,7 @@ public class SimulationRunner {
 
         // #20 If the run stopped between logging points, ensure the terminal state is still logged.
         if (((currentState.iteration() + 1) % logEveryIterations) != 0) {
-            log.tick(currentState.iteration(), currentState.evaluations() - 1);
+            log.tick(currentState.evaluations() - 1);
             notifyOnStep(observers, currentState, log);
         }
 

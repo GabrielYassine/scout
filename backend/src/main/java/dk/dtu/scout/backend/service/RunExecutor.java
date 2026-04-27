@@ -218,7 +218,6 @@ public class RunExecutor {
             perProblemRuns.add(ViewMapper.toRunResponse(
                 searchSpace.id(),
                 problemId,
-                log.getIterations(),
                 evaluations,
                 log.getSeries(),
                 runtimeMs,

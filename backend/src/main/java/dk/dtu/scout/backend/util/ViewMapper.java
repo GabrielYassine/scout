@@ -90,7 +90,6 @@ public final class ViewMapper {
     public static RunResponse toRunResponse(
             String searchSpaceId,
             String problemId,
-            List<Integer> iterations,
             List<Integer> evaluations,
             Map<String, LoggedSeries<?>> series,
             double runtimeMs,
@@ -99,7 +98,6 @@ public final class ViewMapper {
         return new RunResponse(
             searchSpaceId,
             problemId,
-            iterations,
             evaluations,
             toSeriesResponses(series),
             runtimeMs,
@@ -111,8 +109,8 @@ public final class ViewMapper {
         return new RunGroupResponse(runIndex, seed, runs);
     }
 
-    public static AverageRunResponse toAverageRunResponse(List<Integer> iterations, List<Integer> evaluations, Map<String, List<Double>> series) {
-        return new AverageRunResponse(iterations, evaluations, series);
+    public static AverageRunResponse toAverageRunResponse(List<Integer> evaluations, Map<String, List<Double>> series) {
+        return new AverageRunResponse(evaluations, series);
     }
 
     public static SeriesResponse<?> toSeriesResponse(LoggedSeries<?> series) {

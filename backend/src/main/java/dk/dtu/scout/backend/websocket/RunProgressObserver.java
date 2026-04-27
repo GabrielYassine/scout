@@ -76,7 +76,7 @@ public class RunProgressObserver<S> implements Observer<S> {
             return;
         }
 
-        int logIndex = log.getIterations().size() - 1;
+        int logIndex = log.getEvaluations().size() - 1;
         lastSentLogIndex = logIndex;
         sendProgress(log, logIndex, MergeOp.APPEND, "ONGOING", null, true);
     }
@@ -89,7 +89,7 @@ public class RunProgressObserver<S> implements Observer<S> {
      */
     @Override
     public void onEnd(IterationSnapshot<S> state, RunLog log) {
-        int logIndex = log.getIterations().size() - 1;
+        int logIndex = log.getEvaluations().size() - 1;
         if (logIndex < 0) {
             return;
         }
@@ -110,7 +110,7 @@ public class RunProgressObserver<S> implements Observer<S> {
             return false;
         }
 
-        int logIndex = log.getIterations().size() - 1;
+        int logIndex = log.getEvaluations().size() - 1;
         if (logIndex < 0 || logIndex <= lastSentLogIndex) {
             return false;
         }
@@ -129,7 +129,6 @@ public class RunProgressObserver<S> implements Observer<S> {
         Double runtimeMs,
         boolean includeSeriesDelta
     ) {
-        int iteration = log.getIterations().get(logIndex);
         int evaluation = log.getEvaluations().get(logIndex);
 
         Map<String, Object> seriesDelta = includeSeriesDelta ? buildSeriesDelta(log) : Map.of();
@@ -145,11 +144,8 @@ public class RunProgressObserver<S> implements Observer<S> {
                 problemId,
                 nextSequenceId(),
                 axisMergeOp,
-                axisMergeOp,
                 seriesMerge,
-                iteration,
                 evaluation,
-                null,
                 null,
                 seriesDelta,
                 status,

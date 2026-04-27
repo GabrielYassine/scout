@@ -9,12 +9,10 @@ import java.util.Map;
  * Aggregated time-series output for a run, populated by observers.
  */
 public class RunLog {
-    private final List<Integer> iterations = new ArrayList<>();
     private final List<Integer> evaluations = new ArrayList<>();
     private final Map<String, LoggedSeries<?>> series = new LinkedHashMap<>();
 
-    public void tick(int iteration, int evaluation) {
-        iterations.add(iteration);
+    public void tick(int evaluation) {
         evaluations.add(evaluation);
     }
 
@@ -24,7 +22,6 @@ public class RunLog {
         loggedSeries.add(value);
     }
 
-    public List<Integer> getIterations() { return iterations; }
     public List<Integer> getEvaluations() { return evaluations; }
     public Map<String, LoggedSeries<?>> getSeries() { return series; }
 }

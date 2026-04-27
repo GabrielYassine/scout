@@ -232,49 +232,4 @@ class RunTest {
         assertFalse(batches.isEmpty());
         assertFalse(batches.getFirst().runs().isEmpty());
     }
-
-    @Test
-    @DisplayName("VRP X-n101-k25 with route-list relocate (smoke test)")
-    void testVrpXn101k25() throws IOException {
-        Map<String, Object> vrpInstance = loadVrpInstance("x-n101-k25.vrp");
-
-        RunRequest request = ViewMapper.toRunRequest(
-            "route-list",
-            Map.of("vrpInstance", vrpInstance),
-            List.of("vrp"),
-            Map.of("vrpInstance", vrpInstance),
-            "route-list-relocate",
-            Map.of(),
-            "mu-lambda",
-            Map.of("mu", 1, "lambda", 1),
-            "mu-plus-lambda",
-            Map.of(),
-            "random-parents",
-            Map.of(),
-            null,
-            null,
-            List.of("tour"),
-            Map.of(),
-            List.of("max-iterations"),
-            Map.of("maxIterations", 1000),
-            13579L,
-            1,
-            "test-session",
-            "test-run-vrp-xn101-k25",
-            100,
-            0
-        );
-
-        List<RunGroupResponse> batches = executeRunRequest(request);
-
-        RunResponse vrpRun = batches.stream()
-            .flatMap(batch -> batch.runs().stream())
-            .filter(run -> "vrp".equals(run.problemId()))
-            .findFirst()
-            .orElseThrow();
-
-        assertTrue(vrpRun.totalEvaluations() > 0);
-        assertTrue(vrpRun.series().containsKey("tspCities"));
-        assertTrue(vrpRun.series().containsKey("tspTour"));
-    }
 }

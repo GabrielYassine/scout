@@ -19,12 +19,9 @@ import java.util.Map;
  * @param searchSpaceId ID of the selected search space
  * @param problemId ID of the problem being updated
  * @param sequenceId increasing sequence number for ordering progress packets
- * @param iterationsMerge merge operation for iteration data
  * @param evaluationsMerge merge operation for evaluation data
  * @param seriesMerge merge operations for individual series
- * @param iteration latest iteration value for progress updates
  * @param evaluation latest evaluation value for progress updates
- * @param iterations optional full iteration list
  * @param evaluations optional full evaluation list
  * @param seriesDelta latest series values sent as a delta
  * @param status per-run status, such as ONGOING or FINISHED
@@ -41,12 +38,9 @@ public record RunWsPayload(
     String searchSpaceId,
     String problemId,
     Long sequenceId,
-    MergeOp iterationsMerge,
     MergeOp evaluationsMerge,
     Map<String, MergeOp> seriesMerge,
-    Integer iteration,
     Integer evaluation,
-    List<Integer> iterations,
     List<Integer> evaluations,
     Map<String, Object> seriesDelta,
     String status,
@@ -86,9 +80,6 @@ public record RunWsPayload(
             null,
             null,
             null,
-            null,
-            null,
-            null,
             summary
         );
     }
@@ -111,12 +102,9 @@ public record RunWsPayload(
      * @param searchSpaceId ID of the selected search space
      * @param problemId ID of the problem being updated
      * @param sequenceId increasing sequence number for ordering progress packets
-     * @param iterationsMerge merge operation for iteration data
      * @param evaluationsMerge merge operation for evaluation data
      * @param seriesMerge merge operations for individual series
-     * @param iteration latest iteration value
      * @param evaluation latest evaluation value
-     * @param iterations optional full iteration list
      * @param evaluations optional full evaluation list
      * @param seriesDelta latest series values sent as a delta
      * @param status per-run status, such as ONGOING or FINISHED
@@ -130,12 +118,9 @@ public record RunWsPayload(
         String searchSpaceId,
         String problemId,
         long sequenceId,
-        MergeOp iterationsMerge,
         MergeOp evaluationsMerge,
         Map<String, MergeOp> seriesMerge,
-        Integer iteration,
         Integer evaluation,
-        List<Integer> iterations,
         List<Integer> evaluations,
         Map<String, Object> seriesDelta,
         String status,
@@ -150,12 +135,9 @@ public record RunWsPayload(
             searchSpaceId,
             problemId,
             sequenceId,
-            iterationsMerge,
             evaluationsMerge,
             seriesMerge,
-            iteration,
             evaluation,
-            iterations,
             evaluations,
             seriesDelta,
             status,
@@ -169,9 +151,6 @@ public record RunWsPayload(
             type,
             runId,
             message,
-            null,
-            null,
-            null,
             null,
             null,
             null,

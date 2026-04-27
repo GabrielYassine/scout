@@ -7,7 +7,6 @@ import java.util.Map;
  * Result of a single run for a single problem.
  * @param searchSpaceId ID of the search space used
  * @param problemId ID of the problem solved
- * @param iterations logged iteration values
  * @param evaluations logged evaluation values
  * @param series logged observer series
  * @param runtimeMs runtime in milliseconds
@@ -17,7 +16,6 @@ import java.util.Map;
 public record RunResponse(
     String searchSpaceId,
     String problemId,
-    List<Integer> iterations,
     List<Integer> evaluations,
     Map<String, SeriesResponse<?>> series,
     double runtimeMs,

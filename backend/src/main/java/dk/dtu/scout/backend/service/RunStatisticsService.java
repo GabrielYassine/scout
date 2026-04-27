@@ -143,16 +143,15 @@ public class RunStatisticsService {
      */
     private AverageRunResponse computeAverageRun(List<RunResponse> runs) {
         if (runs.isEmpty()) {
-            return ViewMapper.toAverageRunResponse(List.of(), List.of(), Map.of());
+            return ViewMapper.toAverageRunResponse(List.of(), Map.of());
         }
 
         RunResponse referenceRun = findReferenceRun(runs);
 
-        List<Integer> referenceIterations = safeIntegerList(referenceRun.iterations());
         List<Integer> referenceEvaluations = safeIntegerList(referenceRun.evaluations());
         Map<String, List<Double>> averageSeries = computeAverageSeries(runs, referenceEvaluations);
 
-        return ViewMapper.toAverageRunResponse(referenceIterations, referenceEvaluations, averageSeries);
+        return ViewMapper.toAverageRunResponse(referenceEvaluations, averageSeries);
     }
 
     /**

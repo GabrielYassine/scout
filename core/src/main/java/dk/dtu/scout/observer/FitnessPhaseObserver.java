@@ -24,10 +24,8 @@ public class FitnessPhaseObserver<S> implements Observer<S> {
     private double epsilon = DEFAULT_EPSILON;
 
     private final Deque<Double> fitnessBlock = new ArrayDeque<>();
-    private final Deque<Integer> iterationBlock = new ArrayDeque<>();
     private final Deque<Integer> evaluationBlock = new ArrayDeque<>();
 
-    private Integer lastIntervalEndIteration = null;
     private Integer lastIntervalEndEvaluation = null;
 
     private enum Phase {
@@ -83,20 +81,16 @@ public class FitnessPhaseObserver<S> implements Observer<S> {
     @Override
     public void onStart(IterationSnapshot<S> state, RunLog log) {
         fitnessBlock.clear();
-        iterationBlock.clear();
         evaluationBlock.clear();
-        lastIntervalEndIteration = null;
         lastIntervalEndEvaluation = null;
     }
 
     @Override
     public void onStep(IterationSnapshot<S> state, RunLog log) {
         double fitness = state.currentFitness();
-        int iteration = state.iteration();
         int evaluation = Math.max(0, state.evaluations() - 1);
 
         fitnessBlock.addLast(fitness);
-        iterationBlock.addLast(iteration);
         evaluationBlock.addLast(evaluation);
 
         // Wait until the whole block is complete before classifying/coloring it
@@ -108,22 +102,16 @@ public class FitnessPhaseObserver<S> implements Observer<S> {
         double lastFitness = fitnessBlock.getLast();
         Phase phase = classify(lastFitness - firstFitness);
 
-        int startIteration = iterationBlock.getFirst();
-        int endIteration = iterationBlock.getLast();
         int startEvaluation = evaluationBlock.getFirst();
         int endEvaluation = evaluationBlock.getLast();
 
-        if (lastIntervalEndIteration != null && lastIntervalEndEvaluation != null) {
-            startIteration = lastIntervalEndIteration;
+        if (lastIntervalEndEvaluation != null) {
             startEvaluation = lastIntervalEndEvaluation;
         }
 
-        lastIntervalEndIteration = endIteration;
         lastIntervalEndEvaluation = endEvaluation;
 
         Map<String, Object> interval = newInterval(
-                startIteration,
-                endIteration,
                 startEvaluation,
                 endEvaluation,
                 phase
@@ -133,7 +121,6 @@ public class FitnessPhaseObserver<S> implements Observer<S> {
 
         // Start a fresh new block after emitting this one
         fitnessBlock.clear();
-        iterationBlock.clear();
         evaluationBlock.clear();
     }
 
@@ -148,25 +135,19 @@ public class FitnessPhaseObserver<S> implements Observer<S> {
         double lastFitness = fitnessBlock.getLast();
         Phase phase = classify(lastFitness - firstFitness);
 
-        int startIteration = iterationBlock.getFirst();
-        int endIteration = iterationBlock.getLast();
         int startEvaluation = evaluationBlock.getFirst();
         int endEvaluation = evaluationBlock.getLast();
 
-        if (lastIntervalEndIteration != null && lastIntervalEndEvaluation != null) {
-            startIteration = lastIntervalEndIteration;
+        if (lastIntervalEndEvaluation != null) {
             startEvaluation = lastIntervalEndEvaluation;
         }
 
-        lastIntervalEndIteration = endIteration;
         lastIntervalEndEvaluation = endEvaluation;
 
         Map<String, Object> interval = newInterval(
-            startIteration,
-            endIteration,
-            startEvaluation,
-            endEvaluation,
-            phase
+                startEvaluation,
+                endEvaluation,
+                phase
         );
 
         emitInterval(log, interval);
@@ -183,15 +164,11 @@ public class FitnessPhaseObserver<S> implements Observer<S> {
     }
 
     private Map<String, Object> newInterval(
-        int startIteration,
-        int endIteration,
         int startEvaluation,
         int endEvaluation,
         Phase phase
     ) {
         Map<String, Object> interval = new LinkedHashMap<>();
-        interval.put("startIteration", startIteration);
-        interval.put("endIteration", endIteration);
         interval.put("startEvaluation", startEvaluation);
         interval.put("endEvaluation", endEvaluation);
         interval.put("phase", phase.name());
