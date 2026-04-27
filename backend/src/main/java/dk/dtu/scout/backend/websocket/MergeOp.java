@@ -7,9 +7,6 @@ public enum MergeOp {
     /** Append a single value to an existing list. */
     APPEND,
 
-    /** Replace the entire list/object. */
-    REPLACE,
-
     /** Replace the last element in an existing list (or append if empty). */
     REPLACE_LAST
 }
