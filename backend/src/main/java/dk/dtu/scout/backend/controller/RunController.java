@@ -40,7 +40,7 @@ public class RunController {
 
     /**
      *
-     * Starts a async run, the run will be associated with the sessionId provided in the request, and any previous run associated with the same sessionId will be cancelled.
+     * Starts an async run, the run will be associated with the sessionId provided in the request.
      * @param request a DTO containing the sessionId and all parameters for the run.
      * @return an empty response with status 202 Accepted, indicating that the run has been accepted for processing.
      */
@@ -51,6 +51,11 @@ public class RunController {
     }
 
 
+    /**
+     * Starts an async runtime study, the study will be associated with the sessionId provided in the request.
+     * @param request a DTO containing the sessionId and all parameters for the runtime study.
+     * @return an empty response with status 202 Accepted, indicating that the runtime study has been accepted for processing.
+     */
     @PostMapping("/runtime-study")
     public ResponseEntity<Void> startStudy(@RequestBody RuntimeStudyRequest request) {
         runOrchestratorService.startRuntimeStudy(request);

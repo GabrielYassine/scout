@@ -1,66 +1,39 @@
 package dk.dtu.scout.backend.util;
 
 import dk.dtu.scout.ScoutComponent;
-import dk.dtu.scout.dto.Parameter;
 import dk.dtu.scout.backend.dto.RunRequest;
 import dk.dtu.scout.backend.dto.catalog.CatalogResponse;
 import dk.dtu.scout.backend.dto.catalog.ComponentDef;
 import dk.dtu.scout.backend.dto.catalog.ParamDef;
 import dk.dtu.scout.backend.dto.error.ErrorResponse;
-import dk.dtu.scout.backend.dto.run.*;
-import dk.dtu.scout.backend.dto.permutation.CityDto;
-import dk.dtu.scout.backend.dto.permutation.TSPDto;
+import dk.dtu.scout.backend.dto.run.AverageRunResponse;
+import dk.dtu.scout.backend.dto.run.RunGroupResponse;
+import dk.dtu.scout.backend.dto.run.RunResponse;
 import dk.dtu.scout.backend.dto.series.SeriesResponse;
+import dk.dtu.scout.dto.Parameter;
 import dk.dtu.scout.logging.LoggedSeries;
-import dk.dtu.scout.datatypes.TSPInstance;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Utility class for converting internal backend objects into DTOs used by the frontend.
+ * This keeps DTO construction in one place, so controllers and services do not need
+ * to know the exact response object structure.
+ * The class only contains static mapping methods and should not be instantiated.
+ * @author s235257 & Ahmed
+ */
 public final class ViewMapper {
 
     private ViewMapper() {
-    }
-
-    public static TSPDto toTspDto(TSPInstance instance) {
-        return toTspDto(instance, null, 0.0);
-    }
-
-    public static TSPDto toTspDto(TSPInstance instance, int[] tour, double tourLength) {
-        if (instance == null) {
-            throw new IllegalArgumentException("instance must not be null");
-        }
-        List<CityDto> cities = toCityDtos(instance.getCoordinates());
-        return new TSPDto(
-            instance.getName(),
-            instance.getDimension(),
-            cities,
-            tour,
-            tourLength
-        );
-    }
-
-    public static List<CityDto> toCityDtos(double[][] coordinates) {
-        if (coordinates == null) {
-            return List.of();
-        }
-        List<CityDto> cities = new ArrayList<>(coordinates.length);
-        for (int i = 0; i < coordinates.length; i++) {
-            cities.add(toCityDto(i, coordinates[i][0], coordinates[i][1]));
-        }
-        return cities;
-    }
-
-    public static CityDto toCityDto(int id, double x, double y) {
-        return new CityDto(id, x, y);
     }
 
     public static ParamDef toParamDef(Parameter param) {
         if (param == null) {
             return null;
         }
+
         return new ParamDef(
             param.key(),
             param.label(),
@@ -75,6 +48,7 @@ public final class ViewMapper {
         if (component == null) {
             throw new IllegalArgumentException("component must not be null");
         }
+
         return new ComponentDef(
             kind,
             component.id(),
@@ -114,13 +88,13 @@ public final class ViewMapper {
     }
 
     public static RunResponse toRunResponse(
-        String searchSpaceId,
-        String problemId,
-        List<Integer> iterations,
-        List<Integer> evaluations,
-        Map<String, LoggedSeries<?>> series,
-        double runtimeMs,
-        int finalEvaluations
+            String searchSpaceId,
+            String problemId,
+            List<Integer> iterations,
+            List<Integer> evaluations,
+            Map<String, LoggedSeries<?>> series,
+            double runtimeMs,
+            int totalEvaluations
     ) {
         return new RunResponse(
             searchSpaceId,
@@ -129,7 +103,7 @@ public final class ViewMapper {
             evaluations,
             toSeriesResponses(series),
             runtimeMs,
-            finalEvaluations
+            totalEvaluations
         );
     }
 
@@ -137,20 +111,15 @@ public final class ViewMapper {
         return new RunGroupResponse(runIndex, seed, runs);
     }
 
-    public static AverageRunResponse toAverageRunResponse(
-        List<Integer> iterations,
-        List<Integer> evaluations,
-        Map<String, List<Double>> series
-    ) {
+    public static AverageRunResponse toAverageRunResponse(List<Integer> iterations, List<Integer> evaluations, Map<String, List<Double>> series) {
         return new AverageRunResponse(iterations, evaluations, series);
     }
-
-
 
     public static SeriesResponse<?> toSeriesResponse(LoggedSeries<?> series) {
         if (series == null) {
             return null;
         }
+
         return new SeriesResponse<>(series.getMode(), series.getValues());
     }
 
@@ -158,12 +127,16 @@ public final class ViewMapper {
         if (series == null || series.isEmpty()) {
             return Map.of();
         }
+
         Map<String, SeriesResponse<?>> out = new LinkedHashMap<>();
+
         for (Map.Entry<String, LoggedSeries<?>> entry : series.entrySet()) {
             SeriesResponse<?> response = toSeriesResponse(entry.getValue());
-            if (response == null) continue;
-            out.put(entry.getKey(), response);
+            if (response != null) {
+                out.put(entry.getKey(), response);
+            }
         }
+
         return out;
     }
 
@@ -178,9 +151,9 @@ public final class ViewMapper {
         Map<String, Object> populationModelParams,
         String selectionRuleId,
         Map<String, Object> selectionRuleParams,
-        String  parentSelectionRuleId,
+        String parentSelectionRuleId,
         Map<String, Object> parentSelectionRuleParams,
-        String  crossoverId,
+        String crossoverId,
         Map<String, Object> crossoverParams,
         List<String> observerIds,
         Map<String, Object> observerParams,

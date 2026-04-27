@@ -19,70 +19,53 @@ import java.util.List;
 /**
  * Configuration for component registries.
  * Creates Spring beans that auto-discover all components of each type.
+ * @author s235257
  */
 @Configuration
 public class ComponentRegistryConfig {
 
     @Bean
-    public ComponentRegistry<SelectionRule> selectionRuleRegistry(
-            List<SelectionRule> components,
-            ApplicationContext context) {
+    public ComponentRegistry<SelectionRule<?>> selectionRuleRegistry(List<SelectionRule<?>> components, ApplicationContext context) {
         return new ComponentRegistry<>(components, context);
     }
 
     @Bean
-    public ComponentRegistry<PopulationModel> populationModelRegistry(
-            List<PopulationModel> components,
-            ApplicationContext context) {
+    public ComponentRegistry<PopulationModel<?>> populationModelRegistry(List<PopulationModel<?>> components, ApplicationContext context) {
         return new ComponentRegistry<>(components, context);
     }
 
     @Bean
-    public ComponentRegistry<StopCondition> stopConditionRegistry(
-            List<StopCondition> components,
-            ApplicationContext context) {
+    public ComponentRegistry<StopCondition<?>> stopConditionRegistry(List<StopCondition<?>> components, ApplicationContext context) {
         return new ComponentRegistry<>(components, context);
     }
 
     @Bean
-    public ComponentRegistry<Observer> observerRegistry(
-            List<Observer> components,
-            ApplicationContext context) {
+    public ComponentRegistry<Observer<?>> observerRegistry(List<Observer<?>> components, ApplicationContext context) {
         return new ComponentRegistry<>(components, context);
     }
 
     @Bean
-    public ComponentRegistry<Problem> problemRegistry(
-            List<Problem> components,
-            ApplicationContext context) {
+    public ComponentRegistry<Problem<?>> problemRegistry(List<Problem<?>> components, ApplicationContext context) {
         return new ComponentRegistry<>(components, context);
     }
 
     @Bean
-    public ComponentRegistry<SearchSpace> searchSpaceRegistry(
-            List<SearchSpace> components,
-            ApplicationContext context) {
+    public ComponentRegistry<SearchSpace<?>> searchSpaceRegistry(List<SearchSpace<?>> components, ApplicationContext context) {
         return new ComponentRegistry<>(components, context);
     }
 
     @Bean
-    public ComponentRegistry<Generator> mutationRegistry(
-            List<Generator> components,
-            ApplicationContext context) {
+    public ComponentRegistry<Generator<?>> generatorRegistry(List<Generator<?>> components, ApplicationContext context) {
         return new ComponentRegistry<>(components, context);
     }
 
     @Bean
-    public ComponentRegistry<ParentSelectionRule> parentSelectionRuleRegistry(
-            List<ParentSelectionRule> components,
-            ApplicationContext context) {
+    public ComponentRegistry<ParentSelectionRule<?>> parentSelectionRuleRegistry(List<ParentSelectionRule<?>> components, ApplicationContext context) {
         return new ComponentRegistry<>(components, context);
     }
 
     @Bean
-    public ComponentRegistry<Crossover> crossoverRegistry(
-            List<Crossover> components,
-            ApplicationContext context) {
+    public ComponentRegistry<Crossover<?>> crossoverRegistry(List<Crossover<?>> components, ApplicationContext context) {
         return new ComponentRegistry<>(components, context);
     }
 }

@@ -2,6 +2,12 @@ package dk.dtu.scout.backend.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+/**
+ * Binds executor pool settings from application.properties.
+ * Spring fills this class automatically through @ConfigurationProperties,
+ * so the setters are used by Spring even though they are not called directly in the code.
+ * @author s235257 & Ahmed
+ */
 @ConfigurationProperties(prefix = "scout.executors")
 public class AsyncExecutorProperties {
 
@@ -17,10 +23,10 @@ public class AsyncExecutorProperties {
     }
 
     public static class ExecutorSpec {
-        private int corePoolSize = 4;
-        private int maxPoolSize = 16;
-        private int queueCapacity = 200;
-        private int awaitTerminationSeconds = 30;
+        private int corePoolSize;
+        private int maxPoolSize;
+        private int queueCapacity;
+        private int awaitTerminationSeconds;
 
         public int getCorePoolSize() {
             return corePoolSize;

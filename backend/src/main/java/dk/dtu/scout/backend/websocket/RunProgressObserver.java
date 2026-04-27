@@ -13,6 +13,12 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * Observer that streams run progress to the frontend through WebSockets.
+ * It sends small delta packages during the run, and a final FINISHED package when the run ends.
+ * @param <S> the solution representation type used by the current run
+ * @author s235257 & Ahmed
+ */
 public class RunProgressObserver<S> implements Observer<S> {
 
     private static final ConcurrentHashMap<String, AtomicLong> SEQUENCE_BY_STREAM = new ConcurrentHashMap<>();
@@ -21,8 +27,8 @@ public class RunProgressObserver<S> implements Observer<S> {
     private final String runId;
     private final int runIndex;
     private final long seed;
-    private final String problemId;
     private final String searchSpaceId;
+    private final String problemId;
     private final int wsUpdateEveryIterations;
     private final long startTimeNanos;
 
@@ -41,38 +47,169 @@ public class RunProgressObserver<S> implements Observer<S> {
         this.runId = runId;
         this.runIndex = runIndex;
         this.seed = seed;
-        this.problemId = problemId;
         this.searchSpaceId = searchSpaceId;
+        this.problemId = problemId;
         this.wsUpdateEveryIterations = wsUpdateEveryIterations;
         this.startTimeNanos = System.nanoTime();
 
-        String streamKey = streamKey(runId, problemId, seed);
-        SEQUENCE_BY_STREAM.computeIfAbsent(streamKey, k -> new AtomicLong(0));
+        SEQUENCE_BY_STREAM.computeIfAbsent(streamKey(), key -> new AtomicLong(0));
     }
 
-    private static String streamKey(String runId, String problemId, long seed) {
+    private String streamKey() {
         return runId + ":" + problemId + ":" + seed;
     }
 
-    public static long nextSequenceIdFor(String runId, String problemId, long seed) {
-        String streamKey = streamKey(runId, problemId, seed);
-        return SEQUENCE_BY_STREAM.computeIfAbsent(streamKey, k -> new AtomicLong(0)).incrementAndGet();
-    }
-
     private long nextSequenceId() {
-        return nextSequenceIdFor(runId, problemId, seed);
+        return SEQUENCE_BY_STREAM.computeIfAbsent(streamKey(), key -> new AtomicLong(0)).incrementAndGet();
     }
 
-    private static MergeOp seriesMergeOp(LoggedSeries<?> series) {
-        if (series == null) {
-            return MergeOp.APPEND;
+    /**
+     * Sends an ONGOING progress update when the current log point should be streamed.
+     * The first log point is always sent, and later points are sent according to the configured cadence.
+     * @param state current iteration snapshot
+     * @param log current run log
+     */
+    @Override
+    public void onStep(IterationSnapshot<S> state, RunLog log) {
+        if (!shouldSendStep(state, log)) {
+            return;
         }
 
-        SeriesMode mode = series.getMode();
-        if (mode == SeriesMode.LATEST_ONLY) {
+        int logIndex = log.getIterations().size() - 1;
+        lastSentLogIndex = logIndex;
+        sendProgress(log, logIndex, MergeOp.APPEND, "ONGOING", null, true);
+    }
+
+    /**
+     * Sends the final FINISHED progress update.
+     * If the final log point was already sent during onStep, it replaces the last point instead of appending a duplicate.
+     * @param state final iteration snapshot
+     * @param log completed run log
+     */
+    @Override
+    public void onEnd(IterationSnapshot<S> state, RunLog log) {
+        int logIndex = log.getIterations().size() - 1;
+        if (logIndex < 0) {
+            return;
+        }
+
+        double runtimeMs = (System.nanoTime() - startTimeNanos) / 1_000_000.0;
+
+        if (logIndex <= lastSentLogIndex) {
+            sendProgress(log, logIndex, MergeOp.REPLACE_LAST, "FINISHED", runtimeMs, false);
+            return;
+        }
+
+        lastSentLogIndex = logIndex;
+        sendProgress(log, logIndex, MergeOp.APPEND, "FINISHED", runtimeMs, true);
+    }
+
+    private boolean shouldSendStep(IterationSnapshot<S> state, RunLog log) {
+        if (wsUpdateEveryIterations <= 0) {
+            return false;
+        }
+
+        int logIndex = log.getIterations().size() - 1;
+        if (logIndex < 0 || logIndex <= lastSentLogIndex) {
+            return false;
+        }
+
+        boolean isInitialPoint = logIndex == 0;
+        boolean matchesInterval = ((state.iteration() + 1) % wsUpdateEveryIterations) == 0;
+
+        return isInitialPoint || matchesInterval;
+    }
+
+    private void sendProgress(
+        RunLog log,
+        int logIndex,
+        MergeOp axisMergeOp,
+        String status,
+        Double runtimeMs,
+        boolean includeSeriesDelta
+    ) {
+        int iteration = log.getIterations().get(logIndex);
+        int evaluation = log.getEvaluations().get(logIndex);
+
+        Map<String, Object> seriesDelta = includeSeriesDelta ? buildSeriesDelta(log) : Map.of();
+        Map<String, MergeOp> seriesMerge = includeSeriesDelta ? buildSeriesMerge(log) : Map.of();
+
+        wsSender.sendToRun(
+            runId,
+            RunWsPayload.progress(
+                runId,
+                runIndex,
+                seed,
+                searchSpaceId,
+                problemId,
+                nextSequenceId(),
+                axisMergeOp,
+                axisMergeOp,
+                seriesMerge,
+                iteration,
+                evaluation,
+                null,
+                null,
+                seriesDelta,
+                status,
+                runtimeMs
+            )
+        );
+    }
+
+    /**
+     * Extracts the newest value from each logged series.
+     * This keeps WebSocket packets small because only the new delta is sent.
+     *
+     * @param log current run log
+     * @return map from series name to latest value
+     */
+    private Map<String, Object> buildSeriesDelta(RunLog log) {
+        Map<String, Object> delta = new LinkedHashMap<>();
+
+        for (Map.Entry<String, LoggedSeries<?>> entry : log.getSeries().entrySet()) {
+            LoggedSeries<?> series = entry.getValue();
+            if (series == null || series.getValues() == null || series.getValues().isEmpty()) {
+                continue;
+            }
+
+            delta.put(entry.getKey(), series.getValues().getLast());
+        }
+
+        return delta;
+    }
+
+    /**
+     * Builds merge instructions for each series in the delta package.
+     *
+     * @param log current run log
+     * @return map from series name to merge operation
+     */
+    private Map<String, MergeOp> buildSeriesMerge(RunLog log) {
+        Map<String, MergeOp> mergeOps = new LinkedHashMap<>();
+
+        for (Map.Entry<String, LoggedSeries<?>> entry : log.getSeries().entrySet()) {
+            LoggedSeries<?> series = entry.getValue();
+            if (series == null || series.getValues() == null || series.getValues().isEmpty()) {
+                continue;
+            }
+
+            mergeOps.put(entry.getKey(), seriesMergeOp(series));
+        }
+
+        return mergeOps;
+    }
+
+    /**
+     * Determines how the frontend should merge a series value.
+     * Normal series are appended, while latest-only series replace their previous value.
+     * @param series the logged series to inspect
+     * @return merge operation for the series
+     */
+    private static MergeOp seriesMergeOp(LoggedSeries<?> series) {
+        if (series != null && series.getMode() == SeriesMode.LATEST_ONLY) {
             return MergeOp.REPLACE_LAST;
         }
-
         return MergeOp.APPEND;
     }
 
@@ -94,95 +231,5 @@ public class RunProgressObserver<S> implements Observer<S> {
     @Override
     public List<Parameter> params() {
         return List.of();
-    }
-
-    @Override
-    public void onStep(IterationSnapshot<S> state, RunLog log) {
-        if (wsUpdateEveryIterations <= 0) return;
-
-        int logIndex = log.getIterations().size() - 1;
-        if (logIndex < 0) return;
-        if (logIndex <= lastSentLogIndex) return;
-
-        boolean isInitialPoint = logIndex == 0;
-        boolean matchesInterval = ((state.iteration() + 1) % wsUpdateEveryIterations) == 0;
-
-        if (!isInitialPoint && !matchesInterval) {
-            return;
-        }
-
-        lastSentLogIndex = logIndex;
-
-        sendProgress(log, logIndex, MergeOp.APPEND, MergeOp.APPEND, "ONGOING", null, true);
-    }
-
-    @Override
-    public void onEnd(IterationSnapshot<S> state, RunLog log) {
-        int logIndex = log.getIterations().size() - 1;
-        if (logIndex < 0) return;
-
-        double runtimeMs = (System.nanoTime() - startTimeNanos) / 1_000_000.0;
-
-        boolean finalPointAlreadySent = logIndex <= lastSentLogIndex;
-
-        if (finalPointAlreadySent) {
-            sendProgress(log, logIndex, MergeOp.REPLACE_LAST, MergeOp.REPLACE_LAST, "FINISHED", runtimeMs, false);
-            return;
-        }
-
-        lastSentLogIndex = logIndex;
-        sendProgress(log, logIndex, MergeOp.APPEND, MergeOp.APPEND, "FINISHED", runtimeMs, true);
-    }
-
-    private void sendProgress(
-        RunLog log,
-        int logIndex,
-        MergeOp iterationMergeOp,
-        MergeOp evaluationMergeOp,
-        String status,
-        Double runtimeMs,
-        boolean includeSeriesDelta
-    ) {
-        int iteration = log.getIterations().get(logIndex);
-        int evaluation = log.getEvaluations().get(logIndex);
-
-        Map<String, Object> seriesDelta = new LinkedHashMap<>();
-        Map<String, MergeOp> seriesMerge = new LinkedHashMap<>();
-
-        if (includeSeriesDelta) {
-            for (Map.Entry<String, LoggedSeries<?>> entry : log.getSeries().entrySet()) {
-                String key = entry.getKey();
-                LoggedSeries<?> loggedSeries = entry.getValue();
-                if (loggedSeries == null) continue;
-
-                List<?> values = loggedSeries.getValues();
-                if (values == null || values.isEmpty()) continue;
-
-                seriesDelta.put(key, values.getLast());
-                seriesMerge.put(key, seriesMergeOp(loggedSeries));
-            }
-        }
-
-        wsSender.sendToRun(
-            runId,
-            RunWsPayload.progress(
-                runId,
-                runIndex,
-                seed,
-                searchSpaceId,
-                problemId,
-                nextSequenceId(),
-                iterationMergeOp,
-                evaluationMergeOp,
-                seriesMerge,
-                iteration,
-                evaluation,
-                null,
-                null,
-                seriesDelta,
-                status,
-                runtimeMs
-            )
-        );
     }
 }
