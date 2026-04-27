@@ -5,7 +5,7 @@ import BoxPlotChart from "./BoxPlotChart.jsx";
 
 const VIEW_LINE = "line";
 const VIEW_BOXPLOT = "boxplot";
-
+// Maps study status to display label and CSS class for styling
 function getStudyStatusMeta(studyStatus) {
   const rawStatus = String(studyStatus ?? "").toUpperCase();
 
@@ -19,6 +19,7 @@ function getStudyStatusMeta(studyStatus) {
 
   return { label: "Running", className: "ongoing" };
 }
+
 function RuntimeStudyChart({
   studyTitle = "Runtime Study",
   problemId = null,
@@ -27,7 +28,7 @@ function RuntimeStudyChart({
   visibleCount = null,
 }) {
   const [viewMode, setViewMode] = useState(VIEW_LINE);
-
+  // Sort points by problem size .
   const sortedPoints = useMemo(
     () =>
       [...points].sort(
@@ -35,14 +36,14 @@ function RuntimeStudyChart({
       ),
     [points]
   );
-
+  // Determine which points to display based on visibleCount prop.
   const visiblePoints = useMemo(() => {
     if (!Number.isFinite(visibleCount) || visibleCount == null) {
       return sortedPoints;
     }
     return sortedPoints.slice(0, visibleCount);
   }, [sortedPoints, visibleCount]);
-
+ // Prepare data for line chart, filtering out points with invalid numeric values.
   const linePoints = useMemo(
     () =>
       visiblePoints
@@ -53,7 +54,7 @@ function RuntimeStudyChart({
         .filter(([x, y]) => Number.isFinite(x) && Number.isFinite(y)),
     [visiblePoints]
   );
-
+// Prepare data for box plot chart, filtering out points with valid problem size and box plot data.
   const boxPlotResponse = useMemo(() => {
     const valid = visiblePoints.filter(
       (p) =>

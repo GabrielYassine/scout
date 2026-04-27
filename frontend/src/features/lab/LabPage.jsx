@@ -21,12 +21,13 @@ const SESSION_STORAGE_KEY = "scout:sessionId";
 const SHARED_DROP_AREA_ID = "shared-drop-area";
 const TOAST_DURATION_MS = 3500;
 
+// generates a unique ID using crypto.randomUUID.
 function generateId() {
   return window.crypto?.randomUUID
     ? window.crypto.randomUUID()
     : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
-
+// Parse a comma-separated string into an array of valid positive integers.
 function parseProblemSizes(text) {
   return String(text ?? "")
     .split(",")
@@ -41,12 +42,17 @@ function getProblemFlags(problemList) {
   };
 }
 
+// Validate that required problem instances, vrp or tsp, exist before starting a run.
 function validateProblemInstances({ problemList, tspInstance, vrpInstance }) {
+  // Check whether the selected problems include TSP and/or VRP.
   const { isTspProblem, isVrpProblem } = getProblemFlags(problemList);
-
+  // A valid TSP instance must have a non-empty cities array.
   const hasValidTspInstance =
     Array.isArray(tspInstance?.cities) && tspInstance.cities.length > 0;
 
+  // A valid VRP instance must have:
+  // - a non-empty customers array
+  // - a depot defined
   const hasValidVrpInstance =
     Array.isArray(vrpInstance?.customers) &&
     vrpInstance.customers.length > 0 &&
@@ -63,44 +69,39 @@ function validateProblemInstances({ problemList, tspInstance, vrpInstance }) {
   return { isTspProblem, isVrpProblem };
 }
 
-function buildProblemParams({ baseProblemParams, tspInstance, vrpInstance, isVrpProblem }) {
+// Build the problemParams object to be sent to the backend, including TSP or VRP instances if applicable.
+function buildProblemParams({ baseProblemParams, tspInstance, vrpInstance, isTspProblem, isVrpProblem }) {
   const problemParams = { ...baseProblemParams };
 
-  if (tspInstance?.cities?.length > 0) {
+  if (isTspProblem) {
     problemParams.tspInstance = tspInstance;
   }
 
-  if (isVrpProblem && vrpInstance) {
+  if (isVrpProblem) {
     problemParams.vrpInstance = vrpInstance;
   }
 
   return problemParams;
 }
-
-function buildSearchSpaceParams({
-  baseSearchSpaceParams,
-  tspInstance,
-  vrpInstance,
-  isTspProblem,
-  isVrpProblem,
-}) {
+// Build the searchSpaceParams object to be sent to the backend, including problem size parameters derived from TSP or VRP instances if applicable.
+function buildSearchSpaceParams({ baseSearchSpaceParams, tspInstance, vrpInstance, isTspProblem, isVrpProblem, }) {
   const searchSpaceParams = { ...baseSearchSpaceParams };
 
-  if (isTspProblem && tspInstance?.cities?.length > 0) {
+  if (isTspProblem) {
     searchSpaceParams.n = tspInstance.cities.length;
   }
 
-  if (isVrpProblem && vrpInstance?.customers?.length > 0) {
+  if (isVrpProblem) {
     searchSpaceParams.n = vrpInstance.customers.length;
   }
 
   return searchSpaceParams;
 }
-
+// Retrieve the existing session ID from sessionStorage, or return null if it doesn't exist.
 function getExistingSessionId() {
   return window.sessionStorage?.getItem(SESSION_STORAGE_KEY) ?? null;
 }
-
+// Persist the given session ID to sessionStorage for future runs.
 function persistSessionId(sessionId) {
   try {
     window.sessionStorage?.setItem(SESSION_STORAGE_KEY, sessionId);
@@ -108,7 +109,7 @@ function persistSessionId(sessionId) {
     // ignore storage errors
   }
 }
-
+// Ensure that a session ID exists by returning the existing one or generating and persisting a new one if it doesn't exist.
 function ensureSessionId(existingSessionId) {
   if (existingSessionId) return existingSessionId;
 
@@ -116,7 +117,7 @@ function ensureSessionId(existingSessionId) {
   persistSessionId(next);
   return next;
 }
-
+// Build the request payload for starting a runtime study.
 function buildRuntimeStudyRequest({
   studyId,
   sessionId,
@@ -152,7 +153,7 @@ function buildRuntimeStudyRequest({
     wsUpdateEverySizes: params.global?.wsUpdateEverySizes ?? 1,
   };
 }
-
+// Build the request payload for starting a standard run.
 function buildRunRequest({
   runId,
   sessionId,
@@ -195,6 +196,7 @@ export default function LabPage({
   catalogLoading,
   catalogError,
 }) {
+// Get shared lab state and update functions from the puzzle config context
   const {
     puzzleConfig,
     params,
@@ -219,26 +221,30 @@ export default function LabPage({
   // Listen to drag-and-drop events from dnd-kit to determine when to show the remove drop zone overlay.
   useDndMonitor({
     onDragStart(event) {
+     // Check whether the dragged item is a piece that is already placed in the puzzle.
       const isPlacedPiece = event.active?.data?.current?.fromIndex != null;
       setShowRemoveDropZone(isPlacedPiece);
     },
     onDragOver(event) {
+     // Keep remove zone hidden for selector pieces.
       const isPlacedPiece = event.active?.data?.current?.fromIndex != null;
       if (!isPlacedPiece) {
         setShowRemoveDropZone(false);
         return;
       }
-
+      // Show remove zone when dragging outside the shared drop area.
       setShowRemoveDropZone(event.over?.id !== SHARED_DROP_AREA_ID);
     },
     onDragEnd() {
+       // Hide remove zone after drop.
       setShowRemoveDropZone(false);
     },
     onDragCancel() {
+      // Hide remove zone if drag is cancelled.
       setShowRemoveDropZone(false);
     },
   });
-
+  // Cleanup when the component unmounts if a toast timer is still running, stop it.
   useEffect(() => {
     return () => {
       if (toastTimeoutRef.current) {
@@ -246,20 +252,21 @@ export default function LabPage({
       }
     };
   }, []);
-
+  // Show a temporary toast message
   function showToast(message) {
     setToastMessage(message);
     setToastVisible(true);
-
+    // If an old timeout already exists, clear it first
     if (toastTimeoutRef.current) {
       clearTimeout(toastTimeoutRef.current);
     }
-
+    // Hide toast after a delay
     toastTimeoutRef.current = setTimeout(() => {
       setToastVisible(false);
     }, TOAST_DURATION_MS);
   }
 
+  // Helper function to find a catalog item by type and ID, used for showing hover info in the UI.
   function getCatalogItem(type, id) {
     if (!catalog || !id) return null;
 
@@ -277,7 +284,7 @@ export default function LabPage({
 
     return (map[type] ?? []).find((x) => x.id === id) ?? null;
   }
-
+ // When the user hovers over a piece in the puzzle or selector, look up its title and description in the catalog.
   function handlePieceHover(type, id) {
     const item = getCatalogItem(type, id);
     if (!item) return;
@@ -292,6 +299,7 @@ export default function LabPage({
     setHoverInfo(null);
   }
 
+  // Collect and validate the common data needed to start an execution,
   function buildExecutionContext() {
     const seed = params.global?.seed ?? Date.now();
     const existingSessionId = getExistingSessionId();
@@ -307,6 +315,7 @@ export default function LabPage({
       baseProblemParams: params.problem,
       tspInstance,
       vrpInstance,
+      isTspProblem,
       isVrpProblem,
     });
 
@@ -325,15 +334,14 @@ export default function LabPage({
       searchSpaceParams,
     };
   }
-
+  // Save the current run configuration to localStorage and navigate to the run page with the necessary state.
   function saveAndNavigate(savedState, navigationState) {
     setSavedRun(savedState);
     navigate("/run", { state: navigationState });
   }
-
+ // Start a runtime study by building the appropriate request payload and navigating to the run page in runtime study mode.
   async function startRuntimeStudy() {
-    const { seed, existingSessionId, problemParams, searchSpaceParams } =
-      buildExecutionContext();
+    const { seed, existingSessionId, problemParams, searchSpaceParams } = buildExecutionContext();
 
     const sessionId = ensureSessionId(existingSessionId);
     const problemSizes = parseProblemSizes(params.global?.problemSizes);
@@ -382,9 +390,9 @@ export default function LabPage({
     );
   }
 
+// Start a standard run by preparing the run on the backend, building the appropriate request payload, and navigating to the run page in run mode.
   async function startStandardRun() {
-    const { seed, existingSessionId, problemParams, searchSpaceParams } =
-      buildExecutionContext();
+    const { seed, existingSessionId, problemParams, searchSpaceParams } = buildExecutionContext();
 
     const prep = await prepareRun({ sessionId: existingSessionId });
     const sessionId = prep?.sessionId ?? existingSessionId;
@@ -434,7 +442,7 @@ export default function LabPage({
       }
     );
   }
-
+  // Main function to handle the "Run" action, which decides whether to start a runtime study or a standard run based on the selected experiment type.
   async function onRun() {
     try {
       const experimentType = params.global?.experimentType ?? "run";
@@ -449,10 +457,10 @@ export default function LabPage({
       showToast(err.message || "Failed to start run");
     }
   }
-
+  // Apply the selected template to the current lab configuration
   function onApplyTemplate(templateId) {
-    if (!catalog || !templateId) return;
-
+    if ( !templateId) return;
+    // Find the matching template object from the template list
     const template = runTemplates.find((t) => t.id === templateId);
     if (!template) return;
 

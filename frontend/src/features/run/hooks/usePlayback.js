@@ -14,12 +14,11 @@ const PLAYBACK_DIVISOR = 15;
 export function usePlayback({ length, initialSpeed = 50 }) {
   const [playbackSpeed, setPlaybackSpeed] = useState(initialSpeed);
   const [visibleCount, setVisibleCount] = useState(1);
-
   useEffect(() => {
     if (!length) return;
-
+    // Calculate how many data points to reveal on each tick based on the current playback speed.
     const stepSize = Math.max(1, Math.floor(playbackSpeed / PLAYBACK_DIVISOR));
-
+    // Set up an interval to incrementally increase the visible count until it reaches the total length.
     const intervalId = setInterval(() => {
       setVisibleCount((previousCount) =>
         previousCount >= length? previousCount : Math.min(previousCount + stepSize, length)

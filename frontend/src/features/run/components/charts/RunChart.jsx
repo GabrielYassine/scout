@@ -18,7 +18,7 @@ const SPECIAL_SERIES_KEYS = new Set([
   "pheromoneHeatmap",
   "fitnessPhaseIntervals",
 ]);
-
+// Maps run status to display label and CSS class for styling
 function getRunStatusMeta(run) {
   const rawStatus = String(run?.status ?? "").toUpperCase();
 
@@ -32,7 +32,7 @@ function getRunStatusMeta(run) {
 
   return { label: "Running", className: "ongoing" };
 }
-
+// Maps internal observer keys to user-friendly display names
 function getObserverDisplayName(observerKey) {
   switch (observerKey) {
     case HYPERCUBE_KEY:
@@ -45,11 +45,11 @@ function getObserverDisplayName(observerKey) {
       return observerKey;
   }
 }
-
+// Extracts the keys of standard line series from the run's series data, excluding special keys used for other visualizations
 function getLineSeriesKeys(series) {
   return Object.keys(series).filter((key) => !SPECIAL_SERIES_KEYS.has(key));
 }
-
+// Builds the list of observer keys that can be displayed based on the available data in the run's series.
 function buildDisplayKeys({ lineSeriesKeys, hasHypercube, hasTspTour, hasBestFitnessBoxPlot }) {
   const keys = [...lineSeriesKeys];
 
@@ -59,59 +59,17 @@ function buildDisplayKeys({ lineSeriesKeys, hasHypercube, hasTspTour, hasBestFit
 
   return keys;
 }
-
+// Determines the fallback observer key to use when the currently selected observer is not available.
 function getFallbackObserver(displayKeys, hasTspTour) {
   if (displayKeys.length > 0) return displayKeys[0];
-  if (hasTspTour) return TSP_TOUR_KEY;
   return null;
 }
-
-function buildPhaseRanges(phaseIntervals, iterations, evaluations) {
-  if (!phaseIntervals?.length || !iterations.length || !evaluations.length) {
-    return [];
-  }
-
-  const iterationToEvaluation = new Map();
-  for (let i = 0; i < iterations.length; i += 1) {
-    iterationToEvaluation.set(iterations[i], evaluations[i]);
-  }
-
-  const lookupEvaluation = (iteration) => {
-    const direct = iterationToEvaluation.get(iteration);
-    if (direct != null) return direct;
-
-    let bestIndex = -1;
-    let bestDelta = Number.POSITIVE_INFINITY;
-
-    for (let i = 0; i < iterations.length; i += 1) {
-      const delta = Math.abs(iterations[i] - iteration);
-      if (delta < bestDelta) {
-        bestDelta = delta;
-        bestIndex = i;
-      }
-    }
-
-    return bestIndex >= 0 ? evaluations[bestIndex] : null;
-  };
-
-  const rawRanges = phaseIntervals
+// Normalizes and sorts phase intervals for visualization, ensuring valid numeric values and consistent ordering.
+function normalizePhaseRanges(phaseIntervals) {
+  return (phaseIntervals ?? [])
     .map((interval) => {
-      const startEvaluation = Number(interval?.startEvaluation);
-      const endEvaluation = Number(interval?.endEvaluation);
-      const startIteration = Number(interval?.startIteration);
-      const endIteration = Number(interval?.endIteration);
-
-      let startEval = startEvaluation;
-      let endEval = endEvaluation;
-
-      if (!Number.isFinite(startEval) || !Number.isFinite(endEval)) {
-        if (!Number.isFinite(startIteration) || !Number.isFinite(endIteration)) {
-          return null;
-        }
-
-        startEval = lookupEvaluation(startIteration);
-        endEval = lookupEvaluation(endIteration);
-      }
+      const startEval = Number(interval?.startEvaluation);
+      const endEval = Number(interval?.endEvaluation);
 
       if (!Number.isFinite(startEval) || !Number.isFinite(endEval)) {
         return null;
@@ -120,31 +78,33 @@ function buildPhaseRanges(phaseIntervals, iterations, evaluations) {
       return {
         start: Math.min(startEval, endEval),
         end: Math.max(startEval, endEval),
+        // Ensure phase is a valid string, defaulting to "STAGNANT" if not provided or invalid
         phase: typeof interval?.phase === "string" ? interval.phase : "STAGNANT",
       };
     })
-    .filter(Boolean);
-
-  const sortedRanges = rawRanges.slice().sort((a, b) => a.start - b.start);
-  const filledRanges = [];
+    .filter(Boolean)
+    .sort((a, b) => a.start - b.start);
+}
+// Resolves gaps and overlaps in the sorted phase intervals to create a continuous timeline for visualization.
+function resolveRangeGapsAndOverlaps(sortedRanges) {
+  const resolvedRanges = [];
 
   for (const range of sortedRanges) {
-    const previous = filledRanges[filledRanges.length - 1];
-
+    const previous = resolvedRanges[resolvedRanges.length - 1];
+    // If there's a gap between the previous range and the current range, fill it with a new range using the previous phase
     if (previous && range.start > previous.end) {
-      filledRanges.push({
+      resolvedRanges.push({
         start: previous.end,
         end: range.start,
         phase: previous.phase,
       });
     }
-
+    // If there's an overlap between the previous range and the current range, adjust the current range to start where the previous one ended
     if (previous && range.start < previous.end) {
       if (range.end <= previous.end) {
         continue;
       }
-
-      filledRanges.push({
+      resolvedRanges.push({
         ...range,
         start: previous.end,
       });
@@ -152,13 +112,23 @@ function buildPhaseRanges(phaseIntervals, iterations, evaluations) {
     }
 
     if (range.end > range.start) {
-      filledRanges.push(range);
+      resolvedRanges.push(range);
     }
   }
 
-  return filledRanges;
+  return resolvedRanges;
 }
 
+function buildPhaseRanges(phaseIntervals) {
+  if (!phaseIntervals?.length) {
+    return [];
+  }
+
+  const sortedRanges = normalizePhaseRanges(phaseIntervals);
+  return resolveRangeGapsAndOverlaps(sortedRanges);
+}
+
+// Creates an empty point cache object for a given observer key, initializing lengths and points array.
 function createEmptyPointCache(observerKey) {
   return {
     observerKey,
@@ -167,7 +137,7 @@ function createEmptyPointCache(observerKey) {
     points: [],
   };
 }
-
+// Builds the chart points for a given observer.
 function buildChartPoints({
   effectiveObserver,
   evaluations,
@@ -175,6 +145,7 @@ function buildChartPoints({
   isStandardLineSeries,
   pointsCacheRef,
 }) {
+ // If the effective observer is not a standard line series, reset the points cache and return an empty array
   if (!isStandardLineSeries) {
     pointsCacheRef.current = createEmptyPointCache(effectiveObserver);
     return [];
@@ -193,7 +164,8 @@ function buildChartPoints({
     cache.lastEvalLen > evaluationLength ||
     cache.lastYLen > valueLength ||
     cache.points.length > sharedLength;
-
+  // If the observer has changed or if the lengths of evaluations or observer values have decreased,
+  // we need to rebuild the points from scratch to ensure consistency.
   if (shouldRebuild) {
     const rebuiltPoints = [];
 
@@ -215,7 +187,7 @@ function buildChartPoints({
 
     return rebuiltPoints;
   }
-
+  //else if the observer is the same and lengths have not decreased, we can append new points to the existing cache without rebuilding everything.
   const startIndex = cache.points.length;
 
   if (startIndex >= sharedLength) {
@@ -253,7 +225,6 @@ function RunChart({
   bestFitnessBoxPlot = null,
 }) {
   const evaluations = run?.evaluations ?? [];
-  const iterations = run?.iterations ?? [];
   const series = run?.series ?? {};
   const runtimeMs = Number.isFinite(run?.runtimeMs) ? run.runtimeMs : null;
 
@@ -349,8 +320,8 @@ function RunChart({
   }, [statsChartPoints, lineChartWindowRange]);
 
   const phaseRanges = useMemo(() => {
-    return buildPhaseRanges(series.fitnessPhaseIntervals ?? [], iterations, evaluations);
-  }, [series.fitnessPhaseIntervals, iterations, evaluations]);
+    return buildPhaseRanges(series.fitnessPhaseIntervals ?? []);
+  }, [series.fitnessPhaseIntervals]);
 
   const hasAnyData =
     displayKeys.length > 0 &&
