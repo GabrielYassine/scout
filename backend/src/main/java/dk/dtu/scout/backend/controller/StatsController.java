@@ -34,9 +34,6 @@ public class StatsController {
      */
     @PostMapping("/series-window")
     public ResponseEntity<SeriesWindowStatsResponse> seriesWindow(@RequestBody SeriesWindowStatsRequest request) {
-        if (request == null) {
-            throw new BadRequestException("Request body is required.");
-        }
         return ResponseEntity.ok(seriesStatsService.computeSeriesWindowStats(request));
     }
 }

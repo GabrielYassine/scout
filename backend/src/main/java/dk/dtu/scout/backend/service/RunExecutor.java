@@ -67,11 +67,7 @@ public class RunExecutor {
      * @return A list of RunGroupResponse objects.
      * @param <S> The solution type used in the search space and problems. This is a generic type that allows the method to work with any solution representation defined in the search space.
      */
-    public <S> List<RunGroupResponse> runBatch(
-        RunRequest request,
-        int logEveryIterations,
-        int wsUpdateEveryIterations
-    ) {
+    public <S> List<RunGroupResponse> runBatch(RunRequest request, int logEveryIterations, int wsUpdateEveryIterations) {
         checkCancelled();
 
         long baseSeed = request.seed(); // Will be altered for each runtime to ensure different random sequences

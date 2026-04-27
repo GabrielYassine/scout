@@ -69,12 +69,7 @@ public class RunComponentFactory {
      * @return the configured component
      * @param <T> the component interface type
      */
-    private <T extends ScoutComponent> T createAndConfigure(
-        ComponentRegistry<? extends T> registry,
-        String id,
-        String componentType,
-        Map<String, Object> params
-    ) {
+    private <T extends ScoutComponent> T createAndConfigure(ComponentRegistry<? extends T> registry, String id, String componentType, Map<String, Object> params) {
         if (id == null || id.isBlank()) {
             throw new BadRequestException(componentType + " must be specified");
         }

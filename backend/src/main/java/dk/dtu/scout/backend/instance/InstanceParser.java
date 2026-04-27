@@ -30,7 +30,7 @@ public final class InstanceParser {
 
         return switch (type.trim().toUpperCase()) {
             case "TSP" -> "TSP";
-            case "CVRP", "VRP" -> "VRP";
+            case "CVRP" -> "VRP";
             default -> throw new IllegalArgumentException("Unsupported instance TYPE: " + type);
         };
     }
@@ -67,14 +67,12 @@ public final class InstanceParser {
             }
 
             Map<String, Object> city = new LinkedHashMap<>();
-            city.put("id", cities.size()); // We follow 0-based indexing and not the original Ids
+            city.put("id", toInt(parts[0]));
             city.put("x", toDouble(parts[1]));
             city.put("y", toDouble(parts[2]));
             cities.add(city);
         }
 
-        // Reason we check again, is because this method can be called directly without calling detectInstanceType first.
-        requireType(headers, "TSP");
         requireSupportedEdgeWeightType(headers);
 
         int dimension = resolveDimension(headers, cities.size(), "NODE_COORD_SECTION contains " + cities.size() + " nodes");
@@ -141,7 +139,6 @@ public final class InstanceParser {
             }
         }
 
-        requireType(headers, "CVRP", "VRP");
         requireSupportedEdgeWeightType(headers);
 
         if (coords.isEmpty()) {
@@ -262,7 +259,6 @@ public final class InstanceParser {
 
             addHeaderIfPresent(headers, line);
         }
-
         return headers;
     }
 
@@ -271,23 +267,6 @@ public final class InstanceParser {
         if (parsed != null) {
             headers.put(parsed.key(), parsed.value());
         }
-    }
-
-    private static void requireType(Map<String, String> headers, String... expectedTypes) {
-        String type = headers.get("TYPE");
-        if (type == null || type.isBlank()) {
-            throw new IllegalArgumentException("Instance file must contain a TYPE field");
-        }
-
-        for (String expectedType : expectedTypes) {
-            if (expectedType.equalsIgnoreCase(type)) {
-                return;
-            }
-        }
-
-        throw new IllegalArgumentException(
-                "Expected TYPE: " + String.join(" or ", expectedTypes) + ", but got: " + type
-        );
     }
 
     private static void requireSupportedEdgeWeightType(Map<String, String> headers) {

@@ -2,8 +2,6 @@ package dk.dtu.scout.observer;
 
 import dk.dtu.scout.datatypes.TSPInstance;
 import dk.dtu.scout.datatypes.VRPInstance;
-import dk.dtu.scout.logging.RunLog;
-import dk.dtu.scout.logging.SeriesMode;
 
 import java.util.ArrayList;
 import java.util.HashMap;

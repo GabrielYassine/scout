@@ -106,8 +106,6 @@ public class RunOrchestratorService {
      * @param request the run request containing all necessary information to execute the run.
      */
     public void run(RunRequest request) {
-        runRequestValidator.validateRunRequest(request);
-
         int logEvery = runRequestValidator.resolveLogEveryIterations(request);
         int wsUpdateEvery = request.wsUpdateEveryIterations() > 0 ? request.wsUpdateEveryIterations() : logEvery;
 
