@@ -100,7 +100,9 @@ public class RunExecutor {
                     )
                 ));
             }
-            return collectFinishedRuns(futures).stream().sorted(Comparator.comparingInt(RunGroupResponse::runIndex)).toList();
+            List<RunGroupResponse> results = collectFinishedRuns(futures);
+            // We return it sorted since there is no guarantee that parallel runs will finish in the order they were started.
+            return results.stream().sorted(Comparator.comparingInt(RunGroupResponse::runIndex)).toList();
         } catch (RuntimeException ex) {
             cancelAll(futures);
             throw ex;

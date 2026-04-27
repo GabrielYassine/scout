@@ -15,5 +15,5 @@ public record RunResponse(
     List<Integer> evaluations,
     Map<String, SeriesResponse<?>> series,
     double runtimeMs,
-    int finalEvaluations
+    int totalEvaluations
 ) {}

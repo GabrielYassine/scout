@@ -71,6 +71,19 @@ public class SeriesStatsService {
         );
     }
 
+    /**
+     * Safety filter to ensure we only consider valid points within the specified x-range, and sort them by x-value.
+     * @param request the request containing the series points and x-range
+     * @return the filtered and sorted list of points that fall within the x-range
+     */
+    private List<SeriesPoint> filterPointsInRange(SeriesWindowStatsRequest request) {
+        return request.points().stream()
+            .filter(point -> point != null && Double.isFinite(point.x()) && Double.isFinite(point.y()))
+            .filter(point -> point.x() >= request.xMin() && point.x() <= request.xMax())
+            .sorted(Comparator.comparingDouble(SeriesPoint::x))
+            .toList();
+    }
+
     private void validateRequest(SeriesWindowStatsRequest request) {
         if (request == null) {
             throw new BadRequestException("Request body is required.");
@@ -87,18 +100,5 @@ public class SeriesStatsService {
         if (request.xMin() > request.xMax()) {
             throw new BadRequestException("xMin must be less than or equal to xMax.");
         }
-    }
-
-    /**
-     * Safety filter to ensure we only consider valid points within the specified x-range, and sort them by x-value.
-     * @param request the request containing the series points and x-range
-     * @return the filtered and sorted list of points that fall within the x-range
-     */
-    private List<SeriesPoint> filterPointsInRange(SeriesWindowStatsRequest request) {
-        return request.points().stream()
-            .filter(point -> point != null && Double.isFinite(point.x()) && Double.isFinite(point.y()))
-            .filter(point -> point.x() >= request.xMin() && point.x() <= request.xMax())
-            .sorted(Comparator.comparingDouble(SeriesPoint::x))
-            .toList();
     }
 }

@@ -19,7 +19,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Provides statistical analysis of run results for summary views and runtime studies.
+ * Provides statistical analysis of completed run results.
+ * Used for normal run summaries and runtime-study points.
  * @author Ahmed
  */
 @Service
@@ -30,8 +31,8 @@ public class RunStatisticsService {
 
     /**
      * Called after a batch of runs has completed, to compute statistics for the batch summary view.
-     * @param batches the data from a whole run, containing runresponses from all runtimes and problems, grouped by batch.
-     * @return a BatchSummaryResponse containing the computed statistics for each problem, to be used in the batch summary view.
+     * @param batches completed run groups from RunExecutor
+     * @return summary data for average curves, best-fitness boxplots, and average runtimes
      */
     public BatchSummaryResponse calculateSummary(List<RunGroupResponse> batches) {
         Map<String, List<RunResponse>> runsByProblem = groupRunsByProblem(batches);
@@ -43,36 +44,16 @@ public class RunStatisticsService {
         );
     }
 
-    public RuntimeStudyPointResponse toRuntimeStudyPoint(int problemSize, List<RunGroupResponse> batches) {
-        List<Double> finalEvaluations = new ArrayList<>();
-
-        for (RunGroupResponse group : batches) {
-            for (RunResponse run : group.runs()) {
-                finalEvaluations.add((double) run.finalEvaluations());
-            }
-        }
-
-        finalEvaluations.sort(Double::compareTo);
-
-        return new RuntimeStudyPointResponse(
-                problemSize,
-                StatisticsMath.mean(finalEvaluations),
-                StatisticsMath.fiveNumberSummary(finalEvaluations)
-        );
-    }
-
+    /**
+     * Groups run results by problem ID across all runtime groups.
+     * This is needed because RunExecutor returns results grouped by runtime, while summaries are computed per problem.
+     * @param batches completed run groups from RunExecutor
+     * @return map from problem ID to all runs for that problem
+     */
     private Map<String, List<RunResponse>> groupRunsByProblem(List<RunGroupResponse> batches) {
         Map<String, List<RunResponse>> runsByProblem = new LinkedHashMap<>();
 
-        if (batches == null) {
-            return runsByProblem;
-        }
-
         for (RunGroupResponse batch : batches) {
-            if (batch == null || batch.runs() == null) {
-                continue;
-            }
-
             for (RunResponse run : batch.runs()) {
                 runsByProblem.computeIfAbsent(run.problemId(), key -> new ArrayList<>()).add(run);
             }
@@ -81,6 +62,36 @@ public class RunStatisticsService {
         return runsByProblem;
     }
 
+    /**
+     * Computes one runtime-study point for a specific problem size.
+     * The point is based on the distribution of final evaluations across repeated runs.
+     * @param problemSize the problem size represented by this point
+     * @param batches completed run groups for this problem size
+     * @return runtime-study point containing mean and five-number summary of final evaluations
+     */
+    public RuntimeStudyPointResponse toRuntimeStudyPoint(int problemSize, List<RunGroupResponse> batches) {
+        List<Double> totalEvaluations = new ArrayList<>();
+
+        for (RunGroupResponse group : batches) {
+            for (RunResponse run : group.runs()) {
+                totalEvaluations.add((double) run.totalEvaluations());
+            }
+        }
+
+        totalEvaluations.sort(Double::compareTo);
+
+        return new RuntimeStudyPointResponse(
+            problemSize,
+            StatisticsMath.mean(totalEvaluations),
+            StatisticsMath.fiveNumberSummary(totalEvaluations)
+        );
+    }
+
+    /**
+     * Computes averaged fitness curves for each problem.
+     * @param runsByProblem map from problem ID to the runs for that problem
+     * @return map from problem ID to the averaged run response
+     */
     private Map<String, AverageRunResponse> computeAverageByProblem(Map<String, List<RunResponse>> runsByProblem) {
         Map<String, AverageRunResponse> result = new LinkedHashMap<>();
 
@@ -91,7 +102,14 @@ public class RunStatisticsService {
         return result;
     }
 
-    private Map<String, SeriesBoxPlotResponse> computeBestFitnessBoxPlotsByProblem(Map<String, List<RunResponse>> runsByProblem) {
+    /**
+     * Computes best-fitness boxplot data for each problem.
+     * @param runsByProblem map from problem ID to the runs for that problem
+     * @return map from problem ID to sampled best-fitness boxplots
+     */
+    private Map<String, SeriesBoxPlotResponse> computeBestFitnessBoxPlotsByProblem(
+            Map<String, List<RunResponse>> runsByProblem
+    ) {
         Map<String, SeriesBoxPlotResponse> result = new LinkedHashMap<>();
 
         for (Map.Entry<String, List<RunResponse>> entry : runsByProblem.entrySet()) {
@@ -101,22 +119,30 @@ public class RunStatisticsService {
         return result;
     }
 
+    /**
+     * Computes average runtime in milliseconds for each problem.
+     * @param runsByProblem map from problem ID to the runs for that problem
+     * @return map from problem ID to average runtime in milliseconds
+     */
     private Map<String, Double> computeAverageRuntimeByProblem(Map<String, List<RunResponse>> runsByProblem) {
         Map<String, Double> result = new LinkedHashMap<>();
 
         for (Map.Entry<String, List<RunResponse>> entry : runsByProblem.entrySet()) {
-            List<Double> runtimes = entry.getValue().stream()
-                    .map(RunResponse::runtimeMs)
-                    .toList();
-
+            List<Double> runtimes = entry.getValue().stream().map(RunResponse::runtimeMs).toList();
             result.put(entry.getKey(), StatisticsMath.mean(runtimes));
         }
 
         return result;
     }
 
+    /**
+     * Computes one averaged run from repeated runs of the same problem.
+     * A reference run is used to provide the evaluation axis for averaging.
+     * @param runs repeated runs for the same problem
+     * @return averaged run response for the problem
+     */
     private AverageRunResponse computeAverageRun(List<RunResponse> runs) {
-        if (runs == null || runs.isEmpty()) {
+        if (runs.isEmpty()) {
             return ViewMapper.toAverageRunResponse(List.of(), List.of(), Map.of());
         }
 
@@ -129,20 +155,23 @@ public class RunStatisticsService {
         return ViewMapper.toAverageRunResponse(referenceIterations, referenceEvaluations, averageSeries);
     }
 
+    /**
+     * Computes average values for whitelisted numeric series at the reference evaluations.
+     * @param runs repeated runs for the same problem
+     * @param referenceEvaluations evaluation axis used for alignment
+     * @return map from series name to averaged values
+     */
     private Map<String, List<Double>> computeAverageSeries(List<RunResponse> runs, List<Integer> referenceEvaluations) {
         Map<String, List<Double>> result = new LinkedHashMap<>();
 
-        if (runs == null || runs.isEmpty() || referenceEvaluations == null || referenceEvaluations.isEmpty()) {
+        if (runs.isEmpty() || referenceEvaluations == null || referenceEvaluations.isEmpty()) {
             return result;
         }
 
         Map<String, List<AlignedSeries>> seriesByName = collectAverageableSeries(runs);
 
         for (Map.Entry<String, List<AlignedSeries>> entry : seriesByName.entrySet()) {
-            List<Double> averagedValues = averageSeriesAtReferenceEvaluations(
-                    entry.getValue(),
-                    referenceEvaluations
-            );
+            List<Double> averagedValues = averageSeriesAtReferenceEvaluations(entry.getValue(), referenceEvaluations);
 
             if (!averagedValues.isEmpty()) {
                 result.put(entry.getKey(), averagedValues);
@@ -152,6 +181,12 @@ public class RunStatisticsService {
         return result;
     }
 
+    /**
+     * Extracts whitelisted numeric series from the runs.
+     * Non-numeric series are ignored because they cannot be averaged.
+     * @param runs repeated runs for the same problem
+     * @return map from series name to aligned numeric series
+     */
     private Map<String, List<AlignedSeries>> collectAverageableSeries(List<RunResponse> runs) {
         Map<String, List<AlignedSeries>> result = new LinkedHashMap<>();
 
@@ -175,7 +210,17 @@ public class RunStatisticsService {
         return result;
     }
 
-    private List<Double> averageSeriesAtReferenceEvaluations(List<AlignedSeries> alignedRuns, List<Integer> referenceEvaluations) {
+    /**
+     * Averages aligned series values at each reference evaluation.
+     * If a run does not have a value exactly at the target evaluation, the most recent previous value is used.
+     * @param alignedRuns aligned numeric series from repeated runs
+     * @param referenceEvaluations evaluation axis used for averaging
+     * @return averaged values at the reference evaluations
+     */
+    private List<Double> averageSeriesAtReferenceEvaluations(
+            List<AlignedSeries> alignedRuns,
+            List<Integer> referenceEvaluations
+    ) {
         List<Double> averaged = new ArrayList<>(referenceEvaluations.size());
 
         for (Integer targetEvaluation : referenceEvaluations) {
@@ -196,8 +241,13 @@ public class RunStatisticsService {
         return averaged;
     }
 
+    /**
+     * Computes sampled boxplots for the bestFitness series across repeated runs.
+     * @param runs repeated runs for the same problem
+     * @return sampled best-fitness boxplot response
+     */
     private SeriesBoxPlotResponse computeBestFitnessBoxPlot(List<RunResponse> runs) {
-        if (runs == null || runs.isEmpty()) {
+        if (runs.isEmpty()) {
             return new SeriesBoxPlotResponse(List.of(), List.of());
         }
 
@@ -217,6 +267,11 @@ public class RunStatisticsService {
         return sampleBestFitnessBoxPlots(referenceEvaluations, bestFitnessRuns);
     }
 
+    /**
+     * Extracts the bestFitness series from all runs where it is available.
+     * @param runs repeated runs for the same problem
+     * @return aligned bestFitness series
+     */
     private List<AlignedSeries> extractBestFitnessSeries(List<RunResponse> runs) {
         List<AlignedSeries> result = new ArrayList<>();
 
@@ -230,7 +285,16 @@ public class RunStatisticsService {
         return result;
     }
 
-    private SeriesBoxPlotResponse sampleBestFitnessBoxPlots(List<Integer> referenceEvaluations, List<AlignedSeries> bestFitnessRuns) {
+    /**
+     * Samples evaluation positions and computes five-number summaries for bestFitness.
+     * @param referenceEvaluations evaluation axis used for sampling
+     * @param bestFitnessRuns aligned bestFitness series from repeated runs
+     * @return sampled boxplot response
+     */
+    private SeriesBoxPlotResponse sampleBestFitnessBoxPlots(
+            List<Integer> referenceEvaluations,
+            List<AlignedSeries> bestFitnessRuns
+    ) {
         int step = Math.max(1, (int) Math.ceil((double) referenceEvaluations.size() / MAX_BOX_PLOTS));
 
         List<Integer> sampledEvaluations = new ArrayList<>();
@@ -253,6 +317,12 @@ public class RunStatisticsService {
         return new SeriesBoxPlotResponse(sampledEvaluations, boxplots);
     }
 
+    /**
+     * Collects values from aligned runs at a single target evaluation.
+     * @param alignedRuns aligned numeric series from repeated runs
+     * @param targetEvaluation evaluation at which to collect values
+     * @return values at the target evaluation
+     */
     private List<Double> valuesAtEvaluation(List<AlignedSeries> alignedRuns, int targetEvaluation) {
         List<Double> values = new ArrayList<>();
 
@@ -266,10 +336,21 @@ public class RunStatisticsService {
         return values;
     }
 
+    /**
+     * Selects the run with the longest evaluation axis as the reference run.
+     * @param runs repeated runs for the same problem
+     * @return run with the most logged evaluation points
+     */
     private RunResponse findReferenceRun(List<RunResponse> runs) {
         return runs.stream().max(Comparator.comparingInt(run -> run.evaluations() != null ? run.evaluations().size() : 0)).orElse(runs.getFirst());
     }
 
+    /**
+     * Extracts a numeric series and aligns it with the run's evaluation list.
+     * @param run run response containing logged series
+     * @param seriesName name of the series to extract
+     * @return aligned numeric series, or null if the series is missing or non-numeric
+     */
     private AlignedSeries extractAlignedSeries(RunResponse run, String seriesName) {
         if (run == null || run.series() == null || run.evaluations() == null || run.evaluations().isEmpty()) {
             return null;
@@ -291,11 +372,16 @@ public class RunStatisticsService {
         }
 
         return new AlignedSeries(
-                new ArrayList<>(run.evaluations().subList(0, usableLength)),
-                new ArrayList<>(numericValues.subList(0, usableLength))
+            new ArrayList<>(run.evaluations().subList(0, usableLength)),
+            new ArrayList<>(numericValues.subList(0, usableLength))
         );
     }
 
+    /**
+     * Converts raw series values to doubles.
+     * @param rawValues raw values from a series response
+     * @return double values, or an empty list if any value is non-numeric
+     */
     private List<Double> toDoubleList(List<?> rawValues) {
         List<Double> result = new ArrayList<>();
 
@@ -314,6 +400,14 @@ public class RunStatisticsService {
         return result;
     }
 
+    /**
+     * Returns the value at the requested evaluation.
+     * If the exact evaluation does not exist, the latest previous value is used.
+     * @param evaluations evaluation axis for the series
+     * @param values numeric values aligned with the evaluations
+     * @param targetEvaluation evaluation to look up
+     * @return value at the target evaluation, or null if no value is available
+     */
     private Double valueAtEvaluation(List<Integer> evaluations, List<Double> values, int targetEvaluation) {
         if (evaluations == null || values == null || evaluations.isEmpty() || values.isEmpty()) {
             return null;
@@ -338,6 +432,11 @@ public class RunStatisticsService {
         return values != null ? new ArrayList<>(values) : List.of();
     }
 
+    /**
+     * Numeric series paired with its evaluation axis.
+     * @param evaluations evaluation axis for the series
+     * @param values numeric values aligned with the evaluations
+     */
     private record AlignedSeries(List<Integer> evaluations, List<Double> values) {
     }
 }

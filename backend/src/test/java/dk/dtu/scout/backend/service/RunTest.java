@@ -103,7 +103,7 @@ class RunTest {
         List<Integer> finalEvals = batches.stream()
             .flatMap(batch -> batch.runs().stream())
             .filter(run -> problemId.equals(run.problemId()))
-            .map(RunResponse::finalEvaluations)
+            .map(RunResponse::totalEvaluations)
             .sorted()
             .toList();
 
@@ -273,7 +273,7 @@ class RunTest {
             .findFirst()
             .orElseThrow();
 
-        assertTrue(vrpRun.finalEvaluations() > 0);
+        assertTrue(vrpRun.totalEvaluations() > 0);
         assertTrue(vrpRun.series().containsKey("tspCities"));
         assertTrue(vrpRun.series().containsKey("tspTour"));
     }
