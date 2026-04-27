@@ -1,7 +1,9 @@
 package dk.dtu.scout.backend.websocket;
 
-import dk.dtu.scout.backend.dto.RunRequest;
-import dk.dtu.scout.backend.dto.RuntimeStudyRequest;
+import dk.dtu.scout.backend.dto.request.RunRequest;
+import dk.dtu.scout.backend.dto.request.RuntimeStudyRequest;
+import dk.dtu.scout.backend.dto.ws.RunWsPayload;
+import dk.dtu.scout.backend.dto.ws.RuntimeStudyWsPayload;
 import dk.dtu.scout.backend.service.RunOrchestratorService;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;

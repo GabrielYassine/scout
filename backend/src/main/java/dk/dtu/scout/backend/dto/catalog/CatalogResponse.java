@@ -2,6 +2,10 @@ package dk.dtu.scout.backend.dto.catalog;
 
 import java.util.List;
 
+/**
+ * Response containing the available configurable SCOUT components.
+ * @author s235257 & Ahmed
+ */
 public record CatalogResponse(
     List<ComponentDef> searchSpaces,
     List<ComponentDef> problems,

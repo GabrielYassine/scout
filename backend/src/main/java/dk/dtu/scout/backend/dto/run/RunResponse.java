@@ -1,12 +1,18 @@
 package dk.dtu.scout.backend.dto.run;
 
-import dk.dtu.scout.backend.dto.series.SeriesResponse;
-
 import java.util.List;
 import java.util.Map;
 
 /**
  * Result of a single run for a single problem.
+ * @param searchSpaceId ID of the search space used
+ * @param problemId ID of the problem solved
+ * @param iterations logged iteration values
+ * @param evaluations logged evaluation values
+ * @param series logged observer series
+ * @param runtimeMs runtime in milliseconds
+ * @param totalEvaluations total number of evaluations performed when the run ended
+ * @author s235257 & Ahmed
  */
 public record RunResponse(
     String searchSpaceId,

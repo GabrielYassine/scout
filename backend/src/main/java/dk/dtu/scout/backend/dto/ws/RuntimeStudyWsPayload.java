@@ -1,6 +1,6 @@
-package dk.dtu.scout.backend.websocket;
+package dk.dtu.scout.backend.dto.ws;
 
-import dk.dtu.scout.backend.dto.study.RuntimeStudyPointResponse;
+import dk.dtu.scout.backend.dto.run.RuntimeStudyPointResponse;
 
 /**
  * WebSocket payload used for runtime study updates.

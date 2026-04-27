@@ -1,6 +1,6 @@
 package dk.dtu.scout.backend.service;
 
-import dk.dtu.scout.backend.dto.RunRequest;
+import dk.dtu.scout.backend.dto.request.RunRequest;
 import dk.dtu.scout.backend.dto.run.RunGroupResponse;
 import dk.dtu.scout.backend.dto.run.RunResponse;
 import dk.dtu.scout.backend.util.ViewMapper;

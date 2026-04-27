@@ -1,7 +1,7 @@
 package dk.dtu.scout.backend.service;
 
-import dk.dtu.scout.backend.dto.RunRequest;
-import dk.dtu.scout.backend.dto.RuntimeStudyRequest;
+import dk.dtu.scout.backend.dto.request.RunRequest;
+import dk.dtu.scout.backend.dto.request.RuntimeStudyRequest;
 import dk.dtu.scout.backend.exception.BadRequestException;
 import dk.dtu.scout.backend.instance.InstanceMapper;
 import dk.dtu.scout.backend.instance.InstanceValidator;

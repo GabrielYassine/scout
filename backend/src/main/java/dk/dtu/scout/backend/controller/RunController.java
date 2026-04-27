@@ -1,9 +1,9 @@
 package dk.dtu.scout.backend.controller;
 
-import dk.dtu.scout.backend.dto.PrepareRunRequest;
-import dk.dtu.scout.backend.dto.PrepareRunResponse;
-import dk.dtu.scout.backend.dto.RunRequest;
-import dk.dtu.scout.backend.dto.RuntimeStudyRequest;
+import dk.dtu.scout.backend.dto.request.PrepareRunRequest;
+import dk.dtu.scout.backend.dto.request.PrepareRunResponse;
+import dk.dtu.scout.backend.dto.request.RunRequest;
+import dk.dtu.scout.backend.dto.request.RuntimeStudyRequest;
 import dk.dtu.scout.backend.service.RunOrchestratorService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

@@ -1,7 +1,7 @@
 package dk.dtu.scout.backend.util;
 
 import dk.dtu.scout.ScoutComponent;
-import dk.dtu.scout.backend.dto.RunRequest;
+import dk.dtu.scout.backend.dto.request.RunRequest;
 import dk.dtu.scout.backend.dto.catalog.CatalogResponse;
 import dk.dtu.scout.backend.dto.catalog.ComponentDef;
 import dk.dtu.scout.backend.dto.catalog.ParamDef;
@@ -9,7 +9,7 @@ import dk.dtu.scout.backend.dto.error.ErrorResponse;
 import dk.dtu.scout.backend.dto.run.AverageRunResponse;
 import dk.dtu.scout.backend.dto.run.RunGroupResponse;
 import dk.dtu.scout.backend.dto.run.RunResponse;
-import dk.dtu.scout.backend.dto.series.SeriesResponse;
+import dk.dtu.scout.backend.dto.run.SeriesResponse;
 import dk.dtu.scout.dto.Parameter;
 import dk.dtu.scout.logging.LoggedSeries;
 

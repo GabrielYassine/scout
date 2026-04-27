@@ -1,13 +1,13 @@
 package dk.dtu.scout.backend.service;
 
-import dk.dtu.scout.backend.dto.PrepareRunResponse;
-import dk.dtu.scout.backend.dto.RunRequest;
-import dk.dtu.scout.backend.dto.RuntimeStudyRequest;
+import dk.dtu.scout.backend.dto.request.PrepareRunResponse;
+import dk.dtu.scout.backend.dto.request.RunRequest;
+import dk.dtu.scout.backend.dto.request.RuntimeStudyRequest;
 import dk.dtu.scout.backend.dto.run.BatchSummaryResponse;
 import dk.dtu.scout.backend.dto.run.RunGroupResponse;
-import dk.dtu.scout.backend.dto.study.RuntimeStudyPointResponse;
-import dk.dtu.scout.backend.websocket.RunWsPayload;
-import dk.dtu.scout.backend.websocket.RuntimeStudyWsPayload;
+import dk.dtu.scout.backend.dto.run.RuntimeStudyPointResponse;
+import dk.dtu.scout.backend.dto.ws.RunWsPayload;
+import dk.dtu.scout.backend.dto.ws.RuntimeStudyWsPayload;
 import dk.dtu.scout.backend.websocket.WsSender;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;

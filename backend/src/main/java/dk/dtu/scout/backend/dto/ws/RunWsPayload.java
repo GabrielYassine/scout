@@ -1,6 +1,7 @@
-package dk.dtu.scout.backend.websocket;
+package dk.dtu.scout.backend.dto.ws;
 
 import dk.dtu.scout.backend.dto.run.BatchSummaryResponse;
+import dk.dtu.scout.backend.websocket.MergeOp;
 
 import java.util.List;
 import java.util.Map;

@@ -3,7 +3,8 @@ package dk.dtu.scout.backend.dto.run;
 import java.util.Map;
 
 /**
- * Summary statistics aggregated across a batch of runs.
+ * DTO for summarizing the results of a batch of runs across multiple problems.
+ * @author Ahmed
  */
 public record BatchSummaryResponse(
     Map<String, AverageRunResponse> averageByProblem,
