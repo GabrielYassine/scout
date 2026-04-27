@@ -19,7 +19,7 @@ export default function PuzzlePiece({
   puzzleData = null,
 }) {
   const isPlaced = mode === "placed";
-
+  // Use a unique drag id for placed pieces so they do not clash with selector pieces
   const dragId = isPlaced ? `dropped-${index}-${type}-${id}` : id;
 
   const dragData = isPlaced
@@ -34,7 +34,7 @@ export default function PuzzlePiece({
         type,
         disabledReason,
       };
-
+  // Set up the draggable behavior using useDraggable from dnd-kit
   const { setNodeRef, listeners, attributes, isDragging } = useDraggable({
     id: dragId,
     data: dragData,
@@ -46,7 +46,7 @@ export default function PuzzlePiece({
   const effectiveRenderKey = isPlaced ? renderKey : "0000";
   const effectiveRotation = isPlaced ? rotation : 0;
   const effectiveMirrorX = isPlaced ? mirrorX : false;
-
+  // Compute the CSS transform for rotation and mirroring based on the piece's state
   const transform = `${effectiveMirrorX ? "scaleX(-1) " : ""}rotate(${effectiveRotation}deg)`;
 
   const handleMouseEnter = () => {

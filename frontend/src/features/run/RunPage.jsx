@@ -1,8 +1,8 @@
 /**
-* usePlayback is a custom hook for chart animation.
-*  It controls playback speed, gradually reveals more data points,
-*  and provides a reset function to start the playback over.
-*/
+ * RunPage shows run results or runtime study results.
+ * It restores saved state, listens for live websocket updates,
+ * controls playback, and renders the correct charts and controls.
+ */
 
 import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -23,13 +23,18 @@ import { useRuntimeStudyWebSocket } from "@/features/run/hooks/useRuntimeStudyWe
 
 
 const INITIAL_SPEED = 50;
-
+/**
+*This function determines the effective state of the RunPage by considering both the incoming location state and any saved run state from localStorage.
+*It prioritizes live execution data when available and ensures that the page mode, run/study IDs, requests,
+*and other relevant information are correctly resolved for rendering the appropriate charts and controls.
+ */
 function resolveRunPageState(locationState, savedRun) {
   const incomingRunId =
     locationState.runId ?? locationState.runRequest?.runId ?? null;
   const incomingStudyId =
     locationState.studyId ?? locationState.runtimeStudyRequest?.studyId ?? null;
 
+// Determine if the saved run matches the incoming run or study, and if the incoming state is still loading
   const savedMatchesIncomingRun =
     savedRun?.pageMode === "run" &&
     savedRun?.loading === false &&
@@ -42,9 +47,13 @@ function resolveRunPageState(locationState, savedRun) {
     !!incomingStudyId &&
     savedRun?.studyId === incomingStudyId;
 
+
+// if the incoming state is loading but matches the saved run/study, we should ignore the incoming loading state
+// and use the saved state instead to avoid showing a loading state unnecessarily.
   const shouldIgnoreIncomingState =
     locationState.loading === true &&
     (savedMatchesIncomingRun || savedMatchesIncomingStudy);
+
 
   const hasIncomingExecution =
     !shouldIgnoreIncomingState &&
@@ -70,8 +79,7 @@ function resolveRunPageState(locationState, savedRun) {
     runId,
     studyId,
     runRequest,
-    runtimeStudyRequest:
-      locationState.runtimeStudyRequest ?? restoredRun?.runtimeStudyRequest ?? null,
+    runtimeStudyRequest: locationState.runtimeStudyRequest ?? restoredRun?.runtimeStudyRequest ?? null,
     puzzleConfig: locationState.puzzleConfig ?? restoredRun?.puzzleConfig ?? [],
     params: locationState.params ?? restoredRun?.params ?? [],
     tspInstance: locationState.tspInstance ?? restoredRun?.tspInstance ?? null,
@@ -86,12 +94,11 @@ function resolveRunPageState(locationState, savedRun) {
     liveExecution: hasIncomingExecution,
   };
 }
-
+// Converts the backend average-by-problem summary into run-like objects, so they can be rendered in the same charts as regular runs.
 function buildAverageRuns(averageByProblem, averageRunTimeByProblem, searchSpaceId) {
   return Object.entries(averageByProblem).map(([problemId, avg]) => ({
     problemId,
     searchSpaceId,
-    iterations: avg.iterations ?? [],
     evaluations: avg.evaluations ?? [],
     series: avg.series ?? {},
     runtimeMs: averageRunTimeByProblem[problemId] ?? null,
@@ -114,6 +121,7 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
   const [savedRun, setSavedRun] = useLocalStorageState("scout:lastRun", null);
 
   const locationState = location.state ?? {};
+  // Resolve the effective state for the RunPage by considering both the incoming location state and any saved run state.
   const resolvedState = useMemo(
     () => resolveRunPageState(locationState, savedRun),
     [locationState, savedRun]
@@ -142,7 +150,7 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
   const [loading, setLoading] = useState(!!initialLoading);
   const [error, setError] = useState(initialError ?? null);
   const [layoutMode, setLayoutMode] = useState("stack");
-
+// Sort batches by runIndex to ensure consistent order in the UI.
   const batches = useMemo(
     () => [...(batch?.batches ?? [])].sort((a, b) => a.runIndex - b.runIndex),
     [batch]
@@ -163,30 +171,32 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
     [averageByProblem, averageRunTimeByProblem,batch?.searchSpaceId]
   );
 
+
   const [selectedRunKey, setSelectedRunKey] = useState(() => {
     if (restoredRun?.selectedRunKey != null) {
       return restoredRun.selectedRunKey;
     }
-    return Object.keys(averageByProblem).length > 0 ? "average" : null;
+    return null;
   });
 
-  function handleSelectedRunChange(value) {
-    setSelectedRunKey(value);
-    setSavedRun((prev) =>
-      prev
-        ? {
-            ...prev,
-            selectedRunKey: value,
-          }
-        : prev
-    );
-  }
 
   const effectiveSelectedRunKey = normalizeSelectedRunKey(
     selectedRunKey,
     averageRuns,
     batches
   );
+
+  function handleSelectedRunChange(value) {
+      setSelectedRunKey(value);
+      setSavedRun((prev) =>
+        prev
+          ? {
+              ...prev,
+              selectedRunKey: value,
+            }
+          : prev
+      );
+    }
 
   const selectedBatch =
     effectiveSelectedRunKey === "average"

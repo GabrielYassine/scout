@@ -20,20 +20,22 @@ function createEmptyBatch(runId = null) {
   };
 }
 
+// Merges incoming list data based on the specified operation.
 function mergeList(prevList, operation, incomingSingle, incomingList) {
   const prev = Array.isArray(prevList) ? prevList : [];
 
   switch (operation) {
+  // REPLACE: Incoming data replaces existing data.
     case "REPLACE":
       if (Array.isArray(incomingList)) return [...incomingList];
       if (incomingSingle != null) return [incomingSingle];
       return [];
-
+    // APPEND: Incoming data is appended to existing data.
     case "APPEND":
       if (Array.isArray(incomingList)) return [...prev, ...incomingList];
       if (incomingSingle != null) return [...prev, incomingSingle];
       return prev;
-
+    // REPLACE_LAST: Incoming data replaces only the last element of existing data.
     case "REPLACE_LAST":
       if (Array.isArray(incomingList)) return [...incomingList];
       if (incomingSingle == null) return prev;
@@ -45,10 +47,10 @@ function mergeList(prevList, operation, incomingSingle, incomingList) {
       return prev;
   }
 }
-
+// Merges series data by applying the specified merge operation for each series key.
 function mergeSeries(existingSeries, seriesDelta, seriesMerge) {
   const nextSeries = { ...(existingSeries ?? {}) };
-
+// Apply each delta operation to the corresponding series key.
   for (const [key, value] of Object.entries(seriesDelta ?? {})) {
     const operation = seriesMerge?.[key] ?? "APPEND";
     nextSeries[key] = mergeList(
@@ -61,43 +63,30 @@ function mergeSeries(existingSeries, seriesDelta, seriesMerge) {
 
   return nextSeries;
 }
-
-function trimAppendedSeriesToXAxisLength(run, seriesMerge) {
-  const xLength = Math.min(
-    run.evaluations.length,
-    run.iterations.length || run.evaluations.length
-  );
-
-  for (const [key, operation] of Object.entries(seriesMerge ?? {})) {
-    if (operation !== "APPEND") continue;
-
-    const values = run.series?.[key];
-    if (Array.isArray(values) && values.length > xLength) {
-      run.series[key] = values.slice(0, xLength);
-    }
-  }
-}
-
+// Merges incoming progress updates into the existing batch data,
 function mergeProgress(prevBatch, update) {
   const base = prevBatch ?? createEmptyBatch(update.runId);
   const nextBatches = [...(base.batches ?? [])];
-
+  // We first look for the batch that matches the incoming update's run index.
   const batchIndex = nextBatches.findIndex((batch) => batch.runIndex === update.runIndex);
+
+  // Reuse the existing batch if found, otherwise create a new one.
   const nextBatch =
     batchIndex >= 0
       ? { ...nextBatches[batchIndex] }
       : { runIndex: update.runIndex, seed: update.seed, runs: [] };
 
   const nextRuns = [...(nextBatch.runs ?? [])];
+  // Find the run for the specific problem being updated.
   const existingRunIndex = nextRuns.findIndex((run) => run.problemId === update.problemId);
-
+  // Reuse the existing run if it already exists.
+  // Otherwise create a fresh run object.
   const nextRun =
     existingRunIndex >= 0
       ? { ...nextRuns[existingRunIndex] }
       : {
           problemId: update.problemId,
           searchSpaceId: update.searchSpaceId,
-          iterations: [],
           evaluations: [],
           series: {},
           runtimeMs: null,
@@ -109,22 +98,15 @@ function mergeProgress(prevBatch, update) {
     nextRun.searchSpaceId = update.searchSpaceId;
   }
 
-  nextRun.iterations = mergeList(
-    nextRun.iterations,
-    update.iterationsMerge,
-    update.iteration,
-    update.iterations
-  );
-
+  // Merge evaluation data into the run.
   nextRun.evaluations = mergeList(
     nextRun.evaluations,
     update.evaluationsMerge,
     update.evaluation,
     update.evaluations
   );
-
+  // Merge all incoming series updates (fitness, bestFitness, etc.).
   nextRun.series = mergeSeries(nextRun.series, update.seriesDelta, update.seriesMerge);
-  trimAppendedSeriesToXAxisLength(nextRun, update.seriesMerge);
 
   if (typeof update.runtimeMs === "number" && Number.isFinite(update.runtimeMs)) {
     nextRun.runtimeMs = update.runtimeMs;
@@ -153,7 +135,7 @@ function createWebSocketUrl() {
   const protocol = window.location.protocol === "https:" ? "wss" : "ws";
   return `${protocol}://${window.location.host}/ws`;
 }
-
+// Safely parses incoming WebSocket messages, returning null for invalid JSON.
 function parseSocketMessage(rawMessage) {
   try {
     return JSON.parse(rawMessage.body);
@@ -202,7 +184,7 @@ export function useRunWebSocket({
       brokerURL: createWebSocketUrl(),
       reconnectDelay: 0,
     });
-
+    // Processes all progress updates that have been waiting in the queue.
     const flushProgressQueue = () => {
       if (!enabled || readyProgressQueueRef.current.length === 0) return;
 
@@ -210,7 +192,7 @@ export function useRunWebSocket({
       readyProgressQueueRef.current = [];
 
       let nextBatch = latestBatchRef.current ?? null;
-
+      // We merge all queued packets in the correct order to produce the latest batch state.
       for (const packet of queuedPackets) {
         if (!packet?.runId) continue;
         if (activeRunIdRef.current && packet.runId !== activeRunIdRef.current) continue;
@@ -221,7 +203,7 @@ export function useRunWebSocket({
       setLoading(false);
       setBatch(nextBatch);
     };
-
+   // Sends the "ready" signal to the backend to indicate that the client is prepared to receive updates.
     const handleRunConnected = () => {
       if (startSentRef.current || !runRequest) return;
 
@@ -231,7 +213,8 @@ export function useRunWebSocket({
         body: JSON.stringify(runRequest),
       });
     };
-
+    // Handles the completion of the run by flushing any remaining progress updates,
+    // updating the batch with final summary data, and saving the run state.
     const handleRunFinished = (message) => {
       flushProgressQueue();
 
@@ -263,14 +246,15 @@ export function useRunWebSocket({
 
       client.deactivate();
     };
-
+    // Handles run failure by flushing any remaining progress updates, setting an error message, and closing the WebSocket connection.
     const handleRunFailed = (message) => {
       flushProgressQueue();
       setLoading(false);
       setError(message.message || "Run failed");
       client.deactivate();
     };
-
+    // Main handler for incoming WebSocket messages.
+    // It parses the message, checks if it pertains to the active run, and routes it to the appropriate handler based on the message type.
     const handleSocketMessage = (rawMessage) => {
       const message = parseSocketMessage(rawMessage);
       if (!message?.runId) return;
@@ -311,7 +295,7 @@ export function useRunWebSocket({
         body: JSON.stringify({ runId }),
       });
     };
-
+    // We set up a timer to flush incoming progress updates at a regular interval.
     flushTimerRef.current = setInterval(flushProgressQueue, FLUSH_INTERVAL_MS);
     client.activate();
 

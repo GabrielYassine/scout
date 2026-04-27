@@ -20,7 +20,7 @@ export default function RunConfigPuzzle({ onPieceHover, onPieceLeave }) {
     renameConfig,
     placedPieces,
   } = usePuzzleConfig();
-
+ // Set up the droppable area for placing puzzle pieces.
   const { setNodeRef, isOver } = useDroppable({
     id: "shared-drop-area",
     data: { acceptsAll: true },

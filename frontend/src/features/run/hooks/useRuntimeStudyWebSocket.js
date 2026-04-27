@@ -13,12 +13,14 @@ function createWebSocketUrl() {
   return `${protocol}://${window.location.host}/ws`;
 }
 
+// Sorts study points by problem size.
 function sortStudyPoints(points) {
   return [...(points ?? [])].sort(
     (a, b) => Number(a.problemSize) - Number(b.problemSize)
   );
 }
 
+// Parses a raw WebSocket message, returning the parsed object or null if parsing fails.
 function parseSocketMessage(rawMessage) {
   try {
     return JSON.parse(rawMessage.body);
@@ -41,13 +43,14 @@ export function useRuntimeStudyWebSocket({
   setSavedRun,
   setStudyStatus,
 }) {
+  // Refs to track whether "ready" and "start" messages have been sent, and to keep the latest study points.
   const readySentRef = useRef(false);
   const startSentRef = useRef(false);
   const latestPointsRef = useRef([]);
 
   useEffect(() => {
     if (!enabled || !studyId || !runtimeStudyRequest) return;
-
+    //
     readySentRef.current = false;
     startSentRef.current = false;
     latestPointsRef.current = [];
@@ -68,7 +71,6 @@ export function useRuntimeStudyWebSocket({
         body: JSON.stringify(runtimeStudyRequest),
       });
     };
-
     const handleStudyFinished = () => {
       setLoading(false);
       setStudyStatus("FINISHED");
@@ -89,50 +91,38 @@ export function useRuntimeStudyWebSocket({
 
       client.deactivate();
     };
-
+   // Handles a study progress message by updating the latest study points and React state.
    const handleStudyProgress = (message) => {
-         if (!message.point) return;
+     if (!message.point) return;
+     setLoading(false);
+     setStudyStatus("ONGOING");
+    // Update the latest study points, replacing any existing point with the same problem size.
+     const nextPoints = sortStudyPoints([
+       ...(latestPointsRef.current ?? []).filter(
+         (p) => Number(p.problemSize) !== Number(message.point.problemSize)
+       ),
+       message.point,
+     ]);
 
-         setLoading(false);
-         setStudyStatus("ONGOING");
+     latestPointsRef.current = nextPoints;
+     setStudyPoints(nextPoints);
 
-         setStudyPoints((prev) => {
-           const filtered = (prev ?? []).filter(
-             (p) => Number(p.problemSize) !== Number(message.point.problemSize)
-           );
-
-           const next = sortStudyPoints([...filtered, message.point]);
-           latestPointsRef.current = next;
-           return next;
-         });
-
-         setSavedRun((prev) => {
-           const nextPoints = sortStudyPoints([
-             ...((prev?.studyPoints ?? []).filter(
-               (p) => Number(p.problemSize) !== Number(message.point.problemSize)
-             )),
-             message.point,
-           ]);
-
-           latestPointsRef.current = nextPoints;
-
-           return {
-             ...(prev ?? {}),
-             pageMode: "runtimeStudy",
-             studyId,
-             batch: null,
-             studyPoints: nextPoints,
-             loading: false,
-             puzzleConfig,
-             params,
-             tspInstance,
-             vrpInstance,
-             runtimeStudyRequest,
-             savedAt: Date.now(),
-           };
-         });
+     setSavedRun((prev) => ({
+       ...(prev ?? {}),
+       pageMode: "runtimeStudy",
+       studyId,
+       batch: null,
+       studyPoints: nextPoints,
+       loading: false,
+       puzzleConfig,
+       params,
+       tspInstance,
+       vrpInstance,
+       runtimeStudyRequest,
+       savedAt: Date.now(),
+     }));
    };
-
+    // Handles a study failure message by updating state and closing the WebSocket connection.
     const handleStudyFailed = (message) => {
       setLoading(false);
       setStudyStatus("FAILED");
@@ -176,7 +166,6 @@ export function useRuntimeStudyWebSocket({
         });
       }
     };
-
     client.activate();
 
     return () => {
