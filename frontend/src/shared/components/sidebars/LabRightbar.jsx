@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 
-import RouteGraphModal from "@/features/run/components/charts/RouteGraphModal.jsx";
+import RouteGraphModal from "@/features/run/components/charts/route/RouteGraphModal.jsx";
 import FieldRow from "./FieldRow.jsx";
 import ParamField from "./ParamField.jsx";
 import SidebarSection from "./SidebarSection.jsx";

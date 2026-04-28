@@ -1,0 +1,35 @@
+.observer-checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+}
+
+.observer-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.1s ease;
+}
+
+.observer-checkbox-label:hover {
+  background-color: var(--color-panel-hover);
+}
+
+.observer-checkbox-label input[type="radio"] {
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+  accent-color: var(--color-border-highlight);
+}
+
+.observer-checkbox-label input[type="radio"]:checked + span {
+  color: var(--color-border-highlight);
+}
+
+.run-chart-stats {
+  margin-top: 12px;
+}

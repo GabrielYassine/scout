@@ -56,15 +56,10 @@ export default function RouteVisualization({
       const tspCitiesSeries = run.series.tspCities;
 
       const citiesData =
-        Array.isArray(tspCitiesSeries?.[0]) || !tspCitiesSeries?.length
-          ? tspCitiesSeries[tspCitiesSeries.length - 1]
-          : tspCitiesSeries;
+        Array.isArray(tspCitiesSeries?.[0]) || !tspCitiesSeries?.length? tspCitiesSeries[tspCitiesSeries.length - 1]: tspCitiesSeries;
 
       const tspTourSeries = run.series.tspTour;
-      const tourDataEntry = Array.isArray(tspTourSeries)
-        ? tspTourSeries[tspTourSeries.length - 1]
-        : tspTourSeries;
-
+      const tourDataEntry = Array.isArray(tspTourSeries)? tspTourSeries[tspTourSeries.length - 1]: tspTourSeries;
       const tourArray = tourDataEntry?.tour || tourDataEntry;
       const tourLength = tourDataEntry?.length;
 
@@ -79,10 +74,7 @@ export default function RouteVisualization({
             }))
           : [],
         observedTourLength: tourLength,
-        originalTourLength:
-          run.series?.fitness?.[run.series.fitness.length - 1] != null
-            ? Math.abs(run.series.fitness[run.series.fitness.length - 1])
-            : null
+        originalTourLength: run.series?.fitness?.[run.series.fitness.length - 1] != null? Math.abs(run.series.fitness[run.series.fitness.length - 1]): null
       };
     }
 
@@ -261,9 +253,7 @@ export default function RouteVisualization({
 
         setCities((prevCities) =>
           prevCities.map((city, index) =>
-            index === draggedCity
-              ? { ...city, ...nextCoords }
-              : city
+            index === draggedCity? { ...city, ...nextCoords } : city
           )
         );
         return;
@@ -330,9 +320,7 @@ export default function RouteVisualization({
     (route) => {
       if (!Array.isArray(route) || route.length === 0) return "";
 
-      const indices = route
-        .map((v) => Number(v))
-        .filter((v) => Number.isFinite(v));
+      const indices = route.map((v) => Number(v)).filter((v) => Number.isFinite(v));
 
       if (indices.length === 0) return "";
 
@@ -351,8 +339,7 @@ export default function RouteVisualization({
           if (!city) return null;
           const coords = toSVGCoords(city.x, city.y);
           return `${coords.x},${coords.y}`;
-        })
-        .filter((p) => p !== null);
+        }).filter((p) => p !== null);
 
       return pathPoints.join(" ");
     },
@@ -368,8 +355,7 @@ export default function RouteVisualization({
         key: `route-${idx}`,
         color: ROUTE_COLORS[idx % ROUTE_COLORS.length],
         points: buildRoutePath(route),
-      }))
-      .filter((route) => route.points);
+      })).filter((route) => route.points);
   }, [buildRoutePath, cities.length, normalizeRoutes, sourceData]);
 
   const currentTourLength = useMemo(() => {
@@ -382,9 +368,7 @@ export default function RouteVisualization({
     for (const route of routes) {
       if (!Array.isArray(route) || route.length === 0) continue;
 
-      const indices = route
-        .map((v) => Number(v))
-        .filter((v) => Number.isFinite(v));
+      const indices = route.map((v) => Number(v)).filter((v) => Number.isFinite(v));
 
       if (indices.length === 0) continue;
 

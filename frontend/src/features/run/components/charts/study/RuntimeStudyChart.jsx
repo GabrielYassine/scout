@@ -1,11 +1,14 @@
 import { useMemo, useState, memo } from "react";
-import "./RunChart.css";
-import LineCharts from "./LineCharts.jsx";
-import BoxPlotChart from "./BoxPlotChart.jsx";
+import "../common/ChartPanel.css";
+import "../run/RunChart.css";
+
+import LineCharts from "../common/LineCharts.jsx";
+import BoxPlotChart from "../common/BoxPlotChart.jsx";
+import RunChartHeader from "../run/RunChartHeader.jsx";
 
 const VIEW_LINE = "line";
 const VIEW_BOXPLOT = "boxplot";
-// Maps study status to display label and CSS class for styling
+
 function getStudyStatusMeta(studyStatus) {
   const rawStatus = String(studyStatus ?? "").toUpperCase();
 
@@ -28,7 +31,7 @@ function RuntimeStudyChart({
   visibleCount = null,
 }) {
   const [viewMode, setViewMode] = useState(VIEW_LINE);
-  // Sort points by problem size .
+
   const sortedPoints = useMemo(
     () =>
       [...points].sort(
@@ -36,14 +39,14 @@ function RuntimeStudyChart({
       ),
     [points]
   );
-  // Determine which points to display based on visibleCount prop.
+
   const visiblePoints = useMemo(() => {
     if (!Number.isFinite(visibleCount) || visibleCount == null) {
       return sortedPoints;
     }
     return sortedPoints.slice(0, visibleCount);
   }, [sortedPoints, visibleCount]);
- // Prepare data for line chart, filtering out points with invalid numeric values.
+
   const linePoints = useMemo(
     () =>
       visiblePoints
@@ -54,7 +57,7 @@ function RuntimeStudyChart({
         .filter(([x, y]) => Number.isFinite(x) && Number.isFinite(y)),
     [visiblePoints]
   );
-// Prepare data for box plot chart, filtering out points with valid problem size and box plot data.
+
   const boxPlotResponse = useMemo(() => {
     const valid = visiblePoints.filter(
       (p) =>
@@ -80,19 +83,14 @@ function RuntimeStudyChart({
   const title = problemId ? `${studyTitle} - ${problemId}` : studyTitle;
   const statusMeta = getStudyStatusMeta(studyStatus);
 
-
   if (!hasLineData && !hasBoxPlotData) {
     return (
       <div className="run-chart-panel">
-        <div className="run-chart-header">
-          <div className="chart-title-row">
-            <div className="chart-title">{title}</div>
-            <div className={`run-status-indicator ${statusMeta.className}`}>
-              <span className="run-status-text">{statusMeta.label}</span>
-              <span className="run-status-dot" />
-            </div>
-          </div>
-        </div>
+        <RunChartHeader
+          problemId={title}
+          statusMeta={statusMeta}
+          showRuntime={false}
+        />
 
         <div>
           {statusMeta.className === "ongoing"
@@ -105,12 +103,11 @@ function RuntimeStudyChart({
 
   return (
     <div className="chart-panel">
-      <div className="chart-title">{title}</div>
-      <div className={`run-status-indicator ${statusMeta.className}`}>
-             <span className="run-status-text">{statusMeta.label}</span>
-            <span className="run-status-dot" />
-      </div>
-
+      <RunChartHeader
+        problemId={title}
+        statusMeta={statusMeta}
+        showRuntime={false}
+      />
 
       <div className="run-chart-inner">
         {viewMode === VIEW_BOXPLOT ? (

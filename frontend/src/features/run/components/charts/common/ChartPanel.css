@@ -1,0 +1,27 @@
+.chart-panel {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  gap: var(--spacing-sm);
+}
+
+.run-chart-panel {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  gap: var(--spacing-sm);
+}
+
+.run-chart-inner {
+  background: white;
+  height: 30rem;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}

@@ -1,4 +1,4 @@
-import TSPVisualization from "./RouteVisualization/RouteVisualization.jsx";
+import TSPVisualization from "./RouteVisualization.jsx";
 import "./RouteGraphModal.css";
 
 const toInt = (value) => Math.round(Number(value) || 0);

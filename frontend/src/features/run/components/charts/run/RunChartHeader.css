@@ -1,0 +1,68 @@
+.run-chart-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.chart-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.chart-title {
+  font-weight: 700;
+  min-width: 0;
+}
+
+.chart-instance-name {
+  font-weight: 500;
+  opacity: 0.75;
+}
+
+.run-chart-subtitle {
+  font-size: 0.95rem;
+  margin-bottom: 0.15rem;
+}
+
+.run-status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.run-status-dot {
+  display: inline-block;
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  background-color: currentColor;
+  flex-shrink: 0;
+  box-shadow: 0 0 6px currentColor;
+}
+
+.run-status-dot::after {
+  display: none;
+}
+
+.run-status-indicator.finished {
+  color: #1f9d55;
+}
+
+.run-status-indicator.ongoing {
+  color: #d4a017;
+}
+
+.run-status-indicator.failed {
+  color: #d64545;
+}
+
+.run-status-text {
+  opacity: 0.95;
+}

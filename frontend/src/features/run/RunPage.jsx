@@ -1,106 +1,28 @@
 /**
- * RunPage shows run results or runtime study results.
- * It restores saved state, listens for live websocket updates,
- * controls playback, and renders the correct charts and controls.
+ * RunPage is the layout and orchestration component for run and runtime-study results.
+ * It wires page state, websocket hooks, playback controls, sidebars, and result content.
  */
 
 import { useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 import LabLeftbar from "@/shared/components/sidebars/LabLeftbar.jsx";
 import LabRightbar from "@/shared/components/sidebars/LabRightbar.jsx";
-import RunChart from "@/features/run/components/charts/RunChart.jsx";
-import RuntimeStudyChart from "@/features/run/components/charts/RuntimeStudyChart.jsx";
-import RunControls from "@/features/run/components/runcontrols/RunControls.jsx";
+import RunControls from "@/features/run/components/controls/RunControls.jsx";
+import PopulatedRunContent from "@/features/run/components/PopulatedRunContent.jsx";
 
 import "./RunPage.css";
 
-import { useLocalStorageState } from "@/shared/hooks/useLocalStorageState.js";
-import { computeAnimationLength, normalizeBatch, normalizeSelectedRunKey, } from "@/features/run/utils/runData.js";
+import { computeAnimationLength } from "@/features/run/utils/runData.js";
 import { usePlayback } from "@/features/run/hooks/usePlayback.js";
+import { useRunPageState } from "@/features/run/hooks/useRunPageState.js";
+import { useRunSelection } from "@/features/run/hooks/useRunSelection.js";
 import { useRunWebSocket } from "@/features/run/hooks/useRunWebSocket.js";
 import { useRuntimeStudyWebSocket } from "@/features/run/hooks/useRuntimeStudyWebSocket.js";
 
-
 const INITIAL_SPEED = 1;
-//This function determines the effective state of the RunPage by considering both the incoming location state and any saved run state from localStorage.
-function resolveRunPageState(locationState, savedRun) {
-  const incomingRunId = locationState.runId ?? locationState.runRequest?.runId ?? null;
-  const incomingStudyId = locationState.studyId ?? locationState.runtimeStudyRequest?.studyId ?? null;
 
-// Determine if the saved run matches the incoming run or study, and if the incoming state is still loading
-  const savedMatchesIncomingRun =
-    savedRun?.pageMode === "run" &&
-    savedRun?.loading === false &&
-    !!incomingRunId &&
-    savedRun?.runId === incomingRunId;
-
-  const savedMatchesIncomingStudy =
-    savedRun?.pageMode === "runtimeStudy" &&
-    savedRun?.loading === false &&
-    !!incomingStudyId &&
-    savedRun?.studyId === incomingStudyId;
-
-
-// if the incoming state is loading but matches the saved run/study, we should ignore the incoming loading state
-// and use the saved state instead to avoid showing a loading state unnecessarily.
-  const shouldIgnoreIncomingState =
-    locationState.loading === true &&
-    (savedMatchesIncomingRun || savedMatchesIncomingStudy);
-
-
-  const hasIncomingExecution =
-    !shouldIgnoreIncomingState &&
-    (Boolean(locationState.runId) ||
-      Boolean(locationState.studyId) ||
-      locationState.loading === true);
-
-  const restoredRun = hasIncomingExecution ? null : savedRun;
-
-  const pageMode =
-    locationState.pageMode ??
-    (locationState.runId ? "run" : null) ??
-    (locationState.studyId ? "runtimeStudy" : null) ??
-    restoredRun?.pageMode ??
-    "run";
-
-  const runRequest = locationState.runRequest ?? restoredRun?.runRequest ?? null;
-  const runId = locationState.runId ?? runRequest?.runId ?? restoredRun?.runId ?? null;
-  const studyId = locationState.studyId ?? restoredRun?.studyId ?? null;
-
-  return {
-    pageMode,
-    runId,
-    studyId,
-    runRequest,
-    runtimeStudyRequest: locationState.runtimeStudyRequest ?? restoredRun?.runtimeStudyRequest ?? null,
-    puzzleConfig: locationState.puzzleConfig ?? restoredRun?.puzzleConfig ?? [],
-    params: locationState.params ?? restoredRun?.params ?? [],
-    tspInstance: locationState.tspInstance ?? restoredRun?.tspInstance ?? null,
-    vrpInstance: locationState.vrpInstance ?? restoredRun?.vrpInstance ?? null,
-    batchResponse: locationState.batch ?? restoredRun?.batch ?? null,
-    studyPoints: restoredRun?.studyPoints ?? [],
-    loading: shouldIgnoreIncomingState
-      ? restoredRun?.loading ?? false
-      : locationState.loading ?? restoredRun?.loading ?? false,
-    error: locationState.error ?? restoredRun?.error ?? null,
-    restoredRun,
-    liveExecution: hasIncomingExecution,
-  };
-}
-// Converts the backend average-by-problem summary into run-like objects, so they can be rendered in the same charts as regular runs.
-function buildAverageRuns(averageByProblem, averageRunTimeByProblem, searchSpaceId) {
-  return Object.entries(averageByProblem).map(([problemId, avg]) => ({
-    problemId,
-    searchSpaceId,
-    evaluations: avg.evaluations ?? [],
-    series: avg.series ?? {},
-    runtimeMs: averageRunTimeByProblem[problemId] ?? null,
-    isAverage: true,
-  }));
-}
-
-function renderNoDataPanel(title, message) {
+function renderStatusPanel(title, message) {
   return (
     <div className="run-chart-panel">
       <div className="run-chart-title">{title}</div>
@@ -110,16 +32,8 @@ function renderNoDataPanel(title, message) {
 }
 
 export default function RunPage({ catalog, catalogLoading, catalogError }) {
-  const location = useLocation();
   const navigate = useNavigate();
-  const [savedRun, setSavedRun] = useLocalStorageState("scout:lastRun", null);
-
-  const locationState = location.state ?? {};
-  // Resolve the effective state for the RunPage by considering both the incoming location state and any saved run state.
-  const resolvedState = useMemo(
-    () => resolveRunPageState(locationState, savedRun),
-    [locationState, savedRun]
-  );
+  const [layoutMode, setLayoutMode] = useState("stack");
 
   const {
     pageMode,
@@ -131,77 +45,49 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
     params,
     tspInstance,
     vrpInstance,
-    batchResponse,
-    studyPoints: initialStudyPoints,
-    loading: initialLoading,
-    error: initialError,
     restoredRun,
     liveExecution,
-  } = resolvedState;
 
-  const [batch, setBatch] = useState(() => normalizeBatch(batchResponse ?? null));
-  const [studyPoints, setStudyPoints] = useState(() => initialStudyPoints);
-  const [loading, setLoading] = useState(!!initialLoading);
-  const [error, setError] = useState(initialError ?? null);
-  const [layoutMode, setLayoutMode] = useState("stack");
-// Sort batches by runIndex to ensure consistent order in the UI.
-  const batches = useMemo(
-    () => [...(batch?.batches ?? [])].sort((a, b) => a.runIndex - b.runIndex),
-    [batch]
-  );
+    batch,
+    setBatch,
+    studyPoints,
+    setStudyPoints,
+    loading,
+    setLoading,
+    error,
+    setError,
+    setSavedRun,
+    studyStatus,
+    setStudyStatus,
+  } = useRunPageState();
 
-  const [studyStatus, setStudyStatus] = useState(() => {
-    if (pageMode !== "runtimeStudy") return null;
-    if (initialError) return "FAILED";
-    if (initialLoading) return "ONGOING";
-    return "FINISHED";
-  });
-  const averageByProblem = batch?.summary?.averageByProblem ?? {};
-  const bestFitnessBoxPlotsByProblem = batch?.summary?.bestFitnessBoxPlotsByProblem ?? {};
-  const averageRunTimeByProblem = batch?.summary?.averageRunTimeByProblem ?? {};
-
-  const averageRuns = useMemo(
-    () => buildAverageRuns(averageByProblem, averageRunTimeByProblem, batch?.searchSpaceId),
-    [averageByProblem, averageRunTimeByProblem,batch?.searchSpaceId]
-  );
-
-
-  const [selectedRunKey, setSelectedRunKey] = useState(() => {
-    if (restoredRun?.selectedRunKey != null) {
-      return restoredRun.selectedRunKey;
-    }
-    return null;
-  });
-
-
-  const effectiveSelectedRunKey = normalizeSelectedRunKey(
-    selectedRunKey,
+  const {
+    batches,
     averageRuns,
-    batches
-  );
+    bestFitnessBoxPlotsByProblem,
+    selectedBatch,
+    runs,
+    effectiveSelectedRunKey,
+    handleSelectedRunChange,
+  } = useRunSelection({
+    batch,
+    restoredRun,
+    setSavedRun,
+  });
 
-  function handleSelectedRunChange(value) {
-      setSelectedRunKey(value);
-      setSavedRun((prev) => prev ? {..prev,  selectedRunKey: value, }: prev );
-    }
-
-  const selectedBatch =
-    effectiveSelectedRunKey === "average" ? null: batches.find((batchItem) => String(batchItem.runIndex) === String(effectiveSelectedRunKey)) ?? null;
-
-  const runs =
-    effectiveSelectedRunKey === "average" ? averageRuns: selectedBatch?.runs ?? [];
-
-  const runtimeStudyProblemId = runtimeStudyRequest?.problemId ?? puzzleConfig?.problem?.[0]?.id ?? null;
+  const runtimeStudyProblemId =
+    runtimeStudyRequest?.problemId ?? puzzleConfig?.problem?.[0]?.id ?? null;
 
   const currentAnimationLength = useMemo(
     () => computeAnimationLength({ pageMode, studyPoints, runs }),
     [pageMode, studyPoints, runs]
   );
 
-  const { playbackSpeed, setPlaybackSpeed, visibleCount, resetPlayback } = usePlayback({
-    length: currentAnimationLength,
-    initialSpeed: INITIAL_SPEED,
-  });
+  const { playbackSpeed, setPlaybackSpeed, visibleCount, resetPlayback } =
+    usePlayback({
+      length: currentAnimationLength,
+      initialSpeed: INITIAL_SPEED,
+    });
 
   useRunWebSocket({
     enabled: liveExecution && pageMode === "run",
@@ -249,65 +135,43 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
       </div>
 
       <div className="run-page-content">
+        <RunControls
+          currentAnimationLength={currentAnimationLength}
+          playbackSpeed={playbackSpeed}
+          setPlaybackSpeed={setPlaybackSpeed}
+          resetPlayback={resetPlayback}
+          averageRuns={averageRuns}
+          batches={batches}
+          effectiveSelectedRunKey={effectiveSelectedRunKey}
+          onSelectedRunChange={handleSelectedRunChange}
+          layoutMode={layoutMode}
+          setLayoutMode={setLayoutMode}
+        />
+
         {loading ? (
           <div className="run-loading">
             <div className="spinner" aria-label="Loading" />
             <div>Preparing run...</div>
           </div>
         ) : error ? (
-          renderNoDataPanel("Run failed", error)
-        ) : pageMode === "runtimeStudy" ?(
-            <RuntimeStudyChart
-              studyTitle="Runtime Study"
-              problemId={runtimeStudyProblemId}
-              points={studyPoints}
-              visibleCount={visibleCount}
-              studyStatus={studyStatus}
-            />
-        ) : batches.length === 0 ? (
-          renderNoDataPanel("No run data", "No data to plot.")
+          renderStatusPanel("Run failed", error)
+        ) : pageMode !== "runtimeStudy" && batches.length === 0 ? (
+          renderStatusPanel("No run data", "No data to plot.")
         ) : (
-          <>
-            <RunControls
-              currentAnimationLength={currentAnimationLength}
-              playbackSpeed={playbackSpeed}
-              setPlaybackSpeed={setPlaybackSpeed}
-              resetPlayback={resetPlayback}
-              averageRuns={averageRuns}
-              batches={batches}
-              effectiveSelectedRunKey={effectiveSelectedRunKey}
-              onSelectedRunChange={handleSelectedRunChange}
-              layoutMode={layoutMode}
-              setLayoutMode={setLayoutMode}
-            />
-
-            <div
-              className={`run-stack ${
-                layoutMode === "grid" ? "run-stack--grid" : "run-stack--stack"
-              }`}
-            >
-              {runs.map((run, idx) => (
-                <RunChart
-                  key={`${effectiveSelectedRunKey}-${idx}`}
-                  run={run}
-                  runIndex={selectedBatch?.runIndex ?? "average"}
-                  visibleCount={visibleCount}
-                  instanceName={
-                    run.problemId === "tsp"
-                      ? tspInstance?.name ?? null
-                      : run.problemId === "vrp"
-                        ? vrpInstance?.name ?? null
-                        : null
-                  }
-                  bestFitnessBoxPlot={
-                    effectiveSelectedRunKey === "average"
-                      ? bestFitnessBoxPlotsByProblem[run.problemId] ?? null
-                      : null
-                  }
-                />
-              ))}
-            </div>
-          </>
+          <PopulatedRunContent
+            pageMode={pageMode}
+            runtimeStudyProblemId={runtimeStudyProblemId}
+            studyPoints={studyPoints}
+            studyStatus={studyStatus}
+            runs={runs}
+            selectedBatch={selectedBatch}
+            visibleCount={visibleCount}
+            effectiveSelectedRunKey={effectiveSelectedRunKey}
+            layoutMode={layoutMode}
+            tspInstance={tspInstance}
+            vrpInstance={vrpInstance}
+            bestFitnessBoxPlotsByProblem={bestFitnessBoxPlotsByProblem}
+          />
         )}
       </div>
 

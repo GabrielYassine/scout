@@ -1,0 +1,44 @@
+.line-chart-container {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.line-chart-echarts {
+  width: 100% !important;
+  height: 100% !important;
+  flex: 1;
+  min-height: 0;
+}
+
+.line-chart-stats-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.line-chart-stats-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.line-chart-stats-window {
+  font-size: 12px;
+  color: #666;
+}
+
+.line-chart-stats-error {
+  font-size: 12px;
+  color: #b45309;
+}
+
+.line-chart-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  font-size: 12px;
+}

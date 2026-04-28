@@ -41,6 +41,21 @@ export function normalizeBatch(batch) {
   };
 }
 
+export function buildAverageRuns(
+  averageByProblem,
+  averageRunTimeByProblem,
+  searchSpaceId
+) {
+  return Object.entries(averageByProblem ?? {}).map(([problemId, avg]) => ({
+    problemId,
+    searchSpaceId,
+    evaluations: avg.evaluations ?? [],
+    series: normalizeSeriesMap(avg.series),
+    runtimeMs: averageRunTimeByProblem?.[problemId] ?? null,
+    isAverage: true,
+  }));
+}
+
 export function normalizeSelectedRunKey(selectedKey, averageRuns, batches) {
   const numericKey = Number(selectedKey);
   const hasAverage = averageRuns.length > 0;

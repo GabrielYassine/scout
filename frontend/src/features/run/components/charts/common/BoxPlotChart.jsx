@@ -18,9 +18,7 @@ function BoxPlotChart({
       ? boxPlotResponse.evaluations
       : [];
 
-    const rawBoxplots = Array.isArray(boxPlotResponse.boxplots)
-      ? boxPlotResponse.boxplots
-      : [];
+    const rawBoxplots = Array.isArray(boxPlotResponse.boxplots)? boxPlotResponse.boxplots : [];
 
     if (!xValues.length || !rawBoxplots.length) return null;
 
@@ -31,17 +29,13 @@ function BoxPlotChart({
 
     const displaySeriesName = isPermutationFitness ? "tourLength" : seriesName;
     const resolvedYAxisLabel = yAxisLabel ?? displaySeriesName;
-    const entries = xValues
-     .map((x, i) => {
-       const row = rawBoxplots[i];
+    const entries = xValues.map((x, i) => {const row = rawBoxplots[i];
        if (!Array.isArray(row) || row.length !== 5) return null;
 
        const values = row.map(Number);
        if (!values.every(Number.isFinite)) return null;
 
-       const normalized = isPermutationFitness
-         ? [-values[4], -values[3], -values[2], -values[1], -values[0]]
-         : values;
+       const normalized = isPermutationFitness? [-values[4], -values[3], -values[2], -values[1], -values[0]] : values;
 
        const [min, q1, median, q3, max] = normalized;
 

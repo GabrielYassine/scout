@@ -1,7 +1,6 @@
 import { useMemo, memo } from "react";
-import "./RunChart.css";
+import "./HypercubePlot.css";
 
-//not done
 function buildEyePaths(width, height,padding,  gaussianScale, steps = 250) {
   const innerW = width - 2 * padding;
   const innerH = height - 2 * padding;
@@ -21,9 +20,7 @@ function buildEyePaths(width, height,padding,  gaussianScale, steps = 250) {
  }
 
   const toPath = (pts) =>
-    pts
-      .map(([x, y], i) => `${i === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`)
-      .join(" ");
+    pts.map(([x, y], i) => `${i === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`).join(" ");
 
   return { leftD: toPath(left), rightD: toPath(right) };
 }
@@ -64,9 +61,7 @@ function HypercubePlot({
   const visiblePts = visibleCount == null ? pts : pts.slice(0, visibleCount);
 
   if (!visiblePts.length) return <div>No hypercube data.</div>;
-  const d = visiblePts
-    .map((p, idx) => `${idx === 0 ? "M" : "L"} ${p.px.toFixed(2)} ${p.py.toFixed(2)}`)
-    .join(" ");
+  const d = visiblePts.map((p, idx) => `${idx === 0 ? "M" : "L"} ${p.px.toFixed(2)} ${p.py.toFixed(2)}`).join(" ");
 
   const last = visiblePts[visiblePts.length - 1];
 
