@@ -329,6 +329,7 @@ export default function LabPage({
     const prep = await prepareRun({ sessionId: existingSessionId });
     const sessionId = prep?.sessionId ?? existingSessionId;
     const studyId = prep?.executionId;
+    persistSessionId(sessionId)
 
     const runtimeStudyRequest = buildRuntimeStudyRequest({
       studyId,
