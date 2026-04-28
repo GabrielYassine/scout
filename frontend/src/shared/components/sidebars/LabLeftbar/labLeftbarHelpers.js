@@ -1,0 +1,58 @@
+/*
+ * Helper functions for LabLeftbar.
+ * They handle parameter parsing, catalog lookups, and validation
+ * for whether the current configuration is ready to run.
+ */
+
+export function parseValue(type, raw) {
+  if (raw == null) return raw;
+  if (type === "boolean") return Boolean(raw);
+
+  if (type === "int" || type === "long" || type === "double") {
+    if (raw === "") return "";
+    return Number(raw);
+  }
+
+  return raw;
+}
+
+export function findPieceDef(catalog, type, id) {
+  if (!catalog || !id) return null;
+
+  const catalogMap = {
+    searchSpace: catalog.searchSpaces,
+    problem: catalog.problems,
+    generator: catalog.generators,
+    selection: catalog.selectionRules,
+    populationModel: catalog.populationModels,
+    parentSelectionRule: catalog.parentSelectionRules,
+    crossover: catalog.crossovers,
+    stopCondition: catalog.stopConditions,
+    observer: catalog.observers,
+  };
+
+  const list = catalogMap[type] ?? [];
+  return list.find((item) => item.id === id) ?? null;
+}
+
+export function countPlacedPieces(puzzleConfig) {
+  return Object.values(puzzleConfig ?? {}).reduce((sum, group) => {
+    return sum + (Array.isArray(group) ? group.length : 0);
+  }, 0);
+}
+
+export function areRequiredPiecesPlaced(puzzleConfig) {
+  const requiredTypes = [
+    "searchSpace",
+    "problem",
+    "generator",
+    "selection",
+    "populationModel",
+    "parentSelectionRule",
+    "stopCondition",
+  ];
+
+  return requiredTypes.every(
+    (type) => Array.isArray(puzzleConfig?.[type]) && puzzleConfig[type].length > 0
+  );
+}
