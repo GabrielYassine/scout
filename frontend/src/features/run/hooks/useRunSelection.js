@@ -1,3 +1,7 @@
+/**
+ * Derives the selected run data from a batch response.
+ * Supports both individual run selections and the aggregated average run view.
+ */
 import { useMemo, useState } from "react";
 
 import {

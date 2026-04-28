@@ -1,16 +1,13 @@
+/**
+ * Applies progress packets in sequence order per run/problem/seed stream.
+ * Duplicate or old packets are ignored, and future packets are buffered until
+ * missing earlier packets arrive.
+ */
+
 export function makeStreamKey({ runId, problemId, seed }) {
   return `${runId}:${problemId}:${seed}`;
 }
 
-/**
- * Creates a per-stream ordered packet applier.
- *
- * Packet contract:
- * - Packets contain { runId, problemId, seed, sequenceId }.
- * - A packet is applied only when its sequenceId is exactly the next expected one.
- * - Older or duplicate packets are ignored.
- * - Future packets are buffered until missing sequence numbers arrive.
- */
 export function createOrderedProgressApplier({
   applyPacket,
   maxPending = 5000,

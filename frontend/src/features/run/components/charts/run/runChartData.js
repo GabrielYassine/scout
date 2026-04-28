@@ -1,3 +1,7 @@
+/**
+ * Pure helpers for RunChart observer selection, phase ranges, status labels,
+ * and incremental chart-point construction.
+ */
 export const HYPERCUBE_KEY = "__hypercube__";
 export const TSP_TOUR_KEY = "__tsp-tour__";
 export const BEST_FITNESS_BOXPLOT_KEY = "__boxplot__:bestFitness";

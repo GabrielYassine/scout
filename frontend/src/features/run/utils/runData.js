@@ -1,3 +1,6 @@
+/**
+ * Pure helpers for normalizing backend run data and deriving chart playback lengths.
+ */
 function normalizeSeriesValues(value) {
   if (value && typeof value === "object" && Array.isArray(value.values)) {
     return value.values;

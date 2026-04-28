@@ -1,3 +1,7 @@
+/**
+ * Renders the main result content once run data is available.
+ * Chooses between runtime-study charts and normal per-problem run charts.
+ */
 import RunChart from "@/features/run/components/charts/run/RunChart.jsx";
 import RuntimeStudyChart from "@/features/run/components/charts/study/RuntimeStudyChart.jsx";
 

@@ -1,3 +1,7 @@
+/**
+ * Optional statistics panel for the currently visible line-chart window.
+ * Falls back to local statistics if the backend stats endpoint fails.
+ */
 import { useCallback, useState } from "react";
 import { computeLocalStats } from "./lineChartStats.js";
 import "./LineCharts.css";

@@ -1,10 +1,7 @@
 /**
- * Manages the full websocket lifecycle for a normal run:
- * connects to the backend, listens for live run updates,
- * keeps the newest batch/run data in sync with React state and local storage,
- * merges incoming progress packets in the correct order,
- * updates loading/error state,
- * and closes the websocket when the run finishes, fails, or the component unmounts.
+ * Manages the websocket lifecycle for normal runs.
+ * Incoming progress packets are ordered, buffered, merged into batch state,
+ * and persisted when the run finishes.
  */
 import { useEffect, useRef } from "react";
 import { Client } from "@stomp/stompjs";

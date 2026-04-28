@@ -1,8 +1,7 @@
 /**
- * RunPage is the layout and orchestration component for run and runtime-study results.
- * It wires page state, websocket hooks, playback controls, sidebars, and result content.
+ * Layout and orchestration component for run and runtime-study results.
+ * Wires page state, websocket hooks, playback controls, sidebars, and content.
  */
-
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 

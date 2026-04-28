@@ -1,3 +1,7 @@
+/**
+ * Pure helpers for merging websocket progress packets into the frontend batch model.
+ * These functions do not mutate the previous batch state.
+ */
 export function createEmptyBatch(runId = null) {
   return {
     runId,

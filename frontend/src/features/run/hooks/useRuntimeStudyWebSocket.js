@@ -1,9 +1,6 @@
 /**
- * Manages the full websocket lifecycle for a runtime study:
- * connects to the backend, sends "ready" and "start", listens for live study updates,
- * keeps the newest study points in sync with React state and local storage,
- * updates the study status (ongoing / finished / failed),
- * and closes the websocket when the study ends or the component unmounts.
+ * Manages the websocket lifecycle for runtime studies.
+ * Study points are merged by problem size so repeated updates replace older points.
  */
 import { useEffect, useRef } from "react";
 import { Client } from "@stomp/stompjs";

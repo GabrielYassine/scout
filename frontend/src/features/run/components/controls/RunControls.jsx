@@ -1,3 +1,8 @@
+/**
+ * Control panel for run result playback and display options.
+ * Lets the user reset playback, adjust animation speed, select individual or
+ * average runs, and switch between stack/grid chart layouts.
+ */
 import "./RunControls.css";
 
 export default function RunControls({

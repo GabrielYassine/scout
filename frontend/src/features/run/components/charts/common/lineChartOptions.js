@@ -1,3 +1,6 @@
+/**
+ * Pure builders for ECharts line-chart options and series patches.
+ */
 const PHASE_COLORS = {
   IMPROVING: "rgba(46, 204, 113, 0.18)",
   WORSENING: "rgba(231, 76, 60, 0.18)",

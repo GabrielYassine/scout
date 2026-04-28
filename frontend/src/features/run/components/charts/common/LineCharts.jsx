@@ -1,3 +1,7 @@
+/**
+ * ECharts wrapper for line-series data.
+ * Handles live data patching and reports the current zoom window for statistics.
+ */
 import { useMemo, memo, useState, useRef, useCallback, useEffect } from "react";
 import ReactECharts from "echarts-for-react";
 import LineChartStatsPanel from "./LineChartStatsPanel.jsx";

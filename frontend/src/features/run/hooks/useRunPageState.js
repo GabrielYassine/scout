@@ -1,3 +1,8 @@
+/**
+ * Resolves and owns the RunPage state restored from router state and localStorage.
+ * Live executions take priority over saved results unless the saved result already
+ * matches the incoming run/study id.
+ */
 import { useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 

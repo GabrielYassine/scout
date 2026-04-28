@@ -1,3 +1,8 @@
+/**
+ * Renders the hypercube observer projection for bitstring runs.
+ * The observer provides x/y coordinates over time, and this component draws
+ * the visited trajectory up to the current playback position.
+ */
 import { useMemo, memo } from "react";
 import "./HypercubePlot.css";
 

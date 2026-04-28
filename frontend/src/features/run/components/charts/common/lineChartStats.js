@@ -1,3 +1,8 @@
+/**
+ * Pure statistics helpers for line-chart data.
+ * Used by the stats panel to compute local summaries when backend statistics
+ * are unavailable or fail.
+ */
 export function computePercentile(sorted, p) {
   if (!sorted.length) return 0;
   if (sorted.length === 1) return sorted[0];
