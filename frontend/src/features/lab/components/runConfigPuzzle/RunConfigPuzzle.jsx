@@ -11,6 +11,7 @@ import { usePuzzleConfig } from "@/shared/contexts/usePuzzleConfig.js";
 import "./RunConfigPuzzle.css";
 
 export default function RunConfigPuzzle({ onPieceHover, onPieceLeave }) {
+
   const {
     configs,
     activeConfigId,
@@ -20,6 +21,7 @@ export default function RunConfigPuzzle({ onPieceHover, onPieceLeave }) {
     renameConfig,
     placedPieces,
   } = usePuzzleConfig();
+
  // Set up the droppable area for placing puzzle pieces.
   const { setNodeRef, isOver } = useDroppable({
     id: "shared-drop-area",

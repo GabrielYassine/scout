@@ -22,17 +22,11 @@ import { useRunWebSocket } from "@/features/run/hooks/useRunWebSocket.js";
 import { useRuntimeStudyWebSocket } from "@/features/run/hooks/useRuntimeStudyWebSocket.js";
 
 
-const INITIAL_SPEED = 50;
-/**
-*This function determines the effective state of the RunPage by considering both the incoming location state and any saved run state from localStorage.
-*It prioritizes live execution data when available and ensures that the page mode, run/study IDs, requests,
-*and other relevant information are correctly resolved for rendering the appropriate charts and controls.
- */
+const INITIAL_SPEED = 1;
+//This function determines the effective state of the RunPage by considering both the incoming location state and any saved run state from localStorage.
 function resolveRunPageState(locationState, savedRun) {
-  const incomingRunId =
-    locationState.runId ?? locationState.runRequest?.runId ?? null;
-  const incomingStudyId =
-    locationState.studyId ?? locationState.runtimeStudyRequest?.studyId ?? null;
+  const incomingRunId = locationState.runId ?? locationState.runRequest?.runId ?? null;
+  const incomingStudyId = locationState.studyId ?? locationState.runtimeStudyRequest?.studyId ?? null;
 
 // Determine if the saved run matches the incoming run or study, and if the incoming state is still loading
   const savedMatchesIncomingRun =
@@ -188,29 +182,16 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
 
   function handleSelectedRunChange(value) {
       setSelectedRunKey(value);
-      setSavedRun((prev) =>
-        prev
-          ? {
-              ...prev,
-              selectedRunKey: value,
-            }
-          : prev
-      );
+      setSavedRun((prev) => prev ? {..prev,  selectedRunKey: value, }: prev );
     }
 
   const selectedBatch =
-    effectiveSelectedRunKey === "average"
-      ? null
-      : batches.find((batchItem) => String(batchItem.runIndex) === String(effectiveSelectedRunKey)) ??
-        null;
+    effectiveSelectedRunKey === "average" ? null: batches.find((batchItem) => String(batchItem.runIndex) === String(effectiveSelectedRunKey)) ?? null;
 
   const runs =
-    effectiveSelectedRunKey === "average"
-      ? averageRuns
-      : selectedBatch?.runs ?? [];
+    effectiveSelectedRunKey === "average" ? averageRuns: selectedBatch?.runs ?? [];
 
-  const runtimeStudyProblemId =
-    runtimeStudyRequest?.problemId ?? puzzleConfig?.problem?.[0]?.id ?? null;
+  const runtimeStudyProblemId = runtimeStudyRequest?.problemId ?? puzzleConfig?.problem?.[0]?.id ?? null;
 
   const currentAnimationLength = useMemo(
     () => computeAnimationLength({ pageMode, studyPoints, runs }),

@@ -6,5 +6,5 @@ package dk.dtu.scout.backend.dto.request;
  */
 public record PrepareRunResponse(
     String sessionId,
-    String runId
+    String executionId
 ) {}

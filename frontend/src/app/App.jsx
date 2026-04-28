@@ -17,7 +17,6 @@ export default function App() {
     <PuzzleConfigProvider>
       <div className="app-root">
         <TopNavbar />
-
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route

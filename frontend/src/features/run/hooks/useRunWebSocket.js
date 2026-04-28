@@ -20,50 +20,46 @@ function createEmptyBatch(runId = null) {
   };
 }
 
-// Merges incoming list data based on the specified operation.
-function mergeList(prevList, operation, incomingSingle, incomingList) {
+// Merges new incoming value(s) into an existing list using the specified merge operation.
+function mergeList(prevList, operation, incoming) {
   const prev = Array.isArray(prevList) ? prevList : [];
-
   switch (operation) {
-  // REPLACE: Incoming data replaces existing data.
     case "REPLACE":
-      if (Array.isArray(incomingList)) return [...incomingList];
-      if (incomingSingle != null) return [incomingSingle];
+      if (Array.isArray(incoming)) return [...incoming];
+      if (incoming != null) return [incoming];
       return [];
-    // APPEND: Incoming data is appended to existing data.
-    case "APPEND":
-      if (Array.isArray(incomingList)) return [...prev, ...incomingList];
-      if (incomingSingle != null) return [...prev, incomingSingle];
-      return prev;
-    // REPLACE_LAST: Incoming data replaces only the last element of existing data.
-    case "REPLACE_LAST":
-      if (Array.isArray(incomingList)) return [...incomingList];
-      if (incomingSingle == null) return prev;
-      if (prev.length === 0) return [incomingSingle];
 
-      return [...prev.slice(0, -1), incomingSingle];
+    case "APPEND":
+      if (Array.isArray(incoming)) return [...prev, ...incoming];
+      if (incoming != null) return [...prev, incoming];
+      return prev;
+
+    case "REPLACE_LAST":
+      if (Array.isArray(incoming)) return [...incoming];
+      if (incoming == null) return prev;
+      if (prev.length === 0) return [incoming];
+      return [...prev.slice(0, -1), incoming];
 
     default:
       return prev;
   }
 }
-// Merges series data by applying the specified merge operation for each series key.
+// Merges incoming series updates into the existing series object.
 function mergeSeries(existingSeries, seriesDelta, seriesMerge) {
   const nextSeries = { ...(existingSeries ?? {}) };
-// Apply each delta operation to the corresponding series key.
+  // Apply each delta operation to the corresponding series key.
   for (const [key, value] of Object.entries(seriesDelta ?? {})) {
     const operation = seriesMerge?.[key] ?? "APPEND";
     nextSeries[key] = mergeList(
       nextSeries[key],
       operation,
-      value,
-      Array.isArray(value) ? value : null
+      value
     );
   }
 
   return nextSeries;
 }
-// Merges incoming progress updates into the existing batch data,
+// Merges one incoming websocket progress update into the correct batch and run in frontend state.
 function mergeProgress(prevBatch, update) {
   const base = prevBatch ?? createEmptyBatch(update.runId);
   const nextBatches = [...(base.batches ?? [])];
@@ -102,8 +98,7 @@ function mergeProgress(prevBatch, update) {
   nextRun.evaluations = mergeList(
     nextRun.evaluations,
     update.evaluationsMerge,
-    update.evaluation,
-    update.evaluations
+    update.evaluations ?? update.evaluation
   );
   // Merge all incoming series updates (fitness, bestFitness, etc.).
   nextRun.series = mergeSeries(nextRun.series, update.seriesDelta, update.seriesMerge);

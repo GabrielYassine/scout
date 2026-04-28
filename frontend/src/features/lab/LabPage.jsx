@@ -21,12 +21,6 @@ const SESSION_STORAGE_KEY = "scout:sessionId";
 const SHARED_DROP_AREA_ID = "shared-drop-area";
 const TOAST_DURATION_MS = 3500;
 
-// generates a unique ID using crypto.randomUUID.
-function generateId() {
-  return window.crypto?.randomUUID
-    ? window.crypto.randomUUID()
-    : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-}
 // Parse a comma-separated string into an array of valid positive integers.
 function parseProblemSizes(text) {
   return String(text ?? "")
@@ -42,21 +36,15 @@ function getProblemFlags(problemList) {
   };
 }
 
-// Validate that required problem instances, vrp or tsp, exist before starting a run.
+// Ensure that all required TSP or VRP instances exist before starting a run or runtime study.
 function validateProblemInstances({ problemList, tspInstance, vrpInstance }) {
   // Check whether the selected problems include TSP and/or VRP.
   const { isTspProblem, isVrpProblem } = getProblemFlags(problemList);
   // A valid TSP instance must have a non-empty cities array.
-  const hasValidTspInstance =
-    Array.isArray(tspInstance?.cities) && tspInstance.cities.length > 0;
+  const hasValidTspInstance = Array.isArray(tspInstance?.cities) && tspInstance.cities.length > 0;
 
-  // A valid VRP instance must have:
-  // - a non-empty customers array
-  // - a depot defined
-  const hasValidVrpInstance =
-    Array.isArray(vrpInstance?.customers) &&
-    vrpInstance.customers.length > 0 &&
-    vrpInstance?.depot != null;
+  // A valid VRP instance must have: a non-empty customers array and a depot defined
+  const hasValidVrpInstance =  Array.isArray(vrpInstance?.customers) && vrpInstance.customers.length > 0 && vrpInstance?.depot != null;
 
   if (isTspProblem && !hasValidTspInstance) {
     throw new Error("Please upload or create a TSP instance before running a TSP problem.");
@@ -97,11 +85,10 @@ function buildSearchSpaceParams({ baseSearchSpaceParams, tspInstance, vrpInstanc
 
   return searchSpaceParams;
 }
-// Retrieve the existing session ID from sessionStorage, or return null if it doesn't exist.
+
 function getExistingSessionId() {
   return window.sessionStorage?.getItem(SESSION_STORAGE_KEY) ?? null;
 }
-// Persist the given session ID to sessionStorage for future runs.
 function persistSessionId(sessionId) {
   try {
     window.sessionStorage?.setItem(SESSION_STORAGE_KEY, sessionId);
@@ -109,15 +96,7 @@ function persistSessionId(sessionId) {
     // ignore storage errors
   }
 }
-// Ensure that a session ID exists by returning the existing one or generating and persisting a new one if it doesn't exist.
-function ensureSessionId(existingSessionId) {
-  if (existingSessionId) return existingSessionId;
 
-  const next = generateId();
-  persistSessionId(next);
-  return next;
-}
-// Build the request payload for starting a runtime study.
 function buildRuntimeStudyRequest({
   studyId,
   sessionId,
@@ -153,7 +132,6 @@ function buildRuntimeStudyRequest({
     wsUpdateEverySizes: params.global?.wsUpdateEverySizes ?? 1,
   };
 }
-// Build the request payload for starting a standard run.
 function buildRunRequest({
   runId,
   sessionId,
@@ -196,7 +174,6 @@ export default function LabPage({
   catalogLoading,
   catalogError,
 }) {
-// Get shared lab state and update functions from the puzzle config context
   const {
     puzzleConfig,
     params,
@@ -244,6 +221,7 @@ export default function LabPage({
       setShowRemoveDropZone(false);
     },
   });
+
   // Cleanup when the component unmounts if a toast timer is still running, stop it.
   useEffect(() => {
     return () => {
@@ -252,6 +230,7 @@ export default function LabPage({
       }
     };
   }, []);
+
   // Show a temporary toast message
   function showToast(message) {
     setToastMessage(message);
@@ -266,7 +245,6 @@ export default function LabPage({
     }, TOAST_DURATION_MS);
   }
 
-  // Helper function to find a catalog item by type and ID, used for showing hover info in the UI.
   function getCatalogItem(type, id) {
     if (!catalog || !id) return null;
 
@@ -339,18 +317,18 @@ export default function LabPage({
     setSavedRun(savedState);
     navigate("/run", { state: navigationState });
   }
+
  // Start a runtime study by building the appropriate request payload and navigating to the run page in runtime study mode.
   async function startRuntimeStudy() {
     const { seed, existingSessionId, problemParams, searchSpaceParams } = buildExecutionContext();
 
-    const sessionId = ensureSessionId(existingSessionId);
     const problemSizes = parseProblemSizes(params.global?.problemSizes);
-
     if (problemSizes.length === 0) {
       throw new Error("Please enter at least one valid problem size");
     }
-
-    const studyId = generateId();
+    const prep = await prepareRun({ sessionId: existingSessionId });
+    const sessionId = prep?.sessionId ?? existingSessionId;
+    const studyId = prep?.executionId;
 
     const runtimeStudyRequest = buildRuntimeStudyRequest({
       studyId,
@@ -396,7 +374,7 @@ export default function LabPage({
 
     const prep = await prepareRun({ sessionId: existingSessionId });
     const sessionId = prep?.sessionId ?? existingSessionId;
-    const runId = prep?.runId;
+    const runId = prep?.executionId;
 
     if (!sessionId || !runId) {
       throw new Error("Backend did not return sessionId and runId");
@@ -404,15 +382,7 @@ export default function LabPage({
 
     persistSessionId(sessionId);
 
-    const runRequest = buildRunRequest({
-      runId,
-      sessionId,
-      puzzleConfig,
-      params,
-      searchSpaceParams,
-      problemParams,
-      seed,
-    });
+    const runRequest = buildRunRequest({runId, sessionId, puzzleConfig, params, searchSpaceParams, problemParams, seed, });
 
     saveAndNavigate(
       {
@@ -446,7 +416,6 @@ export default function LabPage({
   async function onRun() {
     try {
       const experimentType = params.global?.experimentType ?? "run";
-
       if (experimentType === "runtimeStudy") {
         await startRuntimeStudy();
         return;
@@ -457,6 +426,7 @@ export default function LabPage({
       showToast(err.message || "Failed to start run");
     }
   }
+
   // Apply the selected template to the current lab configuration
   function onApplyTemplate(templateId) {
     if ( !templateId) return;

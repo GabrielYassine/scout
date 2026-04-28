@@ -55,15 +55,18 @@ public class RunOrchestratorService {
     }
 
     /**
-     * Prepares for a run by generating a runId and returning it along with the provided or generated sessionId.
-     * @param requestedSessionId an optional sessionId, if null or blank, a new random sessionId will be generated.
-     * @return a PrepareRunResponse containing the sessionId and a new runId to be used for the run request.
+     * Prepares an execution by generating a new executionId and returning it together with
+     * the provided or generated sessionId.
+     * For a standard run, the executionId is used as the runId.
+     * For a runtime study, the executionId is used as the studyId.
+     * @param requestedSessionId an optional sessionId; if null or blank, a new random sessionId is generated.
+     * @return a PrepareRunResponse containing the sessionId and a new executionId to be used in the next request.
      */
     public PrepareRunResponse prepareRun(String requestedSessionId) {
         String sessionId = requestedSessionId != null && !requestedSessionId.isBlank() ? requestedSessionId : UUID.randomUUID().toString();
 
-        String runId = UUID.randomUUID().toString();
-        return new PrepareRunResponse(sessionId, runId);
+        String executionId = UUID.randomUUID().toString();
+        return new PrepareRunResponse(sessionId, executionId);
     }
 
     /**

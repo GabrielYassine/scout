@@ -34,6 +34,7 @@ const RUNTIME_STUDY_SINGLE_SELECT_TYPES = new Set([
   "problem",
   "stopCondition",
 ]);
+
 // Use a fixed number of columns for the tab buttons in each row.
 const TAB_COLUMNS = 5;
 
@@ -75,9 +76,8 @@ export default function Selector({
 
   // Build a list of all valid tab keys and make sure the active tab  is still one of them, as it comes from sessionstorage.
   const validTabKeys = COMPONENT_TYPES.map((type) => type.key);
-  const currentActiveTab = validTabKeys.includes(activeTab)
-    ? activeTab
-    : validTabKeys[0] ?? "searchSpace";
+  const currentActiveTab = validTabKeys.includes(activeTab)  ? activeTab : validTabKeys[0] ?? "searchSpace";
+
   // If the active tab from session storage is not valid anymore , reset it to to the first valid tab.
   if (currentActiveTab !== activeTab) {
     setActiveTab(currentActiveTab);
@@ -85,6 +85,7 @@ export default function Selector({
 
   const activeType = COMPONENT_TYPES.find((type) => type.key === currentActiveTab);
   const items = activeType ? catalog?.[activeType.catalogKey] ?? [] : [];
+
   // Calculate how many empty placeholder cells are needed to fill the last row of tabs so that the layout remains consistent.
   const fillerCount = (TAB_COLUMNS - (COMPONENT_TYPES.length % TAB_COLUMNS)) % TAB_COLUMNS;
   // Helper function to get the count of selected pieces for a given type, used for displaying the badge count on each tab.
@@ -93,10 +94,7 @@ export default function Selector({
     return Array.isArray(group) ? group.length : 0;
   };
 
-  const isSingleSelectType = (type) =>
-    isRuntimeStudy
-      ? RUNTIME_STUDY_SINGLE_SELECT_TYPES.has(type)
-      : SINGLE_SELECT_TYPES.has(type);
+  const isSingleSelectType = (type) => isRuntimeStudy ? RUNTIME_STUDY_SINGLE_SELECT_TYPES.has(type) : SINGLE_SELECT_TYPES.has(type);
 
   const getSelectedSearchSpaceId = () => {
     const searchSpaces = puzzleConfig?.searchSpace;
@@ -124,9 +122,7 @@ export default function Selector({
   };
 
   const isIdAlreadyInConfig = (itemId) =>
-    Object.values(puzzleConfig ?? {}).some(
-      (group) => Array.isArray(group) && group.some((piece) => piece.id === itemId)
-    );
+    Object.values(puzzleConfig ?? {}).some( (group) => Array.isArray(group) && group.some((piece) => piece.id === itemId) );
 
   const isDisabledBySingleSelectRule = (item) => {
     if (!isSingleSelectType(currentActiveTab)) {
@@ -134,6 +130,7 @@ export default function Selector({
     }
 
     const currentGroup = puzzleConfig?.[currentActiveTab];
+
     if (!Array.isArray(currentGroup) || currentGroup.length === 0) {
       return false;
     }
