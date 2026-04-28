@@ -15,7 +15,7 @@ import {
   rangesEqual,
   resolveZoomRange,
 } from "./lineChartZoom.js";
-import "./LineCharts.css";
+import "@/features/run/styles/LineCharts.css";
 
 function LineCharts({
   chartPoints,

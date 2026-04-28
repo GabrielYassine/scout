@@ -10,7 +10,7 @@ import LabRightbar from "@/shared/components/sidebars/LabRightbar.jsx";
 import RunControls from "@/features/run/components/controls/RunControls.jsx";
 import PopulatedRunContent from "@/features/run/components/PopulatedRunContent.jsx";
 
-import "./RunPage.css";
+import "./styles/RunPage.css";
 
 import { computeAnimationLength } from "@/features/run/utils/runData.js";
 import { usePlayback } from "@/features/run/hooks/usePlayback.js";

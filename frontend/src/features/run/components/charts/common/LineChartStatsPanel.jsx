@@ -4,7 +4,7 @@
  */
 import { useCallback, useState } from "react";
 import { computeLocalStats } from "./lineChartStats.js";
-import "./LineCharts.css";
+import "@/features/run/styles/LineCharts.css";
 
 export default function LineChartStatsPanel({
   seriesName,

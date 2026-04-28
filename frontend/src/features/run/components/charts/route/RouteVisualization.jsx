@@ -4,7 +4,7 @@
  * and pheromone heatmap overlays when available from observer data.
  */
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
-import "./RouteVisualization.css";
+import "@/features/run/styles/RouteVisualization.css";
 
 const ROUTE_COLORS = [
   "#3b82f6",

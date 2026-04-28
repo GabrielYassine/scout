@@ -3,7 +3,7 @@
  * Used when route data should be inspected separately from the normal chart panel.
  */
 import TSPVisualization from "./RouteVisualization.jsx";
-import "./RouteGraphModal.css";
+import "@/features/run/styles/RouteGraphModal.css";
 
 const toInt = (value) => Math.round(Number(value) || 0);
 

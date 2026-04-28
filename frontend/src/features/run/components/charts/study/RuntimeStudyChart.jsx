@@ -3,8 +3,8 @@
  * or boxplots over repeated runs.
  */
 import { useMemo, useState, memo } from "react";
-import "../common/ChartPanel.css";
-import "../run/RunChart.css";
+import "@/features/run/styles/ChartPanel.css";
+import "@/features/run/styles/RunChart.css";
 
 import LineCharts from "../common/LineCharts.jsx";
 import BoxPlotChart from "../common/BoxPlotChart.jsx";

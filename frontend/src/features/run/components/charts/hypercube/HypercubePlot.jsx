@@ -4,7 +4,7 @@
  * the visited trajectory up to the current playback position.
  */
 import { useMemo, memo } from "react";
-import "./HypercubePlot.css";
+import "@/features/run/styles/HypercubePlot.css";
 
 function buildEyePaths(width, height,padding,  gaussianScale, steps = 250) {
   const innerW = width - 2 * padding;

@@ -3,7 +3,7 @@
  * Displays the problem or study title, optional instance name, run status,
  * and optional runtime information.
  */
-import "./RunChartHeader.css";
+import "@/features/run/styles/RunChartHeader.css";
 
 export default function RunChartHeader({
   problemId,

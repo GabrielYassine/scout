@@ -4,8 +4,8 @@
  * depending on the observer data available in the run.
  */
 import { useState, useMemo, memo, useCallback, useEffect, useRef } from "react";
-import "../common/ChartPanel.css";
-import "./RunChart.css";
+import "@/features/run/styles/ChartPanel.css";
+import "@/features/run/styles/RunChart.css";
 
 import HypercubePlot from "../hypercube/HypercubePlot.jsx";
 import TSPVisualization from "../route/RouteVisualization.jsx";

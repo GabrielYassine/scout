@@ -3,7 +3,7 @@
  * Lets the user reset playback, adjust animation speed, select individual or
  * average runs, and switch between stack/grid chart layouts.
  */
-import "./RunControls.css";
+import "@/features/run/styles/RunControls.css";
 
 export default function RunControls({
   currentAnimationLength,
