@@ -1,6 +1,7 @@
-// LabPage is the main page for configuring experiments.
-// It handles puzzle-piece selection, instance validation, request building,
-// and navigation to the run page.
+/*
+* LabPage is the main page for configuring experiments.
+* It handles UI state, drag/drop feedback, and navigation to the run page.
+*/
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDndMonitor } from "@dnd-kit/core";
@@ -16,158 +17,11 @@ import { usePuzzleConfig } from "@/shared/contexts/usePuzzleConfig.js";
 import { useLocalStorageState } from "@/shared/hooks/useLocalStorageState.js";
 import { prepareRun } from "@/shared/api/run.js";
 import { runTemplates } from "@/features/lab/templates/runTemplates.js";
+import { persistSessionId } from "@/features/lab/utils/sessionStorage.js";
+import { parseProblemSizes, buildExecutionContext, buildRuntimeStudyRequest, buildRunRequest, } from "@/features/lab/utils/labExecution.js";
 
-const SESSION_STORAGE_KEY = "scout:sessionId";
 const SHARED_DROP_AREA_ID = "shared-drop-area";
 const TOAST_DURATION_MS = 3500;
-
-// Parse a comma-separated string into an array of valid positive integers.
-function parseProblemSizes(text) {
-  return String(text ?? "")
-    .split(",")
-    .map((s) => Number(s.trim()))
-    .filter((n) => Number.isInteger(n) && n > 0);
-}
-
-function getProblemFlags(problemList) {
-  return {
-    isTspProblem: problemList.some((p) => p.id === "tsp"),
-    isVrpProblem: problemList.some((p) => p.id === "vrp"),
-  };
-}
-
-// Ensure that all required TSP or VRP instances exist before starting a run or runtime study.
-function validateProblemInstances({ problemList, tspInstance, vrpInstance }) {
-  // Check whether the selected problems include TSP and/or VRP.
-  const { isTspProblem, isVrpProblem } = getProblemFlags(problemList);
-  // A valid TSP instance must have a non-empty cities array.
-  const hasValidTspInstance = Array.isArray(tspInstance?.cities) && tspInstance.cities.length > 0;
-
-  // A valid VRP instance must have: a non-empty customers array and a depot defined
-  const hasValidVrpInstance =  Array.isArray(vrpInstance?.customers) && vrpInstance.customers.length > 0 && vrpInstance?.depot != null;
-
-  if (isTspProblem && !hasValidTspInstance) {
-    throw new Error("Please upload or create a TSP instance before running a TSP problem.");
-  }
-
-  if (isVrpProblem && !hasValidVrpInstance) {
-    throw new Error("Please upload or create a VRP instance before running a VRP problem.");
-  }
-
-  return { isTspProblem, isVrpProblem };
-}
-
-// Build the problemParams object to be sent to the backend, including TSP or VRP instances if applicable.
-function buildProblemParams({ baseProblemParams, tspInstance, vrpInstance, isTspProblem, isVrpProblem }) {
-  const problemParams = { ...baseProblemParams };
-
-  if (isTspProblem) {
-    problemParams.tspInstance = tspInstance;
-  }
-
-  if (isVrpProblem) {
-    problemParams.vrpInstance = vrpInstance;
-  }
-
-  return problemParams;
-}
-// Build the searchSpaceParams object to be sent to the backend, including problem size parameters derived from TSP or VRP instances if applicable.
-function buildSearchSpaceParams({ baseSearchSpaceParams, tspInstance, vrpInstance, isTspProblem, isVrpProblem, }) {
-  const searchSpaceParams = { ...baseSearchSpaceParams };
-
-  if (isTspProblem) {
-    searchSpaceParams.n = tspInstance.cities.length;
-  }
-
-  if (isVrpProblem) {
-    searchSpaceParams.n = vrpInstance.customers.length;
-  }
-
-  return searchSpaceParams;
-}
-
-function getExistingSessionId() {
-  return window.sessionStorage?.getItem(SESSION_STORAGE_KEY) ?? null;
-}
-function persistSessionId(sessionId) {
-  try {
-    window.sessionStorage?.setItem(SESSION_STORAGE_KEY, sessionId);
-  } catch {
-    // ignore storage errors
-  }
-}
-
-function buildRuntimeStudyRequest({
-  studyId,
-  sessionId,
-  puzzleConfig,
-  params,
-  searchSpaceParams,
-  problemParams,
-  seed,
-  problemSizes,
-}) {
-  return {
-    studyId,
-    sessionId,
-    searchSpaceId: puzzleConfig.searchSpace?.[0]?.id ?? null,
-    searchSpaceParams,
-    problemId: puzzleConfig.problem?.[0]?.id ?? null,
-    problemParams,
-    generatorId: puzzleConfig.generator?.[0]?.id ?? null,
-    generatorParams: params.generator,
-    selectionRuleId: puzzleConfig.selection?.[0]?.id ?? null,
-    selectionRuleParams: params.selection,
-    populationModelId: puzzleConfig.populationModel?.[0]?.id ?? null,
-    populationModelParams: params.populationModel,
-    parentSelectionRuleId: puzzleConfig.parentSelectionRule?.[0]?.id ?? null,
-    parentSelectionRuleParams: params.parentSelectionRule,
-    crossoverId: puzzleConfig.crossover?.[0]?.id ?? null,
-    crossoverParams: params.crossover,
-    stopConditionIds: puzzleConfig.stopCondition?.map((x) => x.id) ?? [],
-    stopConditionParams: params.stopCondition,
-    seed,
-    problemSizes,
-    repetitionsPerSize: params.global?.repetitionsPerSize ?? 30,
-    wsUpdateEverySizes: params.global?.wsUpdateEverySizes ?? 1,
-  };
-}
-function buildRunRequest({
-  runId,
-  sessionId,
-  puzzleConfig,
-  params,
-  searchSpaceParams,
-  problemParams,
-  seed,
-}) {
-  return {
-    searchSpaceId: puzzleConfig.searchSpace?.[0]?.id ?? null,
-    searchSpaceParams,
-    problemIds: puzzleConfig.problem?.map((x) => x.id) ?? [],
-    problemParams,
-    generatorId: puzzleConfig.generator?.[0]?.id ?? null,
-    generatorParams: params.generator,
-    selectionRuleId: puzzleConfig.selection?.[0]?.id ?? null,
-    selectionRuleParams: params.selection,
-    populationModelId: puzzleConfig.populationModel?.[0]?.id ?? null,
-    populationModelParams: params.populationModel,
-    parentSelectionRuleId: puzzleConfig.parentSelectionRule?.[0]?.id ?? null,
-    parentSelectionRuleParams: params.parentSelectionRule,
-    crossoverId: puzzleConfig.crossover?.[0]?.id ?? null,
-    crossoverParams: params.crossover,
-    stopConditionIds: puzzleConfig.stopCondition?.map((x) => x.id) ?? [],
-    stopConditionParams: params.stopCondition,
-    observerIds: puzzleConfig.observer?.map((x) => x.id) ?? [],
-    observerParams: params.observer,
-    seed,
-    runTimes: params.global?.runTimes ?? 1,
-    sessionId,
-    runId,
-    logEveryIterations: params.global?.logEveryIterations ?? 100,
-    wsUpdateEveryIterations: params.global?.wsUpdateEveryIterations ?? 100,
-  };
-}
 
 export default function LabPage({
   catalog,
@@ -221,6 +75,7 @@ export default function LabPage({
       setShowRemoveDropZone(false);
     },
   });
+
 
   // Cleanup when the component unmounts if a toast timer is still running, stop it.
   useEffect(() => {
@@ -277,50 +132,29 @@ export default function LabPage({
     setHoverInfo(null);
   }
 
-  // Collect and validate the common data needed to start an execution,
-  function buildExecutionContext() {
-    const seed = params.global?.seed ?? Date.now();
-    const existingSessionId = getExistingSessionId();
-    const problemList = Array.isArray(puzzleConfig.problem) ? puzzleConfig.problem : [];
-
-    const { isTspProblem, isVrpProblem } = validateProblemInstances({
-      problemList,
-      tspInstance,
-      vrpInstance,
-    });
-
-    const problemParams = buildProblemParams({
-      baseProblemParams: params.problem,
-      tspInstance,
-      vrpInstance,
-      isTspProblem,
-      isVrpProblem,
-    });
-
-    const searchSpaceParams = buildSearchSpaceParams({
-      baseSearchSpaceParams: params.searchSpace,
-      tspInstance,
-      vrpInstance,
-      isTspProblem,
-      isVrpProblem,
-    });
-
-    return {
-      seed,
-      existingSessionId,
-      problemParams,
-      searchSpaceParams,
-    };
-  }
   // Save the current run configuration to localStorage and navigate to the run page with the necessary state.
   function saveAndNavigate(savedState, navigationState) {
     setSavedRun(savedState);
     navigate("/run", { state: navigationState });
   }
+  // Main function to handle the "Run" action, which decides whether to start a runtime study or a standard run based on the selected experiment type.
+    async function onRun() {
+      try {
+        const experimentType = params.global?.experimentType ?? "run";
+        if (experimentType === "runtimeStudy") {
+          await startRuntimeStudy();
+          return;
+        }
+
+        await startStandardRun();
+      } catch (err) {
+        showToast(err.message || "Failed to start run");
+      }
+    }
 
  // Start a runtime study by building the appropriate request payload and navigating to the run page in runtime study mode.
   async function startRuntimeStudy() {
-    const { seed, existingSessionId, problemParams, searchSpaceParams } = buildExecutionContext();
+    const { seed, existingSessionId, problemParams, searchSpaceParams } = buildExecutionContext({ puzzleConfig, params,tspInstance,vrpInstance,});
 
     const problemSizes = parseProblemSizes(params.global?.problemSizes);
     if (problemSizes.length === 0) {
@@ -343,36 +177,14 @@ export default function LabPage({
     });
 
     saveAndNavigate(
-      {
-        pageMode: "runtimeStudy",
-        loading: true,
-        studyId,
-        batch: null,
-        studyPoints: [],
-        puzzleConfig,
-        params,
-        tspInstance,
-        vrpInstance,
-        runtimeStudyRequest,
-        savedAt: Date.now(),
-      },
-      {
-        pageMode: "runtimeStudy",
-        loading: true,
-        puzzleConfig,
-        params,
-        tspInstance,
-        vrpInstance,
-        studyId,
-        runtimeStudyRequest,
-      }
+      { pageMode: "runtimeStudy", loading: true, studyId, batch: null, studyPoints: [], puzzleConfig,  params, tspInstance, vrpInstance, runtimeStudyRequest, savedAt: Date.now(), },
+      { pageMode: "runtimeStudy",  loading: true,  puzzleConfig,  params,  tspInstance, vrpInstance,  studyId, runtimeStudyRequest,  }
     );
   }
 
 // Start a standard run by preparing the run on the backend, building the appropriate request payload, and navigating to the run page in run mode.
   async function startStandardRun() {
-    const { seed, existingSessionId, problemParams, searchSpaceParams } = buildExecutionContext();
-
+    const { seed, existingSessionId, problemParams, searchSpaceParams } =  buildExecutionContext({ puzzleConfig, params,tspInstance,vrpInstance,});
     const prep = await prepareRun({ sessionId: existingSessionId });
     const sessionId = prep?.sessionId ?? existingSessionId;
     const runId = prep?.executionId;
@@ -386,51 +198,14 @@ export default function LabPage({
     const runRequest = buildRunRequest({runId, sessionId, puzzleConfig, params, searchSpaceParams, problemParams, seed, });
 
     saveAndNavigate(
-      {
-        pageMode: "run",
-        loading: true,
-        runId,
-        studyId: null,
-        batch: null,
-        studyPoints: [],
-        puzzleConfig,
-        params,
-        tspInstance,
-        vrpInstance,
-        runRequest,
-        selectedRunKey: "0",
-        savedAt: Date.now(),
-      },
-      {
-        pageMode: "run",
-        loading: true,
-        puzzleConfig,
-        params,
-        tspInstance,
-        vrpInstance,
-        runId,
-        runRequest,
-      }
+      { pageMode: "run", loading: true,  runId,  studyId: null, batch: null, studyPoints: [], puzzleConfig, params, tspInstance, vrpInstance, runRequest, selectedRunKey: "0",  savedAt: Date.now(), },
+      { pageMode: "run", loading: true, puzzleConfig,   params, tspInstance,  vrpInstance, runId, runRequest,  }
     );
-  }
-  // Main function to handle the "Run" action, which decides whether to start a runtime study or a standard run based on the selected experiment type.
-  async function onRun() {
-    try {
-      const experimentType = params.global?.experimentType ?? "run";
-      if (experimentType === "runtimeStudy") {
-        await startRuntimeStudy();
-        return;
-      }
-
-      await startStandardRun();
-    } catch (err) {
-      showToast(err.message || "Failed to start run");
-    }
   }
 
   // Apply the selected template to the current lab configuration
   function onApplyTemplate(templateId) {
-    if ( !templateId) return;
+    if (!templateId || !catalog) return;
     // Find the matching template object from the template list
     const template = runTemplates.find((t) => t.id === templateId);
     if (!template) return;
