@@ -23,11 +23,132 @@ const ZOOM_SENSITIVITY = 0.0015;
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const toInt = (value) => Math.round(Number(value) || 0);
+
 const sanitizeCity = (city) => ({
   ...city,
   x: toInt(city.x),
   y: toInt(city.y),
 });
+
+function getLatestSeriesValue(seriesValue) {
+  if (!Array.isArray(seriesValue)) {
+    return seriesValue;
+  }
+
+  if (!seriesValue.length) {
+    return null;
+  }
+
+  return seriesValue[seriesValue.length - 1];
+}
+
+function normalizeCities(citiesData) {
+  if (!Array.isArray(citiesData)) {
+    return [];
+  }
+
+  return citiesData.map((city) =>
+    sanitizeCity({
+      ...city,
+      id: city.id,
+      nodeId: city.nodeId,
+      x: city.x,
+      y: city.y,
+      demand: city.demand ?? 0,
+      isDepot: city.isDepot === true,
+    })
+  );
+}
+
+function normalizeRoutes(tour) {
+  if (!Array.isArray(tour) || tour.length === 0) {
+    return [];
+  }
+
+  return Array.isArray(tour[0]) ? tour : [tour];
+}
+
+function extractRunSourceData(run) {
+  if (!run?.series?.tspTour || !run?.series?.tspCities) {
+    return null;
+  }
+
+  const tspCitiesSeries = run.series.tspCities;
+  const citiesData = Array.isArray(tspCitiesSeries?.[0]) || !tspCitiesSeries?.length ? getLatestSeriesValue(tspCitiesSeries) : tspCitiesSeries;
+
+  const tourDataEntry = getLatestSeriesValue(run.series.tspTour);
+  const tourArray = tourDataEntry?.tour || tourDataEntry;
+  const tourLength = tourDataEntry?.length;
+
+  return {
+    tour: tourArray,
+    cities: normalizeCities(citiesData),
+    observedTourLength: tourLength,
+    originalTourLength:
+      run.series?.fitness?.[run.series.fitness.length - 1] != null
+        ? Math.abs(run.series.fitness[run.series.fitness.length - 1])
+        : null,
+  };
+}
+
+function extractTspSourceData(tspData) {
+  if (!tspData) {
+    return null;
+  }
+
+  return {
+    tour: tspData.tour,
+    cities: normalizeCities(tspData.cities ?? []),
+    originalTourLength: tspData.tourLength,
+  };
+}
+
+function buildCitiesKey(cities) {
+  if (!cities?.length) {
+    return "";
+  }
+  return cities.map((city) => `${city.id}:${city.x},${city.y}:${city.isDepot ? 1 : 0}`).join("|");
+}
+
+function buildRouteSequence(route, depotIndex) {
+  if (!Array.isArray(route) || route.length === 0) {
+    return [];
+  }
+
+  const sequence = route.map(Number).filter(Number.isFinite);
+
+  if (!sequence.length) {
+    return [];
+  }
+
+  if (depotIndex >= 0) {
+    if (sequence[0] !== depotIndex) sequence.unshift(depotIndex);
+    if (sequence[sequence.length - 1] !== depotIndex) sequence.push(depotIndex);
+  } else {
+    sequence.push(sequence[0]);
+  }
+
+  return sequence;
+}
+
+function calculateRouteDistance(sequence, cities) {
+  let totalDistance = 0;
+
+  for (let i = 0; i < sequence.length - 1; i += 1) {
+    const currentCity = cities[sequence[i]];
+    const nextCity = cities[sequence[i + 1]];
+
+    if (!currentCity || !nextCity) {
+      continue;
+    }
+
+    const dx = currentCity.x - nextCity.x;
+    const dy = currentCity.y - nextCity.y;
+    totalDistance += Math.sqrt(dx * dx + dy * dy);
+  }
+
+  return totalDistance;
+}
 
 export default function RouteVisualization({
   tspData,
@@ -35,88 +156,48 @@ export default function RouteVisualization({
   width,
   height,
   editable = false,
-  onCitiesChange
+  onCitiesChange,
 }) {
   const containerRef = useRef(null);
   const svgRef = useRef(null);
   const panStartRef = useRef(null);
+  const dragOffsetRef = useRef({ x: 0, y: 0 });
   const viewRef = useRef({ zoom: 1, panX: 0, panY: 0 });
-  const [isPanning, setIsPanning] = useState(false);
 
-  const [dimensions, setDimensions] = useState({
-    width: width || 800,
-    height: height || 600
-  });
+  const [isPanning, setIsPanning] = useState(false);
   const [draggedCity, setDraggedCity] = useState(null);
   const [dragPosition, setDragPosition] = useState(null);
   const [view, setView] = useState({ zoom: 1, panX: 0, panY: 0 });
-  const dragOffsetRef = useRef({ x: 0, y: 0 });
+  const [dimensions, setDimensions] = useState({
+    width: width || 800,
+    height: height || 600,
+  });
 
   useEffect(() => {
     viewRef.current = view;
   }, [view]);
 
   const sourceData = useMemo(() => {
-    if (run?.series?.tspTour && run?.series?.tspCities) {
-      const tspCitiesSeries = run.series.tspCities;
-
-      const citiesData =
-        Array.isArray(tspCitiesSeries?.[0]) || !tspCitiesSeries?.length? tspCitiesSeries[tspCitiesSeries.length - 1]: tspCitiesSeries;
-
-      const tspTourSeries = run.series.tspTour;
-      const tourDataEntry = Array.isArray(tspTourSeries)? tspTourSeries[tspTourSeries.length - 1]: tspTourSeries;
-      const tourArray = tourDataEntry?.tour || tourDataEntry;
-      const tourLength = tourDataEntry?.length;
-
-      return {
-        tour: tourArray,
-        cities: Array.isArray(citiesData)
-          ? citiesData.map((city, index) => sanitizeCity({
-              id: index,
-              x: city.x,
-              y: city.y,
-              isDepot: city.isDepot === true,
-            }))
-          : [],
-        observedTourLength: tourLength,
-        originalTourLength: run.series?.fitness?.[run.series.fitness.length - 1] != null? Math.abs(run.series.fitness[run.series.fitness.length - 1]): null
-      };
-    }
-
-    if (tspData) {
-      return {
-        tour: tspData.tour,
-        cities: (tspData.cities ?? []).map((city, index) => sanitizeCity({
-          id: city.id ?? index,
-          x: city.x,
-          y: city.y,
-          isDepot: city.isDepot === true,
-        })),
-        originalTourLength: tspData.tourLength
-      };
-    }
-
-    return null;
+    return extractRunSourceData(run) ?? extractTspSourceData(tspData);
   }, [tspData, run]);
 
   const initialCities = useMemo(() => sourceData?.cities ?? [], [sourceData]);
   const [cities, setCities] = useState(() => [...initialCities]);
 
-  // Reset the internal `cities` state when the *input data* changes, but don't do it
-  // as a direct side-effect of render-time memo changes.
-  const initialCitiesKey = useMemo(() => {
-    if (!initialCities?.length) return "";
-    return initialCities.map((c) => `${c.id}:${c.x},${c.y}:${c.isDepot ? 1 : 0}`).join("|");
-  }, [initialCities]);
+  const initialCitiesKey = useMemo(
+    () => buildCitiesKey(initialCities),
+    [initialCities]
+  );
 
   const lastInitialKeyRef = useRef(initialCitiesKey);
+
   useEffect(() => {
     if (draggedCity !== null) return;
     if (lastInitialKeyRef.current === initialCitiesKey) return;
+
     lastInitialKeyRef.current = initialCitiesKey;
 
-    // This is an intentional sync: when the backing data changes (new run / new instance),
-    // refresh the local editable state.
+    // Refresh local editable city state when the backing run/instance data changes.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setCities([...initialCities]);
   }, [initialCitiesKey, draggedCity, initialCities]);
@@ -125,13 +206,15 @@ export default function RouteVisualization({
     if (!containerRef.current) return;
 
     const updateDimensions = () => {
-      if (containerRef.current) {
-        const { width: w, height: h } = containerRef.current.getBoundingClientRect();
-        setDimensions({
-          width: width || Math.max(300, w),
-          height: height || Math.max(200, h)
-        });
-      }
+      if (!containerRef.current) return;
+
+      const { width: measuredWidth, height: measuredHeight } =
+        containerRef.current.getBoundingClientRect();
+
+      setDimensions({
+        width: width || Math.max(300, measuredWidth),
+        height: height || Math.max(200, measuredHeight),
+      });
     };
 
     updateDimensions();
@@ -143,46 +226,48 @@ export default function RouteVisualization({
   }, [width, height]);
 
   const { minX, minY, scale, offsetX, offsetY } = useMemo(() => {
-    if (!cities || cities.length === 0) {
+    if (!cities.length) {
       return {
         minX: 0,
-        maxX: 100,
         minY: 0,
-        maxY: 100,
         scale: 1,
         offsetX: 0,
-        offsetY: 0
+        offsetY: 0,
       };
     }
 
     const padding = 30;
-    const { width: w, height: h } = dimensions;
+    const { width: svgWidth, height: svgHeight } = dimensions;
 
-    const minX = Math.min(...cities.map((c) => c.x));
-    const maxX = Math.max(...cities.map((c) => c.x));
-    const minY = Math.min(...cities.map((c) => c.y));
-    const maxY = Math.max(...cities.map((c) => c.y));
+    const xs = cities.map((city) => city.x);
+    const ys = cities.map((city) => city.y);
+
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    const minY = Math.min(...ys);
+    const maxY = Math.max(...ys);
 
     const dataWidth = maxX - minX || 1;
     const dataHeight = maxY - minY || 1;
 
-    const scaleX = (w - 2 * padding) / dataWidth;
-    const scaleY = (h - 2 * padding) / dataHeight;
+    const scaleX = (svgWidth - 2 * padding) / dataWidth;
+    const scaleY = (svgHeight - 2 * padding) / dataHeight;
     const scale = Math.min(scaleX, scaleY);
 
-    const offsetX = padding + (w - 2 * padding - dataWidth * scale) / 2;
-    const offsetY = padding + (h - 2 * padding - dataHeight * scale) / 2;
+    const offsetX = padding + (svgWidth - 2 * padding - dataWidth * scale) / 2;
+    const offsetY = padding + (svgHeight - 2 * padding - dataHeight * scale) / 2;
 
-    return { minX, maxX, minY, maxY, scale, offsetX, offsetY };
+    return { minX, minY, scale, offsetX, offsetY };
   }, [cities, dimensions]);
 
   const toSVGCoords = useCallback(
     (x, y) => {
       const baseX = (x - minX) * scale + offsetX;
       const baseY = dimensions.height - ((y - minY) * scale + offsetY);
+
       return {
         x: baseX * view.zoom + view.panX,
-        y: baseY * view.zoom + view.panY
+        y: baseY * view.zoom + view.panY,
       };
     },
     [minX, minY, scale, offsetX, offsetY, dimensions.height, view]
@@ -192,38 +277,44 @@ export default function RouteVisualization({
     (svgX, svgY) => {
       const baseX = (svgX - view.panX) / view.zoom;
       const baseY = (svgY - view.panY) / view.zoom;
+
       return {
         x: (baseX - offsetX) / scale + minX,
-        y: (dimensions.height - baseY - offsetY) / scale + minY
+        y: (dimensions.height - baseY - offsetY) / scale + minY,
       };
     },
     [minX, minY, scale, offsetX, offsetY, dimensions.height, view]
   );
 
   const getSVGPoint = useCallback((clientX, clientY) => {
-    if (!svgRef.current) return { x: 0, y: 0 };
+    if (!svgRef.current) {
+      return { x: 0, y: 0 };
+    }
 
     const rect = svgRef.current.getBoundingClientRect();
+
     return {
       x: clientX - rect.left,
-      y: clientY - rect.top
+      y: clientY - rect.top,
     };
   }, []);
 
   const handleMouseDown = useCallback(
-    (e, cityIndex) => {
+    (event, cityIndex) => {
       if (!editable) return;
-      e.preventDefault();
-      e.stopPropagation();
+
+      event.preventDefault();
+      event.stopPropagation();
 
       const city = cities[cityIndex];
       if (!city) return;
 
-      const svgPoint = getSVGPoint(e.clientX, e.clientY);
+      const svgPoint = getSVGPoint(event.clientX, event.clientY);
       const dataCoords = fromSVGCoords(svgPoint.x, svgPoint.y);
+
       dragOffsetRef.current = {
         x: dataCoords.x - city.x,
-        y: dataCoords.y - city.y
+        y: dataCoords.y - city.y,
       };
 
       setDraggedCity(cityIndex);
@@ -234,47 +325,58 @@ export default function RouteVisualization({
   );
 
   const handlePanMouseDown = useCallback(
-    (e) => {
-      if (!editable || draggedCity !== null || e.button !== 0) return;
-      e.preventDefault();
-      const point = getSVGPoint(e.clientX, e.clientY);
-      panStartRef.current = { point, panX: viewRef.current.panX, panY: viewRef.current.panY };
+    (event) => {
+      if (!editable || draggedCity !== null || event.button !== 0) return;
+
+      event.preventDefault();
+
+      const point = getSVGPoint(event.clientX, event.clientY);
+
+      panStartRef.current = {
+        point,
+        panX: viewRef.current.panX,
+        panY: viewRef.current.panY,
+      };
+
       setIsPanning(true);
     },
     [editable, draggedCity, getSVGPoint]
   );
 
   const handleMouseMove = useCallback(
-    (e) => {
+    (event) => {
       if (draggedCity !== null) {
-        const svgPoint = getSVGPoint(e.clientX, e.clientY);
+        const svgPoint = getSVGPoint(event.clientX, event.clientY);
         const dataCoords = fromSVGCoords(svgPoint.x, svgPoint.y);
+
         const nextCoords = {
           x: toInt(dataCoords.x - dragOffsetRef.current.x),
-          y: toInt(dataCoords.y - dragOffsetRef.current.y)
+          y: toInt(dataCoords.y - dragOffsetRef.current.y),
         };
 
         setDragPosition(nextCoords);
 
         setCities((prevCities) =>
           prevCities.map((city, index) =>
-            index === draggedCity? { ...city, ...nextCoords } : city
+            index === draggedCity ? { ...city, ...nextCoords } : city
           )
         );
+
         return;
       }
 
       if (!isPanning || !panStartRef.current) return;
 
-      const point = getSVGPoint(e.clientX, e.clientY);
+      const point = getSVGPoint(event.clientX, event.clientY);
       const dx = point.x - panStartRef.current.point.x;
       const dy = point.y - panStartRef.current.point.y;
       const { panX, panY } = panStartRef.current;
-       setView((prev) => ({
-         ...prev,
+
+      setView((prev) => ({
+        ...prev,
         panX: panX + dx,
-        panY: panY + dy
-       }));
+        panY: panY + dy,
+      }));
     },
     [draggedCity, getSVGPoint, fromSVGCoords, isPanning]
   );
@@ -283,6 +385,7 @@ export default function RouteVisualization({
     if (draggedCity !== null && editable && onCitiesChange) {
       onCitiesChange(cities.map(sanitizeCity));
     }
+
     setDraggedCity(null);
     setDragPosition(null);
     setIsPanning(false);
@@ -291,12 +394,14 @@ export default function RouteVisualization({
   }, [draggedCity, editable, onCitiesChange, cities]);
 
   const handleWheel = useCallback(
-    (e) => {
-      e.preventDefault();
-      const point = getSVGPoint(e.clientX, e.clientY);
+    (event) => {
+      event.preventDefault();
+
+      const point = getSVGPoint(event.clientX, event.clientY);
       const currentView = viewRef.current;
+
       const nextZoom = clamp(
-        currentView.zoom * Math.exp(-e.deltaY * ZOOM_SENSITIVITY),
+        currentView.zoom * Math.exp(-event.deltaY * ZOOM_SENSITIVITY),
         MIN_ZOOM,
         MAX_ZOOM
       );
@@ -307,44 +412,30 @@ export default function RouteVisualization({
       setView({
         zoom: nextZoom,
         panX: point.x - worldX * nextZoom,
-        panY: point.y - worldY * nextZoom
+        panY: point.y - worldY * nextZoom,
       });
     },
     [getSVGPoint]
   );
 
-  const depotIndex = useMemo(() => cities.findIndex((c) => c.isDepot), [cities]);
-
-  const normalizeRoutes = useCallback((tour) => {
-    if (!Array.isArray(tour) || tour.length === 0) return [];
-    if (Array.isArray(tour[0])) return tour;
-    return [tour];
-  }, []);
+  const depotIndex = useMemo(
+    () => cities.findIndex((city) => city.isDepot),
+    [cities]
+  );
 
   const buildRoutePath = useCallback(
     (route) => {
-      if (!Array.isArray(route) || route.length === 0) return "";
+      const sequence = buildRouteSequence(route, depotIndex);
+      if (!sequence.length) return "";
 
-      const indices = route.map((v) => Number(v)).filter((v) => Number.isFinite(v));
-
-      if (indices.length === 0) return "";
-
-      const sequence = [...indices];
-
-      if (depotIndex >= 0) {
-        if (sequence[0] !== depotIndex) sequence.unshift(depotIndex);
-        if (sequence[sequence.length - 1] !== depotIndex) sequence.push(depotIndex);
-      } else {
-        sequence.push(sequence[0]);
-      }
-
-      const pathPoints = sequence
-        .map((cityIndex) => {
+      const pathPoints = sequence.map((cityIndex) => {
           const city = cities[cityIndex];
           if (!city) return null;
+
           const coords = toSVGCoords(city.x, city.y);
           return `${coords.x},${coords.y}`;
-        }).filter((p) => p !== null);
+        })
+        .filter(Boolean);
 
       return pathPoints.join(" ");
     },
@@ -356,53 +447,26 @@ export default function RouteVisualization({
     if (!routes.length || !cities.length) return [];
 
     return routes
-      .map((route, idx) => ({
-        key: `route-${idx}`,
-        color: ROUTE_COLORS[idx % ROUTE_COLORS.length],
+      .map((route, index) => ({
+        key: `route-${index}`,
+        color: ROUTE_COLORS[index % ROUTE_COLORS.length],
         points: buildRoutePath(route),
-      })).filter((route) => route.points);
-  }, [buildRoutePath, cities.length, normalizeRoutes, sourceData]);
+      }))
+      .filter((route) => route.points);
+  }, [buildRoutePath, cities.length, sourceData]);
 
   const currentTourLength = useMemo(() => {
     const routes = normalizeRoutes(sourceData?.tour);
-    if (!routes.length || !cities || cities.length === 0) return 0;
+    if (!routes.length || !cities.length) return 0;
 
-    const startIndex = depotIndex >= 0 ? depotIndex : null;
-    let totalDistance = 0;
-
-    for (const route of routes) {
-      if (!Array.isArray(route) || route.length === 0) continue;
-
-      const indices = route.map((v) => Number(v)).filter((v) => Number.isFinite(v));
-
-      if (indices.length === 0) continue;
-
-      const sequence = [...indices];
-
-      if (startIndex != null) {
-        if (sequence[0] !== startIndex) sequence.unshift(startIndex);
-        if (sequence[sequence.length - 1] !== startIndex) sequence.push(startIndex);
-      } else {
-        sequence.push(sequence[0]);
-      }
-
-      for (let i = 0; i < sequence.length - 1; i++) {
-        const currentCity = cities[sequence[i]];
-        const nextCity = cities[sequence[i + 1]];
-
-        if (currentCity && nextCity) {
-          const dx = currentCity.x - nextCity.x;
-          const dy = currentCity.y - nextCity.y;
-          totalDistance += Math.sqrt(dx * dx + dy * dy);
-        }
-      }
-    }
-
-    return totalDistance;
-  }, [sourceData, cities, normalizeRoutes, depotIndex]);
+    return routes.reduce((sum, route) => {
+      const sequence = buildRouteSequence(route, depotIndex);
+      return sum + calculateRouteDistance(sequence, cities);
+    }, 0);
+  }, [sourceData, cities, depotIndex]);
 
   const pheromoneEdges = useMemo(() => {
-    if (!run?.series?.pheromoneHeatmap || !cities?.length) {
+    if (!run?.series?.pheromoneHeatmap || !cities.length) {
       return [];
     }
 
@@ -411,55 +475,60 @@ export default function RouteVisualization({
 
     if (!heatmaps.length) return [];
 
-    const heatmapIndex = Math.min(heatmaps.length - 1, Math.max(0, tours.length - 1));
+    const heatmapIndex = Math.min(
+      heatmaps.length - 1,
+      Math.max(0, tours.length - 1)
+    );
+
     const matrix = heatmaps[heatmapIndex];
 
     if (!Array.isArray(matrix) || !Array.isArray(matrix[0])) {
       return [];
     }
 
-    const n = Math.min(matrix.length, cities.length);
-    if (n === 0) return [];
+    const size = Math.min(matrix.length, cities.length);
+    if (size === 0) return [];
 
-    let maxVal = 0;
-    const allEdges = [];
+    let maxValue = 0;
+    const rawEdges = [];
 
-    for (let i = 0; i < n; i++) {
-      for (let j = i + 1; j < n; j++) {
-        const rawV = Math.max(
+    for (let i = 0; i < size; i += 1) {
+      for (let j = i + 1; j < size; j += 1) {
+        const value = Math.max(
           Number(matrix[i]?.[j] ?? 0),
           Number(matrix[j]?.[i] ?? 0)
         );
 
-        allEdges.push({ a: i, b: j, v: rawV });
-        if (rawV > maxVal) maxVal = rawV;
+        rawEdges.push({ a: i, b: j, value });
+        if (value > maxValue) maxValue = value;
       }
     }
 
-    if (maxVal <= 0) return [];
+    if (maxValue <= 0) return [];
 
-    return allEdges
-      .map(({ a, b, v }) => {
-        const c1 = cities[a];
-        const c2 = cities[b];
-        if (!c1 || !c2) return null;
+    return rawEdges
+      .map(({ a, b, value }) => {
+        const cityA = cities[a];
+        const cityB = cities[b];
 
-        const p1 = toSVGCoords(c1.x, c1.y);
-        const p2 = toSVGCoords(c2.x, c2.y);
+        if (!cityA || !cityB) {
+          return null;
+        }
 
-        const visualFloor = maxVal * 0.02;
-        const visualValue = Math.max(v, visualFloor);
-        const normalized = visualValue / maxVal;
+        const pointA = toSVGCoords(cityA.x, cityA.y);
+        const pointB = toSVGCoords(cityB.x, cityB.y);
+
+        const visualFloor = maxValue * 0.02;
+        const visualValue = Math.max(value, visualFloor);
+        const normalized = visualValue / maxValue;
         const boosted = Math.pow(normalized, 0.55);
 
         return {
-          x1: p1.x,
-          y1: p1.y,
-          x2: p2.x,
-          y2: p2.y,
+          x1: pointA.x,
+          y1: pointA.y,
+          x2: pointB.x,
+          y2: pointB.y,
           intensity: Math.max(0.06, Math.min(1, boosted)),
-          value: v,
-          isWeak: v < maxVal * 0.05
         };
       })
       .filter(Boolean);
@@ -467,7 +536,8 @@ export default function RouteVisualization({
 
   return (
     <div ref={containerRef} className="tsp-visualization">
-      {(sourceData?.observedTourLength !== undefined || sourceData?.originalTourLength != null) && (
+      {(sourceData?.observedTourLength !== undefined ||
+        sourceData?.originalTourLength != null) && (
         <div className="tour-info">
           {sourceData?.observedTourLength !== undefined ? (
             <span className="tour-length">
@@ -485,30 +555,26 @@ export default function RouteVisualization({
         ref={svgRef}
         width={dimensions.width}
         height={dimensions.height}
-        className={`tsp-svg ${editable ? "editable" : "readonly"} ${isPanning ? "panning" : ""}`}
+        className={`tsp-svg ${editable ? "editable" : "readonly"} ${
+          isPanning ? "panning" : ""
+        }`}
         onMouseMove={handleMouseMove}
         onMouseUp={finishInteraction}
         onMouseLeave={finishInteraction}
         onMouseDown={handlePanMouseDown}
         onWheel={handleWheel}
       >
-        <defs>
-          <filter id="pheromone-blur-wide" x="-40%" y="-40%" width="180%" height="180%">
-            <feGaussianBlur stdDeviation="10" />
-          </filter>
-        </defs>
-
         <g transform={`translate(${view.panX} ${view.panY}) scale(${view.zoom})`}>
-          {pheromoneEdges.map((e, idx) => (
+          {pheromoneEdges.map((edge, index) => (
             <line
-              key={`ph-${idx}`}
-              x1={e.x1}
-              y1={e.y1}
-              x2={e.x2}
-              y2={e.y2}
+              key={`ph-${index}`}
+              x1={edge.x1}
+              y1={edge.y1}
+              x2={edge.x2}
+              y2={edge.y2}
               stroke="#ff6a2a"
-              strokeOpacity={0.08 + 0.5 * e.intensity}
-              strokeWidth={0.5 + 3 * e.intensity}
+              strokeOpacity={0.08 + 0.5 * edge.intensity}
+              strokeWidth={0.5 + 3 * edge.intensity}
               strokeLinecap="round"
               pointerEvents="none"
             />
@@ -532,18 +598,25 @@ export default function RouteVisualization({
             return (
               <g
                 key={city.id ?? index}
-                className={`city ${isDragging ? "dragging" : ""} ${editable ? "editable" : "readonly"}`}
+                className={`city ${isDragging ? "dragging" : ""} ${
+                  editable ? "editable" : "readonly"
+                }`}
                 pointerEvents="none"
               >
                 <circle
                   className={`city-dot ${city.isDepot ? "depot" : ""}`}
                   cx={coords.x}
                   cy={coords.y}
-                  onMouseDown={(e) => handleMouseDown(e, index)}
+                  onMouseDown={(event) => handleMouseDown(event, index)}
                   pointerEvents="all"
                 />
-                <text className="city-label" x={coords.x} y={coords.y - 12} pointerEvents="none">
-                  {index}
+                <text
+                  className="city-label"
+                  x={coords.x}
+                  y={coords.y - 12}
+                  pointerEvents="none"
+                >
+                  {city.nodeId}
                 </text>
               </g>
             );

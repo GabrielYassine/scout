@@ -4,6 +4,46 @@
 import { useMemo, memo } from "react";
 import ReactECharts from "echarts-for-react";
 
+function getBoxplotXAxisValues(boxPlotResponse) {
+  if (Array.isArray(boxPlotResponse.xValues)) {
+    return boxPlotResponse.xValues;
+  }
+
+  if (Array.isArray(boxPlotResponse.evaluations)) {
+    return boxPlotResponse.evaluations;
+  }
+
+  return [];
+}
+
+function normalizeBoxplotRow(row, invertValues) {
+  if (!Array.isArray(row) || row.length !== 5) return null;
+
+  const values = row.map(Number);
+  if (!values.every(Number.isFinite)) return null;
+
+  return invertValues ? [-values[4], -values[3], -values[2], -values[1], -values[0]] : values;
+}
+
+function buildBoxplotEntries(xValues, rawBoxplots, invertValues) {
+  return xValues
+    .map((x, index) => {
+      const normalized = normalizeBoxplotRow(rawBoxplots[index], invertValues);
+      if (!normalized) return null;
+
+      const [min, q1, median, q3, max] = normalized;
+
+      return {
+        label: String(x),
+        item: {
+          value: normalized,
+          rawStats: { min, q1, median, q3, max },
+        },
+      };
+    })
+    .filter(Boolean);
+}
+
 function BoxPlotChart({
   seriesName,
   boxPlotResponse,
@@ -15,13 +55,8 @@ function BoxPlotChart({
   const option = useMemo(() => {
     if (!seriesName || !boxPlotResponse) return null;
 
-    const xValues = Array.isArray(boxPlotResponse.xValues)
-      ? boxPlotResponse.xValues
-      : Array.isArray(boxPlotResponse.evaluations)
-      ? boxPlotResponse.evaluations
-      : [];
-
-    const rawBoxplots = Array.isArray(boxPlotResponse.boxplots)? boxPlotResponse.boxplots : [];
+    const xValues = getBoxplotXAxisValues(boxPlotResponse);
+    const rawBoxplots = Array.isArray(boxPlotResponse.boxplots) ? boxPlotResponse.boxplots : [];
 
     if (!xValues.length || !rawBoxplots.length) return null;
 
@@ -32,25 +67,12 @@ function BoxPlotChart({
 
     const displaySeriesName = isPermutationFitness ? "tourLength" : seriesName;
     const resolvedYAxisLabel = yAxisLabel ?? displaySeriesName;
-    const entries = xValues.map((x, i) => {const row = rawBoxplots[i];
-       if (!Array.isArray(row) || row.length !== 5) return null;
 
-       const values = row.map(Number);
-       if (!values.every(Number.isFinite)) return null;
-
-       const normalized = isPermutationFitness? [-values[4], -values[3], -values[2], -values[1], -values[0]] : values;
-
-       const [min, q1, median, q3, max] = normalized;
-
-       return {
-         label: String(x),
-         item: {
-           value: normalized,
-           rawStats: { min, q1, median, q3, max },
-         },
-       };
-     })
-     .filter(Boolean);
+    const entries = buildBoxplotEntries(
+      xValues,
+      rawBoxplots,
+      isPermutationFitness
+    );
 
     if (!entries.length) return null;
 
@@ -66,22 +88,22 @@ function BoxPlotChart({
         left: 64,
         containLabel: true,
       },
-    tooltip: {
-       trigger: "item",
-       formatter: (params) => {
-         const { min, q1, median, q3, max } = params?.data?.rawStats ?? {};
+      tooltip: {
+        trigger: "item",
+        formatter: (params) => {
+          const { min, q1, median, q3, max } = params?.data?.rawStats ?? {};
 
-         return [
-           displaySeriesName,
-           `${xAxisLabel}: ${params?.name ?? "-"}`,
-           `Min: ${Number.isFinite(min) ? min : "-"}`,
-           `Q1: ${Number.isFinite(q1) ? q1 : "-"}`,
-           `Median: ${Number.isFinite(median) ? median : "-"}`,
-           `Q3: ${Number.isFinite(q3) ? q3 : "-"}`,
-           `Max: ${Number.isFinite(max) ? max : "-"}`,
-         ].join("<br/>");
-       },
-     },
+          return [
+            displaySeriesName,
+            `${xAxisLabel}: ${params?.name ?? "-"}`,
+            `Min: ${Number.isFinite(min) ? min : "-"}`,
+            `Q1: ${Number.isFinite(q1) ? q1 : "-"}`,
+            `Median: ${Number.isFinite(median) ? median : "-"}`,
+            `Q3: ${Number.isFinite(q3) ? q3 : "-"}`,
+            `Max: ${Number.isFinite(max) ? max : "-"}`,
+          ].join("<br/>");
+        },
+      },
       xAxis: {
         type: "category",
         data: labels,

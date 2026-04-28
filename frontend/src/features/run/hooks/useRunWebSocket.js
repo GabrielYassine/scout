@@ -7,15 +7,13 @@ import { useEffect, useRef } from "react";
 import { Client } from "@stomp/stompjs";
 
 import { createOrderedProgressApplier } from "@/features/run/utils/orderedProgress.js";
-import {
-  createEmptyBatch,
-  mergeProgress,
-} from "@/features/run/utils/runProgressMerge.js";
-import {
-  createWebSocketUrl,
-  parseSocketMessage,
-} from "@/features/run/utils/socketUtils.js";
+import { createEmptyBatch, mergeProgress } from "@/features/run/utils/runProgressMerge.js";
+import { createWebSocketUrl, parseSocketMessage } from "@/features/run/utils/socketUtils.js";
 
+// Progress packets may arrive frequently, so UI state is updated in small batches
+// instead of once per websocket message.
+// This interval is a tradeoff between UI responsiveness and React rendering overhead.
+// But is a must since it will be too expensive otherwise.
 const FLUSH_INTERVAL_MS = 75;
 
 export function useRunWebSocket({
@@ -31,6 +29,8 @@ export function useRunWebSocket({
   setBatch,
   setSavedRun,
 }) {
+  // Refs are used for websocket lifecycle data that must stay current without
+  // causing React re-renders for every incoming packet.
   const activeRunIdRef = useRef(null);
   const readySentRef = useRef(false);
   const startSentRef = useRef(false);
@@ -42,12 +42,15 @@ export function useRunWebSocket({
   useEffect(() => {
     if (!enabled || !runId) return;
 
+    // Reset per-run lifecycle state when a new live run is connected.
     activeRunIdRef.current = runId;
     readySentRef.current = false;
     startSentRef.current = false;
     latestBatchRef.current = null;
     readyProgressQueueRef.current = [];
 
+    // The backend sends sequence ids per stream. The ordered applier ensures
+    // packets are merged only after all earlier packets for that stream arrived.
     orderedApplierRef.current = createOrderedProgressApplier({
       applyPacket: (packet) => {
         readyProgressQueueRef.current.push(packet);
@@ -67,6 +70,8 @@ export function useRunWebSocket({
 
       let nextBatch = latestBatchRef.current ?? null;
 
+      // Merge all queued progress packets into one batch update. This avoids
+      // triggering a React state update for every single websocket message.
       for (const packet of queuedPackets) {
         if (!packet?.runId) continue;
         if (activeRunIdRef.current && packet.runId !== activeRunIdRef.current) {
@@ -84,6 +89,8 @@ export function useRunWebSocket({
     const handleRunConnected = () => {
       if (startSentRef.current || !runRequest) return;
 
+      // The frontend first subscribes and sends "ready". The backend then
+      // confirms RUN_CONNECTED, after which the actual run is started.
       startSentRef.current = true;
       client.publish({
         destination: `/app/run/${runId}/start`,
@@ -105,6 +112,8 @@ export function useRunWebSocket({
       setLoading(false);
       setBatch(finishedBatch);
 
+      // Persist the finished run so the RunPage can be restored after refresh
+      // or navigation without reconnecting to the websocket.
       setSavedRun({
         pageMode: "run",
         runId,
@@ -166,6 +175,8 @@ export function useRunWebSocket({
 
       if (readySentRef.current) return;
 
+      // Tell the backend that the frontend is subscribed and ready to receive
+      // progress before the backend starts the run.
       readySentRef.current = true;
       client.publish({
         destination: `/app/run/${runId}/ready`,
@@ -183,6 +194,7 @@ export function useRunWebSocket({
           flushTimerRef.current = null;
         }
 
+        // Clear run-local buffers so stale packets cannot affect a later run.
         readyProgressQueueRef.current = [];
         latestBatchRef.current = null;
         orderedApplierRef.current?.resetAll?.();

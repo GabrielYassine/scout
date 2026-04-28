@@ -4,6 +4,7 @@
  */
 import { useMemo, memo, useState, useRef, useCallback, useEffect } from "react";
 import ReactECharts from "echarts-for-react";
+
 import LineChartStatsPanel from "./LineChartStatsPanel.jsx";
 import {
   buildLineChartBaseOption,
@@ -15,6 +16,7 @@ import {
   rangesEqual,
   resolveZoomRange,
 } from "./lineChartZoom.js";
+
 import "@/features/run/styles/LineCharts.css";
 
 function LineCharts({
@@ -29,7 +31,6 @@ function LineCharts({
   showStats = true,
   onWindowRangeChange = null,
 }) {
-  const echartsRef = useRef(null);
   const chartInstanceRef = useRef(null);
   const userHasZoomedRef = useRef(false);
   const [windowRange, setWindowRange] = useState(null);
@@ -87,16 +88,14 @@ function LineCharts({
 
       try {
         chartInstance.setOption(
-          {
-            series: [seriesPatch],
-          },
+          { series: [seriesPatch] },
           {
             notMerge: false,
             lazyUpdate: true,
           }
         );
       } catch {
-        // ignore disposed instance races
+        // Ignore disposed chart instance races during unmount/re-render.
       }
     },
     [seriesName, displaySeriesName, displayChartPoints, markAreaData]
@@ -105,6 +104,7 @@ function LineCharts({
   useEffect(() => {
     const chart = chartInstanceRef.current;
     if (!chart) return;
+
     applySeriesPatch(chart);
   }, [applySeriesPatch]);
 
@@ -150,8 +150,7 @@ function LineCharts({
       const nextRange = resolveZoomRange(zoom, dataXRange);
       if (!nextRange) return;
 
-      const zoomedAwayFromFull = !rangesEqual(nextRange, dataXRange);
-      userHasZoomedRef.current = zoomedAwayFromFull;
+      userHasZoomedRef.current = !rangesEqual(nextRange, dataXRange);
 
       if (!windowRange || !rangesEqual(windowRange, nextRange)) {
         setWindowRange(nextRange);
@@ -201,7 +200,6 @@ function LineCharts({
       )}
 
       <ReactECharts
-        ref={echartsRef}
         option={baseOption}
         notMerge={false}
         lazyUpdate={true}

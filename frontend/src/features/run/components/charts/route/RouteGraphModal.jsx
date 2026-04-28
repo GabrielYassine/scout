@@ -19,14 +19,22 @@ export default function TSPGraphModal({
   onRemoveCity,
   onDepotToggle,
 }) {
+
   const cities = nodes.length
-    ? nodes.map((node, idx) => ({
-        id: idx,
+    ? nodes.map((node) => ({
+        id: node.id,
+        nodeId: node.nodeId,
         x: node.x,
         y: node.y,
-        isDepot: node.isDepot,
+        demand: node.demand ?? 0,
+        isDepot: node.isDepot === true,
       }))
-    : tspInstance?.cities ?? [];
+    : (tspInstance?.cities ?? []).map((city) => ({
+        ...city,
+        id: city.id,
+        nodeId: city.nodeId,
+        isDepot: city.isDepot === true,
+      }));
 
   const depotSignature = nodes.map((node) => (node.isDepot ? "1" : "0")).join("");
 

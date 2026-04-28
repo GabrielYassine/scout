@@ -66,8 +66,11 @@ public final class InstanceParser {
                 throw new IllegalArgumentException("Invalid TSP coordinate line: " + line);
             }
 
+            int nodeId = toInt(parts[0]);
+
             Map<String, Object> city = new LinkedHashMap<>();
-            city.put("id", toInt(parts[0]));
+            city.put("id", nodeId);
+            city.put("nodeId", nodeId);
             city.put("x", toDouble(parts[1]));
             city.put("y", toDouble(parts[2]));
             cities.add(city);
@@ -149,40 +152,31 @@ public final class InstanceParser {
             throw new IllegalArgumentException("VRP file must contain DEPOT_SECTION");
         }
 
-        List<Integer> resolvedDepotIds = depotIds;
-        if (resolvedDepotIds.size() > 1) {
+        if (depotIds.size() > 1) {
             throw new IllegalArgumentException("Only single-depot CVRP instances are currently supported");
         }
 
-        int depotNodeId = resolvedDepotIds.getFirst();
+        int depotNodeId = depotIds.getFirst();
         double[] depotCoords = coords.get(depotNodeId);
+
         if (depotCoords == null) {
             throw new IllegalArgumentException("Depot node " + depotNodeId + " is missing coordinates");
         }
 
         double capacity = requireCapacity(headers);
         int numberOfVehicles = resolveVehicleCount(headers);
-        validateDemandsExist(coords, demands, resolvedDepotIds);
+        validateDemandsExist(coords, demands, depotIds);
 
-        List<Map<String, Object>> customers = buildCustomers(coords, demands, resolvedDepotIds);
+        List<Map<String, Object>> customers = buildCustomers(coords, demands, depotIds);
 
         int expectedNodeCount = customers.size() + 1;
-        int dimension = resolveDimension(headers, expectedNodeCount, "instance contains " + expectedNodeCount + " nodes");
+        int dimension = resolveDimension(headers, expectedNodeCount, "instance contains " + expectedNodeCount + " nodes"
+        );
 
-        String name = headers.getOrDefault("NAME", "");
-
-        Map<String, Object> depot = new LinkedHashMap<>();
-        depot.put("x", depotCoords[0]);
-        depot.put("y", depotCoords[1]);
-
-        Map<String, Object> depotNode = new LinkedHashMap<>();
-        depotNode.put("id", 0);
-        depotNode.put("nodeId", depotNodeId);
-        depotNode.put("x", depotCoords[0]);
-        depotNode.put("y", depotCoords[1]);
+        Map<String, Object> depot = buildNode(depotNodeId, depotCoords);
 
         Map<String, Object> result = new LinkedHashMap<>();
-        result.put("name", name);
+        result.put("name", headers.getOrDefault("NAME", ""));
         result.put("comment", headers.getOrDefault("COMMENT", ""));
         result.put("type", "CVRP");
         result.put("dimension", dimension);
@@ -190,10 +184,19 @@ public final class InstanceParser {
         result.put("capacity", capacity);
         result.put("numberOfVehicles", numberOfVehicles);
         result.put("depot", depot);
-        result.put("depots", List.of(depotNode));
+        result.put("depots", List.of(depot));
         result.put("customers", customers);
 
         return result;
+    }
+
+    private static Map<String, Object> buildNode(int nodeId, double[] coords) {
+        Map<String, Object> node = new LinkedHashMap<>();
+        node.put("id", nodeId);
+        node.put("nodeId", nodeId);
+        node.put("x", coords[0]);
+        node.put("y", coords[1]);
+        return node;
     }
 
     private static void parseCoordinateLine(String line, Map<Integer, double[]> coords) {
@@ -234,12 +237,8 @@ public final class InstanceParser {
 
             double[] point = entry.getValue();
 
-            Map<String, Object> customer = new LinkedHashMap<>();
-            customer.put("id", customers.size());
-            customer.put("x", point[0]);
-            customer.put("y", point[1]);
+            Map<String, Object> customer = buildNode(nodeId, point);
             customer.put("demand", demands.get(nodeId));
-            customer.put("originalId", nodeId);
             customers.add(customer);
         }
 
@@ -259,6 +258,7 @@ public final class InstanceParser {
 
             addHeaderIfPresent(headers, line);
         }
+
         return headers;
     }
 
@@ -316,7 +316,6 @@ public final class InstanceParser {
 
     private static int resolveDimension(Map<String, String> headers, int actualDimension, String actualDescription) {
         int dimension = headers.containsKey("DIMENSION") ? toInt(headers.get("DIMENSION")) : actualDimension;
-
         if (dimension != actualDimension) {
             throw new IllegalArgumentException("DIMENSION is " + dimension + ", but " + actualDescription);
         }

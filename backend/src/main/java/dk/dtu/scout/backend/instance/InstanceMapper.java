@@ -16,7 +16,6 @@ import java.util.Map;
  */
 public final class InstanceMapper {
 
-    // We only support 2D Euclidean instances.
     private static final String EDGE_WEIGHT_TYPE = "EUC_2D";
 
     private InstanceMapper() {
@@ -48,7 +47,7 @@ public final class InstanceMapper {
                 throw new IllegalArgumentException("tspInstance city must be a map");
             }
 
-            @SuppressWarnings("unchecked") // Safe as JSON uses string keys and object values.
+            @SuppressWarnings("unchecked")
             Map<String, Object> city = (Map<String, Object>) cityRaw;
 
             coordinates[i][0] = toDouble(city.get("x"));
@@ -89,7 +88,7 @@ public final class InstanceMapper {
                 throw new IllegalArgumentException("vrpInstance customer must be a map");
             }
 
-            @SuppressWarnings("unchecked") // Safe as JSON uses string keys and object values.
+            @SuppressWarnings("unchecked")
             Map<String, Object> customer = (Map<String, Object>) customerRaw;
 
             customerCoordinates[i][0] = toDouble(customer.get("x"));
@@ -110,6 +109,7 @@ public final class InstanceMapper {
 
     /**
      * Converts a TSPInstance object into a map format suitable for frontend use and export.
+     * TSPInstance stores coordinates only, so node IDs are generated in standard TSPLIB order: 1..n.
      * @param instance the TSPInstance to convert into a payload map.
      * @return a map containing the TSP instance data in a structured format for frontend display and export.
      */
@@ -118,8 +118,11 @@ public final class InstanceMapper {
         double[][] coordinates = instance.getCoordinates();
 
         for (int i = 0; i < coordinates.length; i++) {
+            int nodeId = i + 1;
+
             Map<String, Object> city = new LinkedHashMap<>();
-            city.put("id", i);
+            city.put("id", nodeId);
+            city.put("nodeId", nodeId);
             city.put("x", coordinates[i][0]);
             city.put("y", coordinates[i][1]);
             cities.add(city);
@@ -138,6 +141,8 @@ public final class InstanceMapper {
 
     /**
      * Converts a VRPInstance object into a map format suitable for frontend use and export.
+     * VRPInstance stores coordinates and demands only, so node IDs are generated in standard VRPLIB order:
+     * depot = 1, customers = 2..n.
      * @param instance the VRPInstance to convert into a payload map.
      * @return a map containing the VRP instance data in a structured format for frontend display and export.
      */
@@ -145,11 +150,13 @@ public final class InstanceMapper {
         double[] depotCoordinates = instance.getDepotCoordinates();
 
         Map<String, Object> depot = new LinkedHashMap<>();
+        depot.put("id", 1);
+        depot.put("nodeId", 1);
         depot.put("x", depotCoordinates[0]);
         depot.put("y", depotCoordinates[1]);
 
         Map<String, Object> depotNode = new LinkedHashMap<>();
-        depotNode.put("id", 0);
+        depotNode.put("id", 1);
         depotNode.put("nodeId", 1);
         depotNode.put("x", depotCoordinates[0]);
         depotNode.put("y", depotCoordinates[1]);
@@ -158,12 +165,14 @@ public final class InstanceMapper {
         double[][] customerCoordinates = instance.getCustomerCoordinates();
 
         for (int i = 0; i < customerCoordinates.length; i++) {
+            int nodeId = i + 2;
+
             Map<String, Object> customer = new LinkedHashMap<>();
-            customer.put("id", i);
+            customer.put("id", nodeId);
+            customer.put("nodeId", nodeId);
             customer.put("x", customerCoordinates[i][0]);
             customer.put("y", customerCoordinates[i][1]);
             customer.put("demand", instance.getDemand(i));
-            customer.put("originalId", i + 2);
             customers.add(customer);
         }
 
@@ -193,10 +202,10 @@ public final class InstanceMapper {
             throw new IllegalArgumentException("vrpInstance must include depot coordinates");
         }
 
-        @SuppressWarnings("unchecked") // Safe by convention: JSON objects use string keys and object values.
+        @SuppressWarnings("unchecked")
         Map<String, Object> depot = (Map<String, Object>) depotRaw;
 
-        return new double[] {toDouble(depot.get("x")), toDouble(depot.get("y"))};
+        return new double[] { toDouble(depot.get("x")), toDouble(depot.get("y")) };
     }
 
     private static double toDouble(Object value) {

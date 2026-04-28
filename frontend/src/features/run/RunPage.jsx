@@ -19,8 +19,10 @@ import { useRunSelection } from "@/features/run/hooks/useRunSelection.js";
 import { useRunWebSocket } from "@/features/run/hooks/useRunWebSocket.js";
 import { useRuntimeStudyWebSocket } from "@/features/run/hooks/useRuntimeStudyWebSocket.js";
 
+// Default playback speed used when the RunPage first loads.
 const INITIAL_SPEED = 1;
 
+// Renders a simple status panel for failed runs or empty result states.
 function renderStatusPanel(title, message) {
   return (
     <div className="run-chart-panel">
@@ -32,8 +34,11 @@ function renderStatusPanel(title, message) {
 
 export default function RunPage({ catalog, catalogLoading, catalogError }) {
   const navigate = useNavigate();
+
+  // The chart layout starts stacked and can be changed from RunControls.
   const [layoutMode, setLayoutMode] = useState("stack");
 
+  // This hook resolves the initial page state from router state and localStorage,
   const {
     pageMode,
     runId,
@@ -46,7 +51,6 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
     vrpInstance,
     restoredRun,
     liveExecution,
-
     batch,
     setBatch,
     studyPoints,
@@ -60,6 +64,7 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
     setStudyStatus,
   } = useRunPageState();
 
+  // This hook derives run selection options and handlers from the current batch and restored run.
   const {
     batches,
     averageRuns,
@@ -74,20 +79,31 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
     setSavedRun,
   });
 
-  const runtimeStudyProblemId =
-    runtimeStudyRequest?.problemId ?? puzzleConfig?.problem?.[0]?.id ?? null;
+  // Runtime studies vary the problem size for a single problem, so this extracts
+  // the problem id used in the study chart title.
+  const runtimeStudyProblemId = runtimeStudyRequest?.problemId ?? puzzleConfig?.problem?.[0]?.id ?? null;
 
+  // During live runs this length grows as websocket packets add more logged data.
+  // usePlayback animates up to the currently available length and continues when
+  // more points arrive.
   const currentAnimationLength = useMemo(
     () => computeAnimationLength({ pageMode, studyPoints, runs }),
     [pageMode, studyPoints, runs]
   );
 
+  // Drives chart playback. visibleCount controls how many currently available
+  // data points are shown, while playbackSpeed and resetPlayback are controlled
+  // from RunControls.
   const { playbackSpeed, setPlaybackSpeed, visibleCount, resetPlayback } =
     usePlayback({
       length: currentAnimationLength,
       initialSpeed: INITIAL_SPEED,
     });
 
+  // Start the appropriate websocket lifecycle for live executions.
+  // Restored saved results do not reconnect.
+
+  // Normal runs stream incremental batch/run updates.
   useRunWebSocket({
     enabled: liveExecution && pageMode === "run",
     runId,
@@ -102,6 +118,7 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
     setSavedRun,
   });
 
+  // Runtime studies stream one aggregated study point per problem size.
   useRuntimeStudyWebSocket({
     enabled: liveExecution && pageMode === "runtimeStudy",
     studyId,

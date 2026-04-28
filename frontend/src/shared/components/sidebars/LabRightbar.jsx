@@ -43,6 +43,7 @@ const LabRightbar = ({
 
   const updateTspInstance = (updater) => {
     if (!onTspInstanceChange) return;
+
     onTspInstanceChange((prev) => {
       const base = prev ?? createEmptyTspInstance();
       const next = typeof updater === "function" ? updater(base) : updater;
@@ -52,6 +53,7 @@ const LabRightbar = ({
 
   const updateVrpInstance = (updater) => {
     if (!onVrpInstanceChange) return;
+
     onVrpInstanceChange((prev) => {
       const base = prev ?? createEmptyVrpInstance();
       const next = typeof updater === "function" ? updater(base) : updater;
@@ -63,6 +65,7 @@ const LabRightbar = ({
     if (instanceType === "VRP") {
       const nodes = buildVrpNodes(vrpInstance);
       const vrpVehicles = vrpInstance?.numberOfVehicles;
+
       return {
         name: vrpInstance?.name ?? CUSTOM_INSTANCE_NAME,
         comment: vrpInstance?.comment ?? "",
@@ -79,11 +82,11 @@ const LabRightbar = ({
       type: "TSP",
       numberOfVehicles: 1,
       capacity: "",
-      nodes: (tspInstance?.cities ?? []).map((c, idx) => ({
-        key: `city-${idx}`,
-        nodeId: idx,
-        x: c.x,
-        y: c.y,
+      nodes: (tspInstance?.cities ?? []).map((city) => ({
+        key: `city-${city.nodeId}`,
+        nodeId: city.nodeId,
+        x: city.x,
+        y: city.y,
         demand: 0,
         isDepot: false,
       })),
@@ -94,7 +97,13 @@ const LabRightbar = ({
   const dimension = view.nodes.length;
 
   const syncCitiesToTsp = (nodes) => {
-    const normalized = nodes.map((node, idx) => ({ id: idx, x: node.x, y: node.y }));
+    const normalized = nodes.map((node) => ({
+      id: node.nodeId,
+      nodeId: node.nodeId,
+      x: node.x,
+      y: node.y,
+    }));
+
     updateTspInstance((current) => ({
       ...current,
       type: "TSP",
@@ -106,23 +115,36 @@ const LabRightbar = ({
 
   const syncCitiesToVrp = (nodes) => {
     updateVrpInstance((current) => {
-      const depotNodes = nodes.filter((n) => n.isDepot);
-      const depotIdSet = new Set(depotNodes.map((d) => d.nodeId));
-      const customerNodes = nodes.filter((n) => !n.isDepot && !depotIdSet.has(n.nodeId));
-      const depots = depotNodes.map((d, idx) => ({
-        id: idx,
-        nodeId: d.nodeId ?? idx + 1,
-        x: d.x,
-        y: d.y,
+      const depotNodes = nodes.filter((node) => node.isDepot);
+      const depotIdSet = new Set(depotNodes.map((depot) => depot.nodeId));
+      const customerNodes = nodes.filter(
+        (node) => !node.isDepot && !depotIdSet.has(node.nodeId)
+      );
+
+      const depots = depotNodes.map((depot) => ({
+        id: depot.nodeId,
+        nodeId: depot.nodeId,
+        x: depot.x,
+        y: depot.y,
       }));
-      const customers = customerNodes.map((c, idx) => ({
-        id: idx,
-        x: c.x,
-        y: c.y,
-        demand: c.demand ?? 0,
-        originalId: c.nodeId ?? idx + 1,
+
+      const customers = customerNodes.map((customer) => ({
+        id: customer.nodeId,
+        nodeId: customer.nodeId,
+        x: customer.x,
+        y: customer.y,
+        demand: customer.demand ?? 0,
+        originalId: customer.nodeId,
       }));
-      const primaryDepot = depots[0] ? { x: depots[0].x, y: depots[0].y } : null;
+
+      const primaryDepot = depots[0]
+        ? {
+            id: depots[0].nodeId,
+            nodeId: depots[0].nodeId,
+            x: depots[0].x,
+            y: depots[0].y,
+          }
+        : null;
 
       return {
         ...current,
@@ -179,6 +201,7 @@ const LabRightbar = ({
       console.error("Instance import error:", err);
     } finally {
       setUploading(false);
+
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -188,27 +211,43 @@ const LabRightbar = ({
   const buildTspExportPayload = () => ({
     name: view.name || CUSTOM_INSTANCE_NAME,
     comment: view.comment || "",
-    cities: view.nodes.map((node, idx) => ({ id: idx, x: node.x, y: node.y })),
+    cities: view.nodes.map((node) => ({
+      id: node.nodeId,
+      nodeId: node.nodeId,
+      x: node.x,
+      y: node.y,
+    })),
   });
 
   const buildVrpExportPayload = () => {
-    const depotNodes = view.nodes.filter((n) => n.isDepot);
-    const depots = depotNodes.map((d, idx) => ({
-      id: idx,
-      nodeId: d.nodeId ?? idx + 1,
-      x: d.x,
-      y: d.y,
+    const depotNodes = view.nodes.filter((node) => node.isDepot);
+
+    const depots = depotNodes.map((depot) => ({
+      id: depot.nodeId,
+      nodeId: depot.nodeId,
+      x: depot.x,
+      y: depot.y,
     }));
+
     const customers = view.nodes
-      .filter((n) => !n.isDepot)
-      .map((c, idx) => ({
-        id: idx,
-        x: c.x,
-        y: c.y,
-        demand: c.demand ?? 0,
-        originalId: c.nodeId ?? idx + 1,
+      .filter((node) => !node.isDepot)
+      .map((customer) => ({
+        id: customer.nodeId,
+        nodeId: customer.nodeId,
+        x: customer.x,
+        y: customer.y,
+        demand: customer.demand ?? 0,
+        originalId: customer.nodeId,
       }));
-    const primaryDepot = depots[0] ? { x: depots[0].x, y: depots[0].y } : null;
+
+    const primaryDepot = depots[0]
+      ? {
+          id: depots[0].nodeId,
+          nodeId: depots[0].nodeId,
+          x: depots[0].x,
+          y: depots[0].y,
+        }
+      : null;
 
     return {
       name: view.name || CUSTOM_INSTANCE_NAME,
@@ -230,9 +269,11 @@ const LabRightbar = ({
       setExportError("Add at least one city before exporting.");
       return;
     }
+
     if (instanceType === "VRP") {
-      const hasDepot = view.nodes.some((n) => n.isDepot);
-      const hasCustomer = view.nodes.some((n) => !n.isDepot);
+      const hasDepot = view.nodes.some((node) => node.isDepot);
+      const hasCustomer = view.nodes.some((node) => !node.isDepot);
+
       if (!hasDepot || !hasCustomer) {
         setExportError("Add at least one depot and one customer before exporting.");
         return;
@@ -240,8 +281,11 @@ const LabRightbar = ({
     }
 
     setExporting(true);
+
     try {
-      const payload = instanceType === "VRP" ? buildVrpExportPayload() : buildTspExportPayload();
+      const payload =
+        instanceType === "VRP" ? buildVrpExportPayload() : buildTspExportPayload();
+
       const requestBody = {
         exportType: instanceType,
         ...payload,
@@ -249,17 +293,24 @@ const LabRightbar = ({
 
       const content = await exportInstanceFile(requestBody);
       const extension = instanceType === "VRP" ? "vrp" : "tsp";
-      const safeName = String(payload.name || "instance").trim().replace(/[^a-zA-Z0-9-_]+/g, "_").replace(/_+/g, "_");
+      const safeName = String(payload.name || "instance")
+        .trim()
+        .replace(/[^a-zA-Z0-9-_]+/g, "_")
+        .replace(/_+/g, "_");
+
       const fileName = `${safeName || "instance"}.${extension}`;
 
       const blob = new Blob([content], { type: "text/plain" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
+
       link.href = url;
       link.download = fileName;
+
       document.body.appendChild(link);
       link.click();
       link.remove();
+
       URL.revokeObjectURL(url);
     } catch (err) {
       setExportError(err.message || "Failed to export instance");
@@ -286,6 +337,7 @@ const LabRightbar = ({
 
   const handleVehicleChange = (value) => {
     if (instanceType !== "VRP") return;
+
     if (value === "") {
       updateVrpInstance((current) => ({
         ...current,
@@ -296,6 +348,7 @@ const LabRightbar = ({
 
     const parsed = Number(value);
     if (!Number.isFinite(parsed)) return;
+
     const nextValue = Math.max(1, Math.floor(parsed));
 
     updateVrpInstance((current) => ({
@@ -306,6 +359,7 @@ const LabRightbar = ({
 
   const handleCapacityChange = (value) => {
     if (instanceType !== "VRP") return;
+
     if (value === "") {
       updateVrpInstance((current) => ({
         ...current,
@@ -316,6 +370,7 @@ const LabRightbar = ({
 
     const parsed = Number(value);
     if (!Number.isFinite(parsed)) return;
+
     const nextValue = Math.max(0, parsed);
 
     updateVrpInstance((current) => ({
@@ -329,6 +384,7 @@ const LabRightbar = ({
     if (Number.isNaN(numValue)) return;
 
     const updatedNodes = [...view.nodes];
+
     updatedNodes[index] = {
       ...updatedNodes[index],
       [field]: numValue,
@@ -343,6 +399,7 @@ const LabRightbar = ({
 
   const handleAddCity = () => {
     const nextNodeId = getNextNodeId(view.nodes);
+
     const nextNodes = [
       ...view.nodes,
       {
@@ -354,6 +411,7 @@ const LabRightbar = ({
         isDepot: false,
       },
     ];
+
     if (instanceType === "VRP") {
       syncCitiesToVrp(nextNodes);
     } else {
@@ -363,26 +421,28 @@ const LabRightbar = ({
 
   const handleRemoveCity = (index) => {
     const target = view.nodes[index];
+
     if (instanceType === "VRP" && target?.isDepot) {
-      const depotCount = view.nodes.filter((n) => n.isDepot).length;
+      const depotCount = view.nodes.filter((node) => node.isDepot).length;
       if (depotCount <= 1) return;
     }
+
     const updatedNodes = view.nodes.filter((_, i) => i !== index);
 
     if (instanceType === "VRP") {
       syncCitiesToVrp(updatedNodes);
     } else {
-      const reindexed = updatedNodes.map((node, idx) => ({ ...node, nodeId: idx }));
-      syncCitiesToTsp(reindexed);
+      syncCitiesToTsp(updatedNodes);
     }
   };
 
   const handleCitiesUpdate = (updatedCities) => {
-    const nodes = (updatedCities ?? []).map((city, idx) => {
-      const baseNode = view.nodes[idx] ?? {};
+    const nodes = (updatedCities ?? []).map((city, index) => {
+      const baseNode = view.nodes[index];
+
       return {
-        key: baseNode.key ?? `city-${idx}`,
-        nodeId: baseNode.nodeId ?? idx,
+        key: baseNode.key,
+        nodeId: baseNode.nodeId,
         x: city.x,
         y: city.y,
         demand: baseNode.demand ?? 0,
@@ -393,32 +453,40 @@ const LabRightbar = ({
     if (instanceType === "VRP") {
       syncCitiesToVrp(nodes);
     } else {
-      const tspNodes = nodes.map((node, idx) => ({
+      const tspNodes = nodes.map((node) => ({
         ...node,
-        nodeId: idx,
         isDepot: false,
       }));
+
       syncCitiesToTsp(tspNodes);
     }
   };
 
   const handleDepotToggle = (index) => {
     if (instanceType !== "VRP") return;
+
     const updatedNodes = [...view.nodes];
     const target = updatedNodes[index];
+
     if (!target) return;
-    const depotCount = updatedNodes.filter((n) => n.isDepot).length;
+
+    const depotCount = updatedNodes.filter((node) => node.isDepot).length;
     if (target.isDepot && depotCount <= 1) return;
+
     updatedNodes[index] = {
       ...target,
       isDepot: !target.isDepot,
       demand: target.isDepot ? target.demand ?? 0 : 0,
     };
+
     syncCitiesToVrp(updatedNodes);
   };
 
   const depotCount = useMemo(
-    () => (instanceType === "VRP" ? view.nodes.filter((n) => n.isDepot).length : 0),
+    () =>
+      instanceType === "VRP"
+        ? view.nodes.filter((node) => node.isDepot).length
+        : 0,
     [instanceType, view.nodes]
   );
 
@@ -428,7 +496,12 @@ const LabRightbar = ({
         <SidebarSection
           title="Description"
           isOpen={open.description}
-          onToggle={() => setOpen((o) => ({ ...o, description: !o.description }))}
+          onToggle={() =>
+            setOpen((current) => ({
+              ...current,
+              description: !current.description,
+            }))
+          }
         >
           <div className="lr-description-body">
             {hoverInfo ? (
@@ -447,7 +520,12 @@ const LabRightbar = ({
         <SidebarSection
           title="Problem Instance"
           isOpen={open.instance}
-          onToggle={() => setOpen((o) => ({ ...o, instance: !o.instance }))}
+          onToggle={() =>
+            setOpen((current) => ({
+              ...current,
+              instance: !current.instance,
+            }))
+          }
         >
           <div className="tsp-upload-section">
             <input
@@ -459,21 +537,27 @@ const LabRightbar = ({
               className="tsp-file-input"
               id="instance-file-upload"
             />
+
             <label
               htmlFor="instance-file-upload"
               className={`tsp-upload-btn ${uploading ? "disabled" : ""}`}
             >
               {uploading ? "Uploading..." : "Upload Instance File"}
             </label>
+
             <button
-              className={`tsp-upload-btn tsp-export-btn ${exporting ? "disabled" : ""}`}
+              className={`tsp-upload-btn tsp-export-btn ${
+                exporting ? "disabled" : ""
+              }`}
               type="button"
               onClick={handleExport}
               disabled={exporting}
             >
               {exporting ? "Exporting..." : "Export Instance File"}
             </button>
+
             <div className="tsp-file-hint">Accepts .tsp and .vrp file formats</div>
+
             {uploadError && <div className="tsp-upload-error">{uploadError}</div>}
             {exportError && <div className="tsp-upload-error">{exportError}</div>}
           </div>
@@ -517,7 +601,7 @@ const LabRightbar = ({
               }}
               value={view.capacity}
               disabled={instanceType === "TSP"}
-              onValueChange={(v) => handleCapacityChange(v)}
+              onValueChange={(value) => handleCapacityChange(value)}
             />
 
             <ParamField
@@ -530,11 +614,16 @@ const LabRightbar = ({
               }}
               value={view.numberOfVehicles}
               disabled={instanceType === "TSP"}
-              onValueChange={(v) => handleVehicleChange(v)}
+              onValueChange={(value) => handleVehicleChange(value)}
             />
 
             <FieldRow label="Edge Weight Type">
-              <input className="field-input" value={EDGE_WEIGHT_TYPE} readOnly disabled />
+              <input
+                className="field-input"
+                value={EDGE_WEIGHT_TYPE}
+                readOnly
+                disabled
+              />
             </FieldRow>
           </div>
 
@@ -549,8 +638,9 @@ const LabRightbar = ({
         onClose={() => setIsModalOpen(false)}
         tspInstance={{
           name: view.name,
-          cities: view.nodes.map((node, idx) => ({
-            id: idx,
+          cities: view.nodes.map((node) => ({
+            id: node.nodeId,
+            nodeId: node.nodeId,
             x: node.x,
             y: node.y,
             isDepot: node.isDepot,
