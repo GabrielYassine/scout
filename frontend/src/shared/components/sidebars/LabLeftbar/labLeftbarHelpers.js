@@ -41,18 +41,3 @@ export function countPlacedPieces(puzzleConfig) {
   }, 0);
 }
 
-export function areRequiredPiecesPlaced(puzzleConfig) {
-  const requiredTypes = [
-    "searchSpace",
-    "problem",
-    "generator",
-    "selection",
-    "populationModel",
-    "parentSelectionRule",
-    "stopCondition",
-  ];
-
-  return requiredTypes.every(
-    (type) => Array.isArray(puzzleConfig?.[type]) && puzzleConfig[type].length > 0
-  );
-}

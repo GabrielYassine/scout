@@ -1,3 +1,6 @@
+/*
+ * API functions for importing and exporting instance files.
+ */
 export async function importInstanceFile({ fileName, content }) {
   const res = await fetch("/api/instance/import", {
     method: "POST",

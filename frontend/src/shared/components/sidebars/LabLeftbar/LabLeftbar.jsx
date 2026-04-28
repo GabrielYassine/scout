@@ -12,7 +12,7 @@ import GlobalSettingsSection from "./GlobalSettingsSection.jsx";
 import SelectedPieceSection from "./SelectedPieceSection.jsx";
 import TemplateSection from "./TemplateSection.jsx";
 
-import { areRequiredPiecesPlaced, countPlacedPieces, findPieceDef, parseValue, } from "./labLeftbarHelpers.js";
+import { countPlacedPieces, findPieceDef, parseValue, } from "./labLeftbarHelpers.js";
 
 const PIECE_SECTIONS = [
   ["searchSpace", "Search Space"],
@@ -63,7 +63,6 @@ export default function LabLeftbar({
   const runMode = params.global?.experimentType ?? "run";
 
  const placedPieceCount = countPlacedPieces(puzzleConfig);
- const allPiecesPlaced = areRequiredPiecesPlaced(puzzleConfig);
 
   function setParam(type, def, rawValue) {
     const currentParams = params[type] ?? {};
@@ -156,7 +155,7 @@ export default function LabLeftbar({
           className="btn btn--green"
           type="button"
           onClick={onRun}
-          disabled={!allPiecesPlaced || disabled}
+          disabled={ disabled}
         >
           Run
         </button>

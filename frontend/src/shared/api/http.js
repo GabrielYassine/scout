@@ -1,3 +1,7 @@
+/*
+ * Shared helpers for making JSON HTTP requests
+ * and handling API errors consistently.
+ */
 export class HttpError extends Error {
   constructor(message, { status = null, url = null, payload = null } = {}) {
     super(message);
