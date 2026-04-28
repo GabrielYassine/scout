@@ -1,11 +1,10 @@
+/**
+ * Custom hook for loading async data.
+ * It runs the provided loader function, tracks data/loading/error state,
+ * and prevents state updates after the component unmounts.
+ */
 import { useEffect, useRef, useState } from "react";
 
-/**
- * Small helper for request-style resources.
- * Contract:
- * - `loader` returns a promise.
- * - Handles cancellation on unmount.
- */
 export function useAsyncResource(loader, deps = []) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);

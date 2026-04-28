@@ -1,3 +1,7 @@
+/*
+ * useLocalStorageState stores a React state value in localStorage
+ * so it persists across page reloads.
+ */
 import { useEffect, useState } from "react";
 
 export function useLocalStorageState(key, initialValue) {

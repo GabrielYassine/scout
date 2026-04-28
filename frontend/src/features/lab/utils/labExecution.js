@@ -116,12 +116,7 @@ export function buildExecutionContext({
     isVrpProblem,
   });
 
-  return {
-    seed,
-    existingSessionId,
-    problemParams,
-    searchSpaceParams,
-  };
+  return { seed,  existingSessionId,  problemParams,  searchSpaceParams, };
 }
 
 // Build the request payload for starting a runtime study.

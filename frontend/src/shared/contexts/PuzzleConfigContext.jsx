@@ -1,3 +1,8 @@
+/*
+ * PuzzleConfigProvider manages the shared puzzle configuration state for the lab.
+ * It stores configs, params, TSP/VRP instances, and drag-and-drop state,
+ * and exposes actions for updating, resetting, renaming, and applying templates.
+ */
 import { createContext, useMemo, useState } from "react";
 import { DndContext, DragOverlay, rectIntersection } from "@dnd-kit/core";
 
@@ -5,49 +10,24 @@ import { useSessionStorageState } from "@/shared/hooks/useSessionStorageState.js
 import { maskStyle } from "@/shared/util/puzzleMasks.js";
 
 import {
-  GRID_COLUMNS,
   cloneTspInstance,
   cloneVrpInstance,
   createDefaultConfig,
   createEmptyParams,
   deriveGroupedPuzzleConfig,
-  normalizeStoredConfig,
   rekeyGrid,
   applyTemplateRunRequestToState,
+  createFallbackConfig,
+  normalizeConfigList,
+  getNextConfigName,
+  DEFAULT_CONFIG_ID,
 } from "@/shared/contexts/puzzleConfigHelpers.js";
 
 import "@/features/lab/components/PuzzlePiece.css";
 
 export const PuzzleConfigContext = createContext(null);
 
-const DEFAULT_CONFIG_ID = "config-1";
-const DEFAULT_CONFIG_NAME = "Config 1";
 
-function createFallbackConfig() {
-  return createDefaultConfig(DEFAULT_CONFIG_ID, DEFAULT_CONFIG_NAME);
-}
-
-function normalizeConfigList(configs, fallbackToDefault = true) {
-  if (Array.isArray(configs)) {
-    return configs.map(normalizeStoredConfig);
-  }
-
-  return fallbackToDefault ? [createFallbackConfig()] : [];
-}
-
-function getNextConfigName(configs) {
-  const safeConfigs = Array.isArray(configs) ? configs : [];
-
-  const maxNumber = safeConfigs.reduce((max, config) => {
-    const match = String(config?.name ?? "").match(/^Config\s+(\d+)$/i);
-    if (!match) return max;
-
-    const value = Number(match[1]);
-    return Number.isFinite(value) ? Math.max(max, value) : max;
-  }, 0);
-
-  return `Config ${maxNumber + 1}`;
-}
 
 export function PuzzleConfigProvider({ children }) {
   const [configs, setConfigs] = useSessionStorageState("scout:runConfigs", [

@@ -1,3 +1,9 @@
+/*
+ * puzzleConfigHelpers provides helper functions for puzzle configuration state.
+ * It creates default configs, normalizes stored configs, clones instances,
+ * rebuilds puzzle piece grid data, converts between grouped and flat structures,
+ * and applies template run requests.
+ */
 import { generatePuzzleKey } from "@/shared/util/puzzleGenerator.js";
 
 export const GRID_COLUMNS = 6;
@@ -13,23 +19,40 @@ export const componentTypes = [
   "stopCondition",
   "observer",
 ];
+export const DEFAULT_CONFIG_ID = "config-1";
+export const DEFAULT_CONFIG_NAME = "Config 1";
+
+export function createFallbackConfig() {
+  return createDefaultConfig(DEFAULT_CONFIG_ID, DEFAULT_CONFIG_NAME);
+}
+
+export function normalizeConfigList(configs, fallbackToDefault = true) {
+  if (Array.isArray(configs)) {
+    return configs.map(normalizeStoredConfig);
+  }
+
+  return fallbackToDefault ? [createFallbackConfig()] : [];
+}
+
+export function getNextConfigName(configs) {
+  const safeConfigs = Array.isArray(configs) ? configs : [];
+
+  const maxNumber = safeConfigs.reduce((max, config) => {
+    const match = String(config?.name ?? "").match(/^Config\s+(\d+)$/i);
+    if (!match) return max;
+
+    const value = Number(match[1]);
+    return Number.isFinite(value) ? Math.max(max, value) : max;
+  }, 0);
+
+  return `Config ${maxNumber + 1}`;
+}
 
 export const cloneTspInstance = (tsp) =>
-  tsp
-    ? {
-        ...tsp,
-        cities: (tsp.cities ?? []).map((city) => ({ ...city })),
-      }
-    : null;
+  tsp ? { ...tsp,  cities: (tsp.cities ?? []).map((city) => ({ ...city })),  }  : null;
 
 export const cloneVrpInstance = (vrp) =>
-  vrp
-    ? {
-        ...vrp,
-        depot: vrp.depot ? { ...vrp.depot } : null,
-        customers: (vrp.customers ?? []).map((customer) => ({ ...customer })),
-      }
-    : null;
+  vrp ? {  ...vrp,  depot: vrp.depot ? { ...vrp.depot } : null,  customers: (vrp.customers ?? []).map((customer) => ({ ...customer })),  }   : null;
 
 export const createEmptyPuzzleConfig = () => ({
   searchSpace: [],
@@ -139,23 +162,13 @@ function buildGridNeighbors(pieces, index, totalCols = GRID_COLUMNS) {
 
   return {
     left:
-      leftIndex === null
-        ? { kind: "wall" }
-        : pieces[leftIndex]
-          ? { kind: "piece", edge: getEdge(pieces[leftIndex], "E") }
-          : { kind: "empty" },
+      leftIndex === null ? { kind: "wall" }  : pieces[leftIndex]  ? { kind: "piece", edge: getEdge(pieces[leftIndex], "E") }  : { kind: "empty" },
 
     right:
-      rightIndex === null
-        ? { kind: "wall" }
-        : { kind: "empty" },
+      rightIndex === null  ? { kind: "wall" } : { kind: "empty" },
 
     top:
-      topIndex === null
-        ? { kind: "wall" }
-        : pieces[topIndex]
-          ? { kind: "piece", edge: getEdge(pieces[topIndex], "S") }
-          : { kind: "empty" },
+      topIndex === null ? { kind: "wall" }  : pieces[topIndex] ? { kind: "piece", edge: getEdge(pieces[topIndex], "S") } : { kind: "empty" },
 
     bottom: { kind: "empty" },
   };
@@ -183,9 +196,7 @@ export function normalizeStoredConfig(config, fallbackIndex = 0) {
     vrpInstance: config?.vrpInstance ? cloneVrpInstance(config.vrpInstance) : null,
   };
 
-  const placedPieces = Array.isArray(config?.placedPieces)
-    ? config.placedPieces.map(clonePlacedPiece)
-    : flattenGroupedPuzzleConfig(config?.puzzleConfig);
+  const placedPieces = Array.isArray(config?.placedPieces) ? config.placedPieces.map(clonePlacedPiece) : flattenGroupedPuzzleConfig(config?.puzzleConfig);
 
   return {
     ...base,
@@ -201,15 +212,7 @@ export function rekeyGrid(pieces, _startIndex = 0, totalCols = GRID_COLUMNS) {
     const row = Math.floor(i / totalCols);
     const neighbors = buildGridNeighbors(next, i, totalCols);
 
-    next[i] = {
-      ...next[i],
-      puzzleData: generatePuzzleKey({
-        col,
-        row,
-        totalCols,
-        neighbors,
-      }),
-    };
+    next[i] = { ...next[i], puzzleData: generatePuzzleKey({  col, row, totalCols, neighbors, }), };
   }
 
   return next;
@@ -249,9 +252,7 @@ export function applyTemplateRunRequestToState({
 
   const flattenedPieces = componentMapping.flatMap(
     ({ type, catalogKey, requestKey, single }) =>
-      catalog[catalogKey]
-        ? mapIdsToPieces(runRequest[requestKey], catalog[catalogKey], type, single)
-        : []
+      catalog[catalogKey]  ? mapIdsToPieces(runRequest[requestKey], catalog[catalogKey], type, single) : []
   );
 
   setPlacedPieces(rekeyGrid(flattenedPieces, 0));

@@ -1,3 +1,8 @@
+/*
+ * LabRightbar displays contextual information and problem-instance controls.
+ * It handles instance upload/export, TSP/VRP switching, instance editing,
+ * and opens the graph editor modal for editing nodes visually.
+ */
 import { useMemo, useRef, useState } from "react";
 
 import RouteGraphModal from "@/features/run/components/charts/route/RouteGraphModal.jsx";

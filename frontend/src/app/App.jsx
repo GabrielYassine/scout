@@ -7,11 +7,9 @@ import LabPage from "@/features/lab/LabPage.jsx";
 import RunPage from "@/features/run/RunPage.jsx";
 
 import { useCatalog } from "@/shared/hooks/useCatalog.js";
-import { useTemplates } from "@/shared/hooks/useTemplates.js";
 
 export default function App() {
   const { catalog, catalogLoading, catalogError } = useCatalog();
-  const { templates, templatesLoading, templatesError } = useTemplates();
 
   return (
     <PuzzleConfigProvider>
