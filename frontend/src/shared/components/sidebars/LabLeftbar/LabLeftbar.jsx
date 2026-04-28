@@ -6,7 +6,7 @@
 import { useMemo, useState } from "react";
 
 import "./LabLeftbar.css";
-import "./FormFields.css";
+import "../FormFields.css";
 
 import GlobalSettingsSection from "./GlobalSettingsSection.jsx";
 import SelectedPieceSection from "./SelectedPieceSection.jsx";

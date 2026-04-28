@@ -1,5 +1,10 @@
-const CUSTOM_INSTANCE_NAME = "Custom Instance";
+/*
+ * instanceModel contains constants and helper functions for TSP/VRP instances.
+ * It creates default instances, updates metadata for edited imports,
+ * converts VRP data into UI nodes, and computes the next node id.
+ */
 
+const CUSTOM_INSTANCE_NAME = "Custom Instance";
 export const EDGE_WEIGHT_TYPE = "EUC_2D";
 export const CUSTOM_EDITED_COMMENT = "Custom edited instance";
 export { CUSTOM_INSTANCE_NAME };

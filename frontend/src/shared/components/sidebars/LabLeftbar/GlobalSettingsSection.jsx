@@ -2,8 +2,8 @@
  * GlobalSettingsSection renders the global experiment settings,
  * including mode, seed, and mode-specific parameters.
  */
-import SidebarSection from "./SidebarSection.jsx";
-import ParamField from "./ParamField.jsx";
+import SidebarSection from "../SidebarSection.jsx";
+import ParamField from "../ParamField.jsx";
 
 export default function GlobalSettingsSection({
   open,

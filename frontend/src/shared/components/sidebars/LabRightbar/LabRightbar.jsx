@@ -6,11 +6,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import RouteGraphModal from "@/features/run/components/charts/route/RouteGraphModal.jsx";
-import SidebarSection from "./SidebarSection.jsx";
+import SidebarSection from "../SidebarSection.jsx";
 import InstanceUploadSection from "./InstanceUploadSection.jsx";
 import InstanceFieldsSection from "./InstanceFieldsSection.jsx";
 
-import "./FormFields.css";
+import "../FormFields.css";
 import "./LabRightbar.css";
 
 import { importInstanceFile, exportInstanceFile } from "@/shared/api/instance.js";

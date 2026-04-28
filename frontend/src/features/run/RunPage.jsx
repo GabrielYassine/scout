@@ -5,8 +5,8 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import LabLeftbar from "@/shared/components/sidebars/LabLeftbar.jsx";
-import LabRightbar from "@/shared/components/sidebars/LabRightbar.jsx";
+import LabLeftbar from "@/shared/components/sidebars/LabLeftbar/LabLeftbar.jsx";
+import LabRightbar from "@/shared/components/sidebars/LabRightbar/LabRightbar.jsx";
 import RunControls from "@/features/run/components/controls/RunControls.jsx";
 import PopulatedRunContent from "@/features/run/components/PopulatedRunContent.jsx";
 

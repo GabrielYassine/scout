@@ -6,8 +6,8 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDndMonitor } from "@dnd-kit/core";
 
-import LabLeftbar from "@/shared/components/sidebars/LabLeftbar.jsx";
-import LabRightbar from "@/shared/components/sidebars/LabRightbar.jsx";
+import LabLeftbar from "@/shared/components/sidebars/LabLeftbar/LabLeftbar.jsx";
+import LabRightbar from "@/shared/components/sidebars/LabRightbar/LabRightbar.jsx";
 import RunConfigPuzzle from "@/features/lab/components/runConfigPuzzle/RunConfigPuzzle.jsx";
 import Selector from "@/features/lab/components/selector/Selector.jsx";
 

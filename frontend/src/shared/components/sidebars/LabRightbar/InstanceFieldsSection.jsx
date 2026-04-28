@@ -2,8 +2,8 @@
  * InstanceFieldsSection displays the editable metadata and settings
  * for the currently selected TSP or VRP instance.
  */
-import FieldRow from "./FieldRow.jsx";
-import ParamField from "./ParamField.jsx";
+import FieldRow from "../FieldRow.jsx";
+import ParamField from "../ParamField.jsx";
 import { EDGE_WEIGHT_TYPE } from "./instanceModel.js";
 
 export default function InstanceFieldsSection({

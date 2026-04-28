@@ -2,8 +2,8 @@
  * SelectedPieceSection renders the parameter controls
  * for all currently selected pieces of one type.
  */
-import SidebarSection from "./SidebarSection.jsx";
-import ParamField from "./ParamField.jsx";
+import SidebarSection from "../SidebarSection.jsx";
+import ParamField from "../ParamField.jsx";
 
 export default function SelectedPieceSection({
   type,
