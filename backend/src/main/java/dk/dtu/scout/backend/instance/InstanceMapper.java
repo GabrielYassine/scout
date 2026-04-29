@@ -70,7 +70,7 @@ public final class InstanceMapper {
         String name = map.getOrDefault("name", "Custom VRP Instance").toString();
         String comment = map.getOrDefault("comment", "").toString();
         double capacity = toDouble(map.get("capacity"));
-        int numberOfVehicles = Math.max(1, toInt(map.getOrDefault("numberOfVehicles", 1)));
+        int numberOfVehicles = toInt(map.getOrDefault("numberOfVehicles", 1));
 
         double[] depotCoordinates = extractDepot(map);
 
@@ -108,90 +108,6 @@ public final class InstanceMapper {
     }
 
     /**
-     * Converts a TSPInstance object into a map format suitable for frontend use and export.
-     * TSPInstance stores coordinates only, so node IDs are generated in standard TSPLIB order: 1..n.
-     * @param instance the TSPInstance to convert into a payload map.
-     * @return a map containing the TSP instance data in a structured format for frontend display and export.
-     */
-    public static Map<String, Object> toTspPayload(TSPInstance instance) {
-        List<Map<String, Object>> cities = new ArrayList<>();
-        double[][] coordinates = instance.getCoordinates();
-
-        for (int i = 0; i < coordinates.length; i++) {
-            int nodeId = i + 1;
-
-            Map<String, Object> city = new LinkedHashMap<>();
-            city.put("id", nodeId);
-            city.put("nodeId", nodeId);
-            city.put("x", coordinates[i][0]);
-            city.put("y", coordinates[i][1]);
-            cities.add(city);
-        }
-
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("name", instance.getName());
-        payload.put("comment", instance.getComment());
-        payload.put("type", "TSP");
-        payload.put("dimension", instance.getDimension());
-        payload.put("edgeWeightType", EDGE_WEIGHT_TYPE);
-        payload.put("cities", cities);
-
-        return payload;
-    }
-
-    /**
-     * Converts a VRPInstance object into a map format suitable for frontend use and export.
-     * VRPInstance stores coordinates and demands only, so node IDs are generated in standard VRPLIB order:
-     * depot = 1, customers = 2..n.
-     * @param instance the VRPInstance to convert into a payload map.
-     * @return a map containing the VRP instance data in a structured format for frontend display and export.
-     */
-    public static Map<String, Object> toVrpPayload(VRPInstance instance) {
-        double[] depotCoordinates = instance.getDepotCoordinates();
-
-        Map<String, Object> depot = new LinkedHashMap<>();
-        depot.put("id", 1);
-        depot.put("nodeId", 1);
-        depot.put("x", depotCoordinates[0]);
-        depot.put("y", depotCoordinates[1]);
-
-        Map<String, Object> depotNode = new LinkedHashMap<>();
-        depotNode.put("id", 1);
-        depotNode.put("nodeId", 1);
-        depotNode.put("x", depotCoordinates[0]);
-        depotNode.put("y", depotCoordinates[1]);
-
-        List<Map<String, Object>> customers = new ArrayList<>();
-        double[][] customerCoordinates = instance.getCustomerCoordinates();
-
-        for (int i = 0; i < customerCoordinates.length; i++) {
-            int nodeId = i + 2;
-
-            Map<String, Object> customer = new LinkedHashMap<>();
-            customer.put("id", nodeId);
-            customer.put("nodeId", nodeId);
-            customer.put("x", customerCoordinates[i][0]);
-            customer.put("y", customerCoordinates[i][1]);
-            customer.put("demand", instance.getDemand(i));
-            customers.add(customer);
-        }
-
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("name", instance.getName());
-        payload.put("comment", instance.getComment());
-        payload.put("type", "CVRP");
-        payload.put("dimension", instance.getCustomerCount() + 1);
-        payload.put("edgeWeightType", EDGE_WEIGHT_TYPE);
-        payload.put("capacity", instance.getCapacity());
-        payload.put("numberOfVehicles", instance.getNumberOfVehicles());
-        payload.put("depot", depot);
-        payload.put("depots", List.of(depotNode));
-        payload.put("customers", customers);
-
-        return payload;
-    }
-
-    /**
      * Extracts depot coordinates from the provided map.
      * @param map the map containing the VRP instance data.
      * @return a double array of length 2 containing the x and y coordinates of the depot.
@@ -205,16 +121,18 @@ public final class InstanceMapper {
         @SuppressWarnings("unchecked")
         Map<String, Object> depot = (Map<String, Object>) depotRaw;
 
-        return new double[] { toDouble(depot.get("x")), toDouble(depot.get("y")) };
+        return new double[] {toDouble(depot.get("x")), toDouble(depot.get("y"))};
     }
 
     private static double toDouble(Object value) {
         if (value instanceof Number number) {
             return number.doubleValue();
         }
+
         if (value == null) {
             throw new IllegalArgumentException("Missing numeric value");
         }
+
         return Double.parseDouble(value.toString());
     }
 
@@ -222,9 +140,11 @@ public final class InstanceMapper {
         if (value instanceof Number number) {
             return number.intValue();
         }
+
         if (value == null) {
             throw new IllegalArgumentException("Missing integer value");
         }
+
         return Integer.parseInt(value.toString());
     }
 }

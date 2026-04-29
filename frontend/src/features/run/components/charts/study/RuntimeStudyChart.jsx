@@ -48,39 +48,38 @@ function RuntimeStudyChart({
     if (!Number.isFinite(visibleCount) || visibleCount == null) {
       return sortedPoints;
     }
+
     return sortedPoints.slice(0, visibleCount);
   }, [sortedPoints, visibleCount]);
 
   const linePoints = useMemo(
     () =>
       visiblePoints
-        .map((p) => [
-          Number(p.problemSize),
-          Number(p.meanEvaluationsToOptimum),
+        .map((point) => [
+          Number(point.problemSize),
+          Number(point.meanEvaluationsToOptimum),
         ])
         .filter(([x, y]) => Number.isFinite(x) && Number.isFinite(y)),
     [visiblePoints]
   );
 
   const boxPlotResponse = useMemo(() => {
-    const valid = visiblePoints.filter(
-      (p) =>
-        Number.isFinite(Number(p.problemSize)) &&
-        Array.isArray(p.boxPlot) &&
-        p.boxPlot.length === 5 &&
-        p.boxPlot.every((v) => Number.isFinite(Number(v)))
+    const validPoints = visiblePoints.filter(
+      (point) =>
+        Number.isFinite(Number(point.problemSize)) &&
+        Array.isArray(point.boxPlot) &&
+        point.boxPlot.length === 5 &&
+        point.boxPlot.every((value) => Number.isFinite(Number(value)))
     );
 
     return {
-      xValues: valid.map((p) => p.problemSize),
-      boxplots: valid.map((p) => p.boxPlot.map(Number)),
+      xValues: validPoints.map((point) => point.problemSize),
+      boxplots: validPoints.map((point) => point.boxPlot.map(Number)),
     };
   }, [visiblePoints]);
 
   const hasLineData = linePoints.length > 0;
   const hasBoxPlotData =
-    Array.isArray(boxPlotResponse.xValues) &&
-    Array.isArray(boxPlotResponse.boxplots) &&
     boxPlotResponse.xValues.length > 0 &&
     boxPlotResponse.boxplots.length > 0;
 
@@ -128,7 +127,6 @@ function RuntimeStudyChart({
             chartPoints={linePoints}
             xAxisLabel="Problem Size"
             yAxisLabel="Average Evaluations to Optimum"
-            invertPermutationFitness={false}
           />
         )}
       </div>

@@ -113,10 +113,12 @@ public final class InstanceParser {
                 section = "NODE";
                 continue;
             }
+
             if (isSection(line, "DEMAND_SECTION")) {
                 section = "DEMAND";
                 continue;
             }
+
             if (isSection(line, "DEPOT_SECTION")) {
                 section = "DEPOT";
                 continue;
@@ -170,8 +172,7 @@ public final class InstanceParser {
         List<Map<String, Object>> customers = buildCustomers(coords, demands, depotIds);
 
         int expectedNodeCount = customers.size() + 1;
-        int dimension = resolveDimension(headers, expectedNodeCount, "instance contains " + expectedNodeCount + " nodes"
-        );
+        int dimension = resolveDimension(headers, expectedNodeCount, "instance contains " + expectedNodeCount + " nodes");
 
         Map<String, Object> depot = buildNode(depotNodeId, depotCoords);
 
@@ -224,20 +225,14 @@ public final class InstanceParser {
         demands.put(nodeId, demand);
     }
 
-    private static List<Map<String, Object>> buildCustomers(
-            Map<Integer, double[]> coords,
-            Map<Integer, Double> demands,
-            List<Integer> depotIds
-    ) {
+    private static List<Map<String, Object>> buildCustomers(Map<Integer, double[]> coords, Map<Integer, Double> demands, List<Integer> depotIds) {
         List<Map<String, Object>> customers = new ArrayList<>();
 
         for (Map.Entry<Integer, double[]> entry : coords.entrySet()) {
             int nodeId = entry.getKey();
             if (depotIds.contains(nodeId)) continue;
 
-            double[] point = entry.getValue();
-
-            Map<String, Object> customer = buildNode(nodeId, point);
+            Map<String, Object> customer = buildNode(nodeId, entry.getValue());
             customer.put("demand", demands.get(nodeId));
             customers.add(customer);
         }
@@ -316,6 +311,7 @@ public final class InstanceParser {
 
     private static int resolveDimension(Map<String, String> headers, int actualDimension, String actualDescription) {
         int dimension = headers.containsKey("DIMENSION") ? toInt(headers.get("DIMENSION")) : actualDimension;
+
         if (dimension != actualDimension) {
             throw new IllegalArgumentException("DIMENSION is " + dimension + ", but " + actualDescription);
         }

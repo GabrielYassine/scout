@@ -19,6 +19,8 @@ export function resolveRunPageState(locationState, savedRun) {
     !!incomingStudyId &&
     savedRun?.studyId === incomingStudyId;
 
+  // If React/router gives us a stale "loading" navigation state for a run that
+  // is already saved as finished, prefer the saved finished result.
   const shouldIgnoreIncomingState =
     locationState.loading === true &&
     (savedMatchesIncomingRun || savedMatchesIncomingStudy);

@@ -1,6 +1,7 @@
 /**
  * Pure helpers for normalizing backend run data and deriving chart playback lengths.
  */
+
 function normalizeSeriesValues(value) {
   if (value && typeof value === "object" && Array.isArray(value.values)) {
     return value.values;
@@ -17,7 +18,10 @@ export function normalizeSeriesMap(seriesMap) {
   if (!seriesMap) return {};
 
   return Object.fromEntries(
-    Object.entries(seriesMap).map(([key, value]) => [key, normalizeSeriesValues(value)])
+    Object.entries(seriesMap).map(([key, value]) => [
+      key,
+      normalizeSeriesValues(value),
+    ])
   );
 }
 
@@ -44,6 +48,8 @@ export function normalizeBatch(batch) {
   };
 }
 
+// Converts backend summary averages into run-like objects so RunChart can render
+// average results using the same path as individual runs.
 export function buildAverageRuns(
   averageByProblem,
   averageRunTimeByProblem,
@@ -59,6 +65,8 @@ export function buildAverageRuns(
   }));
 }
 
+// Ensures the selected run key still points to an available option.
+// If the old selection is invalid, prefer the average view when available.
 export function normalizeSelectedRunKey(selectedKey, averageRuns, batches) {
   const numericKey = Number(selectedKey);
   const hasAverage = averageRuns.length > 0;
@@ -97,6 +105,8 @@ function getRunAnimationLength(run) {
   );
 }
 
+// Playback length is based on whatever visual data is currently available.
+// During live runs, this value grows as websocket packets add more points.
 export function computeAnimationLength({ pageMode, studyPoints, runs }) {
   if (pageMode === "runtimeStudy") {
     return studyPoints.length;

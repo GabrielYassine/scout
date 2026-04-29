@@ -16,6 +16,7 @@ import java.util.Locale;
 public final class InstanceFormatter {
 
     private static final String EDGE_WEIGHT_TYPE = "EUC_2D";
+    private static final DecimalFormatSymbols DECIMAL_SYMBOLS = new DecimalFormatSymbols(Locale.US);
 
     private InstanceFormatter() {
     }
@@ -29,13 +30,14 @@ public final class InstanceFormatter {
         StringBuilder out = new StringBuilder();
 
         appendHeader(out, normalizeName(instance.getName(), "Custom TSP Instance"), "TSP", instance.getComment());
+
         out.append("DIMENSION: ").append(instance.getDimension()).append("\n");
         out.append("EDGE_WEIGHT_TYPE: ").append(EDGE_WEIGHT_TYPE).append("\n");
         out.append("NODE_COORD_SECTION\n");
 
-        double[][] coords = instance.getCoordinates();
-        for (int i = 0; i < coords.length; i++) {
-            appendCoordinate(out, i + 1, coords[i][0], coords[i][1]);
+        double[][] coordinates = instance.getCoordinates();
+        for (int i = 0; i < coordinates.length; i++) {
+            appendCoordinate(out, i + 1, coordinates[i][0], coordinates[i][1]);
         }
 
         out.append("EOF\n");
@@ -50,9 +52,8 @@ public final class InstanceFormatter {
     public static String formatVrp(VRPInstance instance) {
         StringBuilder out = new StringBuilder();
 
-        String name = normalizeName(instance.getName(), "Custom VRP Instance");
+        appendHeader(out, normalizeName(instance.getName(), "Custom VRP Instance"), "CVRP", instance.getComment());
 
-        appendHeader(out, name, "CVRP", instance.getComment());
         out.append("DIMENSION: ").append(instance.getCustomerCount() + 1).append("\n");
         out.append("EDGE_WEIGHT_TYPE: ").append(EDGE_WEIGHT_TYPE).append("\n");
         out.append("CAPACITY: ").append(formatInteger(instance.getCapacity())).append("\n");
@@ -68,6 +69,7 @@ public final class InstanceFormatter {
 
         out.append("DEMAND_SECTION\n");
         out.append("1 0\n");
+
         for (int i = 0; i < customers.length; i++) {
             out.append(i + 2)
                 .append(" ")
@@ -106,6 +108,7 @@ public final class InstanceFormatter {
         if (name == null || name.isBlank()) {
             return fallback;
         }
+
         return name.trim();
     }
 
@@ -113,12 +116,12 @@ public final class InstanceFormatter {
         if (comment == null || comment.isBlank()) {
             return null;
         }
+
         return comment.trim().replaceAll("\\s+", " ");
     }
 
     private static String formatNumber(double value) {
-        DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.US);
-        DecimalFormat formatter = new DecimalFormat("0.##", symbols);
+        DecimalFormat formatter = new DecimalFormat("0.##", DECIMAL_SYMBOLS);
         formatter.setGroupingUsed(false);
         return formatter.format(value);
     }

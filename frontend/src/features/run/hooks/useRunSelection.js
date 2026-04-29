@@ -20,6 +20,7 @@ export function useRunSelection({ batch, restoredRun, setSavedRun }) {
     batch?.summary?.bestFitnessBoxPlotsByProblem ?? {};
   const averageRunTimeByProblem = batch?.summary?.averageRunTimeByProblem ?? {};
 
+  // Average runs are synthetic runs built from backend summary data.
   const averageRuns = useMemo(
     () =>
       buildAverageRuns(
@@ -37,6 +38,7 @@ export function useRunSelection({ batch, restoredRun, setSavedRun }) {
     return null;
   });
 
+  // Ensures the selected key still points to an available run after data changes.
   const effectiveSelectedRunKey = normalizeSelectedRunKey(
     selectedRunKey,
     averageRuns,
@@ -45,28 +47,20 @@ export function useRunSelection({ batch, restoredRun, setSavedRun }) {
 
   function handleSelectedRunChange(value) {
     setSelectedRunKey(value);
+
+    // Persist the selection so refresh/navigation restores the same view.
     setSavedRun((prev) =>
-      prev
-        ? {
-            ...prev,
-            selectedRunKey: value,
-          }
-        : prev
+      prev ? {...prev, selectedRunKey: value } : prev
     );
   }
 
   const selectedBatch =
-    effectiveSelectedRunKey === "average"
-      ? null
-      : batches.find(
-          (batchItem) =>
-            String(batchItem.runIndex) === String(effectiveSelectedRunKey)
-        ) ?? null;
+    effectiveSelectedRunKey === "average" ? null : batches.find(
+      (batchItem) => String(batchItem.runIndex) === String(effectiveSelectedRunKey)
+    ) ?? null;
 
   const runs =
-    effectiveSelectedRunKey === "average"
-      ? averageRuns
-      : selectedBatch?.runs ?? [];
+    effectiveSelectedRunKey === "average" ? averageRuns : selectedBatch?.runs ?? [];
 
   return {
     batches,

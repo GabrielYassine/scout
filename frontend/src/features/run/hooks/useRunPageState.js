@@ -16,6 +16,7 @@ export function useRunPageState() {
 
   const locationState = location.state ?? {};
 
+  // Combines router state and saved localStorage state into one initial page state.
   const resolvedState = useMemo(
     () => resolveRunPageState(locationState, savedRun),
     [locationState, savedRun]
@@ -29,6 +30,8 @@ export function useRunPageState() {
     pageMode,
   } = resolvedState;
 
+  // These states are initialized from resolvedState once, then updated by
+  // websocket hooks or user interaction while the page is mounted.
   const [batch, setBatch] = useState(() =>
     normalizeBatch(batchResponse ?? null)
   );

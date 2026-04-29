@@ -1,26 +1,23 @@
 /**
  * Optional statistics panel for the currently visible line-chart window.
- * Falls back to local statistics if the backend stats endpoint fails.
+ * Computes statistics through the backend stats endpoint when the user requests it.
  */
 import { useCallback, useState } from "react";
-import { computeLocalStats } from "./lineChartStats.js";
 import "@/features/run/styles/LineCharts.css";
 
 export default function LineChartStatsPanel({
   seriesName,
   xAxisLabel = "Evaluation",
   yAxisLabel = null,
-  visiblePoints,
+  visiblePoints = [],
   windowRange,
 }) {
   const [statsLoading, setStatsLoading] = useState(false);
   const [statsError, setStatsError] = useState("");
   const [windowStats, setWindowStats] = useState(null);
 
-  const computeAndFetchStats = useCallback(async () => {
-    const points = visiblePoints;
-
-    if (!points?.length) {
+  const computeStats = useCallback(async () => {
+    if (visiblePoints.length === 0) {
       setStatsError("No points in the current window.");
       setWindowStats(null);
       return;
@@ -30,42 +27,30 @@ export default function LineChartStatsPanel({
       seriesName,
       xAxisLabel,
       yAxisLabel: yAxisLabel ?? seriesName,
-      xMin: windowRange?.min ?? points[0][0],
-      xMax: windowRange?.max ?? points[points.length - 1][0],
-      points,
+      xMin: windowRange?.min ?? visiblePoints[0][0],
+      xMax: windowRange?.max ?? visiblePoints[visiblePoints.length - 1][0],
+      points: visiblePoints,
     };
 
     setStatsLoading(true);
     setStatsError("");
 
     try {
-      const res = await fetch("/api/stats/series-window", {
+      const response = await fetch("/api/stats/series-window", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) {
-        let message = `Stats request failed with status ${res.status}`;
-
-        try {
-          const data = await res.json();
-          if (data?.message) message = data.message;
-        } catch {
-          // ignore parse failure
-        }
-
-        throw new Error(message);
+      if (!response.ok) {
+        throw new Error(`Stats request failed with status ${response.status}`);
       }
 
-      const data = await res.json();
+      const data = await response.json();
       setWindowStats(data);
-    } catch (err) {
-      const fallback = computeLocalStats(points);
-      setWindowStats(fallback);
-      setStatsError(
-        err?.message ?? "Failed to fetch stats; showing local summary instead."
-      );
+    } catch (error) {
+      setWindowStats(null);
+      setStatsError(error.message);
     } finally {
       setStatsLoading(false);
     }
@@ -76,8 +61,8 @@ export default function LineChartStatsPanel({
       <div className="line-chart-stats-actions">
         <button
           type="button"
-          onClick={computeAndFetchStats}
-          disabled={statsLoading || !(visiblePoints?.length > 0)}
+          onClick={computeStats}
+          disabled={statsLoading || visiblePoints.length === 0}
         >
           {statsLoading ? "Computing..." : "Compute stats for zoom window"}
         </button>
@@ -85,7 +70,7 @@ export default function LineChartStatsPanel({
         {windowRange && (
           <span className="line-chart-stats-window">
             Window: {windowRange.min} → {windowRange.max} (
-            {visiblePoints?.length ?? 0} points)
+            {visiblePoints.length} points)
           </span>
         )}
       </div>
@@ -99,52 +84,51 @@ export default function LineChartStatsPanel({
           <div>
             <strong>Count</strong>
             <br />
-            {windowStats.count ?? "-"}
+            {windowStats.count}
           </div>
 
           <div>
             <strong>Mean</strong>
             <br />
-            {Number(windowStats.mean ?? 0).toFixed(4)}
+            {Number(windowStats.mean).toFixed(4)}
           </div>
 
           <div>
             <strong>Median</strong>
             <br />
-            {Number(windowStats.median ?? 0).toFixed(4)}
+            {Number(windowStats.median).toFixed(4)}
           </div>
 
           <div>
             <strong>Std Dev</strong>
             <br />
-            {Number(windowStats.stdDev ?? windowStats.stddev ?? 0).toFixed(4)}
+            {Number(windowStats.stdDev).toFixed(4)}
           </div>
 
           <div>
             <strong>Min / Max</strong>
             <br />
-            {Number(windowStats.min ?? 0).toFixed(4)} /{" "}
-            {Number(windowStats.max ?? 0).toFixed(4)}
+            {Number(windowStats.min).toFixed(4)} /{" "}
+            {Number(windowStats.max).toFixed(4)}
           </div>
 
           <div>
             <strong>Q1 / Q3</strong>
             <br />
-            {Number(windowStats.q1 ?? 0).toFixed(4)} /{" "}
-            {Number(windowStats.q3 ?? 0).toFixed(4)}
+            {Number(windowStats.q1).toFixed(4)} /{" "}
+            {Number(windowStats.q3).toFixed(4)}
           </div>
 
           <div>
             <strong>IQR</strong>
             <br />
-            {Number(windowStats.iqr ?? 0).toFixed(4)}
+            {Number(windowStats.iqr).toFixed(4)}
           </div>
 
           <div>
             <strong>Trend</strong>
             <br />
-            {windowStats.trend ?? "-"} (
-            {Number(windowStats.slope ?? 0).toFixed(6)})
+            {windowStats.trend} ({Number(windowStats.slope).toFixed(6)})
           </div>
         </div>
       )}

@@ -33,7 +33,9 @@ export default function PopulatedRunContent({
 
   return (
     <div
-      className={`run-stack ${layoutMode === "grid" ? "run-stack--grid" : "run-stack--stack"}`}
+      className={`run-stack ${
+        layoutMode === "grid" ? "run-stack--grid" : "run-stack--stack"
+      }`}
     >
       {runs.map((run, idx) => (
         <RunChart
@@ -42,9 +44,15 @@ export default function PopulatedRunContent({
           runIndex={selectedBatch?.runIndex ?? "average"}
           visibleCount={visibleCount}
           instanceName={
-            run.problemId === "tsp"? tspInstance?.name ?? null: run.problemId === "vrp"? vrpInstance?.name ?? null: null
+            run.problemId === "tsp"
+              ? tspInstance?.name ?? null
+              : run.problemId === "vrp"
+              ? vrpInstance?.name ?? null
+              : null
           }
-          bestFitnessBoxPlot={effectiveSelectedRunKey === "average"? bestFitnessBoxPlotsByProblem[run.problemId] ?? null: null
+          // Average runs can include backend-generated boxplots.
+          // Individual runs show their direct logged series instead.
+          bestFitnessBoxPlot={effectiveSelectedRunKey === "average" ? bestFitnessBoxPlotsByProblem[run.problemId] ?? null : null
           }
         />
       ))}

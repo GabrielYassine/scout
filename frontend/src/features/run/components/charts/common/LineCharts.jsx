@@ -5,7 +5,6 @@
 import { useMemo, memo, useState, useRef, useCallback, useEffect } from "react";
 import ReactECharts from "echarts-for-react";
 
-import LineChartStatsPanel from "./LineChartStatsPanel.jsx";
 import {
   buildLineChartBaseOption,
   buildMarkAreaData,
@@ -19,6 +18,13 @@ import {
 
 import "@/features/run/styles/LineCharts.css";
 
+function isMinimizationFitnessSeries(seriesName, searchSpaceId) {
+  return (
+    (seriesName === "fitness" || seriesName === "bestFitness") &&
+    (searchSpaceId === "permutation" || searchSpaceId === "route-list")
+  );
+}
+
 function LineCharts({
   chartPoints,
   seriesName,
@@ -27,30 +33,23 @@ function LineCharts({
   searchSpaceId = null,
   phaseRanges = [],
   enableDataZoom = true,
-  invertPermutationFitness = true,
-  showStats = true,
   onWindowRangeChange = null,
 }) {
   const chartInstanceRef = useRef(null);
   const userHasZoomedRef = useRef(false);
   const [windowRange, setWindowRange] = useState(null);
 
-  const isPermutationFitness = useMemo(() => {
-    return (
-      invertPermutationFitness &&
-      (seriesName === "fitness" || seriesName === "bestFitness") &&
-      (searchSpaceId === "permutation" || searchSpaceId === "route-list")
-    );
-  }, [invertPermutationFitness, searchSpaceId, seriesName]);
-
-  const displaySeriesName = isPermutationFitness ? "tourLength" : seriesName;
+  // TSP and VRP fitness is stored as negative distance internally.
+  // For chart display, fitness/bestFitness is shown as positive tour length.
+  const shouldInvertFitness = isMinimizationFitnessSeries(seriesName, searchSpaceId);
+  const displaySeriesName = shouldInvertFitness ? "tourLength" : seriesName;
   const resolvedYAxisLabel = yAxisLabel ?? displaySeriesName;
 
   const displayChartPoints = useMemo(() => {
-    if (!chartPoints?.length) return [];
+    if (!chartPoints.length) return [];
 
-    return isPermutationFitness ? chartPoints.map(([x, y]) => [x, -y]) : chartPoints;
-  }, [chartPoints, isPermutationFitness]);
+    return shouldInvertFitness? chartPoints.map(([x, y]) => [x, -y]) : chartPoints;
+  }, [chartPoints, shouldInvertFitness]);
 
   const markAreaData = useMemo(() => {
     return buildMarkAreaData(phaseRanges);
@@ -101,6 +100,7 @@ function LineCharts({
     [seriesName, displaySeriesName, displayChartPoints, markAreaData]
   );
 
+  // Push new live points into the existing chart without rebuilding the whole option.
   useEffect(() => {
     const chart = chartInstanceRef.current;
     if (!chart) return;
@@ -108,12 +108,15 @@ function LineCharts({
     applySeriesPatch(chart);
   }, [applySeriesPatch]);
 
+  // When switching observer/series, reset zoom and stats window.
   useEffect(() => {
     userHasZoomedRef.current = false;
     setWindowRange(null);
     onWindowRangeChange?.(null);
   }, [seriesName, onWindowRangeChange]);
 
+  // While the user has not manually zoomed, keep the active window equal to
+  // the full data range. This allows the stats panel to follow live updates.
   useEffect(() => {
     if (!dataXRange) {
       setWindowRange(null);
@@ -121,38 +124,25 @@ function LineCharts({
       return;
     }
 
-    if (!userHasZoomedRef.current) {
-      if (!windowRange || !rangesEqual(windowRange, dataXRange)) {
-        setWindowRange(dataXRange);
-        onWindowRangeChange?.(dataXRange);
-      }
+    if (!userHasZoomedRef.current && !rangesEqual(windowRange, dataXRange)) {
+      setWindowRange(dataXRange);
+      onWindowRangeChange?.(dataXRange);
     }
   }, [dataXRange, windowRange, onWindowRangeChange]);
-
-  const visiblePoints = useMemo(() => {
-    if (!windowRange || !displayChartPoints.length) {
-      return displayChartPoints;
-    }
-
-    return displayChartPoints.filter(
-      ([x]) => x >= windowRange.min && x <= windowRange.max
-    );
-  }, [displayChartPoints, windowRange]);
 
   const updateRangeFromInstance = useCallback(
     (chartInstance) => {
       if (!chartInstance || !dataXRange) return;
 
       const optionRef = chartInstance.getOption?.();
-      const zoomEntries = optionRef?.dataZoom ?? [];
-      const zoom = zoomEntries.find((z) => Number(z?.xAxisIndex ?? 0) === 0) ?? zoomEntries[0] ?? null;
-
+      const zoom = optionRef?.dataZoom?.[0] ?? null;
       const nextRange = resolveZoomRange(zoom, dataXRange);
+
       if (!nextRange) return;
 
       userHasZoomedRef.current = !rangesEqual(nextRange, dataXRange);
 
-      if (!windowRange || !rangesEqual(windowRange, nextRange)) {
+      if (!rangesEqual(windowRange, nextRange)) {
         setWindowRange(nextRange);
         onWindowRangeChange?.(nextRange);
       }
@@ -169,6 +159,8 @@ function LineCharts({
     [applySeriesPatch, updateRangeFromInstance]
   );
 
+  // ECharts emits datazoom when the slider changes. We translate that into
+  // numeric x-axis bounds so the stats panel can summarize the selected window.
   useEffect(() => {
     const chartInstance = chartInstanceRef.current;
     if (!chartInstance) return;
@@ -189,16 +181,6 @@ function LineCharts({
 
   return (
     <div className="line-chart-container">
-      {showStats && (
-        <LineChartStatsPanel
-          seriesName={seriesName}
-          xAxisLabel={xAxisLabel}
-          yAxisLabel={yAxisLabel}
-          visiblePoints={visiblePoints}
-          windowRange={windowRange}
-        />
-      )}
-
       <ReactECharts
         option={baseOption}
         notMerge={false}

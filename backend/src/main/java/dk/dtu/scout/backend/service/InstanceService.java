@@ -39,14 +39,12 @@ public class InstanceService {
                 InstanceValidator.validateVrp(instance);
                 yield Map.of("instanceType", "VRP", "instance", parsed);
             }
-
             case "TSP" -> {
                 Map<String, Object> parsed = InstanceParser.parseTspContent(content);
                 TSPInstance instance = InstanceMapper.toTspInstance(parsed);
                 InstanceValidator.validateTsp(instance);
                 yield Map.of("instanceType", "TSP", "instance", parsed);
             }
-
             default -> throw new IllegalArgumentException("Unsupported instance type: " + instanceType);
         };
     }
@@ -68,6 +66,7 @@ public class InstanceService {
 
         Map<String, Object> instanceData = new LinkedHashMap<>(payload);
         instanceData.remove("exportType");
+
         String normalizedType = rawExportType.toString().trim().toUpperCase(Locale.ROOT);
 
         return switch (normalizedType) {
@@ -76,13 +75,11 @@ public class InstanceService {
                 InstanceValidator.validateTsp(instance);
                 yield InstanceFormatter.formatTsp(instance);
             }
-
             case "VRP" -> {
                 VRPInstance instance = InstanceMapper.toVrpInstance(instanceData);
                 InstanceValidator.validateVrp(instance);
                 yield InstanceFormatter.formatVrp(instance);
             }
-
             default -> throw new IllegalArgumentException("Unsupported exportType: " + rawExportType);
         };
     }

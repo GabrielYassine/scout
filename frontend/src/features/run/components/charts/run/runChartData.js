@@ -2,6 +2,7 @@
  * Pure helpers for RunChart observer selection, phase ranges, status labels,
  * and incremental chart-point construction.
  */
+
 export const HYPERCUBE_KEY = "__hypercube__";
 export const TSP_TOUR_KEY = "__tsp-tour__";
 export const BEST_FITNESS_BOXPLOT_KEY = "__boxplot__:bestFitness";
@@ -42,6 +43,10 @@ export function getObserverDisplayName(observerKey) {
   }
 }
 
+/**
+ * Returns ordinary numeric observer series that can be rendered as line charts.
+ * Special series are consumed by custom visualizations instead.
+ */
 export function getLineSeriesKeys(series) {
   return Object.keys(series).filter((key) => !SPECIAL_SERIES_KEYS.has(key));
 }
@@ -61,9 +66,27 @@ export function buildDisplayKeys({
   return keys;
 }
 
-export function getFallbackObserver(displayKeys) {
-  if (displayKeys.length > 0) return displayKeys[0];
-  return null;
+export function getInitialObserver(displayKeys) {
+  return displayKeys[0] ?? null;
+}
+
+export function isSpecialObserver(observerKey) {
+  return (
+    observerKey === HYPERCUBE_KEY ||
+    observerKey === TSP_TOUR_KEY ||
+    observerKey === BEST_FITNESS_BOXPLOT_KEY
+  );
+}
+
+export function isMinimizationFitnessObserver(observerKey, searchSpaceId) {
+  return (
+    (observerKey === "fitness" || observerKey === "bestFitness") &&
+    (searchSpaceId === "permutation" || searchSpaceId === "route-list")
+  );
+}
+
+export function invertFitnessPoints(points) {
+  return points.map(([x, y]) => [x, -y]);
 }
 
 function normalizePhaseRanges(phaseIntervals) {
@@ -86,6 +109,11 @@ function normalizePhaseRanges(phaseIntervals) {
     .sort((a, b) => a.start - b.start);
 }
 
+/**
+ * Makes phase ranges continuous and non-overlapping.
+ * Gaps inherit the previous phase so the chart background does not break
+ * between adjacent observer intervals.
+ */
 function resolveRangeGapsAndOverlaps(sortedRanges) {
   const resolvedRanges = [];
 
@@ -138,30 +166,31 @@ export function createEmptyPointCache(observerKey) {
   };
 }
 
+/**
+ * Builds [evaluation, value] points for a line chart.
+ * During live runs, new points are appended to a cache instead of rebuilding
+ * the entire point array every render.
+ */
 export function buildChartPoints({
-  effectiveObserver,
+  observerKey,
   evaluations,
   series,
-  isStandardLineSeries,
+  isLineSeries,
   pointsCacheRef,
 }) {
-  if (!isStandardLineSeries) {
-    pointsCacheRef.current = createEmptyPointCache(effectiveObserver);
+  if (!isLineSeries) {
+    pointsCacheRef.current = createEmptyPointCache(observerKey);
     return [];
   }
 
-  const observerValues = series[effectiveObserver] ?? [];
-  const evaluationLength = evaluations.length;
-  const valueLength = observerValues.length;
-  const sharedLength = Math.min(evaluationLength, valueLength);
-
+  const observerValues = series[observerKey];
+  const sharedLength = Math.min(evaluations.length, observerValues.length);
   const cache = pointsCacheRef.current;
-  const sameObserver = cache.observerKey === effectiveObserver;
 
   const shouldRebuild =
-    !sameObserver ||
-    cache.lastEvalLen > evaluationLength ||
-    cache.lastYLen > valueLength ||
+    cache.observerKey !== observerKey ||
+    cache.lastEvalLen > evaluations.length ||
+    cache.lastYLen > observerValues.length ||
     cache.points.length > sharedLength;
 
   if (shouldRebuild) {
@@ -177,26 +206,24 @@ export function buildChartPoints({
     }
 
     pointsCacheRef.current = {
-      observerKey: effectiveObserver,
-      lastEvalLen: evaluationLength,
-      lastYLen: valueLength,
+      observerKey,
+      lastEvalLen: evaluations.length,
+      lastYLen: observerValues.length,
       points: rebuiltPoints,
     };
 
     return rebuiltPoints;
   }
 
-  const startIndex = cache.points.length;
-
-  if (startIndex >= sharedLength) {
-    cache.lastEvalLen = evaluationLength;
-    cache.lastYLen = valueLength;
+  if (cache.points.length >= sharedLength) {
+    cache.lastEvalLen = evaluations.length;
+    cache.lastYLen = observerValues.length;
     return cache.points;
   }
 
   const nextPoints = cache.points.slice();
 
-  for (let i = startIndex; i < sharedLength; i += 1) {
+  for (let i = cache.points.length; i < sharedLength; i += 1) {
     const x = Number(evaluations[i]);
     const y = Number(observerValues[i]);
 
@@ -206,9 +233,9 @@ export function buildChartPoints({
   }
 
   pointsCacheRef.current = {
-    observerKey: effectiveObserver,
-    lastEvalLen: evaluationLength,
-    lastYLen: valueLength,
+    observerKey,
+    lastEvalLen: evaluations.length,
+    lastYLen: observerValues.length,
     points: nextPoints,
   };
 

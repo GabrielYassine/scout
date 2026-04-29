@@ -178,6 +178,7 @@ public class RunOrchestratorService {
             List<Integer> sizes = request.problemSizes();
 
             for (int i = 0; i < sizes.size(); i++) {
+
                 int n = sizes.get(i);
                 RunRequest runRequest = buildRunRequestForSize(request, n, i);
                 int logEvery = runRequestValidator.resolveLogEveryIterations(runRequest);

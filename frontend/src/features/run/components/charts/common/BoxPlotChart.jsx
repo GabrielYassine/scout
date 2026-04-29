@@ -1,9 +1,15 @@
 /**
  * ECharts boxplot wrapper for aggregated runtime/fitness distributions.
+ * Used for average-run summaries and runtime-study distributions.
  */
 import { useMemo, memo } from "react";
 import ReactECharts from "echarts-for-react";
 
+/**
+ * Supports both naming conventions used by backend summaries:
+ * - xValues for generic boxplots
+ * - evaluations for fitness-over-evaluation boxplots
+ */
 function getBoxplotXAxisValues(boxPlotResponse) {
   if (Array.isArray(boxPlotResponse.xValues)) {
     return boxPlotResponse.xValues;
@@ -16,6 +22,22 @@ function getBoxplotXAxisValues(boxPlotResponse) {
   return [];
 }
 
+function isMinimizationFitnessBoxplot(seriesName, searchSpaceId, invertPermutationFitness) {
+  return (
+    invertPermutationFitness &&
+    (seriesName === "fitness" || seriesName === "bestFitness") &&
+    (searchSpaceId === "permutation" || searchSpaceId === "route-list")
+  );
+}
+
+/**
+ * Normalizes one backend boxplot row.
+ * Expected row format is [min, q1, median, q3, max].
+ *
+ * For TSP/VRP fitness, values may be stored as negative distances because the
+ * framework maximizes fitness. In that case, the row is inverted and reordered
+ * so the chart displays positive tour lengths correctly.
+ */
 function normalizeBoxplotRow(row, invertValues) {
   if (!Array.isArray(row) || row.length !== 5) return null;
 
@@ -25,6 +47,10 @@ function normalizeBoxplotRow(row, invertValues) {
   return invertValues ? [-values[4], -values[3], -values[2], -values[1], -values[0]] : values;
 }
 
+/**
+ * Converts backend x-values and boxplot rows into the object format expected by ECharts.
+ * rawStats is kept separately so the tooltip can display named statistics.
+ */
 function buildBoxplotEntries(xValues, rawBoxplots, invertValues) {
   return xValues
     .map((x, index) => {
@@ -60,19 +86,18 @@ function BoxPlotChart({
 
     if (!xValues.length || !rawBoxplots.length) return null;
 
-    const isPermutationFitness =
-      invertPermutationFitness &&
-      (searchSpaceId === "permutation" || searchSpaceId === "route-list") &&
-      (seriesName === "fitness" || seriesName === "bestFitness");
+    // TSP and VRP are represented as minimization problems internally by using
+    // negative fitness values. The chart should show positive distances instead.
+    const shouldInvertFitness = isMinimizationFitnessBoxplot(
+      seriesName,
+      searchSpaceId,
+      invertPermutationFitness
+    );
 
-    const displaySeriesName = isPermutationFitness ? "tourLength" : seriesName;
+    const displaySeriesName = shouldInvertFitness ? "tourLength" : seriesName;
     const resolvedYAxisLabel = yAxisLabel ?? displaySeriesName;
 
-    const entries = buildBoxplotEntries(
-      xValues,
-      rawBoxplots,
-      isPermutationFitness
-    );
+    const entries = buildBoxplotEntries(xValues, rawBoxplots, shouldInvertFitness);
 
     if (!entries.length) return null;
 
@@ -91,16 +116,16 @@ function BoxPlotChart({
       tooltip: {
         trigger: "item",
         formatter: (params) => {
-          const { min, q1, median, q3, max } = params?.data?.rawStats ?? {};
+          const { min, q1, median, q3, max } = params.data.rawStats;
 
           return [
             displaySeriesName,
-            `${xAxisLabel}: ${params?.name ?? "-"}`,
-            `Min: ${Number.isFinite(min) ? min : "-"}`,
-            `Q1: ${Number.isFinite(q1) ? q1 : "-"}`,
-            `Median: ${Number.isFinite(median) ? median : "-"}`,
-            `Q3: ${Number.isFinite(q3) ? q3 : "-"}`,
-            `Max: ${Number.isFinite(max) ? max : "-"}`,
+            `${xAxisLabel}: ${params.name}`,
+            `Min: ${min}`,
+            `Q1: ${q1}`,
+            `Median: ${median}`,
+            `Q3: ${q3}`,
+            `Max: ${max}`,
           ].join("<br/>");
         },
       },

@@ -4,6 +4,15 @@
  * and pheromone heatmap overlays when available from observer data.
  */
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
+import {
+  buildCitiesKey,
+  buildRouteSequence,
+  calculateRouteDistance,
+  extractRunSourceData,
+  extractTspSourceData,
+  normalizeRoutes,
+  sanitizeCity,
+} from "./routeVisualizationData.js";
 import "@/features/run/styles/RouteVisualization.css";
 
 const ROUTE_COLORS = [
@@ -23,132 +32,6 @@ const ZOOM_SENSITIVITY = 0.0015;
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const toInt = (value) => Math.round(Number(value) || 0);
-
-const sanitizeCity = (city) => ({
-  ...city,
-  x: toInt(city.x),
-  y: toInt(city.y),
-});
-
-function getLatestSeriesValue(seriesValue) {
-  if (!Array.isArray(seriesValue)) {
-    return seriesValue;
-  }
-
-  if (!seriesValue.length) {
-    return null;
-  }
-
-  return seriesValue[seriesValue.length - 1];
-}
-
-function normalizeCities(citiesData) {
-  if (!Array.isArray(citiesData)) {
-    return [];
-  }
-
-  return citiesData.map((city) =>
-    sanitizeCity({
-      ...city,
-      id: city.id,
-      nodeId: city.nodeId,
-      x: city.x,
-      y: city.y,
-      demand: city.demand ?? 0,
-      isDepot: city.isDepot === true,
-    })
-  );
-}
-
-function normalizeRoutes(tour) {
-  if (!Array.isArray(tour) || tour.length === 0) {
-    return [];
-  }
-
-  return Array.isArray(tour[0]) ? tour : [tour];
-}
-
-function extractRunSourceData(run) {
-  if (!run?.series?.tspTour || !run?.series?.tspCities) {
-    return null;
-  }
-
-  const tspCitiesSeries = run.series.tspCities;
-  const citiesData = Array.isArray(tspCitiesSeries?.[0]) || !tspCitiesSeries?.length ? getLatestSeriesValue(tspCitiesSeries) : tspCitiesSeries;
-
-  const tourDataEntry = getLatestSeriesValue(run.series.tspTour);
-  const tourArray = tourDataEntry?.tour || tourDataEntry;
-  const tourLength = tourDataEntry?.length;
-
-  return {
-    tour: tourArray,
-    cities: normalizeCities(citiesData),
-    observedTourLength: tourLength,
-    originalTourLength:
-      run.series?.fitness?.[run.series.fitness.length - 1] != null
-        ? Math.abs(run.series.fitness[run.series.fitness.length - 1])
-        : null,
-  };
-}
-
-function extractTspSourceData(tspData) {
-  if (!tspData) {
-    return null;
-  }
-
-  return {
-    tour: tspData.tour,
-    cities: normalizeCities(tspData.cities ?? []),
-    originalTourLength: tspData.tourLength,
-  };
-}
-
-function buildCitiesKey(cities) {
-  if (!cities?.length) {
-    return "";
-  }
-  return cities.map((city) => `${city.id}:${city.x},${city.y}:${city.isDepot ? 1 : 0}`).join("|");
-}
-
-function buildRouteSequence(route, depotIndex) {
-  if (!Array.isArray(route) || route.length === 0) {
-    return [];
-  }
-
-  const sequence = route.map(Number).filter(Number.isFinite);
-
-  if (!sequence.length) {
-    return [];
-  }
-
-  if (depotIndex >= 0) {
-    if (sequence[0] !== depotIndex) sequence.unshift(depotIndex);
-    if (sequence[sequence.length - 1] !== depotIndex) sequence.push(depotIndex);
-  } else {
-    sequence.push(sequence[0]);
-  }
-
-  return sequence;
-}
-
-function calculateRouteDistance(sequence, cities) {
-  let totalDistance = 0;
-
-  for (let i = 0; i < sequence.length - 1; i += 1) {
-    const currentCity = cities[sequence[i]];
-    const nextCity = cities[sequence[i + 1]];
-
-    if (!currentCity || !nextCity) {
-      continue;
-    }
-
-    const dx = currentCity.x - nextCity.x;
-    const dy = currentCity.y - nextCity.y;
-    totalDistance += Math.sqrt(dx * dx + dy * dy);
-  }
-
-  return totalDistance;
-}
 
 export default function RouteVisualization({
   tspData,
@@ -428,7 +311,8 @@ export default function RouteVisualization({
       const sequence = buildRouteSequence(route, depotIndex);
       if (!sequence.length) return "";
 
-      const pathPoints = sequence.map((cityIndex) => {
+      const pathPoints = sequence
+        .map((cityIndex) => {
           const city = cities[cityIndex];
           if (!city) return null;
 
@@ -597,7 +481,7 @@ export default function RouteVisualization({
 
             return (
               <g
-                key={city.id ?? index}
+                key={city.id}
                 className={`city ${isDragging ? "dragging" : ""} ${
                   editable ? "editable" : "readonly"
                 }`}
@@ -610,6 +494,7 @@ export default function RouteVisualization({
                   onMouseDown={(event) => handleMouseDown(event, index)}
                   pointerEvents="all"
                 />
+
                 <text
                   className="city-label"
                   x={coords.x}

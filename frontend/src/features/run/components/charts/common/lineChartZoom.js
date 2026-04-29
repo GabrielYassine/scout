@@ -1,43 +1,45 @@
 /**
  * Pure helpers for converting ECharts dataZoom state into numeric x-axis ranges.
  */
+
 export function getDataXRange(points) {
-  if (!points?.length) return null;
+  if (!points.length) return null;
 
-  const first = points[0]?.[0];
-  const last = points[points.length - 1]?.[0];
-  const min = Number(first);
-  const max = Number(last);
+  const firstX = Number(points[0][0]);
+  const lastX = Number(points[points.length - 1][0]);
 
-  if (Number.isFinite(min) && Number.isFinite(max)) {
-    return { min: Math.min(min, max), max: Math.max(min, max) };
+  if (!Number.isFinite(firstX) || !Number.isFinite(lastX)) {
+    return null;
   }
 
-  const xs = points.map(([x]) => Number(x)).filter(Number.isFinite);
-  if (!xs.length) return null;
-
   return {
-    min: Math.min(...xs),
-    max: Math.max(...xs),
+    min: Math.min(firstX, lastX),
+    max: Math.max(firstX, lastX),
   };
 }
 
 export function rangesEqual(a, b) {
   if (!a || !b) return false;
+
   return Math.abs(a.min - b.min) < 1e-9 && Math.abs(a.max - b.max) < 1e-9;
 }
 
+/**
+ * Keeps a zoom range inside the full available data range.
+ * This avoids stats calculations using x-values outside the actual chart data.
+ */
 export function clampRange(range, fullRange) {
-  if (!range || !fullRange) return fullRange ?? null;
-
   return {
     min: Math.max(fullRange.min, Math.min(range.min, fullRange.max)),
     max: Math.max(fullRange.min, Math.min(range.max, fullRange.max)),
   };
 }
 
+/**
+ * ECharts dataZoom can report the selected window either as exact x-axis values
+ * or as percentages. This converts both formats into numeric x-axis bounds.
+ */
 export function resolveZoomRange(zoom, fullRange) {
-  if (!fullRange) return null;
   if (!zoom) return fullRange;
 
   const startValue = Number(zoom.startValue);

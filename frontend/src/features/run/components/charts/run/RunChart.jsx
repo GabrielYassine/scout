@@ -8,11 +8,12 @@ import "@/features/run/styles/ChartPanel.css";
 import "@/features/run/styles/RunChart.css";
 
 import HypercubePlot from "../hypercube/HypercubePlot.jsx";
-import TSPVisualization from "../route/RouteVisualization.jsx";
+import RouteVisualization from "../route/RouteVisualization.jsx";
 import LineCharts from "../common/LineCharts.jsx";
 import LineChartStatsPanel from "../common/LineChartStatsPanel.jsx";
 import BoxPlotChart from "../common/BoxPlotChart.jsx";
 import RunChartHeader from "./RunChartHeader.jsx";
+
 import {
   BEST_FITNESS_BOXPLOT_KEY,
   HYPERCUBE_KEY,
@@ -21,10 +22,13 @@ import {
   buildDisplayKeys,
   buildPhaseRanges,
   createEmptyPointCache,
-  getFallbackObserver,
+  getInitialObserver,
   getLineSeriesKeys,
   getObserverDisplayName,
   getRunStatusMeta,
+  invertFitnessPoints,
+  isMinimizationFitnessObserver,
+  isSpecialObserver,
 } from "./runChartData.js";
 
 function RunChart({
@@ -34,16 +38,15 @@ function RunChart({
   instanceName = null,
   bestFitnessBoxPlot = null,
 }) {
-  const evaluations = run?.evaluations ?? [];
-  const series = run?.series ?? {};
-  const runtimeMs = Number.isFinite(run?.runtimeMs) ? run.runtimeMs : null;
+  const evaluations = run.evaluations ?? [];
+  const series = run.series ?? {};
+  const runtimeMs = Number.isFinite(run.runtimeMs) ? run.runtimeMs : null;
 
-  const hasHypercube =
-    (series.hypercubeX?.length ?? 0) > 0 &&
-    (series.hypercubeY?.length ?? 0) > 0;
+  const hasHypercube = series.hypercubeX?.length > 0 && series.hypercubeY?.length > 0;
+  const hasTspTour = series.tspTour?.length > 0 && series.tspCities?.length > 0;
 
-  const hasTspTour =(series.tspTour?.length ?? 0) > 0 && (series.tspCities?.length ?? 0) > 0;
-
+  // Standard observer series are shown as line charts.
+  // Special observer series are handled by dedicated visualizations.
   const lineSeriesKeys = useMemo(() => getLineSeriesKeys(series), [series]);
 
   const displayKeys = useMemo(() => {
@@ -51,35 +54,35 @@ function RunChart({
       lineSeriesKeys,
       hasHypercube,
       hasTspTour,
-      hasBestFitnessBoxPlot: bestFitnessBoxPlot != null,
+      hasBestFitnessBoxPlot: bestFitnessBoxPlot !== null,
     });
   }, [lineSeriesKeys, hasHypercube, hasTspTour, bestFitnessBoxPlot]);
 
-  const fallbackObserver = useMemo(() => {
-    return getFallbackObserver(displayKeys);
-  }, [displayKeys]);
+  const initialObserver = useMemo(
+    () => getInitialObserver(displayKeys),
+    [displayKeys]
+  );
 
-  const [selectedObserver, setSelectedObserver] = useState(fallbackObserver);
+  const [selectedObserver, setSelectedObserver] = useState(initialObserver);
   const [lineChartWindowRange, setLineChartWindowRange] = useState(null);
 
+  // If live data changes the available observers, keep the selected observer valid.
   useEffect(() => {
     setSelectedObserver((current) =>
-      displayKeys.includes(current) ? current : fallbackObserver
+      displayKeys.includes(current) ? current : initialObserver
     );
-  }, [displayKeys, fallbackObserver]);
+  }, [displayKeys, initialObserver]);
 
-  const effectiveObserver = displayKeys.includes(selectedObserver) ? selectedObserver : fallbackObserver;
+  const activeObserver = displayKeys.includes(selectedObserver) ? selectedObserver : initialObserver;
 
-  const isHypercube = effectiveObserver === HYPERCUBE_KEY;
-  const isTspTour = effectiveObserver === TSP_TOUR_KEY;
-  const isBestFitnessBoxPlot = effectiveObserver === BEST_FITNESS_BOXPLOT_KEY;
+  const isHypercube = activeObserver === HYPERCUBE_KEY;
+  const isTspTour = activeObserver === TSP_TOUR_KEY;
+  const isBestFitnessBoxPlot = activeObserver === BEST_FITNESS_BOXPLOT_KEY;
 
-  const isStandardLineSeries =
-    !!effectiveObserver &&
-    !isHypercube &&
-    !isTspTour &&
-    !isBestFitnessBoxPlot &&
-    Array.isArray(series[effectiveObserver]);
+  const isLineSeries =
+    activeObserver !== null &&
+    !isSpecialObserver(activeObserver) &&
+    Array.isArray(series[activeObserver]);
 
   const statusMeta = getRunStatusMeta(run);
 
@@ -87,38 +90,42 @@ function RunChart({
     setSelectedObserver(observerKey);
   }, []);
 
+  // Cache point construction so live websocket updates append points instead of
+  // rebuilding the full line series every render.
   const pointsCacheRef = useRef(createEmptyPointCache(null));
 
   const chartPoints = useMemo(() => {
     return buildChartPoints({
-      effectiveObserver,
+      observerKey: activeObserver,
       evaluations,
       series,
-      isStandardLineSeries,
+      isLineSeries,
       pointsCacheRef,
     });
-  }, [effectiveObserver, evaluations, series, isStandardLineSeries]);
+  }, [activeObserver, evaluations, series, isLineSeries]);
 
   const visibleChartPoints = useMemo(() => {
     return chartPoints.slice(0, visibleCount);
   }, [chartPoints, visibleCount]);
 
+  // The stats panel should use the same display values as the chart.
+  // TSP/VRP fitness is internally negative, so it is inverted for readable stats.
   const statsChartPoints = useMemo(() => {
-    const isMinimizationFitness =
-      (effectiveObserver === "fitness" || effectiveObserver === "bestFitness") &&
-      (run?.searchSpaceId === "permutation" || run?.searchSpaceId === "route-list");
+    if (!isMinimizationFitnessObserver(activeObserver, run.searchSpaceId)) {
+      return visibleChartPoints;
+    }
 
-    if (!isMinimizationFitness) return visibleChartPoints;
-
-    return visibleChartPoints.map(([x, y]) => [x, -y]);
-  }, [visibleChartPoints, effectiveObserver, run?.searchSpaceId]);
+    return invertFitnessPoints(visibleChartPoints);
+  }, [visibleChartPoints, activeObserver, run.searchSpaceId]);
 
   useEffect(() => {
     setLineChartWindowRange(null);
-  }, [effectiveObserver]);
+  }, [activeObserver]);
 
   const statsVisiblePoints = useMemo(() => {
-    if (!lineChartWindowRange) return statsChartPoints;
+    if (!lineChartWindowRange) {
+      return statsChartPoints;
+    }
 
     return statsChartPoints.filter(
       ([x]) => x >= lineChartWindowRange.min && x <= lineChartWindowRange.max
@@ -131,13 +138,13 @@ function RunChart({
 
   const hasAnyData =
     displayKeys.length > 0 &&
-    (evaluations.length > 0 || bestFitnessBoxPlot != null);
+    (evaluations.length > 0 || bestFitnessBoxPlot !== null);
 
   if (!hasAnyData) {
     return (
       <div className="run-chart-panel">
         <RunChartHeader
-          problemId={run?.problemId}
+          problemId={run.problemId}
           instanceName={instanceName}
           statusMeta={statusMeta}
           showRuntime={false}
@@ -152,7 +159,7 @@ function RunChart({
   return (
     <div className="chart-panel">
       <RunChartHeader
-        problemId={run?.problemId}
+        problemId={run.problemId}
         instanceName={instanceName}
         statusMeta={statusMeta}
         runtimeMs={runtimeMs}
@@ -162,25 +169,24 @@ function RunChart({
         {isHypercube ? (
           <HypercubePlot run={run} visibleCount={visibleCount} />
         ) : isTspTour ? (
-          <TSPVisualization run={run} />
+          <RouteVisualization run={run} />
         ) : isBestFitnessBoxPlot ? (
           <BoxPlotChart
             seriesName="bestFitness"
             boxPlotResponse={bestFitnessBoxPlot}
-            searchSpaceId={run?.searchSpaceId}
+            searchSpaceId={run.searchSpaceId}
             xAxisLabel="Evaluation"
             yAxisLabel="bestFitness"
           />
         ) : (
           <LineCharts
-            key={`line-${run.problemId}-${runIndex}-${effectiveObserver}`}
-            seriesName={effectiveObserver}
+            key={`line-${run.problemId}-${runIndex}-${activeObserver}`}
+            seriesName={activeObserver}
             chartPoints={visibleChartPoints}
-            searchSpaceId={run?.searchSpaceId}
+            searchSpaceId={run.searchSpaceId}
             phaseRanges={phaseRanges}
             xAxisLabel="Evaluation"
-            yAxisLabel={effectiveObserver}
-            showStats={false}
+            yAxisLabel={activeObserver}
             onWindowRangeChange={setLineChartWindowRange}
           />
         )}
@@ -192,8 +198,8 @@ function RunChart({
             <label key={observerKey} className="observer-checkbox-label">
               <input
                 type="radio"
-                name={`observer-${run?.problemId}-${runIndex}`}
-                checked={effectiveObserver === observerKey}
+                name={`observer-${run.problemId}-${runIndex}`}
+                checked={activeObserver === observerKey}
                 onChange={() => handleObserverChange(observerKey)}
               />
               <span>{getObserverDisplayName(observerKey)}</span>
@@ -202,12 +208,12 @@ function RunChart({
         </div>
       )}
 
-      {isStandardLineSeries && (
+      {isLineSeries && (
         <div className="run-chart-stats">
           <LineChartStatsPanel
-            seriesName={effectiveObserver}
+            seriesName={activeObserver}
             xAxisLabel="Evaluation"
-            yAxisLabel={effectiveObserver}
+            yAxisLabel={activeObserver}
             visiblePoints={statsVisiblePoints}
             windowRange={lineChartWindowRange}
           />

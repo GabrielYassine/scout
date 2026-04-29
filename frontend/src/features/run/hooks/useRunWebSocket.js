@@ -1,12 +1,11 @@
 /**
  * Manages the websocket lifecycle for normal runs.
- * Incoming progress packets are ordered, buffered, merged into batch state,
+ * Incoming progress packets are buffered, merged into batch state,
  * and persisted when the run finishes.
  */
 import { useEffect, useRef } from "react";
 import { Client } from "@stomp/stompjs";
 
-import { createOrderedProgressApplier } from "@/features/run/utils/orderedProgress.js";
 import { createEmptyBatch, mergeProgress } from "@/features/run/utils/runProgressMerge.js";
 import { createWebSocketUrl, parseSocketMessage } from "@/features/run/utils/socketUtils.js";
 
@@ -37,7 +36,6 @@ export function useRunWebSocket({
   const flushTimerRef = useRef(null);
   const latestBatchRef = useRef(null);
   const readyProgressQueueRef = useRef([]);
-  const orderedApplierRef = useRef(null);
 
   useEffect(() => {
     if (!enabled || !runId) return;
@@ -48,14 +46,6 @@ export function useRunWebSocket({
     startSentRef.current = false;
     latestBatchRef.current = null;
     readyProgressQueueRef.current = [];
-
-    // The backend sends sequence ids per stream. The ordered applier ensures
-    // packets are merged only after all earlier packets for that stream arrived.
-    orderedApplierRef.current = createOrderedProgressApplier({
-      applyPacket: (packet) => {
-        readyProgressQueueRef.current.push(packet);
-      },
-    });
 
     const client = new Client({
       brokerURL: createWebSocketUrl(),
@@ -73,7 +63,7 @@ export function useRunWebSocket({
       // Merge all queued progress packets into one batch update. This avoids
       // triggering a React state update for every single websocket message.
       for (const packet of queuedPackets) {
-        if (!packet?.runId) continue;
+        if (!packet.runId) continue;
         if (activeRunIdRef.current && packet.runId !== activeRunIdRef.current) {
           continue;
         }
@@ -142,14 +132,14 @@ export function useRunWebSocket({
     const handleSocketMessage = (rawMessage) => {
       const message = parseSocketMessage(rawMessage);
 
-      if (!message?.runId) return;
+      if (!message.runId) return;
       if (activeRunIdRef.current && message.runId !== activeRunIdRef.current) {
         return;
       }
 
       switch (message.type) {
         case "RUN_PROGRESS":
-          orderedApplierRef.current?.ingest(message);
+          readyProgressQueueRef.current.push(message);
           return;
 
         case "RUN_CONNECTED":
@@ -197,7 +187,6 @@ export function useRunWebSocket({
         // Clear run-local buffers so stale packets cannot affect a later run.
         readyProgressQueueRef.current = [];
         latestBatchRef.current = null;
-        orderedApplierRef.current?.resetAll?.();
         client.deactivate();
       } catch {
         // ignore cleanup errors

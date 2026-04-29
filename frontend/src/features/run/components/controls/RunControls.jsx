@@ -53,6 +53,8 @@ export default function RunControls({
           <label htmlFor="batch-select" className="field-label">
             Select Run:
           </label>
+
+          {/* Average is available only after the backend summary has been produced. */}
           <select
             id="batch-select"
             className="field-input"
@@ -61,11 +63,13 @@ export default function RunControls({
             disabled={averageRuns.length === 0 && batches.length <= 1}
           >
             {averageRuns.length > 0 && <option value="average">Average</option>}
+
             {batches.map((batchItem) => (
               <option key={batchItem.runIndex} value={String(batchItem.runIndex)}>
                 Run {batchItem.runIndex + 1} (Seed: {batchItem.seed})
               </option>
             ))}
+
             {averageRuns.length === 0 && batches.length === 0 && (
               <option value="">No runs available</option>
             )}

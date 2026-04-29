@@ -1,12 +1,19 @@
 /**
  * Pure builders for ECharts line-chart options and series patches.
+ * Kept separate from the React component so chart configuration is easier to read.
  */
+
 const PHASE_COLORS = {
   IMPROVING: "rgba(46, 204, 113, 0.18)",
   WORSENING: "rgba(231, 76, 60, 0.18)",
   STAGNANT: "rgba(241, 196, 15, 0.18)",
 };
 
+/**
+ * Converts phase intervals into ECharts markArea ranges.
+ * These are the shaded background regions used to show improving, worsening,
+ * or stagnant phases on top of a line chart.
+ */
 export function buildMarkAreaData(phaseRanges) {
   return (phaseRanges ?? [])
     .map((range) => {
@@ -25,6 +32,11 @@ export function buildMarkAreaData(phaseRanges) {
     .filter(Boolean);
 }
 
+/**
+ * Builds the stable base ECharts option.
+ * Live data is intentionally not inserted here; it is patched separately so
+ * the chart can update efficiently during websocket streaming.
+ */
 export function buildLineChartBaseOption({
   seriesName,
   displaySeriesName,
@@ -99,14 +111,23 @@ export function buildLineChartBaseOption({
   };
 }
 
+/**
+ * Builds the small series-only patch applied to an existing chart instance.
+ * This avoids recreating the full ECharts option whenever new streamed data arrives.
+ */
 export function buildSeriesPatch({
   displaySeriesName,
   displayChartPoints,
   markAreaData,
 }) {
+  const hasSinglePoint = displayChartPoints.length === 1;
+
   const seriesPatch = {
     name: displaySeriesName,
     data: displayChartPoints,
+    showSymbol: hasSinglePoint,
+    symbol: hasSinglePoint ? "circle" : "none",
+    symbolSize: hasSinglePoint ? 7 : 0,
   };
 
   if (markAreaData.length) {

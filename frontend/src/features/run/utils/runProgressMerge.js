@@ -10,50 +10,56 @@ export function createEmptyBatch(runId = null) {
   };
 }
 
-export function mergeList(prevList, operation, incomingSingle, incomingList) {
-  const prev = Array.isArray(prevList) ? prevList : [];
+function asIncomingValues(value) {
+  if (value == null) {
+    return [];
+  }
+
+  return Array.isArray(value) ? value : [value];
+}
+
+export function mergeList(previousList, operation = "APPEND", incomingValue) {
+  const previous = Array.isArray(previousList) ? previousList : [];
+  const incoming = asIncomingValues(incomingValue);
 
   switch (operation) {
     case "REPLACE":
-      if (Array.isArray(incomingList)) return [...incomingList];
-      if (incomingSingle != null) return [incomingSingle];
-      return [];
+      return incoming;
 
     case "APPEND":
-      if (Array.isArray(incomingList)) return [...prev, ...incomingList];
-      if (incomingSingle != null) return [...prev, incomingSingle];
-      return prev;
+      return [...previous, ...incoming];
 
     case "REPLACE_LAST":
-      if (Array.isArray(incomingList)) return [...incomingList];
-      if (incomingSingle == null) return prev;
-      if (prev.length === 0) return [incomingSingle];
-      return [...prev.slice(0, -1), incomingSingle];
+      if (incoming.length === 0) {
+        return previous;
+      }
+
+      if (previous.length === 0) {
+        return incoming;
+      }
+
+      return [...previous.slice(0, -1), incoming[incoming.length - 1]];
 
     default:
-      return prev;
+      throw new Error(`Unsupported merge operation: ${operation}`);
   }
 }
 
 export function mergeSeries(existingSeries, seriesDelta, seriesMerge) {
   const nextSeries = { ...(existingSeries ?? {}) };
 
+  // Each observer series can define its own merge strategy.
+  // Normal series usually append, while latest-only visual series can replace.
   for (const [key, value] of Object.entries(seriesDelta ?? {})) {
     const operation = seriesMerge?.[key] ?? "APPEND";
-
-    nextSeries[key] = mergeList(
-      nextSeries[key],
-      operation,
-      value,
-      Array.isArray(value) ? value : null
-    );
+    nextSeries[key] = mergeList(nextSeries[key], operation, value);
   }
 
   return nextSeries;
 }
 
-export function mergeProgress(prevBatch, update) {
-  const base = prevBatch ?? createEmptyBatch(update.runId);
+export function mergeProgress(previousBatch, update) {
+  const base = previousBatch ?? createEmptyBatch(update.runId);
   const nextBatches = [...(base.batches ?? [])];
 
   const batchIndex = nextBatches.findIndex(
@@ -67,13 +73,13 @@ export function mergeProgress(prevBatch, update) {
 
   const nextRuns = [...(nextBatch.runs ?? [])];
 
-  const existingRunIndex = nextRuns.findIndex(
+  const runIndex = nextRuns.findIndex(
     (run) => run.problemId === update.problemId
   );
 
   const nextRun =
-    existingRunIndex >= 0
-      ? { ...nextRuns[existingRunIndex] }
+    runIndex >= 0
+      ? { ...nextRuns[runIndex] }
       : {
           problemId: update.problemId,
           searchSpaceId: update.searchSpaceId,
@@ -91,8 +97,7 @@ export function mergeProgress(prevBatch, update) {
   nextRun.evaluations = mergeList(
     nextRun.evaluations,
     update.evaluationsMerge,
-    update.evaluation,
-    update.evaluations
+    update.evaluations ?? update.evaluation
   );
 
   nextRun.series = mergeSeries(
@@ -109,7 +114,7 @@ export function mergeProgress(prevBatch, update) {
     nextRun.status = update.status;
   }
 
-  nextRuns[existingRunIndex >= 0 ? existingRunIndex : nextRuns.length] = nextRun;
+  nextRuns[runIndex >= 0 ? runIndex : nextRuns.length] = nextRun;
   nextBatch.runs = nextRuns;
 
   if (batchIndex >= 0) {

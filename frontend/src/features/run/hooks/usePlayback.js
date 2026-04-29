@@ -2,21 +2,25 @@
  * usePlayback is a custom hook for chart animation.
  * It controls playback speed, gradually reveals more data points,
  * and provides a reset function to start the playback over.
-*/
+ */
 import { useEffect, useState } from "react";
 
 const PLAYBACK_TICK_MS = 30;
 const PLAYBACK_DIVISOR = 15;
 
-export function usePlayback({ length, initialSpeed = 50 }) {
+export function usePlayback({ length, initialSpeed = 1 }) {
   const [playbackSpeed, setPlaybackSpeed] = useState(initialSpeed);
   const [visibleCount, setVisibleCount] = useState(1);
+
   useEffect(() => {
     if (!length) return;
+
+    // Convert the slider value into the number of points revealed per tick.
     const stepSize = Math.max(1, Math.floor(playbackSpeed / PLAYBACK_DIVISOR));
+
     const intervalId = setInterval(() => {
       setVisibleCount((previousCount) =>
-        previousCount >= length? previousCount : Math.min(previousCount + stepSize, length)
+        previousCount >= length ? previousCount : Math.min(previousCount + stepSize, length)
       );
     }, PLAYBACK_TICK_MS);
 
