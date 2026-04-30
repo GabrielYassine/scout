@@ -4,7 +4,7 @@
  * This provider is intended to stay mounted while the user navigates around the app.
  * That allows an active websocket execution to continue even if RunPage unmounts.
  */
-import { createContext, useMemo, useState } from "react";
+import { createContext, useEffect, useMemo, useState } from "react";
 
 import { useSessionStorageState } from "@/shared/hooks/useSessionStorageState.js";
 import { normalizeBatch } from "@/features/run/utils/runData.js";
@@ -14,6 +14,7 @@ import { useRuntimeStudyWebSocket } from "@/features/run/hooks/useRuntimeStudyWe
 export const RunExecutionContext = createContext(null);
 
 const EXECUTION_STORAGE_KEY = "scout:currentExecution";
+const SESSION_ID_STORAGE_KEY = "scout:sessionId";
 
 function getInitialStudyStatus(savedExecution) {
   if (savedExecution?.pageMode !== "runtimeStudy") return null;
@@ -28,8 +29,25 @@ export function RunExecutionProvider({ children }) {
     null
   );
 
-  // Execution metadata. This is initialized from sessionStorage so refresh keeps
-  // the current tab's execution result, but closing the tab forgets it.
+  // Refreshing or closing the tab destroys the current frontend execution session.
+  // Normal React-router navigation does not trigger pagehide, so navigating around
+  // inside the app keeps the websocket and execution state alive.
+  useEffect(() => {
+    const clearExecutionSession = () => {
+      sessionStorage.removeItem(EXECUTION_STORAGE_KEY);
+      sessionStorage.removeItem(SESSION_ID_STORAGE_KEY);
+    };
+
+    window.addEventListener("pagehide", clearExecutionSession);
+
+    return () => {
+      window.removeEventListener("pagehide", clearExecutionSession);
+    };
+  }, []);
+
+  // Execution metadata. This is initialized from sessionStorage so navigation
+  // inside the app keeps the current tab's execution result, but refresh and
+  // tab close forget it.
   const [pageMode, setPageMode] = useState(savedRun?.pageMode ?? "run");
   const [runId, setRunId] = useState(savedRun?.runId ?? null);
   const [studyId, setStudyId] = useState(savedRun?.studyId ?? null);
