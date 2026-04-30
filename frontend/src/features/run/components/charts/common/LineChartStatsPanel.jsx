@@ -59,13 +59,16 @@ export default function LineChartStatsPanel({
   return (
     <div className="line-chart-stats-panel">
       <div className="line-chart-stats-actions">
-        <button
-          type="button"
-          onClick={computeStats}
-          disabled={statsLoading || visiblePoints.length === 0}
-        >
-          {statsLoading ? "Computing..." : "Compute stats for zoom window"}
-        </button>
+        <div className="line-chart-stats-button-wrap">
+          <button
+            type="button"
+            className="btn btn--green"
+            onClick={computeStats}
+            disabled={statsLoading || visiblePoints.length === 0}
+          >
+            {statsLoading ? "Computing..." : "Compute stats for zoom window"}
+          </button>
+        </div>
 
         {windowRange && (
           <span className="line-chart-stats-window">

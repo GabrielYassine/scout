@@ -1,6 +1,5 @@
 /**
  * Owns run/runtime-study execution state above the routed pages.
- *
  * This provider is intended to stay mounted while the user navigates around the app.
  * That allows an active websocket execution to continue even if RunPage unmounts.
  */
@@ -29,12 +28,9 @@ export function RunExecutionProvider({ children }) {
     null
   );
 
-  // Refreshing or closing the tab destroys the current frontend execution session.
-  // Normal React-router navigation does not trigger pagehide, so navigating around
-  // inside the app keeps the websocket and execution state alive.
+  // Remove the execution session on tab close. This ensures that if the user starts a run.
   useEffect(() => {
     const clearExecutionSession = () => {
-      sessionStorage.removeItem(EXECUTION_STORAGE_KEY);
       sessionStorage.removeItem(SESSION_ID_STORAGE_KEY);
     };
 
