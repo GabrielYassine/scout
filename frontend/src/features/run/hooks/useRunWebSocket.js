@@ -53,6 +53,14 @@ export function useRunWebSocket({
       reconnectDelay: 0,
     });
 
+    client.onWebSocketClose = (event) => {
+      console.log("[Run WS] disconnected", {
+        runId,
+        code: event.code,
+        reason: event.reason,
+      });
+    };
+
     const flushProgressQueue = () => {
       if (!enabled || readyProgressQueueRef.current.length === 0) return;
 
@@ -175,7 +183,9 @@ export function useRunWebSocket({
       readySentRef.current = true;
       client.publish({
         destination: `/app/run/${runId}/ready`,
-        body: JSON.stringify({ runId }),
+        body: JSON.stringify({
+          sessionId: runRequest.sessionId,
+        }),
       });
     };
 

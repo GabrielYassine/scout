@@ -3,9 +3,11 @@ package dk.dtu.scout.backend.websocket;
 import dk.dtu.scout.backend.dto.request.StartPreparedExecutionRequest;
 import dk.dtu.scout.backend.dto.ws.RunWsPayload;
 import dk.dtu.scout.backend.dto.ws.RuntimeStudyWsPayload;
+import dk.dtu.scout.backend.service.ExecutionRegistry;
 import dk.dtu.scout.backend.service.RunOrchestratorService;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.stereotype.Controller;
 
 /**
@@ -21,35 +23,44 @@ public class WsReceiver {
 
     private final WsSender wsSender;
     private final RunOrchestratorService runOrchestratorService;
+    private final ExecutionRegistry executionRegistry;
 
-    public WsReceiver(WsSender wsSender, RunOrchestratorService runOrchestratorService) {
+    public WsReceiver(WsSender wsSender, RunOrchestratorService runOrchestratorService, ExecutionRegistry executionRegistry) {
         this.wsSender = wsSender;
         this.runOrchestratorService = runOrchestratorService;
+        this.executionRegistry = executionRegistry;
     }
 
     /**
      * Confirms that the frontend is connected to the run topic.
      * @param runId the run id from the websocket destination
+     * @param request small request containing the browser session id
+     * @param headers websocket message headers
      */
     @MessageMapping("/run/{runId}/ready")
-    public void runReady(@DestinationVariable String runId) {
+    public void runReady(@DestinationVariable String runId, StartPreparedExecutionRequest request, SimpMessageHeaderAccessor headers) {
+        if (request != null) {
+            executionRegistry.attachRunWebSocket(headers.getSessionId(), request.sessionId(), runId);
+        }
+
         wsSender.sendToRun(runId, RunWsPayload.connected(runId));
     }
 
     /**
      * Starts a prepared normal run after the frontend has subscribed to its run topic.
      * The full RunRequest was already validated and stored during REST prepare.
-     *
      * @param runId the run id from the websocket destination
      * @param request small request containing the browser session id
+     * @param headers websocket message headers
      */
     @MessageMapping("/run/{runId}/start")
-    public void runStart(@DestinationVariable String runId, StartPreparedExecutionRequest request) {
+    public void runStart(@DestinationVariable String runId, StartPreparedExecutionRequest request, SimpMessageHeaderAccessor headers) {
         try {
             if (request == null) {
                 throw new IllegalArgumentException("Start request must be provided");
             }
 
+            executionRegistry.attachRunWebSocket(headers.getSessionId(), request.sessionId(), runId);
             runOrchestratorService.startPreparedRun(runId, request.sessionId());
         } catch (Exception ex) {
             wsSender.sendToRun(runId, RunWsPayload.failed(runId, ex.getMessage()));
@@ -59,26 +70,33 @@ public class WsReceiver {
     /**
      * Confirms that the frontend is connected to the runtime study topic.
      * @param studyId the study id from the websocket destination
+     * @param request small request containing the browser session id
+     * @param headers websocket message headers
      */
     @MessageMapping("/study/{studyId}/ready")
-    public void studyReady(@DestinationVariable String studyId) {
+    public void studyReady(@DestinationVariable String studyId, StartPreparedExecutionRequest request, SimpMessageHeaderAccessor headers) {
+        if (request != null) {
+            executionRegistry.attachStudyWebSocket(headers.getSessionId(), request.sessionId(), studyId);
+        }
+
         wsSender.sendToStudy(studyId, RuntimeStudyWsPayload.connected(studyId));
     }
 
     /**
      * Starts a prepared runtime study after the frontend has subscribed to its study topic.
      * The full RuntimeStudyRequest was already validated and stored during REST prepare.
-     *
      * @param studyId the study id from the websocket destination
      * @param request small request containing the browser session id
+     * @param headers websocket message headers
      */
     @MessageMapping("/study/{studyId}/start")
-    public void studyStart(@DestinationVariable String studyId, StartPreparedExecutionRequest request) {
+    public void studyStart(@DestinationVariable String studyId, StartPreparedExecutionRequest request, SimpMessageHeaderAccessor headers) {
         try {
             if (request == null) {
                 throw new IllegalArgumentException("Start request must be provided");
             }
 
+            executionRegistry.attachStudyWebSocket(headers.getSessionId(), request.sessionId(), studyId);
             runOrchestratorService.startPreparedRuntimeStudy(studyId, request.sessionId());
         } catch (Exception ex) {
             wsSender.sendToStudy(studyId, RuntimeStudyWsPayload.failed(studyId, ex.getMessage()));

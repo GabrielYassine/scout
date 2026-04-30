@@ -48,6 +48,14 @@ export function useRuntimeStudyWebSocket({
       reconnectDelay: 0,
     });
 
+    client.onWebSocketClose = (event) => {
+      console.log("[Study WS] disconnected", {
+        studyId,
+        code: event.code,
+        reason: event.reason,
+      });
+    };
+
     const handleStudyConnected = () => {
       if (startSentRef.current) return;
 
@@ -152,7 +160,9 @@ export function useRuntimeStudyWebSocket({
       readySentRef.current = true;
       client.publish({
         destination: `/app/study/${studyId}/ready`,
-        body: JSON.stringify({ studyId }),
+        body: JSON.stringify({
+          sessionId: runtimeStudyRequest.sessionId,
+        }),
       });
     };
 
