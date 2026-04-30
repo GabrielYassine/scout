@@ -14,7 +14,7 @@ import Selector from "@/features/lab/components/selector/Selector.jsx";
 import "./LabPage.css";
 
 import { usePuzzleConfig } from "@/shared/contexts/usePuzzleConfig.js";
-import { useLocalStorageState } from "@/shared/hooks/useLocalStorageState.js";
+import { useSessionStorageState } from "@/shared/hooks/useSessionStorageState.js";
 import { prepareRun } from "@/shared/api/run.js";
 import { runTemplates } from "@/features/lab/templates/runTemplates.js";
 import { persistSessionId } from "@/features/lab/utils/sessionStorage.js";
@@ -47,7 +47,7 @@ export default function LabPage({
 
   const toastTimeoutRef = useRef(null);
   const navigate = useNavigate();
-  const [, setSavedRun] = useLocalStorageState("scout:lastRun", null);
+  const [, setSavedRun] = useSessionStorageState("scout:lastRun", null);
 
   // Listen to drag-and-drop events from dnd-kit to determine when to show the remove drop zone overlay.
   useDndMonitor({

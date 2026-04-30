@@ -6,13 +6,13 @@
 import { useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 
-import { useLocalStorageState } from "@/shared/hooks/useLocalStorageState.js";
+import { useSessionStorageState } from "@/shared/hooks/useSessionStorageState.js";
 import { normalizeBatch } from "@/features/run/utils/runData.js";
 import { resolveRunPageState } from "@/features/run/utils/runPageState.js";
 
 export function useRunPageState() {
   const location = useLocation();
-  const [savedRun, setSavedRun] = useLocalStorageState("scout:lastRun", null);
+  const [savedRun, setSavedRun] = useSessionStorageState("scout:lastRun", null);
 
   const locationState = location.state ?? {};
 
