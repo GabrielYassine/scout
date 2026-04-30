@@ -133,6 +133,20 @@ function buildGlobalParamsFromRunRequest(runRequest) {
     wsUpdateEverySizes: 1,
   };
 }
+function buildGlobalParamsFromRuntimeStudyRequest(runtimeStudyRequest) {
+  return {
+    experimentType: "runtimeStudy",
+    seed: runtimeStudyRequest.seed || Date.now(),
+    runTimes: 1,
+    logEveryIterations: 10,
+    wsUpdateEveryIterations: 100,
+    repetitionsPerSize: runtimeStudyRequest.repetitionsPerSize || 10,
+    problemSizes: Array.isArray(runtimeStudyRequest.problemSizes)
+      ? runtimeStudyRequest.problemSizes.join(", ")
+      : "100, 200, 400, 800",
+    wsUpdateEverySizes: 1,
+  };
+}
 
 function getEdge(piece, direction) {
   const key = piece?.puzzleData?.logicalKey;
@@ -229,7 +243,7 @@ export function deriveGroupedPuzzleConfig(placedPieces) {
 
   return grouped;
 }
-
+// Apply a run template's request data to the puzzle configuration state, mapping component IDs to pieces and setting parameters accordingly.
 export function applyTemplateRunRequestToState({
   runRequest,
   catalog,
@@ -267,6 +281,48 @@ export function applyTemplateRunRequestToState({
     parentSelectionRule: runRequest.parentSelectionRuleParams || {},
     crossover: runRequest.crossoverParams || {},
     stopCondition: runRequest.stopConditionParams || {},
+    observer: {},
+  });
+}
+// Similar to applyTemplateRunRequestToState but tailored for runtime study templates, which may have different parameter structures and typically do not include observers.
+export function applyTemplateRuntimeStudyRequestToState({
+  runtimeStudyRequest,
+  catalog,
+  setPlacedPieces,
+  setParams,
+}) {
+  if (!runtimeStudyRequest || !catalog) return;
+
+  const componentMapping = [
+    { type: "searchSpace", catalogKey: "searchSpaces", requestKey: "searchSpaceId", single: true },
+    { type: "problem", catalogKey: "problems", requestKey: "problemId", single: true },
+    { type: "generator", catalogKey: "generators", requestKey: "generatorId", single: true },
+    { type: "selection", catalogKey: "selectionRules", requestKey: "selectionRuleId", single: true },
+    { type: "populationModel", catalogKey: "populationModels", requestKey: "populationModelId", single: true },
+    { type: "parentSelectionRule", catalogKey: "parentSelectionRules", requestKey: "parentSelectionRuleId", single: true },
+    { type: "crossover", catalogKey: "crossovers", requestKey: "crossoverId", single: true },
+    { type: "stopCondition", catalogKey: "stopConditions", requestKey: "stopConditionIds" },
+  ];
+
+  const flattenedPieces = componentMapping.flatMap(
+    ({ type, catalogKey, requestKey, single }) =>
+      catalog[catalogKey]
+        ? mapIdsToPieces(runtimeStudyRequest[requestKey], catalog[catalogKey], type, single)
+        : []
+  );
+
+  setPlacedPieces(rekeyGrid(flattenedPieces, 0));
+
+  setParams({
+    global: buildGlobalParamsFromRuntimeStudyRequest(runtimeStudyRequest),
+    searchSpace: runtimeStudyRequest.searchSpaceParams || {},
+    problem: runtimeStudyRequest.problemParams || {},
+    generator: runtimeStudyRequest.generatorParams || {},
+    selection: runtimeStudyRequest.selectionRuleParams || {},
+    populationModel: runtimeStudyRequest.populationModelParams || {},
+    parentSelectionRule: runtimeStudyRequest.parentSelectionRuleParams || {},
+    crossover: runtimeStudyRequest.crossoverParams || {},
+    stopCondition: runtimeStudyRequest.stopConditionParams || {},
     observer: {},
   });
 }
