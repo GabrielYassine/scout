@@ -16,14 +16,10 @@ import "./LabPage.css";
 import { usePuzzleConfig } from "@/shared/contexts/usePuzzleConfig.js";
 import { useRunExecution } from "@/features/run/contexts/useRunExecution.js";
 import { prepareRun } from "@/shared/api/run.js";
-import { runTemplates } from "@/features/lab/templates/runTemplates.js";
+import {runTemplates, } from "@/features/lab/templates/runTemplates.js";
+import { runtimeStudyTemplates, } from "@/features/lab/templates/runtimeStudyTemplates.js";
 import { persistSessionId } from "@/features/lab/utils/sessionStorage.js";
-import {
-  parseProblemSizes,
-  buildExecutionContext,
-  buildRuntimeStudyRequest,
-  buildRunRequest,
-} from "@/features/lab/utils/labExecution.js";
+import { parseProblemSizes, buildExecutionContext, buildRuntimeStudyRequest, buildRunRequest, } from "@/features/lab/utils/labExecution.js";
 
 const SHARED_DROP_AREA_ID = "shared-drop-area";
 const TOAST_DURATION_MS = 3500;
@@ -41,6 +37,7 @@ export default function LabPage({
     setTspInstance,
     setVrpInstance,
     applyTemplateRunRequest,
+    applyTemplateRuntimeStudyRequest,
     handleParamChange,
     handleReset,
   } = usePuzzleConfig();
@@ -54,6 +51,9 @@ export default function LabPage({
 
   const toastTimeoutRef = useRef(null);
   const navigate = useNavigate();
+  const runMode = params.global?.experimentType ?? "run";
+
+  const visibleTemplates = runMode === "runtimeStudy" ? runtimeStudyTemplates : runTemplates;
 
   // Listen to drag-and-drop events from dnd-kit to determine when to show the remove drop zone overlay.
   useDndMonitor({
@@ -285,7 +285,15 @@ export default function LabPage({
   // Apply the selected template to the current lab configuration
   function onApplyTemplate(templateId) {
     if (!templateId || !catalog) return;
-    // Find the matching template object from the template list
+
+    if (runMode === "runtimeStudy") {
+      const template = runtimeStudyTemplates.find((t) => t.id === templateId);
+      if (!template) return;
+
+      applyTemplateRuntimeStudyRequest(template.runtimeStudyRequest, catalog);
+      return;
+    }
+
     const template = runTemplates.find((t) => t.id === templateId);
     if (!template) return;
 
@@ -311,7 +319,7 @@ export default function LabPage({
         catalog={catalog}
         catalogLoading={catalogLoading}
         catalogError={catalogError}
-        templates={runTemplates}
+        templates={visibleTemplates}
         onApplyTemplate={onApplyTemplate}
       />
 

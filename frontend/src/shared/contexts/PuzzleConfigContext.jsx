@@ -17,6 +17,7 @@ import {
   deriveGroupedPuzzleConfig,
   rekeyGrid,
   applyTemplateRunRequestToState,
+  applyTemplateRuntimeStudyRequestToState,
   createFallbackConfig,
   normalizeConfigList,
   getNextConfigName,
@@ -205,6 +206,10 @@ export function PuzzleConfigProvider({ children }) {
     applyTemplateRunRequestToState({ runRequest, catalog, setPlacedPieces, setParams });
   }
 
+function applyTemplateRuntimeStudyRequest(runtimeStudyRequest, catalog) {
+  applyTemplateRuntimeStudyRequestToState({ runtimeStudyRequest, catalog, setPlacedPieces, setParams, });
+}
+
   const value = {
     configs: normalizedConfigs,
     activeConfigId,
@@ -224,6 +229,7 @@ export function PuzzleConfigProvider({ children }) {
     handleParamChange,
     handleReset,
     applyTemplateRunRequest,
+    applyTemplateRuntimeStudyRequest,
 
     setTspInstance,
     setVrpInstance,
