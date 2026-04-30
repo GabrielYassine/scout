@@ -1,4 +1,4 @@
-package dk.dtu.scout.acceptance;
+package dk.dtu.scout.selection;
 
 import dk.dtu.scout.dto.EvaluatedSolution;
 import dk.dtu.scout.ScoutComponent;

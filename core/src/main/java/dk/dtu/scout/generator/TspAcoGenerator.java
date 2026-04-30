@@ -1,10 +1,10 @@
 package dk.dtu.scout.generator;
 
-import dk.dtu.scout.dto.EvaluatedSolution;
-import dk.dtu.scout.dto.Parameter;
 import dk.dtu.scout.State;
 import dk.dtu.scout.datatypes.StateKeys;
 import dk.dtu.scout.datatypes.TSPInstance;
+import dk.dtu.scout.dto.EvaluatedSolution;
+import dk.dtu.scout.dto.Parameter;
 import dk.dtu.scout.problems.TSP;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -22,8 +22,10 @@ public class TspAcoGenerator extends AbstractAcoGenerator<int[]> {
     private double alpha = 1.0;
     private double beta = 2.0;
 
+    private double minPheromone = 1e-12;
+    private double maxPheromone = 1e12;
+
     private double[][] pheromoneMatrix;
-    private double[][] distanceMatrix;
     private State state;
     private TSPInstance tspInstance;
 
@@ -50,7 +52,7 @@ public class TspAcoGenerator extends AbstractAcoGenerator<int[]> {
 
     @Override
     public String description() {
-        return "Ant colony generator for TSP that constructs tours using edge pheromones";
+        return "Ant colony generator for TSP that constructs tours using bounded edge pheromones";
     }
 
     @Override
@@ -58,15 +60,19 @@ public class TspAcoGenerator extends AbstractAcoGenerator<int[]> {
         List<Parameter> params = new java.util.ArrayList<>(evaporationParams());
         params.add(new Parameter("alpha", "Pheromone Influence", "double", alpha, 0.1, 5.0));
         params.add(new Parameter("beta", "Heuristic Influence", "double", beta, 0.1, 10.0));
+        params.add(new Parameter("minPheromone", "Minimum Pheromone", "double", minPheromone, 0.0, null));
+        params.add(new Parameter("maxPheromone", "Maximum Pheromone", "double", maxPheromone, 0.0, null));
         return params;
     }
 
     @Override
     public void configure(Map<String, Object> params) {
         super.configure(params);
+
         if (params == null) {
             return;
         }
+
         if (params.containsKey("alpha")) {
             double value = ((Number) params.get("alpha")).doubleValue();
             if (value < 0.1 || value > 5.0) {
@@ -74,12 +80,33 @@ public class TspAcoGenerator extends AbstractAcoGenerator<int[]> {
             }
             this.alpha = value;
         }
+
         if (params.containsKey("beta")) {
             double value = ((Number) params.get("beta")).doubleValue();
             if (value < 0.1 || value > 10.0) {
                 throw new IllegalArgumentException("Beta must be between 0.1 and 10.0");
             }
             this.beta = value;
+        }
+
+        if (params.containsKey("minPheromone")) {
+            double value = ((Number) params.get("minPheromone")).doubleValue();
+            if (value < 0.0) {
+                throw new IllegalArgumentException("Minimum pheromone must be non-negative");
+            }
+            this.minPheromone = value;
+        }
+
+        if (params.containsKey("maxPheromone")) {
+            double value = ((Number) params.get("maxPheromone")).doubleValue();
+            if (value <= 0.0) {
+                throw new IllegalArgumentException("Maximum pheromone must be positive");
+            }
+            this.maxPheromone = value;
+        }
+
+        if (minPheromone > maxPheromone) {
+            throw new IllegalArgumentException("Minimum pheromone cannot be greater than maximum pheromone");
         }
     }
 
@@ -89,77 +116,39 @@ public class TspAcoGenerator extends AbstractAcoGenerator<int[]> {
             initializePheromoneMatrix();
         }
 
-        if (pheromoneMatrix == null || pheromoneMatrix.length == 0) {
-            throw new IllegalStateException("TspAcoGenerator not properly initialized. Pheromone matrix is empty or null.");
-        }
+        int dimension = pheromoneMatrix.length;
+        int[] tour = new int[dimension];
+        boolean[] visited = new boolean[dimension];
 
-        int dim = pheromoneMatrix.length;
-
-        int[] result = new int[dim];
-        boolean[] visited = new boolean[dim];
-
-        // Start from a random city
-        int current = rng.nextInt(dim);
-        result[0] = current;
+        int current = rng.nextInt(dimension);
+        tour[0] = current;
         visited[current] = true;
 
-        // Build the tour guided by pheromone levels
-        for (int step = 1; step < dim; step++) {
-            int next = selectNextCityByPheromone(current, visited, rng);
-            result[step] = next;
+        for (int step = 1; step < dimension; step++) {
+            int next = selectNextCity(current, visited, rng);
+            tour[step] = next;
             visited[next] = true;
             current = next;
         }
 
-        return result;
+        return tour;
     }
 
     private void initializePheromoneMatrix() {
-        int dim = 0;
+        int dimension = resolveDimension();
 
-        if (state != null) {
-            Object dimObj = state.get(StateKeys.DIMENSION);
-            if (dimObj instanceof Integer) {
-                dim = (Integer) dimObj;
-            }
-            if (dim <= 0) {
-                Object nObj = state.get("n");
-                if (nObj instanceof Integer) {
-                    dim = (Integer) nObj;
-                }
-            }
+        if (dimension <= 0) {
+            throw new IllegalStateException("Cannot initialize TspAcoGenerator: dimension must be positive");
         }
 
-        if (dim <= 0) {
-            throw new IllegalStateException("Cannot initialize TspAcoGenerator: dimension must be positive. Got dimension=" + dim + " from state=" + state);
-        }
+        pheromoneMatrix = new double[dimension][dimension];
 
-        pheromoneMatrix = new double[dim][dim];
-        distanceMatrix = new double[dim][dim];
+        double initialPheromone = Math.min(1.0, maxPheromone);
+        initialPheromone = Math.max(initialPheromone, minPheromone);
 
-        // Initialize pheromone matrix with uniform values
-        for (int i = 0; i < dim; i++) {
-            for (int j = 0; j < dim; j++) {
-                pheromoneMatrix[i][j] = 1.0;
-            }
-        }
-
-        // load distance matrix if available
-        if (tspInstance != null) {
-            double[][] realDistances = tspInstance.getCoordinates();
-            if (realDistances != null && realDistances.length == dim) {
-                // Compute Euclidean distances
-                for (int i = 0; i < dim; i++) {
-                    for (int j = 0; j < dim; j++) {
-                        if (i == j) {
-                            distanceMatrix[i][j] = 0.0;
-                        } else {
-                            double dx = realDistances[i][0] - realDistances[j][0];
-                            double dy = realDistances[i][1] - realDistances[j][1];
-                            distanceMatrix[i][j] = Math.sqrt(dx * dx + dy * dy);
-                        }
-                    }
-                }
+        for (int i = 0; i < dimension; i++) {
+            for (int j = 0; j < dimension; j++) {
+                pheromoneMatrix[i][j] = initialPheromone;
             }
         }
 
@@ -168,47 +157,76 @@ public class TspAcoGenerator extends AbstractAcoGenerator<int[]> {
         }
     }
 
-    private int selectNextCityByPheromone(int current, boolean[] visited, Random rng) {
+    private int resolveDimension() {
+        if (tspInstance != null) {
+            return tspInstance.getDimension();
+        }
+
+        if (state != null) {
+            Object dimObj = state.get(StateKeys.DIMENSION);
+            if (dimObj instanceof Number dimension) {
+                return dimension.intValue();
+            }
+        }
+
+        return 0;
+    }
+
+    private int selectNextCity(int current, boolean[] visited, Random rng) {
         int dimension = pheromoneMatrix.length;
-        double[] probabilities = new double[dimension];
-        double sum = 0.0;
+        double[] weights = new double[dimension];
+        double totalWeight = 0.0;
 
-        // Calculate probabilities based on pheromone and visibility
-        for (int i = 0; i < dimension; i++) {
-            if (!visited[i]) {
-                double pheromone = Math.pow(pheromoneMatrix[current][i], alpha);
-                double distance = distanceMatrix[current][i];
-                double visibility = Math.pow(1.0 / (distance + 0.001), beta);
-                probabilities[i] = pheromone * visibility;
-                sum += probabilities[i];
+        for (int city = 0; city < dimension; city++) {
+            if (!visited[city]) {
+                double pheromone = Math.pow(pheromoneMatrix[current][city], alpha);
+                double visibility = Math.pow(1.0 / safeDistance(current, city), beta);
+                double weight = pheromone * visibility;
+
+                weights[city] = weight;
+                totalWeight += weight;
             }
         }
 
-        // Normalize probabilities
-        if (sum > 0) {
-            for (int i = 0; i < dimension; i++) {
-                probabilities[i] /= sum;
-            }
+        if (totalWeight <= 0.0 || Double.isNaN(totalWeight) || Double.isInfinite(totalWeight)) {
+            return firstUnvisited(visited);
         }
 
-        // Select next city using roulette wheel selection
-        double rand = rng.nextDouble();
-        double cumulativeProbability = 0.0;
-        for (int i = 0; i < dimension; i++) {
-            if (!visited[i]) {
-                cumulativeProbability += probabilities[i];
-                if (rand <= cumulativeProbability) {
-                    return i;
+        double threshold = rng.nextDouble() * totalWeight;
+        double cumulative = 0.0;
+
+        for (int city = 0; city < dimension; city++) {
+            if (!visited[city]) {
+                cumulative += weights[city];
+                if (threshold <= cumulative) {
+                    return city;
                 }
             }
         }
 
-        // Fallback: return first unvisited city
-        for (int i = 0; i < dimension; i++) {
-            if (!visited[i]) {
-                return i;
+        return firstUnvisited(visited);
+    }
+
+    private double safeDistance(int from, int to) {
+        if (from == to) {
+            return 1e-9;
+        }
+
+        if (tspInstance != null) {
+            double distance = tspInstance.getDistance(from, to);
+            return Math.max(distance, 1e-9);
+        }
+
+        return 1.0;
+    }
+
+    private int firstUnvisited(boolean[] visited) {
+        for (int city = 0; city < visited.length; city++) {
+            if (!visited[city]) {
+                return city;
             }
         }
+
         return 0;
     }
 
@@ -217,6 +235,7 @@ public class TspAcoGenerator extends AbstractAcoGenerator<int[]> {
         if (pheromoneMatrix == null) {
             initializePheromoneMatrix();
         }
+
         updatePheromoneMatrix(state);
         return Map.of(StateKeys.PHEROMONE_MATRIX, pheromoneMatrix);
     }
@@ -228,22 +247,22 @@ public class TspAcoGenerator extends AbstractAcoGenerator<int[]> {
 
         Object evaluatedObj = state.get(StateKeys.GENERATION_EVALUATED);
 
-        if (!(evaluatedObj instanceof List<?> evaluated)) {
+        if (!(evaluatedObj instanceof List<?> evaluated) || evaluated.isEmpty()) {
             return;
         }
 
-        if (evaluated.isEmpty()) {
-            return;
-        }
-
-        // Evaporate pheromone
         evaporate(evaporationRate);
 
-        // deposit pheromone from all generation solutions
         for (Object entry : evaluated) {
-            if (entry instanceof EvaluatedSolution<?>(Object value, double fitness) && value instanceof int[] solution) {
-                depositPheromone(solution, fitness);
+            if (entry instanceof EvaluatedSolution<?>(Object value, double fitness) && value instanceof int[] tour) {
+                depositPheromone(tour, fitness);
             }
+        }
+
+        clampPheromones();
+
+        if (this.state != null) {
+            this.state.update(Map.of(StateKeys.PHEROMONE_MATRIX, pheromoneMatrix));
         }
     }
 
@@ -255,17 +274,29 @@ public class TspAcoGenerator extends AbstractAcoGenerator<int[]> {
         }
     }
 
-    private void depositPheromone(int[] solution, double fitness) {
-        double tourLength = -fitness;  // Convert fitness back to tour length (positive value)
+    private void depositPheromone(int[] tour, double fitness) {
+        double tourLength = -fitness;
 
-        double deposit = Q / tourLength; // from ACO theory: deltaT = Q / L, where L is the tour length
+        if (tourLength <= 0.0 || Double.isNaN(tourLength) || Double.isInfinite(tourLength)) {
+            return;
+        }
 
-        for (int i = 0; i < solution.length; i++) {
-            int from = solution[i];
-            int to = solution[(i + 1) % solution.length];
+        double deposit = Q / tourLength;
+
+        for (int i = 0; i < tour.length; i++) {
+            int from = tour[i];
+            int to = tour[(i + 1) % tour.length];
 
             pheromoneMatrix[from][to] += deposit;
-            pheromoneMatrix[to][from] += deposit; // Symmetric for undirected TSP
+            pheromoneMatrix[to][from] += deposit;
+        }
+    }
+
+    private void clampPheromones() {
+        for (int i = 0; i < pheromoneMatrix.length; i++) {
+            for (int j = 0; j < pheromoneMatrix.length; j++) {
+                pheromoneMatrix[i][j] = Math.max(minPheromone, Math.min(maxPheromone, pheromoneMatrix[i][j]));
+            }
         }
     }
 }

@@ -1,6 +1,6 @@
 package dk.dtu.scout.backend.config;
 
-import dk.dtu.scout.acceptance.SelectionRule;
+import dk.dtu.scout.selection.SelectionRule;
 import dk.dtu.scout.backend.service.ComponentRegistry;
 import dk.dtu.scout.crossover.Crossover;
 import dk.dtu.scout.generator.Generator;

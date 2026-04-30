@@ -1,7 +1,7 @@
 package dk.dtu.scout.population;
 
 import dk.dtu.scout.State;
-import dk.dtu.scout.acceptance.SelectionRule;
+import dk.dtu.scout.selection.SelectionRule;
 import dk.dtu.scout.crossover.Crossover;
 import dk.dtu.scout.generator.Generator;
 import dk.dtu.scout.parentSelectionRule.ParentSelectionRule;

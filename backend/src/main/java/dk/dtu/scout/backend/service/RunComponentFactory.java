@@ -1,7 +1,7 @@
 package dk.dtu.scout.backend.service;
 
 import dk.dtu.scout.ScoutComponent;
-import dk.dtu.scout.acceptance.SelectionRule;
+import dk.dtu.scout.selection.SelectionRule;
 import dk.dtu.scout.backend.exception.BadRequestException;
 import dk.dtu.scout.crossover.Crossover;
 import dk.dtu.scout.generator.Generator;

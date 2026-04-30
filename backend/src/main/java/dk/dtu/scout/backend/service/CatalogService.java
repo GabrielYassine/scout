@@ -1,7 +1,7 @@
 package dk.dtu.scout.backend.service;
 
 import dk.dtu.scout.ScoutComponent;
-import dk.dtu.scout.acceptance.SelectionRule;
+import dk.dtu.scout.selection.SelectionRule;
 import dk.dtu.scout.backend.dto.catalog.ComponentDef;
 import dk.dtu.scout.backend.util.ViewMapper;
 import dk.dtu.scout.crossover.Crossover;

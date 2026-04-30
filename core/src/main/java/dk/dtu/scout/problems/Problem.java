@@ -7,5 +7,14 @@ import dk.dtu.scout.ScoutComponent;
  */
 public interface Problem<S> extends ScoutComponent {
     double fitness(S solution);
-    default boolean isOptimal(double fitness) { return true; }
+
+    /**
+     * Returns whether the given fitness value is known to be optimal for this problem.
+     * <p>The default is false because not every problem has a known optimum.
+     * Problems with known optima, such as OneMax, LeadingOnes, TSP instances with
+     * stored optima, or VRP instances with stored optima, should override this method.
+     */
+    default boolean isOptimal(double fitness) {
+        return false;
+    }
 }

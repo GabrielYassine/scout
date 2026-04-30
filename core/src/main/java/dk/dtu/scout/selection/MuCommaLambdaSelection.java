@@ -1,4 +1,4 @@
-package dk.dtu.scout.acceptance;
+package dk.dtu.scout.selection;
 
 import dk.dtu.scout.dto.EvaluatedSolution;
 import dk.dtu.scout.dto.Parameter;
@@ -36,16 +36,27 @@ public class MuCommaLambdaSelection<S> implements SelectionRule<S> {
 
     @Override
     public List<EvaluatedSolution<S>> select(
-            List<EvaluatedSolution<S>> parents,
-            List<EvaluatedSolution<S>> children,
-            int mu,
-            int iteration,
-            Random rng
+        List<EvaluatedSolution<S>> parents,
+        List<EvaluatedSolution<S>> children,
+        int mu,
+        int iteration,
+        Random rng
     ) {
+        if (children == null || children.isEmpty()) {
+            throw new IllegalStateException("(mu,lambda) selection requires at least one child");
+        }
+
+        if (mu <= 0) {
+            throw new IllegalArgumentException("mu must be positive");
+        }
+
+        if (children.size() < mu) {
+            throw new IllegalArgumentException("(mu,lambda) selection requires lambda >= mu. Got mu=" + mu + " but only " + children.size() + " children were generated.");
+        }
+
         List<EvaluatedSolution<S>> sortedChildren = new ArrayList<>(children);
         sortedChildren.sort(Comparator.comparingDouble(EvaluatedSolution<S>::fitness).reversed());
 
-        int limit = Math.min(mu, sortedChildren.size());
-        return new ArrayList<>(sortedChildren.subList(0, limit));
+        return new ArrayList<>(sortedChildren.subList(0, mu));
     }
 }

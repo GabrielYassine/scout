@@ -1,5 +1,7 @@
 package dk.dtu.scout.problems;
 
+import dk.dtu.scout.State;
+import dk.dtu.scout.datatypes.StateKeys;
 import dk.dtu.scout.dto.Parameter;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -11,7 +13,6 @@ import java.util.Map;
  * Implementation of the LeadingOnes problem, where the goal is to maximize the consecutive number of 1s from first bit.
  * @author s235257
  */
-
 @Component
 @Scope("prototype")
 public class LeadingOnes implements Problem<boolean[]>{
@@ -49,7 +50,26 @@ public class LeadingOnes implements Problem<boolean[]>{
     public void configure(Map<String, Object> params) {
         if (params == null) return;
         if (params.containsKey("n")) {
-            this.n = ((Number) params.get("n")).intValue();
+            int value = ((Number) params.get("n")).intValue();
+            if (value <= 0) {
+                throw new IllegalArgumentException("n must be positive");
+            }
+            this.n = value;
+        }
+    }
+
+    @Override
+    public void init(State state) {
+        if (state == null) {
+            return;
+        }
+
+        Object dimObj = state.get(StateKeys.DIMENSION);
+        if (dimObj instanceof Number dimension) {
+            int value = dimension.intValue();
+            if (value > 0) {
+                this.n = value;
+            }
         }
     }
 
@@ -74,7 +94,7 @@ public class LeadingOnes implements Problem<boolean[]>{
     /**
      * Determines if the given fitness value represents an optimal solution.
      * @param fitness The fitness value to check.
-     * @return True if the fitness equals n (all bits are 1), false otherwise.
+     * @return True if the fitness equals n, false otherwise.
      */
     @Override
     public boolean isOptimal(double fitness) {
