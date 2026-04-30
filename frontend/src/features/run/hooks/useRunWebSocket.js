@@ -27,6 +27,7 @@ export function useRunWebSocket({
   setError,
   setBatch,
   setSavedRun,
+  setStreaming,
 }) {
   // Refs are used for websocket lifecycle data that must stay current without
   // causing React re-renders for every incoming packet.
@@ -102,6 +103,7 @@ export function useRunWebSocket({
 
       latestBatchRef.current = finishedBatch;
       setLoading(false);
+      setStreaming(false);
       setBatch(finishedBatch);
 
       // Persist the finished run so the RunPage can be restored after refresh
@@ -127,6 +129,7 @@ export function useRunWebSocket({
     const handleRunFailed = (message) => {
       flushProgressQueue();
       setLoading(false);
+      setStreaming(false);
       setError(message.message || "Run failed");
       client.deactivate();
     };
@@ -206,5 +209,6 @@ export function useRunWebSocket({
     setError,
     setBatch,
     setSavedRun,
+    setStreaming,
   ]);
 }

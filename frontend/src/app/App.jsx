@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import TopNavbar from "@/shared/components/navigation/TopNavbar.jsx";
 import { PuzzleConfigProvider } from "@/shared/contexts/PuzzleConfigContext.jsx";
+import { RunExecutionProvider } from "@/features/run/contexts/RunExecutionContext.jsx";
 
 import HomePage from "@/features/home/HomePage.jsx";
 import LabPage from "@/features/lab/LabPage.jsx";
@@ -13,34 +14,36 @@ export default function App() {
 
   return (
     <PuzzleConfigProvider>
-      <div className="app-root">
-        <TopNavbar />
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route
-            path="/lab"
-            element={
-              <LabPage
-                catalog={catalog}
-                catalogLoading={catalogLoading}
-                catalogError={catalogError}
-              />
-            }
-          />
-          <Route
-            path="/run"
-            element={
-              <RunPage
-                catalog={catalog}
-                catalogLoading={catalogLoading}
-                catalogError={catalogError}
-              />
-            }
-          />
+      <RunExecutionProvider>
+        <div className="app-root">
+          <TopNavbar />
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route
+              path="/lab"
+              element={
+                <LabPage
+                  catalog={catalog}
+                  catalogLoading={catalogLoading}
+                  catalogError={catalogError}
+                />
+              }
+            />
+            <Route
+              path="/run"
+              element={
+                <RunPage
+                  catalog={catalog}
+                  catalogLoading={catalogLoading}
+                  catalogError={catalogError}
+                />
+              }
+            />
 
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </div>
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </div>
+      </RunExecutionProvider>
     </PuzzleConfigProvider>
   );
 }

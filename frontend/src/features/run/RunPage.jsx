@@ -1,6 +1,6 @@
 /**
  * Layout and orchestration component for run and runtime-study results.
- * Wires page state, websocket hooks, playback controls, sidebars, and content.
+ * Wires execution state, playback controls, sidebars, and content.
  */
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -14,10 +14,8 @@ import "./styles/RunPage.css";
 
 import { computeAnimationLength } from "@/features/run/utils/runData.js";
 import { usePlayback } from "@/features/run/hooks/usePlayback.js";
-import { useRunPageState } from "@/features/run/hooks/useRunPageState.js";
 import { useRunSelection } from "@/features/run/hooks/useRunSelection.js";
-import { useRunWebSocket } from "@/features/run/hooks/useRunWebSocket.js";
-import { useRuntimeStudyWebSocket } from "@/features/run/hooks/useRuntimeStudyWebSocket.js";
+import { useRunExecution } from "@/features/run/contexts/useRunExecution.js";
 
 // Default playback speed used when the RunPage first loads.
 const INITIAL_SPEED = 1;
@@ -38,31 +36,23 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
   // The chart layout starts stacked and can be changed from RunControls.
   const [layoutMode, setLayoutMode] = useState("stack");
 
-  // This hook resolves the initial page state from router state and localStorage,
+  // Execution state is owned by RunExecutionProvider so websocket connections
+  // can survive normal route navigation.
   const {
     pageMode,
-    runId,
-    studyId,
-    runRequest,
     runtimeStudyRequest,
     puzzleConfig,
     params,
     tspInstance,
     vrpInstance,
     restoredRun,
-    liveExecution,
     batch,
-    setBatch,
     studyPoints,
-    setStudyPoints,
     loading,
-    setLoading,
     error,
-    setError,
     setSavedRun,
     studyStatus,
-    setStudyStatus,
-  } = useRunPageState();
+  } = useRunExecution();
 
   // This hook derives run selection options and handlers from the current batch and restored run.
   const {
@@ -81,7 +71,8 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
 
   // Runtime studies vary the problem size for a single problem, so this extracts
   // the problem id used in the study chart title.
-  const runtimeStudyProblemId = runtimeStudyRequest?.problemId ?? puzzleConfig?.problem?.[0]?.id ?? null;
+  const runtimeStudyProblemId =
+    runtimeStudyRequest?.problemId ?? puzzleConfig?.problem?.[0]?.id ?? null;
 
   // During live runs this length grows as websocket packets add more logged data.
   // usePlayback animates up to the currently available length and continues when
@@ -99,40 +90,6 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
       length: currentAnimationLength,
       initialSpeed: INITIAL_SPEED,
     });
-
-  // Start the appropriate websocket lifecycle for live executions.
-  // Restored saved results do not reconnect.
-
-  // Normal runs stream incremental batch/run updates.
-  useRunWebSocket({
-    enabled: liveExecution && pageMode === "run",
-    runId,
-    runRequest,
-    puzzleConfig,
-    params,
-    tspInstance,
-    vrpInstance,
-    setLoading,
-    setError,
-    setBatch,
-    setSavedRun,
-  });
-
-  // Runtime studies stream one aggregated study point per problem size.
-  useRuntimeStudyWebSocket({
-    enabled: liveExecution && pageMode === "runtimeStudy",
-    studyId,
-    runtimeStudyRequest,
-    puzzleConfig,
-    params,
-    tspInstance,
-    vrpInstance,
-    setLoading,
-    setError,
-    setStudyPoints,
-    setSavedRun,
-    setStudyStatus,
-  });
 
   return (
     <div className="run-page">

@@ -28,6 +28,7 @@ export function useRuntimeStudyWebSocket({
   setStudyPoints,
   setSavedRun,
   setStudyStatus,
+  setStreaming,
 }) {
   // These refs track websocket lifecycle state without causing re-renders.
   const readySentRef = useRef(false);
@@ -85,6 +86,7 @@ export function useRuntimeStudyWebSocket({
 
     const handleStudyFinished = () => {
       setLoading(false);
+      setStreaming(false);
       setStudyStatus("FINISHED");
 
       // Persist only the finished study. Saving partial progress as finished would
@@ -108,6 +110,7 @@ export function useRuntimeStudyWebSocket({
 
     const handleStudyFailed = (message) => {
       setLoading(false);
+      setStreaming(false);
       setStudyStatus("FAILED");
       setError(message.message || "Runtime study failed");
       client.deactivate();
@@ -175,5 +178,6 @@ export function useRuntimeStudyWebSocket({
     setStudyPoints,
     setSavedRun,
     setStudyStatus,
+    setStreaming,
   ]);
 }

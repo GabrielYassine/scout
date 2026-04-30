@@ -14,11 +14,16 @@ import Selector from "@/features/lab/components/selector/Selector.jsx";
 import "./LabPage.css";
 
 import { usePuzzleConfig } from "@/shared/contexts/usePuzzleConfig.js";
-import { useSessionStorageState } from "@/shared/hooks/useSessionStorageState.js";
+import { useRunExecution } from "@/features/run/contexts/useRunExecution.js";
 import { prepareRun } from "@/shared/api/run.js";
 import { runTemplates } from "@/features/lab/templates/runTemplates.js";
 import { persistSessionId } from "@/features/lab/utils/sessionStorage.js";
-import { parseProblemSizes, buildExecutionContext, buildRuntimeStudyRequest, buildRunRequest, } from "@/features/lab/utils/labExecution.js";
+import {
+  parseProblemSizes,
+  buildExecutionContext,
+  buildRuntimeStudyRequest,
+  buildRunRequest,
+} from "@/features/lab/utils/labExecution.js";
 
 const SHARED_DROP_AREA_ID = "shared-drop-area";
 const TOAST_DURATION_MS = 3500;
@@ -40,6 +45,8 @@ export default function LabPage({
     handleReset,
   } = usePuzzleConfig();
 
+  const { startRunExecution, startRuntimeStudyExecution } = useRunExecution();
+
   const [hoverInfo, setHoverInfo] = useState(null);
   const [toastMessage, setToastMessage] = useState("");
   const [toastVisible, setToastVisible] = useState(false);
@@ -47,17 +54,16 @@ export default function LabPage({
 
   const toastTimeoutRef = useRef(null);
   const navigate = useNavigate();
-  const [, setSavedRun] = useSessionStorageState("scout:lastRun", null);
 
   // Listen to drag-and-drop events from dnd-kit to determine when to show the remove drop zone overlay.
   useDndMonitor({
     onDragStart(event) {
-     // Check whether the dragged item is a piece that is already placed in the puzzle.
+      // Check whether the dragged item is a piece that is already placed in the puzzle.
       const isPlacedPiece = event.active?.data?.current?.fromIndex != null;
       setShowRemoveDropZone(isPlacedPiece);
     },
     onDragOver(event) {
-     // Keep remove zone hidden for selector pieces.
+      // Keep remove zone hidden for selector pieces.
       const isPlacedPiece = event.active?.data?.current?.fromIndex != null;
       if (!isPlacedPiece) {
         setShowRemoveDropZone(false);
@@ -67,7 +73,7 @@ export default function LabPage({
       setShowRemoveDropZone(event.over?.id !== SHARED_DROP_AREA_ID);
     },
     onDragEnd() {
-       // Hide remove zone after drop.
+      // Hide remove zone after drop.
       setShowRemoveDropZone(false);
     },
     onDragCancel() {
@@ -75,7 +81,6 @@ export default function LabPage({
       setShowRemoveDropZone(false);
     },
   });
-
 
   // Cleanup when the component unmounts if a toast timer is still running, stop it.
   useEffect(() => {
@@ -117,7 +122,8 @@ export default function LabPage({
 
     return (map[type] ?? []).find((x) => x.id === id) ?? null;
   }
- // When the user hovers over a piece in the puzzle or selector, look up its title and description in the catalog.
+
+  // When the user hovers over a piece in the puzzle or selector, look up its title and description in the catalog.
   function handlePieceHover(type, id) {
     const item = getCatalogItem(type, id);
     if (!item) return;
@@ -132,34 +138,40 @@ export default function LabPage({
     setHoverInfo(null);
   }
 
-  // Save the current run configuration to localStorage and navigate to the run page with the necessary state.
-  function saveAndNavigate(savedState, navigationState) {
-    setSavedRun(savedState);
-    navigate("/run", { state: navigationState });
-  }
   // Main function to handle the "Run" action, which decides whether to start a runtime study or a standard run based on the selected experiment type.
-    async function onRun() {
-      try {
-        const experimentType = params.global?.experimentType ?? "run";
-        if (experimentType === "runtimeStudy") {
-          await startRuntimeStudy();
-          return;
-        }
-
-        await startStandardRun();
-      } catch (err) {
-        showToast(err.message || "Failed to start run");
+  async function onRun() {
+    try {
+      const experimentType = params.global?.experimentType ?? "run";
+      if (experimentType === "runtimeStudy") {
+        await startRuntimeStudy();
+        return;
       }
-    }
 
- // Start a runtime study by building the appropriate request payload and navigating to the run page in runtime study mode.
+      await startStandardRun();
+    } catch (err) {
+      showToast(err.message || "Failed to start run");
+    }
+  }
+
+  // Start a runtime study by building the appropriate request payload and navigating to the run page in runtime study mode.
   async function startRuntimeStudy() {
-    const { seed, existingSessionId, problemParams, searchSpaceParams } = buildExecutionContext({ puzzleConfig, params,tspInstance,vrpInstance,});
+    const {
+      seed,
+      existingSessionId,
+      problemParams,
+      searchSpaceParams,
+    } = buildExecutionContext({
+      puzzleConfig,
+      params,
+      tspInstance,
+      vrpInstance,
+    });
 
     const problemSizes = parseProblemSizes(params.global?.problemSizes);
     if (problemSizes.length === 0) {
       throw new Error("Please enter at least one valid problem size");
     }
+
     const draftRuntimeStudyRequest = buildRuntimeStudyRequest({
       studyId: null,
       sessionId: null,
@@ -197,15 +209,32 @@ export default function LabPage({
       problemSizes,
     });
 
-    saveAndNavigate(
-      { pageMode: "runtimeStudy", loading: true, studyId, batch: null, studyPoints: [], puzzleConfig,  params, tspInstance, vrpInstance, runtimeStudyRequest, savedAt: Date.now(), },
-      { pageMode: "runtimeStudy",  loading: true,  puzzleConfig,  params,  tspInstance, vrpInstance,  studyId, runtimeStudyRequest,  }
-    );
+    startRuntimeStudyExecution({
+      studyId,
+      runtimeStudyRequest,
+      puzzleConfig,
+      params,
+      tspInstance,
+      vrpInstance,
+    });
+
+    navigate("/run");
   }
 
-// Start a standard run by preparing the run on the backend, building the appropriate request payload, and navigating to the run page in run mode.
+  // Start a standard run by preparing the run on the backend, building the appropriate request payload, and navigating to the run page in run mode.
   async function startStandardRun() {
-    const { seed, existingSessionId, problemParams, searchSpaceParams } =  buildExecutionContext({ puzzleConfig, params,tspInstance,vrpInstance,});
+    const {
+      seed,
+      existingSessionId,
+      problemParams,
+      searchSpaceParams,
+    } = buildExecutionContext({
+      puzzleConfig,
+      params,
+      tspInstance,
+      vrpInstance,
+    });
+
     const draftRunRequest = buildRunRequest({
       runId: null,
       sessionId: null,
@@ -240,10 +269,17 @@ export default function LabPage({
       problemParams,
       seed,
     });
-    saveAndNavigate(
-      { pageMode: "run", loading: true,  runId,  studyId: null, batch: null, studyPoints: [], puzzleConfig, params, tspInstance, vrpInstance, runRequest, selectedRunKey: "0",  savedAt: Date.now(), },
-      { pageMode: "run", loading: true, puzzleConfig,   params, tspInstance,  vrpInstance, runId, runRequest,  }
-    );
+
+    startRunExecution({
+      runId,
+      runRequest,
+      puzzleConfig,
+      params,
+      tspInstance,
+      vrpInstance,
+    });
+
+    navigate("/run");
   }
 
   // Apply the selected template to the current lab configuration
