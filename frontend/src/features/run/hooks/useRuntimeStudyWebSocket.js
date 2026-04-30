@@ -57,7 +57,9 @@ export function useRuntimeStudyWebSocket({
 
       client.publish({
         destination: `/app/study/${studyId}/start`,
-        body: JSON.stringify(runtimeStudyRequest),
+        body: JSON.stringify({
+          sessionId: runtimeStudyRequest.sessionId,
+        }),
       });
     };
 

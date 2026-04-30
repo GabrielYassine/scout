@@ -84,7 +84,9 @@ export function useRunWebSocket({
       startSentRef.current = true;
       client.publish({
         destination: `/app/run/${runId}/start`,
-        body: JSON.stringify(runRequest),
+        body: JSON.stringify({
+          sessionId: runRequest.sessionId,
+        }),
       });
     };
 

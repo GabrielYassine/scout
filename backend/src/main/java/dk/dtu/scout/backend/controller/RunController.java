@@ -24,22 +24,20 @@ public class RunController {
     }
 
     /**
+     * Prepares an execution by generating a sessionId and executionId, injecting
+     * them into the provided draft request, and validating the final request.
      *
-     * Prepares a run by creating a sessionId and runId.
-     * If a sessionId is provided, it will be reused if it exists, and a new runId will be created for the new run.
-     * If the sessionId does not exist, a new sessionId will be created along with a runId.
-     * This allows the system to cancel previous runs associated with the same sessionId.
-     * @param request a DTO containing an optional sessionId.
-     * @return a DTO containing the sessionId to be used for starting the run.
+     * This lets validation errors appear on the LabPage before navigation to RunPage.
+     *
+     * @param request the draft execution request to validate
+     * @return a DTO containing the sessionId and executionId to use for websocket execution
      */
     @PostMapping("/run/prepare")
-    public ResponseEntity<PrepareRunResponse> prepareRun(@RequestBody(required = false) PrepareRunRequest request) {
-        String requestedSessionId = request != null ? request.sessionId() : null;
-        return ResponseEntity.ok(runOrchestratorService.prepareRun(requestedSessionId));
+    public ResponseEntity<PrepareRunResponse> prepareRun(@RequestBody PrepareRunRequest request) {
+        return ResponseEntity.ok(runOrchestratorService.prepareRun(request));
     }
 
     /**
-     *
      * Starts an async run, the run will be associated with the sessionId provided in the request.
      * @param request a DTO containing the sessionId and all parameters for the run.
      * @return an empty response with status 202 Accepted, indicating that the run has been accepted for processing.
@@ -49,7 +47,6 @@ public class RunController {
         runOrchestratorService.startRun(request);
         return ResponseEntity.accepted().build();
     }
-
 
     /**
      * Starts an async runtime study, the study will be associated with the sessionId provided in the request.

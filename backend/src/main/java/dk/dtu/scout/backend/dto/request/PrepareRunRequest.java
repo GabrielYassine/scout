@@ -1,10 +1,18 @@
 package dk.dtu.scout.backend.dto.request;
 
 /**
- * Request to prepare a run by creating a session or reusing an existing session.
- * @param sessionId an optional session ID to reuse, or null to create a new session.
- * @author s235257
+ * Request used to prepare a run or runtime study before opening the websocket stream.
+ * The backend generates/reuses a sessionId, generates an executionId, injects
+ * those ids into the draft request, validates it, and stores it for websocket start.
+ * @param sessionId optional existing browser session id
+ * @param executionType either "run" or "runtimeStudy"
+ * @param runRequest draft run request, required when executionType is "run"
+ * @param runtimeStudyRequest draft runtime study request, required when executionType is "runtimeStudy"
+ * @author s235257 & Ahmed
  */
 public record PrepareRunRequest(
-    String sessionId
+    String sessionId,
+    String executionType,
+    RunRequest runRequest,
+    RuntimeStudyRequest runtimeStudyRequest
 ) {}

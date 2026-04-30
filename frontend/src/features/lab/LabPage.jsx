@@ -160,10 +160,31 @@ export default function LabPage({
     if (problemSizes.length === 0) {
       throw new Error("Please enter at least one valid problem size");
     }
-    const prep = await prepareRun({ sessionId: existingSessionId });
+    const draftRuntimeStudyRequest = buildRuntimeStudyRequest({
+      studyId: null,
+      sessionId: null,
+      puzzleConfig,
+      params,
+      searchSpaceParams,
+      problemParams,
+      seed,
+      problemSizes,
+    });
+
+    const prep = await prepareRun({
+      sessionId: existingSessionId,
+      executionType: "runtimeStudy",
+      runtimeStudyRequest: draftRuntimeStudyRequest,
+    });
+
     const sessionId = prep?.sessionId ?? existingSessionId;
     const studyId = prep?.executionId;
-    persistSessionId(sessionId)
+
+    if (!sessionId || !studyId) {
+      throw new Error("Backend did not return sessionId and studyId");
+    }
+
+    persistSessionId(sessionId);
 
     const runtimeStudyRequest = buildRuntimeStudyRequest({
       studyId,
@@ -185,7 +206,22 @@ export default function LabPage({
 // Start a standard run by preparing the run on the backend, building the appropriate request payload, and navigating to the run page in run mode.
   async function startStandardRun() {
     const { seed, existingSessionId, problemParams, searchSpaceParams } =  buildExecutionContext({ puzzleConfig, params,tspInstance,vrpInstance,});
-    const prep = await prepareRun({ sessionId: existingSessionId });
+    const draftRunRequest = buildRunRequest({
+      runId: null,
+      sessionId: null,
+      puzzleConfig,
+      params,
+      searchSpaceParams,
+      problemParams,
+      seed,
+    });
+
+    const prep = await prepareRun({
+      sessionId: existingSessionId,
+      executionType: "run",
+      runRequest: draftRunRequest,
+    });
+
     const sessionId = prep?.sessionId ?? existingSessionId;
     const runId = prep?.executionId;
 
@@ -195,8 +231,15 @@ export default function LabPage({
 
     persistSessionId(sessionId);
 
-    const runRequest = buildRunRequest({runId, sessionId, puzzleConfig, params, searchSpaceParams, problemParams, seed, });
-
+    const runRequest = buildRunRequest({
+      runId,
+      sessionId,
+      puzzleConfig,
+      params,
+      searchSpaceParams,
+      problemParams,
+      seed,
+    });
     saveAndNavigate(
       { pageMode: "run", loading: true,  runId,  studyId: null, batch: null, studyPoints: [], puzzleConfig, params, tspInstance, vrpInstance, runRequest, selectedRunKey: "0",  savedAt: Date.now(), },
       { pageMode: "run", loading: true, puzzleConfig,   params, tspInstance,  vrpInstance, runId, runRequest,  }

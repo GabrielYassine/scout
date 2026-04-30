@@ -1,5 +1,6 @@
 package dk.dtu.scout.backend.service;
 
+import dk.dtu.scout.backend.dto.request.PrepareRunRequest;
 import dk.dtu.scout.backend.dto.request.PrepareRunResponse;
 import dk.dtu.scout.backend.dto.request.RunRequest;
 import dk.dtu.scout.backend.dto.request.RuntimeStudyRequest;
@@ -24,8 +25,8 @@ import java.util.concurrent.Future;
 
 /**
  * Facade for run orchestration.
- * Validates requests, starts asynchronous execution, sends final websocket status messages,
- * and exposes synchronous entry points for tests.
+ * Validates requests, prepares executions, starts asynchronous execution,
+ * sends final websocket status messages, and exposes synchronous entry points for tests.
  * @author s235257 & Ahmed
  */
 @Service
@@ -35,7 +36,7 @@ public class RunOrchestratorService {
     private final RunExecutor runExecutor;
     private final RunStatisticsService runStatisticsService;
     private final WsSender wsSender;
-    private final ActiveRunRegistry activeRunRegistry;
+    private final ExecutionRegistry executionRegistry;
     private final ThreadPoolTaskExecutor requestExecutor;
 
     public RunOrchestratorService(
@@ -43,35 +44,152 @@ public class RunOrchestratorService {
         RunExecutor runExecutor,
         RunStatisticsService runStatisticsService,
         WsSender wsSender,
-        ActiveRunRegistry activeRunRegistry,
+        ExecutionRegistry executionRegistry,
         @Qualifier("requestExecutor") Executor requestExecutor
     ) {
         this.runRequestValidator = runRequestValidator;
         this.runExecutor = runExecutor;
         this.runStatisticsService = runStatisticsService;
         this.wsSender = wsSender;
-        this.activeRunRegistry = activeRunRegistry;
+        this.executionRegistry = executionRegistry;
         this.requestExecutor = (ThreadPoolTaskExecutor) requestExecutor;
     }
 
     /**
-     * Prepares an execution by generating a new executionId and returning it together with
-     * the provided or generated sessionId.
+     * Prepares an execution by generating/reusing a sessionId, generating a new executionId,
+     * applying those ids to the provided draft request, validating the final request, and
+     * storing it until websocket start.
+     *
      * For a standard run, the executionId is used as the runId.
      * For a runtime study, the executionId is used as the studyId.
-     * @param requestedSessionId an optional sessionId; if null or blank, a new random sessionId is generated.
-     * @return a PrepareRunResponse containing the sessionId and a new executionId to be used in the next request.
+     *
+     * @param request draft prepare request containing either a run request or runtime study request
+     * @return sessionId and executionId
      */
-    public PrepareRunResponse prepareRun(String requestedSessionId) {
-        String sessionId = requestedSessionId != null && !requestedSessionId.isBlank() ? requestedSessionId : UUID.randomUUID().toString();
+    public PrepareRunResponse prepareRun(PrepareRunRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("Prepare request must be provided");
+        }
 
+        String sessionId = resolveSessionId(request.sessionId());
         String executionId = UUID.randomUUID().toString();
+
+        // Avoid leaving old prepared-but-never-started requests for the same browser session.
+        executionRegistry.removePreparedForSession(sessionId);
+
+        switch (normalizeExecutionType(request.executionType())) {
+            case "run" -> {
+                RunRequest finalRequest = withRunIds(request.runRequest(), sessionId, executionId);
+                runRequestValidator.validateRunRequest(finalRequest);
+                executionRegistry.storePreparedRun(finalRequest);
+            }
+
+            case "runtimestudy" -> {
+                RuntimeStudyRequest finalRequest = withStudyIds(request.runtimeStudyRequest(), sessionId, executionId);
+                runRequestValidator.validateRuntimeStudyRequest(finalRequest);
+                executionRegistry.storePreparedStudy(finalRequest);
+            }
+
+            default -> throw new IllegalArgumentException("executionType must be either 'run' or 'runtimeStudy'");
+        }
+
         return new PrepareRunResponse(sessionId, executionId);
     }
 
     /**
-     * Starts a run asynchronously. Validates the request, registers the run in the ActiveRunRegistry,
-     * @param request the run request containing all necessary information to execute the run.
+     * Starts a previously prepared run.
+     * @param runId prepared run id
+     * @param sessionId browser session id that owns the prepared run
+     */
+    public void startPreparedRun(String runId, String sessionId) {
+        RunRequest request = executionRegistry.consumePreparedRun(runId, sessionId);
+        startRun(request);
+    }
+
+    /**
+     * Starts a previously prepared runtime study.
+     * @param studyId prepared runtime study id
+     * @param sessionId browser session id that owns the prepared runtime study
+     */
+    public void startPreparedRuntimeStudy(String studyId, String sessionId) {
+        RuntimeStudyRequest request = executionRegistry.consumePreparedStudy(studyId, sessionId);
+        startRuntimeStudy(request);
+    }
+
+    private String resolveSessionId(String requestedSessionId) {
+        return requestedSessionId != null && !requestedSessionId.isBlank() ? requestedSessionId : UUID.randomUUID().toString();
+    }
+
+    private String normalizeExecutionType(String executionType) {
+        return executionType == null ? "" : executionType.trim().replace("-", "").toLowerCase();
+    }
+
+    private RunRequest withRunIds(RunRequest request, String sessionId, String runId) {
+        if (request == null) {
+            throw new IllegalArgumentException("Run request must be provided");
+        }
+
+        return new RunRequest(
+            request.searchSpaceId(),
+            request.searchSpaceParams(),
+            request.problemIds(),
+            request.problemParams(),
+            request.generatorId(),
+            request.generatorParams(),
+            request.populationModelId(),
+            request.populationModelParams(),
+            request.selectionRuleId(),
+            request.selectionRuleParams(),
+            request.parentSelectionRuleId(),
+            request.parentSelectionRuleParams(),
+            request.crossoverId(),
+            request.crossoverParams(),
+            request.observerIds(),
+            request.observerParams(),
+            request.stopConditionIds(),
+            request.stopConditionParams(),
+            request.seed(),
+            request.runTimes(),
+            sessionId,
+            runId,
+            request.logEveryIterations(),
+            request.wsUpdateEveryIterations()
+        );
+    }
+
+    private RuntimeStudyRequest withStudyIds(RuntimeStudyRequest request, String sessionId, String studyId) {
+        if (request == null) {
+            throw new IllegalArgumentException("Runtime study request must be provided");
+        }
+
+        return new RuntimeStudyRequest(
+            studyId,
+            sessionId,
+            request.searchSpaceId(),
+            request.searchSpaceParams(),
+            request.problemId(),
+            request.problemParams(),
+            request.generatorId(),
+            request.generatorParams(),
+            request.selectionRuleId(),
+            request.selectionRuleParams(),
+            request.populationModelId(),
+            request.populationModelParams(),
+            request.parentSelectionRuleId(),
+            request.parentSelectionRuleParams(),
+            request.crossoverId(),
+            request.crossoverParams(),
+            request.stopConditionIds(),
+            request.stopConditionParams(),
+            request.seed(),
+            request.problemSizes(),
+            request.repetitionsPerSize()
+        );
+    }
+
+    /**
+     * Starts a run asynchronously. Validates the request and registers it in the ExecutionRegistry.
+     * @param request the run request containing all necessary information to execute the run
      */
     public void startRun(RunRequest request) {
         runRequestValidator.validateRunRequest(request);
@@ -79,12 +197,12 @@ public class RunOrchestratorService {
         String sessionId = request.sessionId();
         String runId = request.runId();
 
-        if (!activeRunRegistry.markRunStarted(runId)) {
+        if (!executionRegistry.markRunStarted(runId)) {
             return;
         }
 
         Future<?> future = requestExecutor.submit(() -> run(request));
-        activeRunRegistry.register(sessionId, runId, future);
+        executionRegistry.registerActive(sessionId, runId, future);
 
         requestExecutor.execute(() -> {
             try {
@@ -96,27 +214,23 @@ public class RunOrchestratorService {
             } catch (ExecutionException ignored) {
                 // run() already emitted failed payload if needed
             } finally {
-                activeRunRegistry.finishRun(sessionId, runId);
+                executionRegistry.finishRun(sessionId, runId);
             }
         });
     }
 
     /**
      * Synchronous run execution for testing purposes.
-     * Validates the request
-     * executes the run
-     * and sends a final websocket message with the summary or failure.
-     * @param request the run request containing all necessary information to execute the run.
+     * Validates the request, executes the run, and sends a final websocket message with the summary or failure.
+     * @param request the run request containing all necessary information to execute the run
      */
     public void run(RunRequest request) {
         int logEvery = runRequestValidator.resolveLogEveryIterations(request);
         int wsUpdateEvery = request.wsUpdateEveryIterations() > 0 ? request.wsUpdateEveryIterations() : logEvery;
 
         try {
-            // Main execution
             List<RunGroupResponse> batches = runExecutor.runBatch(request, logEvery, wsUpdateEvery);
 
-            // Calculate summary statistics
             BatchSummaryResponse summary = runStatisticsService.calculateSummary(batches);
 
             if (request.runId() != null) {
@@ -134,9 +248,8 @@ public class RunOrchestratorService {
     }
 
     /**
-     * Starts a runtime study asynchronously. Validates the request, registers the study in the ActiveRunRegistry,
-     * and executes the study by iterating over the specified problem sizes and sending progress updates through
-     * @param request the runtime study request containing all necessary information to execute the study.
+     * Starts a runtime study asynchronously. Validates the request and registers it in the ExecutionRegistry.
+     * @param request the runtime study request containing all necessary information to execute the study
      */
     public void startRuntimeStudy(RuntimeStudyRequest request) {
         runRequestValidator.validateRuntimeStudyRequest(request);
@@ -144,12 +257,12 @@ public class RunOrchestratorService {
         String sessionId = request.sessionId();
         String studyId = request.studyId();
 
-        if (!activeRunRegistry.markStudyStarted(studyId)) {
+        if (!executionRegistry.markStudyStarted(studyId)) {
             return;
         }
 
         Future<?> future = requestExecutor.submit(() -> runRuntimeStudy(request));
-        activeRunRegistry.register(sessionId, studyId, future);
+        executionRegistry.registerActive(sessionId, studyId, future);
 
         requestExecutor.execute(() -> {
             try {
@@ -161,15 +274,16 @@ public class RunOrchestratorService {
             } catch (ExecutionException ignored) {
                 // runRuntimeStudy already emits failed payload if needed
             } finally {
-                activeRunRegistry.finishStudy(sessionId, studyId);
+                executionRegistry.finishStudy(sessionId, studyId);
             }
         });
     }
 
     /**
      * Synchronous runtime study execution for testing purposes.
-     * Updates frontend with progress after each problem size is completed, not after each log update as in normal runs.
-     * @param request the runtime study request containing all necessary information to execute the study.
+     * Updates frontend with progress after each problem size is completed,
+     * not after each log update as in normal runs.
+     * @param request the runtime study request containing all necessary information to execute the study
      */
     public void runRuntimeStudy(RuntimeStudyRequest request) {
         runRequestValidator.validateRuntimeStudyRequest(request);
@@ -178,7 +292,6 @@ public class RunOrchestratorService {
             List<Integer> sizes = request.problemSizes();
 
             for (int i = 0; i < sizes.size(); i++) {
-
                 int n = sizes.get(i);
                 RunRequest runRequest = buildRunRequestForSize(request, n, i);
                 int logEvery = runRequestValidator.resolveLogEveryIterations(runRequest);
@@ -188,6 +301,7 @@ public class RunOrchestratorService {
 
                 wsSender.sendToStudy(request.studyId(), RuntimeStudyWsPayload.progress(request.studyId(), point));
             }
+
             wsSender.sendToStudy(request.studyId(), RuntimeStudyWsPayload.finished(request.studyId()));
         } catch (CancellationException ex) {
             throw ex;
@@ -198,14 +312,16 @@ public class RunOrchestratorService {
     }
 
     /**
-     * Helper method to build a RunRequest for a specific problem size based on the RuntimeStudyRequest.
-     * @param request the original runtime study request containing the common parameters for all runs in the study.
-     * @param problemSize the specific problem size for this run, which will be added to the search space parameters as "n".
-     * @param sizeIndex the index of the problem size in the list, used to derive a unique seed for each run to ensure different randomization across runs.
-     * @return a RunRequest configured for the specific problem size, ready to be executed as part of the runtime study.
+     * Builds a RunRequest for a specific problem size as part of a runtime study.
+     * @param request original runtime study request
+     * @param problemSize current problem size
+     * @param sizeIndex index of the current problem size
+     * @return run request for this size
      */
     private RunRequest buildRunRequestForSize(RuntimeStudyRequest request, int problemSize, int sizeIndex) {
-        Map<String, Object> searchSpaceParams = new LinkedHashMap<>(request.searchSpaceParams() != null ? request.searchSpaceParams() : Map.of());
+        Map<String, Object> searchSpaceParams = new LinkedHashMap<>(
+            request.searchSpaceParams() != null ? request.searchSpaceParams() : Map.of()
+        );
 
         searchSpaceParams.put("n", problemSize);
 
