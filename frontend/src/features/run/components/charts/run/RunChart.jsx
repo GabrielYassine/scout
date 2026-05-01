@@ -13,6 +13,7 @@ import LineCharts from "../common/LineCharts.jsx";
 import LineChartStatsPanel from "../common/LineChartStatsPanel.jsx";
 import BoxPlotChart from "../common/BoxPlotChart.jsx";
 import RunChartHeader from "./RunChartHeader.jsx";
+import RunChartObserverControls from "../../controls/RunChartObserverControls.jsx";
 
 import {
   BEST_FITNESS_BOXPLOT_KEY,
@@ -24,7 +25,6 @@ import {
   createEmptyPointCache,
   getInitialObserver,
   getLineSeriesKeys,
-  getObserverDisplayName,
   getRunStatusMeta,
   invertFitnessPoints,
   isMinimizationFitnessObserver,
@@ -42,11 +42,11 @@ function RunChart({
   const series = run.series ?? {};
   const runtimeMs = Number.isFinite(run.runtimeMs) ? run.runtimeMs : null;
 
-  const hasHypercube = series.hypercubeX?.length > 0 && series.hypercubeY?.length > 0;
-  const hasTspTour = series.tspTour?.length > 0 && series.tspCities?.length > 0;
+  const hasHypercube =
+    series.hypercubeX?.length > 0 && series.hypercubeY?.length > 0;
+  const hasTspTour =
+    series.tspTour?.length > 0 && series.tspCities?.length > 0;
 
-  // Standard observer series are shown as line charts.
-  // Special observer series are handled by dedicated visualizations.
   const lineSeriesKeys = useMemo(() => getLineSeriesKeys(series), [series]);
 
   const displayKeys = useMemo(() => {
@@ -58,22 +58,28 @@ function RunChart({
     });
   }, [lineSeriesKeys, hasHypercube, hasTspTour, bestFitnessBoxPlot]);
 
+  const specialDisplayKeys = useMemo(() => {
+    return displayKeys.filter(isSpecialObserver);
+  }, [displayKeys]);
+
   const initialObserver = useMemo(
     () => getInitialObserver(displayKeys),
     [displayKeys]
   );
 
   const [selectedObserver, setSelectedObserver] = useState(initialObserver);
+  const [rightObserver, setRightObserver] = useState("");
   const [lineChartWindowRange, setLineChartWindowRange] = useState(null);
 
-  // If live data changes the available observers, keep the selected observer valid.
   useEffect(() => {
     setSelectedObserver((current) =>
       displayKeys.includes(current) ? current : initialObserver
     );
   }, [displayKeys, initialObserver]);
 
-  const activeObserver = displayKeys.includes(selectedObserver) ? selectedObserver : initialObserver;
+  const activeObserver = displayKeys.includes(selectedObserver)
+    ? selectedObserver
+    : initialObserver;
 
   const isHypercube = activeObserver === HYPERCUBE_KEY;
   const isTspTour = activeObserver === TSP_TOUR_KEY;
@@ -84,15 +90,32 @@ function RunChart({
     !isSpecialObserver(activeObserver) &&
     Array.isArray(series[activeObserver]);
 
+  const rightLineSeries =
+    isLineSeries &&
+    rightObserver &&
+    rightObserver !== activeObserver &&
+    lineSeriesKeys.includes(rightObserver) &&
+    Array.isArray(series[rightObserver])
+      ? rightObserver
+      : null;
+
   const statusMeta = getRunStatusMeta(run);
 
-  const handleObserverChange = useCallback((observerKey) => {
+  const handleLeftAxisChange = useCallback((observerKey) => {
     setSelectedObserver(observerKey);
   }, []);
 
-  // Cache point construction so live websocket updates append points instead of
-  // rebuilding the full line series every render.
+  const handleRightAxisChange = useCallback((observerKey) => {
+    setRightObserver(observerKey);
+  }, []);
+
+  const handleSpecialObserverChange = useCallback((observerKey) => {
+    setSelectedObserver(observerKey);
+    setRightObserver("");
+  }, []);
+
   const pointsCacheRef = useRef(createEmptyPointCache(null));
+  const rightPointsCacheRef = useRef(createEmptyPointCache(null));
 
   const chartPoints = useMemo(() => {
     return buildChartPoints({
@@ -104,12 +127,24 @@ function RunChart({
     });
   }, [activeObserver, evaluations, series, isLineSeries]);
 
+  const rightChartPoints = useMemo(() => {
+    return buildChartPoints({
+      observerKey: rightLineSeries,
+      evaluations,
+      series,
+      isLineSeries: Boolean(rightLineSeries),
+      pointsCacheRef: rightPointsCacheRef,
+    });
+  }, [rightLineSeries, evaluations, series]);
+
   const visibleChartPoints = useMemo(() => {
     return chartPoints.slice(0, visibleCount);
   }, [chartPoints, visibleCount]);
 
-  // The stats panel should use the same display values as the chart.
-  // TSP/VRP fitness is internally negative, so it is inverted for readable stats.
+  const visibleRightChartPoints = useMemo(() => {
+    return rightChartPoints.slice(0, visibleCount);
+  }, [rightChartPoints, visibleCount]);
+
   const statsChartPoints = useMemo(() => {
     if (!isMinimizationFitnessObserver(activeObserver, run.searchSpaceId)) {
       return visibleChartPoints;
@@ -120,7 +155,25 @@ function RunChart({
 
   useEffect(() => {
     setLineChartWindowRange(null);
-  }, [activeObserver]);
+  }, [activeObserver, rightLineSeries]);
+
+  useEffect(() => {
+    if (rightObserver && rightObserver === activeObserver) {
+      setRightObserver("");
+    }
+  }, [activeObserver, rightObserver]);
+
+  useEffect(() => {
+    if (rightObserver && !lineSeriesKeys.includes(rightObserver)) {
+      setRightObserver("");
+    }
+  }, [rightObserver, lineSeriesKeys]);
+
+  useEffect(() => {
+    if (!isLineSeries && rightObserver) {
+      setRightObserver("");
+    }
+  }, [isLineSeries, rightObserver]);
 
   const statsVisiblePoints = useMemo(() => {
     if (!lineChartWindowRange) {
@@ -180,33 +233,35 @@ function RunChart({
           />
         ) : (
           <LineCharts
-            key={`line-${run.problemId}-${runIndex}-${activeObserver}`}
+            key={`line-${run.problemId}-${runIndex}-${activeObserver}-${
+              rightLineSeries ?? "none"
+            }`}
             seriesName={activeObserver}
             chartPoints={visibleChartPoints}
+            rightSeriesName={rightLineSeries}
+            rightChartPoints={visibleRightChartPoints}
             searchSpaceId={run.searchSpaceId}
             phaseRanges={phaseRanges}
             xAxisLabel="Evaluation"
             yAxisLabel={activeObserver}
+            rightYAxisLabel={rightLineSeries}
             onWindowRangeChange={setLineChartWindowRange}
           />
         )}
       </div>
 
-      {displayKeys.length > 1 && (
-        <div className="observer-checkboxes">
-          {displayKeys.map((observerKey) => (
-            <label key={observerKey} className="observer-checkbox-label">
-              <input
-                type="radio"
-                name={`observer-${run.problemId}-${runIndex}`}
-                checked={activeObserver === observerKey}
-                onChange={() => handleObserverChange(observerKey)}
-              />
-              <span>{getObserverDisplayName(observerKey)}</span>
-            </label>
-          ))}
-        </div>
-      )}
+      <RunChartObserverControls
+        problemId={run.problemId}
+        runIndex={runIndex}
+        lineSeriesKeys={lineSeriesKeys}
+        specialDisplayKeys={specialDisplayKeys}
+        activeObserver={activeObserver}
+        rightLineSeries={rightLineSeries}
+        isLineSeries={isLineSeries}
+        onLeftAxisChange={handleLeftAxisChange}
+        onRightAxisChange={handleRightAxisChange}
+        onSpecialObserverChange={handleSpecialObserverChange}
+      />
 
       {isLineSeries && (
         <div className="run-chart-stats">

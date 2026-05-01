@@ -25,11 +25,32 @@ function isMinimizationFitnessSeries(seriesName, searchSpaceId) {
   );
 }
 
+function getDisplaySeriesName(seriesName, searchSpaceId) {
+  return isMinimizationFitnessSeries(seriesName, searchSpaceId)
+    ? seriesName === "bestFitness" ? "bestTourLength" : "tourLength" : seriesName;
+}
+
+function getDisplayChartPoints(chartPoints, seriesName, searchSpaceId) {
+  if (!chartPoints?.length) return [];
+
+  if (!isMinimizationFitnessSeries(seriesName, searchSpaceId)) {
+    return chartPoints;
+  }
+
+  return chartPoints.map(([x, y]) => [x, -y]);
+}
+
 function LineCharts({
   chartPoints,
   seriesName,
+
+  rightChartPoints = [],
+  rightSeriesName = null,
+
   xAxisLabel = "Evaluation",
   yAxisLabel = null,
+  rightYAxisLabel = null,
+
   searchSpaceId = null,
   phaseRanges = [],
   enableDataZoom = true,
@@ -39,17 +60,20 @@ function LineCharts({
   const userHasZoomedRef = useRef(false);
   const [windowRange, setWindowRange] = useState(null);
 
-  // TSP and VRP fitness is stored as negative distance internally.
-  // For chart display, fitness/bestFitness is shown as positive tour length.
-  const shouldInvertFitness = isMinimizationFitnessSeries(seriesName, searchSpaceId);
-  const displaySeriesName = shouldInvertFitness ? "tourLength" : seriesName;
+  const displaySeriesName = getDisplaySeriesName(seriesName, searchSpaceId);
+  const displayRightSeriesName = rightSeriesName ? getDisplaySeriesName(rightSeriesName, searchSpaceId) : null;
+
   const resolvedYAxisLabel = yAxisLabel ?? displaySeriesName;
+  const resolvedRightYAxisLabel = rightYAxisLabel ?? displayRightSeriesName ?? "";
 
   const displayChartPoints = useMemo(() => {
-    if (!chartPoints.length) return [];
+    return getDisplayChartPoints(chartPoints, seriesName, searchSpaceId);
+  }, [chartPoints, seriesName, searchSpaceId]);
 
-    return shouldInvertFitness? chartPoints.map(([x, y]) => [x, -y]) : chartPoints;
-  }, [chartPoints, shouldInvertFitness]);
+  const displayRightChartPoints = useMemo(() => {
+    if (!rightSeriesName) return [];
+    return getDisplayChartPoints(rightChartPoints, rightSeriesName, searchSpaceId);
+  }, [rightChartPoints, rightSeriesName, searchSpaceId]);
 
   const markAreaData = useMemo(() => {
     return buildMarkAreaData(phaseRanges);
@@ -61,17 +85,19 @@ function LineCharts({
 
   const baseOption = useMemo(() => {
     return buildLineChartBaseOption({
-      seriesName,
-      displaySeriesName,
+      leftSeriesName: displaySeriesName,
+      rightSeriesName: displayRightSeriesName,
       xAxisLabel,
-      resolvedYAxisLabel,
+      leftYAxisLabel: resolvedYAxisLabel,
+      rightYAxisLabel: resolvedRightYAxisLabel,
       enableDataZoom,
     });
   }, [
-    seriesName,
     displaySeriesName,
+    displayRightSeriesName,
     xAxisLabel,
     resolvedYAxisLabel,
+    resolvedRightYAxisLabel,
     enableDataZoom,
   ]);
 
@@ -80,14 +106,16 @@ function LineCharts({
       if (!chartInstance || !seriesName) return;
 
       const seriesPatch = buildSeriesPatch({
-        displaySeriesName,
-        displayChartPoints,
+        leftSeriesName: displaySeriesName,
+        leftChartPoints: displayChartPoints,
+        rightSeriesName: displayRightSeriesName,
+        rightChartPoints: displayRightChartPoints,
         markAreaData,
       });
 
       try {
         chartInstance.setOption(
-          { series: [seriesPatch] },
+          { series: seriesPatch },
           {
             notMerge: false,
             lazyUpdate: true,
@@ -97,7 +125,14 @@ function LineCharts({
         // Ignore disposed chart instance races during unmount/re-render.
       }
     },
-    [seriesName, displaySeriesName, displayChartPoints, markAreaData]
+    [
+      seriesName,
+      displaySeriesName,
+      displayChartPoints,
+      displayRightSeriesName,
+      displayRightChartPoints,
+      markAreaData,
+    ]
   );
 
   // Push new live points into the existing chart without rebuilding the whole option.
@@ -113,7 +148,7 @@ function LineCharts({
     userHasZoomedRef.current = false;
     setWindowRange(null);
     onWindowRangeChange?.(null);
-  }, [seriesName, onWindowRangeChange]);
+  }, [seriesName, rightSeriesName, onWindowRangeChange]);
 
   // While the user has not manually zoomed, keep the active window equal to
   // the full data range. This allows the stats panel to follow live updates.

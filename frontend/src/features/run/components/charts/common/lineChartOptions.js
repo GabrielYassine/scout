@@ -3,6 +3,9 @@
  * Kept separate from the React component so chart configuration is easier to read.
  */
 
+const LEFT_AXIS_COLOR = "#1d4ed8";
+const RIGHT_AXIS_COLOR = "#06b6d4";
+
 const PHASE_COLORS = {
   IMPROVING: "rgba(46, 204, 113, 0.18)",
   WORSENING: "rgba(231, 76, 60, 0.18)",
@@ -32,38 +35,104 @@ export function buildMarkAreaData(phaseRanges) {
     .filter(Boolean);
 }
 
+function getAxisColor(yAxisIndex) {
+  return yAxisIndex === 1 ? RIGHT_AXIS_COLOR : LEFT_AXIS_COLOR;
+}
+
+function buildYAxis({ name, position, color }) {
+  return {
+    type: "value",
+    name,
+    position,
+    nameLocation: "middle",
+    nameGap: position === "right" ? 48 : 45,
+    scale: true,
+    axisLine: {
+      show: true,
+      lineStyle: {
+        color,
+      },
+    },
+    axisLabel: {
+      color,
+    },
+    nameTextStyle: {
+      color,
+    },
+  };
+}
+
+function buildEmptyLineSeries({ name, yAxisIndex }) {
+  const color = getAxisColor(yAxisIndex);
+
+  return {
+    name,
+    type: "line",
+    yAxisIndex,
+    data: [],
+    showSymbol: false,
+    symbol: "none",
+    connectNulls: false,
+    lineStyle: {
+      width: 2,
+      color,
+    },
+    itemStyle: {
+      color,
+    },
+    sampling: "lttb",
+    progressive: 2000,
+    progressiveThreshold: 3000,
+  };
+}
+
 /**
  * Builds the stable base ECharts option.
  * Live data is intentionally not inserted here; it is patched separately so
  * the chart can update efficiently during websocket streaming.
  */
 export function buildLineChartBaseOption({
-  seriesName,
-  displaySeriesName,
+  leftSeriesName,
+  rightSeriesName = null,
   xAxisLabel,
-  resolvedYAxisLabel,
+  leftYAxisLabel,
+  rightYAxisLabel = null,
   enableDataZoom,
 }) {
-  if (!seriesName) return null;
+  if (!leftSeriesName) return null;
+
+  const hasRightAxis = Boolean(rightSeriesName);
 
   return {
     animation: false,
     grid: {
       top: 24,
-      right: 24,
+      right: hasRightAxis ? 76 : 24,
       bottom: 70,
       left: 64,
       containLabel: true,
+    },
+    legend: {
+      top: 0,
+      type: "scroll",
     },
     tooltip: {
       trigger: "axis",
       axisPointer: { type: "cross" },
       formatter: (params) => {
-        const first = Array.isArray(params) ? params[0] : params;
-        const value = first?.value ?? [];
-        const x = value[0] ?? "-";
-        const y = value[1] ?? "-";
-        return `${xAxisLabel}: ${x}<br/>${resolvedYAxisLabel}: ${y}`;
+        const rows = Array.isArray(params) ? params : [params];
+        const first = rows[0];
+        const x = first?.value?.[0] ?? "-";
+
+        const seriesRows = rows
+          .map((item) => {
+            const name = item?.seriesName ?? "-";
+            const y = item?.value?.[1] ?? "-";
+            return `${item.marker ?? ""}${name}: ${y}`;
+          })
+          .join("<br/>");
+
+        return `${xAxisLabel}: ${x}<br/>${seriesRows}`;
       },
     },
     xAxis: {
@@ -74,13 +143,24 @@ export function buildLineChartBaseOption({
       min: "dataMin",
       max: "dataMax",
     },
-    yAxis: {
-      type: "value",
-      name: resolvedYAxisLabel,
-      nameLocation: "middle",
-      nameGap: 45,
-      scale: true,
-    },
+    yAxis: hasRightAxis
+      ? [
+          buildYAxis({
+            name: leftYAxisLabel,
+            position: "left",
+            color: LEFT_AXIS_COLOR,
+          }),
+          buildYAxis({
+            name: rightYAxisLabel,
+            position: "right",
+            color: RIGHT_AXIS_COLOR,
+          }),
+        ]
+      : buildYAxis({
+          name: leftYAxisLabel,
+          position: "left",
+          color: LEFT_AXIS_COLOR,
+        }),
     dataZoom: enableDataZoom
       ? [
           {
@@ -93,44 +173,41 @@ export function buildLineChartBaseOption({
         ]
       : [],
     series: [
-      {
-        name: displaySeriesName,
-        type: "line",
-        data: [],
-        showSymbol: false,
-        symbol: "none",
-        connectNulls: false,
-        lineStyle: {
-          width: 2,
-        },
-        sampling: "lttb",
-        progressive: 2000,
-        progressiveThreshold: 3000,
-      },
+      buildEmptyLineSeries({ name: leftSeriesName, yAxisIndex: 0 }),
+      ...(hasRightAxis
+        ? [buildEmptyLineSeries({ name: rightSeriesName, yAxisIndex: 1 })]
+        : []),
     ],
   };
 }
 
-/**
- * Builds the small series-only patch applied to an existing chart instance.
- * This avoids recreating the full ECharts option whenever new streamed data arrives.
- */
-export function buildSeriesPatch({
+function buildSingleSeriesPatch({
   displaySeriesName,
   displayChartPoints,
   markAreaData,
+  yAxisIndex,
+  includeMarkArea,
 }) {
   const hasSinglePoint = displayChartPoints.length === 1;
+  const color = getAxisColor(yAxisIndex);
 
   const seriesPatch = {
     name: displaySeriesName,
+    yAxisIndex,
     data: displayChartPoints,
     showSymbol: hasSinglePoint,
     symbol: hasSinglePoint ? "circle" : "none",
     symbolSize: hasSinglePoint ? 7 : 0,
+    lineStyle: {
+      width: 2,
+      color,
+    },
+    itemStyle: {
+      color,
+    },
   };
 
-  if (markAreaData.length) {
+  if (includeMarkArea && markAreaData.length) {
     seriesPatch.markArea = {
       silent: true,
       label: { show: false },
@@ -141,4 +218,37 @@ export function buildSeriesPatch({
   }
 
   return seriesPatch;
+}
+
+/**
+ * Builds the small series-only patch applied to an existing chart instance.
+ * This avoids recreating the full ECharts option whenever new streamed data arrives.
+ */
+export function buildSeriesPatch({
+  leftSeriesName,
+  leftChartPoints,
+  rightSeriesName = null,
+  rightChartPoints = [],
+  markAreaData,
+}) {
+  return [
+    buildSingleSeriesPatch({
+      displaySeriesName: leftSeriesName,
+      displayChartPoints: leftChartPoints,
+      markAreaData,
+      yAxisIndex: 0,
+      includeMarkArea: true,
+    }),
+    ...(rightSeriesName
+      ? [
+          buildSingleSeriesPatch({
+            displaySeriesName: rightSeriesName,
+            displayChartPoints: rightChartPoints,
+            markAreaData: [],
+            yAxisIndex: 1,
+            includeMarkArea: false,
+          }),
+        ]
+      : []),
+  ];
 }
