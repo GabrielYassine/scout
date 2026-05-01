@@ -1,5 +1,7 @@
 package dk.dtu.scout.selection;
 
+import dk.dtu.scout.State;
+import dk.dtu.scout.datatypes.StateKeys;
 import dk.dtu.scout.dto.EvaluatedSolution;
 import dk.dtu.scout.dto.Parameter;
 import org.springframework.context.annotation.Scope;
@@ -29,6 +31,8 @@ public class AnnealedSelection<S> implements SelectionRule<S> {
     private double initialTemperature = 5.0;
     private double coolingRate = 0.995;
     private double minTemperature = 1e-6;
+
+    private double currentTemperature = initialTemperature;
 
     public AnnealedSelection() {}
 
@@ -68,6 +72,7 @@ public class AnnealedSelection<S> implements SelectionRule<S> {
                 throw new IllegalArgumentException("Initial temperature must be positive");
             }
             this.initialTemperature = value;
+            this.currentTemperature = value;
         }
 
         if (params.containsKey("coolingRate")) {
@@ -102,6 +107,11 @@ public class AnnealedSelection<S> implements SelectionRule<S> {
     }
 
     @Override
+    public Map<String, Object> getStateVariables(State state) {
+        return Map.of(StateKeys.TEMPERATURE, currentTemperature);
+    }
+
+    @Override
     public List<EvaluatedSolution<S>> select(
         List<EvaluatedSolution<S>> parents,
         List<EvaluatedSolution<S>> children,
@@ -121,24 +131,23 @@ public class AnnealedSelection<S> implements SelectionRule<S> {
             throw new IllegalArgumentException("AnnealedSelection requires at least one child");
         }
 
+        currentTemperature = temperatureAt(iteration);
+
         if (mu == 1 && parents.size() == 1 && children.size() == 1) {
-            return selectClassicalAnnealing(parents.getFirst(), children.getFirst(), iteration, rng);
+            return selectClassicalAnnealing(parents.getFirst(), children.getFirst(), currentTemperature, rng);
         }
 
-        return selectPopulationAnnealed(parents, children, mu, iteration, rng);
+        return selectPopulationAnnealed(parents, children, mu, currentTemperature, rng);
     }
 
     private List<EvaluatedSolution<S>> selectClassicalAnnealing(
         EvaluatedSolution<S> current,
         EvaluatedSolution<S> candidate,
-        int iteration,
+        double temperature,
         Random rng
     ) {
-        double temperature = temperatureAt(iteration);
         double delta = candidate.fitness() - current.fitness();
-
         boolean accept = delta >= 0.0 || rng.nextDouble() < Math.exp(delta / temperature);
-
         return List.of(accept ? candidate : current);
     }
 
@@ -146,7 +155,7 @@ public class AnnealedSelection<S> implements SelectionRule<S> {
         List<EvaluatedSolution<S>> parents,
         List<EvaluatedSolution<S>> children,
         int mu,
-        int iteration,
+        double temperature,
         Random rng
     ) {
         List<EvaluatedSolution<S>> remaining = new ArrayList<>(parents.size() + children.size());
@@ -157,7 +166,6 @@ public class AnnealedSelection<S> implements SelectionRule<S> {
             throw new IllegalArgumentException("Annealed population selection requires at least mu candidates. Got mu=" + mu + " but only " + remaining.size() + " candidates are available.");
         }
 
-        double temperature = temperatureAt(iteration);
         List<EvaluatedSolution<S>> selected = new ArrayList<>(mu);
 
         while (selected.size() < mu) {

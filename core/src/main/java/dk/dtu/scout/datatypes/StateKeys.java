@@ -33,4 +33,6 @@ public final class StateKeys {
 
     public static final String PHEROMONE_MATRIX = "pheromoneMatrix";
     public static final String PHEROMONE_VECTOR = "pheromoneVector";
+
+    public static final String TEMPERATURE = "temperature";
 }
