@@ -11,7 +11,7 @@ import LabRightbar from "@/shared/components/sidebars/LabRightbar/LabRightbar.js
 import RunConfigPuzzle from "@/features/lab/components/runConfigPuzzle/RunConfigPuzzle.jsx";
 import Selector from "@/features/lab/components/selector/Selector.jsx";
 
-import "./LabPage.css";
+import "@/features/lab/styles/LabPage.css";
 
 import { usePuzzleConfig } from "@/shared/contexts/usePuzzleConfig.js";
 import { useRunExecution } from "@/features/run/contexts/useRunExecution.js";

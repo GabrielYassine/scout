@@ -5,8 +5,8 @@
  */
 import { useMemo, useState } from "react";
 
-import "./LabLeftbar.css";
-import "../FormFields.css";
+import "@/shared/components/styles/LabLeftbar.css";
+import "@/shared/components/styles/FormFields.css";
 
 import GlobalSettingsSection from "./GlobalSettingsSection.jsx";
 import SelectedPieceSection from "./SelectedPieceSection.jsx";

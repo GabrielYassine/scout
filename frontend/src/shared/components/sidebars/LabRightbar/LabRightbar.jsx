@@ -10,8 +10,8 @@ import SidebarSection from "../SidebarSection.jsx";
 import InstanceUploadSection from "./InstanceUploadSection.jsx";
 import InstanceFieldsSection from "./InstanceFieldsSection.jsx";
 
-import "../FormFields.css";
-import "./LabRightbar.css";
+import "@/shared/components/styles/FormFields.css";
+import "@/shared/components/styles/LabRightbar.css";
 
 import { importInstanceFile, exportInstanceFile } from "@/shared/api/instance.js";
 import { applyEditedMetadata, createEmptyTspInstance, createEmptyVrpInstance, CUSTOM_INSTANCE_NAME, getNextNodeId, } from "./instanceModel.js";

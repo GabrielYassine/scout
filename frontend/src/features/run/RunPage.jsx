@@ -81,6 +81,9 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
     () => computeAnimationLength({ pageMode, studyPoints, runs }),
     [pageMode, studyPoints, runs]
   );
+  // If the page is reopened from an already existing saved/restored execution,
+  // show the full graph immediately instead of replaying it from the beginning.
+  const showAllImmediately = !loading &&  !!restoredRun && currentAnimationLength > 0;
 
   // Drives chart playback. visibleCount controls how many currently available
   // data points are shown, while playbackSpeed and resetPlayback are controlled
@@ -89,6 +92,7 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
     usePlayback({
       length: currentAnimationLength,
       initialSpeed: INITIAL_SPEED,
+      showAllImmediately,
     });
 
   return (

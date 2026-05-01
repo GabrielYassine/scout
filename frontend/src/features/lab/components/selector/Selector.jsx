@@ -3,7 +3,7 @@
  * keeps track of the active tab,
  * and renders each item with the correct enabled/disabled state.
  */
-import "./Selector.css";
+import "@/features/lab/styles/Selector.css";
 import PuzzlePiece from "../PuzzlePiece";
 import { useSessionStorageState } from "@/shared/hooks/useSessionStorageState.js";
 import { COMPONENT_TYPES, TAB_COLUMNS, getDisableReason } from "./selectorRules.js";

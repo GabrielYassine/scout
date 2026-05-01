@@ -24,7 +24,7 @@ import {
   DEFAULT_CONFIG_ID,
 } from "@/shared/contexts/puzzleConfigHelpers.js";
 
-import "@/features/lab/components/PuzzlePiece.css";
+import "@/features/lab/styles/PuzzlePiece.css";
 
 export const PuzzleConfigContext = createContext(null);
 

@@ -9,7 +9,7 @@ import { useState } from "react";
 import PuzzlePiece from "../PuzzlePiece.jsx";
 import { usePuzzleConfig } from "@/shared/contexts/usePuzzleConfig.js";
 
-import "./RunConfigPuzzle.css";
+import "@/features/lab/styles/RunConfigPuzzle.css";
 
 export default function RunConfigPuzzle({ onPieceHover, onPieceLeave }) {
 
