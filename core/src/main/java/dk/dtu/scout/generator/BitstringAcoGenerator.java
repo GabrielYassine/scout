@@ -4,6 +4,7 @@ import dk.dtu.scout.State;
 import dk.dtu.scout.datatypes.StateKeys;
 import dk.dtu.scout.dto.EvaluatedSolution;
 import dk.dtu.scout.dto.Parameter;
+import dk.dtu.scout.util.FormulaEvaluator;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -21,6 +22,9 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
     private double minPheromone = 0.01;
     private double maxPheromone = 0.99;
 
+    private Object minPheromoneParam = "1/n";
+    private Object maxPheromoneParam = "1 - 1/n";
+
     private boolean reinforceBestOnly = true;
 
     private double[] pheromoneVector;
@@ -29,6 +33,7 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
     @Override
     public void init(State state) {
         this.state = state;
+        resolvePheromoneBounds();
     }
 
     @Override
@@ -51,8 +56,8 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
         return List.of(
                 new Parameter("evaporationRate", "Pheromone Evaporation Rate", "double", evaporationRate, 0.0, 1.0),
                 new Parameter("reinforcementRate", "Reinforcement Rate", "double", reinforcementRate, 0.0, 1.0),
-                new Parameter("minPheromone", "Minimum Pheromone", "double", minPheromone, 0.0, 1.0),
-                new Parameter("maxPheromone", "Maximum Pheromone", "double", maxPheromone, 0.0, 1.0),
+                new Parameter("minPheromone", "Minimum Pheromone", "string", "1/n", null, null),
+                new Parameter("maxPheromone", "Maximum Pheromone", "string", "1 - 1/n", null, null),
                 new Parameter("reinforceBestOnly", "Reinforce Best Only", "boolean", reinforceBestOnly, null, null)
         );
     }
@@ -80,27 +85,15 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
         }
 
         if (params.containsKey("minPheromone")) {
-            double value = ((Number) params.get("minPheromone")).doubleValue();
-            if (value < 0.0 || value > 1.0) {
-                throw new IllegalArgumentException("Minimum pheromone must be between 0 and 1");
-            }
-            this.minPheromone = value;
+            this.minPheromoneParam = params.get("minPheromone");
         }
 
         if (params.containsKey("maxPheromone")) {
-            double value = ((Number) params.get("maxPheromone")).doubleValue();
-            if (value < 0.0 || value > 1.0) {
-                throw new IllegalArgumentException("Maximum pheromone must be between 0 and 1");
-            }
-            this.maxPheromone = value;
+            this.maxPheromoneParam = params.get("maxPheromone");
         }
 
         if (params.containsKey("reinforceBestOnly")) {
             this.reinforceBestOnly = (Boolean) params.get("reinforceBestOnly");
-        }
-
-        if (minPheromone > maxPheromone) {
-            throw new IllegalArgumentException("Minimum pheromone cannot be greater than maximum pheromone");
         }
     }
 
@@ -146,6 +139,8 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
             throw new IllegalStateException("Cannot initialize BitstringAcoGenerator: dimension must be positive");
         }
 
+        resolvePheromoneBounds();
+
         double initialPheromone = clamp(0.5);
 
         pheromoneVector = new double[dimension];
@@ -155,6 +150,51 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
 
         if (state != null) {
             state.update(Map.of(StateKeys.PHEROMONE_VECTOR, pheromoneVector));
+        }
+    }
+
+    private void resolvePheromoneBounds() {
+        int dimension = resolveDimension();
+
+        if (dimension <= 0) {
+            return;
+        }
+
+        this.minPheromone = resolveFormulaOrNumber(minPheromoneParam, dimension, "Minimum pheromone");
+        this.maxPheromone = resolveFormulaOrNumber(maxPheromoneParam, dimension, "Maximum pheromone");
+
+        validatePheromoneBounds();
+    }
+
+    private double resolveFormulaOrNumber(Object value, int dimension, String label) {
+        double resolved;
+
+        if (value instanceof String formula) {
+            resolved = FormulaEvaluator.eval(formula, dimension);
+        } else if (value instanceof Number number) {
+            resolved = number.doubleValue();
+        } else {
+            throw new IllegalArgumentException(label + " must be a number or formula");
+        }
+
+        if (Double.isNaN(resolved) || Double.isInfinite(resolved)) {
+            throw new IllegalArgumentException(label + " must resolve to a finite number");
+        }
+
+        return resolved;
+    }
+
+    private void validatePheromoneBounds() {
+        if (minPheromone < 0.0 || minPheromone > 1.0) {
+            throw new IllegalArgumentException("Minimum pheromone must be between 0 and 1");
+        }
+
+        if (maxPheromone < 0.0 || maxPheromone > 1.0) {
+            throw new IllegalArgumentException("Maximum pheromone must be between 0 and 1");
+        }
+
+        if (minPheromone > maxPheromone) {
+            throw new IllegalArgumentException("Minimum pheromone cannot be greater than maximum pheromone");
         }
     }
 
