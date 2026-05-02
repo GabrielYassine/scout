@@ -9,21 +9,29 @@ import dk.dtu.scout.problems.TSP;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
 @Component
 @Scope("prototype")
-public class TspAcoGenerator extends AbstractAcoGenerator<int[]> {
+public class TspAcoGenerator implements Generator<int[]> {
+
+    private static final String REINFORCEMENT_BEST = "best";
+    private static final String REINFORCEMENT_ALL = "all";
 
     private static final double Q = 1.0;
+
+    private double evaporationRate = 0.1;
 
     private double alpha = 1.0;
     private double beta = 2.0;
 
     private double minPheromone = 1e-12;
     private double maxPheromone = 1e12;
+
+    private String reinforcementMode = REINFORCEMENT_BEST;
 
     private double[][] pheromoneMatrix;
     private State state;
@@ -32,6 +40,7 @@ public class TspAcoGenerator extends AbstractAcoGenerator<int[]> {
     @Override
     public void init(State state) {
         this.state = state;
+
         if (state != null) {
             Object problemObj = state.get(StateKeys.PROBLEM);
             if (problemObj instanceof TSP tsp) {
@@ -57,20 +66,28 @@ public class TspAcoGenerator extends AbstractAcoGenerator<int[]> {
 
     @Override
     public List<Parameter> params() {
-        List<Parameter> params = new java.util.ArrayList<>(evaporationParams());
+        List<Parameter> params = new ArrayList<>();
+        params.add(new Parameter("evaporationRate", "Pheromone Evaporation Rate", "double", evaporationRate, 0.0, 1.0));
         params.add(new Parameter("alpha", "Pheromone Influence", "double", alpha, 0.1, 5.0));
         params.add(new Parameter("beta", "Heuristic Influence", "double", beta, 0.1, 10.0));
         params.add(new Parameter("minPheromone", "Minimum Pheromone", "double", minPheromone, 0.0, null));
         params.add(new Parameter("maxPheromone", "Maximum Pheromone", "double", maxPheromone, 0.0, null));
+        params.add(new Parameter("reinforcementMode", "Reinforcement Mode (best/all)", "string", reinforcementMode, null, null));
         return params;
     }
 
     @Override
     public void configure(Map<String, Object> params) {
-        super.configure(params);
-
         if (params == null) {
             return;
+        }
+
+        if (params.containsKey("evaporationRate")) {
+            double value = ((Number) params.get("evaporationRate")).doubleValue();
+            if (value < 0.0 || value > 1.0) {
+                throw new IllegalArgumentException("Evaporation rate must be between 0 and 1");
+            }
+            this.evaporationRate = value;
         }
 
         if (params.containsKey("alpha")) {
@@ -105,9 +122,22 @@ public class TspAcoGenerator extends AbstractAcoGenerator<int[]> {
             this.maxPheromone = value;
         }
 
+        if (params.containsKey("reinforcementMode")) {
+            String value = String.valueOf(params.get("reinforcementMode")).trim().toLowerCase();
+            if (!REINFORCEMENT_BEST.equals(value) && !REINFORCEMENT_ALL.equals(value)) {
+                throw new IllegalArgumentException("Reinforcement mode must be either 'best' or 'all'");
+            }
+            this.reinforcementMode = value;
+        }
+
         if (minPheromone > maxPheromone) {
             throw new IllegalArgumentException("Minimum pheromone cannot be greater than maximum pheromone");
         }
+    }
+
+    @Override
+    public List<String> supportedSearchSpaces() {
+        return List.of("permutation");
     }
 
     @Override
@@ -132,6 +162,21 @@ public class TspAcoGenerator extends AbstractAcoGenerator<int[]> {
         }
 
         return tour;
+    }
+
+    @Override
+    public Map<String, Object> getStateVariables(State state) {
+        if (pheromoneMatrix == null) {
+            initializePheromoneMatrix();
+        }
+
+        updatePheromoneMatrix(state);
+
+        if (this.state != null) {
+            this.state.update(Map.of(StateKeys.PHEROMONE_MATRIX, pheromoneMatrix));
+        }
+
+        return Map.of(StateKeys.PHEROMONE_MATRIX, pheromoneMatrix);
     }
 
     private void initializePheromoneMatrix() {
@@ -230,48 +275,62 @@ public class TspAcoGenerator extends AbstractAcoGenerator<int[]> {
         return 0;
     }
 
-    @Override
-    public Map<String, Object> getStateVariables(State state) {
-        if (pheromoneMatrix == null) {
-            initializePheromoneMatrix();
-        }
-
-        updatePheromoneMatrix(state);
-        return Map.of(StateKeys.PHEROMONE_MATRIX, pheromoneMatrix);
-    }
-
     private void updatePheromoneMatrix(State state) {
         if (state == null || pheromoneMatrix == null || pheromoneMatrix.length == 0) {
             return;
         }
 
         Object evaluatedObj = state.get(StateKeys.GENERATION_EVALUATED);
-
         if (!(evaluatedObj instanceof List<?> evaluated) || evaluated.isEmpty()) {
             return;
         }
 
-        evaporate(evaporationRate);
+        evaporate();
 
+        if (REINFORCEMENT_BEST.equals(reinforcementMode)) {
+            reinforceBest(evaluated);
+        } else if (REINFORCEMENT_ALL.equals(reinforcementMode)) {
+            reinforceAll(evaluated);
+        }
+
+        clampPheromones();
+    }
+
+    private void evaporate() {
+        for (int i = 0; i < pheromoneMatrix.length; i++) {
+            for (int j = 0; j < pheromoneMatrix.length; j++) {
+                pheromoneMatrix[i][j] *= (1.0 - evaporationRate);
+            }
+        }
+    }
+
+    private void reinforceBest(List<?> evaluated) {
+        EvaluatedSolution<int[]> best = bestOf(evaluated);
+        if (best != null) {
+            depositPheromone(best.value(), best.fitness());
+        }
+    }
+
+    private void reinforceAll(List<?> evaluated) {
         for (Object entry : evaluated) {
             if (entry instanceof EvaluatedSolution<?>(Object value, double fitness) && value instanceof int[] tour) {
                 depositPheromone(tour, fitness);
             }
         }
-
-        clampPheromones();
-
-        if (this.state != null) {
-            this.state.update(Map.of(StateKeys.PHEROMONE_MATRIX, pheromoneMatrix));
-        }
     }
 
-    private void evaporate(double rate) {
-        for (int i = 0; i < pheromoneMatrix.length; i++) {
-            for (int j = 0; j < pheromoneMatrix.length; j++) {
-                pheromoneMatrix[i][j] *= (1.0 - rate);
+    private EvaluatedSolution<int[]> bestOf(List<?> evaluated) {
+        EvaluatedSolution<int[]> best = null;
+
+        for (Object entry : evaluated) {
+            if (entry instanceof EvaluatedSolution<?>(Object value, double fitness) && value instanceof int[] tour) {
+                if (best == null || fitness > best.fitness()) {
+                    best = new EvaluatedSolution<>(tour, fitness);
+                }
             }
         }
+
+        return best;
     }
 
     private void depositPheromone(int[] tour, double fitness) {
