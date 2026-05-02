@@ -15,16 +15,13 @@ import java.util.Random;
 @Scope("prototype")
 public class BitstringAcoGenerator implements Generator<boolean[]> {
 
-    private static final String REINFORCEMENT_BEST = "best";
-    private static final String REINFORCEMENT_ALL = "all";
-
     private double evaporationRate = 0.1;
     private double reinforcementRate = 0.1;
 
     private double minPheromone = 0.01;
     private double maxPheromone = 0.99;
 
-    private String reinforcementMode = REINFORCEMENT_BEST;
+    private boolean reinforceBestOnly = true;
 
     private double[] pheromoneVector;
     private State state;
@@ -56,7 +53,7 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
                 new Parameter("reinforcementRate", "Reinforcement Rate", "double", reinforcementRate, 0.0, 1.0),
                 new Parameter("minPheromone", "Minimum Pheromone", "double", minPheromone, 0.0, 1.0),
                 new Parameter("maxPheromone", "Maximum Pheromone", "double", maxPheromone, 0.0, 1.0),
-                new Parameter("reinforcementMode", "Reinforcement Mode (best/all)", "string", reinforcementMode, null, null)
+                new Parameter("reinforceBestOnly", "Reinforce Best Only", "boolean", reinforceBestOnly, null, null)
         );
     }
 
@@ -98,12 +95,8 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
             this.maxPheromone = value;
         }
 
-        if (params.containsKey("reinforcementMode")) {
-            String value = String.valueOf(params.get("reinforcementMode")).trim().toLowerCase();
-            if (!REINFORCEMENT_BEST.equals(value) && !REINFORCEMENT_ALL.equals(value)) {
-                throw new IllegalArgumentException("Reinforcement mode must be either 'best' or 'all'");
-            }
-            this.reinforcementMode = value;
+        if (params.containsKey("reinforceBestOnly")) {
+            this.reinforceBestOnly = (Boolean) params.get("reinforceBestOnly");
         }
 
         if (minPheromone > maxPheromone) {
@@ -193,15 +186,15 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
 
         evaporate();
 
-        if (REINFORCEMENT_BEST.equals(reinforcementMode)) {
+        if (reinforceBestOnly) {
             reinforceBest(evaluated);
-        } else if (REINFORCEMENT_ALL.equals(reinforcementMode)) {
+        } else {
             reinforceAll(evaluated);
         }
 
         clampPheromones();
     }
-    
+
     private void evaporate() {
         for (int i = 0; i < pheromoneVector.length; i++) {
             pheromoneVector[i] *= (1.0 - evaporationRate);

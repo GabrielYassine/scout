@@ -18,9 +18,6 @@ import java.util.Random;
 @Scope("prototype")
 public class TspAcoGenerator implements Generator<int[]> {
 
-    private static final String REINFORCEMENT_BEST = "best";
-    private static final String REINFORCEMENT_ALL = "all";
-
     private static final double Q = 1.0;
 
     private double evaporationRate = 0.1;
@@ -31,7 +28,7 @@ public class TspAcoGenerator implements Generator<int[]> {
     private double minPheromone = 1e-12;
     private double maxPheromone = 1e12;
 
-    private String reinforcementMode = REINFORCEMENT_BEST;
+    private boolean reinforceBestOnly = true;
 
     private double[][] pheromoneMatrix;
     private State state;
@@ -72,7 +69,7 @@ public class TspAcoGenerator implements Generator<int[]> {
         params.add(new Parameter("beta", "Heuristic Influence", "double", beta, 0.1, 10.0));
         params.add(new Parameter("minPheromone", "Minimum Pheromone", "double", minPheromone, 0.0, null));
         params.add(new Parameter("maxPheromone", "Maximum Pheromone", "double", maxPheromone, 0.0, null));
-        params.add(new Parameter("reinforcementMode", "Reinforcement Mode (best/all)", "string", reinforcementMode, null, null));
+        params.add(new Parameter("reinforceBestOnly", "Reinforce Best Only", "boolean", reinforceBestOnly, null, null));
         return params;
     }
 
@@ -122,12 +119,8 @@ public class TspAcoGenerator implements Generator<int[]> {
             this.maxPheromone = value;
         }
 
-        if (params.containsKey("reinforcementMode")) {
-            String value = String.valueOf(params.get("reinforcementMode")).trim().toLowerCase();
-            if (!REINFORCEMENT_BEST.equals(value) && !REINFORCEMENT_ALL.equals(value)) {
-                throw new IllegalArgumentException("Reinforcement mode must be either 'best' or 'all'");
-            }
-            this.reinforcementMode = value;
+        if (params.containsKey("reinforceBestOnly")) {
+            this.reinforceBestOnly = (Boolean) params.get("reinforceBestOnly");
         }
 
         if (minPheromone > maxPheromone) {
@@ -287,9 +280,9 @@ public class TspAcoGenerator implements Generator<int[]> {
 
         evaporate();
 
-        if (REINFORCEMENT_BEST.equals(reinforcementMode)) {
+        if (reinforceBestOnly) {
             reinforceBest(evaluated);
-        } else if (REINFORCEMENT_ALL.equals(reinforcementMode)) {
+        } else {
             reinforceAll(evaluated);
         }
 
