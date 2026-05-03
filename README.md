@@ -119,11 +119,4 @@ scout.executors.run.await-termination-seconds=60
 
 Common endpoints:
 - `/api/catalog`
-- `/api/run`
-
----
-
-## Ports
-
-- Backend: `8080`
-- Frontend: `5173`
+- `/api/run/prepare`
