@@ -1,5 +1,7 @@
 package dk.dtu.scout.backend.websocket;
 
+import dk.dtu.scout.backend.dto.request.RunRequest;
+import dk.dtu.scout.backend.dto.request.RuntimeStudyRequest;
 import dk.dtu.scout.backend.dto.request.StartPreparedExecutionRequest;
 import dk.dtu.scout.backend.dto.ws.RunWsPayload;
 import dk.dtu.scout.backend.dto.ws.RuntimeStudyWsPayload;
@@ -46,7 +48,8 @@ public class WsReceiver {
             }
 
             executionRegistry.attachRunWebSocket(headers.getSessionId(), request.sessionId(), runId);
-            runOrchestratorService.startPreparedRun(runId, request.sessionId());
+            RunRequest preparedRequest = executionRegistry.consumePreparedRun(runId, request.sessionId());
+            runOrchestratorService.startRun(preparedRequest);
         } catch (Exception ex) {
             wsSender.sendToRun(runId, RunWsPayload.failed(runId, ex.getMessage()));
         }
@@ -68,7 +71,8 @@ public class WsReceiver {
             }
 
             executionRegistry.attachStudyWebSocket(headers.getSessionId(), request.sessionId(), studyId);
-            runOrchestratorService.startPreparedRuntimeStudy(studyId, request.sessionId());
+            RuntimeStudyRequest preparedRequest = executionRegistry.consumePreparedStudy(studyId, request.sessionId());
+            runOrchestratorService.startRuntimeStudy(preparedRequest);
         } catch (Exception ex) {
             wsSender.sendToStudy(studyId, RuntimeStudyWsPayload.failed(studyId, ex.getMessage()));
         }
