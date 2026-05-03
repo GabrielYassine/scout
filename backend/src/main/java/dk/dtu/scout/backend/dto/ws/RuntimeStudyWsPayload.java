@@ -4,7 +4,7 @@ import dk.dtu.scout.backend.dto.run.RuntimeStudyPointResponse;
 
 /**
  * WebSocket payload used for runtime study updates.
- * The payload type tells the frontend whether the study connected, progressed, finished, or failed.
+ * The payload type tells the frontend whether the study progressed, finished, or failed.
  * @param type the kind of runtime study event
  * @param studyId the ID of the runtime study
  * @param message human-readable status or error message
@@ -17,14 +17,6 @@ public record RuntimeStudyWsPayload(
     String message,
     RuntimeStudyPointResponse point
 ) {
-    /**
-     * Creates a payload confirming that the frontend is connected to the study stream.
-     * @param studyId the ID of the runtime study
-     * @return connected payload
-     */
-    public static RuntimeStudyWsPayload connected(String studyId) {
-        return new RuntimeStudyWsPayload("STUDY_CONNECTED", studyId, "Study session connected", null);
-    }
 
     /**
      * Creates a payload containing one completed runtime study point.

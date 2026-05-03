@@ -8,7 +8,7 @@ import java.util.Map;
 
 /**
  * WebSocket payload used for normal run updates.
- * The same payload type is used for connection, progress, finished, and failed events.
+ * The same payload type is used for progress, finished, and failed events.
  * For RUN_PROGRESS events, the payload contains a small delta update for one run/problem stream.
  * For RUN_FINISHED events, the payload contains the final batch summary.
  * @param type the kind of run event
@@ -47,14 +47,6 @@ public record RunWsPayload(
     Double runtimeMs,
     BatchSummaryResponse summary
 ) {
-    /**
-     * Creates a payload confirming that the frontend is connected to the run stream.
-     * @param runId the ID of the run
-     * @return connected payload
-     */
-    public static RunWsPayload connected(String runId) {
-        return status("RUN_CONNECTED", runId, "Run session connected");
-    }
 
     /**
      * Creates a payload marking the whole batch run as finished.

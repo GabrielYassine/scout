@@ -12,7 +12,7 @@ import org.springframework.stereotype.Controller;
 
 /**
  * Receives WebSocket messages from the frontend.
- * The frontend first sends a ready message after subscribing, and then sends a start message
+ * The frontend subscribes to run/study topics, then sends a start message
  * containing only the session id of a prepared backend execution.
  * The execution id itself comes from the websocket destination path, so the backend
  * does not trust a runId or studyId from the message body.
@@ -29,21 +29,6 @@ public class WsReceiver {
         this.wsSender = wsSender;
         this.runOrchestratorService = runOrchestratorService;
         this.executionRegistry = executionRegistry;
-    }
-
-    /**
-     * Confirms that the frontend is connected to the run topic.
-     * @param runId the run id from the websocket destination
-     * @param request small request containing the browser session id
-     * @param headers websocket message headers
-     */
-    @MessageMapping("/run/{runId}/ready")
-    public void runReady(@DestinationVariable String runId, StartPreparedExecutionRequest request, SimpMessageHeaderAccessor headers) {
-        if (request != null) {
-            executionRegistry.attachRunWebSocket(headers.getSessionId(), request.sessionId(), runId);
-        }
-
-        wsSender.sendToRun(runId, RunWsPayload.connected(runId));
     }
 
     /**
@@ -67,20 +52,6 @@ public class WsReceiver {
         }
     }
 
-    /**
-     * Confirms that the frontend is connected to the runtime study topic.
-     * @param studyId the study id from the websocket destination
-     * @param request small request containing the browser session id
-     * @param headers websocket message headers
-     */
-    @MessageMapping("/study/{studyId}/ready")
-    public void studyReady(@DestinationVariable String studyId, StartPreparedExecutionRequest request, SimpMessageHeaderAccessor headers) {
-        if (request != null) {
-            executionRegistry.attachStudyWebSocket(headers.getSessionId(), request.sessionId(), studyId);
-        }
-
-        wsSender.sendToStudy(studyId, RuntimeStudyWsPayload.connected(studyId));
-    }
 
     /**
      * Starts a prepared runtime study after the frontend has subscribed to its study topic.

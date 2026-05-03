@@ -32,7 +32,6 @@ export function useRunWebSocket({
   // Refs are used for websocket lifecycle data that must stay current without
   // causing React re-renders for every incoming packet.
   const activeRunIdRef = useRef(null);
-  const readySentRef = useRef(false);
   const startSentRef = useRef(false);
   const flushTimerRef = useRef(null);
   const latestBatchRef = useRef(null);
@@ -43,7 +42,6 @@ export function useRunWebSocket({
 
     // Reset per-run lifecycle state when a new live run is connected.
     activeRunIdRef.current = runId;
-    readySentRef.current = false;
     startSentRef.current = false;
     latestBatchRef.current = null;
     readyProgressQueueRef.current = [];
@@ -83,20 +81,6 @@ export function useRunWebSocket({
       latestBatchRef.current = nextBatch;
       setLoading(false);
       setBatch(nextBatch);
-    };
-
-    const handleRunConnected = () => {
-      if (startSentRef.current || !runRequest) return;
-
-      // The frontend first subscribes and sends "ready". The backend then
-      // confirms RUN_CONNECTED, after which the actual run is started.
-      startSentRef.current = true;
-      client.publish({
-        destination: `/app/run/${runId}/start`,
-        body: JSON.stringify({
-          sessionId: runRequest.sessionId,
-        }),
-      });
     };
 
     const handleRunFinished = (message) => {
@@ -155,10 +139,6 @@ export function useRunWebSocket({
           readyProgressQueueRef.current.push(message);
           return;
 
-        case "RUN_CONNECTED":
-          handleRunConnected();
-          return;
-
         case "RUN_FINISHED":
           handleRunFinished(message);
           return;
@@ -176,13 +156,12 @@ export function useRunWebSocket({
       activeRunIdRef.current = runId;
       client.subscribe(`/topic/run/${runId}`, handleSocketMessage);
 
-      if (readySentRef.current) return;
+      if (startSentRef.current || !runRequest) return;
 
-      // Tell the backend that the frontend is subscribed and ready to receive
-      // progress before the backend starts the run.
-      readySentRef.current = true;
+      // Start the run after subscribing so progress packets are not missed.
+      startSentRef.current = true;
       client.publish({
-        destination: `/app/run/${runId}/ready`,
+        destination: `/app/run/${runId}/start`,
         body: JSON.stringify({
           sessionId: runRequest.sessionId,
         }),

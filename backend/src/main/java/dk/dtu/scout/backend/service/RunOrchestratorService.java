@@ -17,7 +17,6 @@ import org.springframework.stereotype.Service;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -71,21 +70,17 @@ public class RunOrchestratorService {
             throw new IllegalArgumentException("Prepare request must be provided");
         }
 
-        String sessionId = resolveSessionId(request.sessionId());
-        String executionId = UUID.randomUUID().toString();
-
-        // Avoid leaving old prepared-but-never-started requests for the same browser session.
-        executionRegistry.removePreparedForSession(sessionId);
+        ExecutionRegistry.PreparedExecutionIds ids = executionRegistry.prepareIds(request.sessionId());
 
         switch (normalizeExecutionType(request.executionType())) {
             case "run" -> {
-                RunRequest finalRequest = withRunIds(request.runRequest(), sessionId, executionId);
+                RunRequest finalRequest = withRunIds(request.runRequest(), ids.sessionId(), ids.executionId());
                 runRequestValidator.validateRunRequest(finalRequest);
                 executionRegistry.storePreparedRun(finalRequest);
             }
 
             case "runtimestudy" -> {
-                RuntimeStudyRequest finalRequest = withStudyIds(request.runtimeStudyRequest(), sessionId, executionId);
+                RuntimeStudyRequest finalRequest = withStudyIds(request.runtimeStudyRequest(), ids.sessionId(), ids.executionId());
                 runRequestValidator.validateRuntimeStudyRequest(finalRequest);
                 executionRegistry.storePreparedStudy(finalRequest);
             }
@@ -93,7 +88,7 @@ public class RunOrchestratorService {
             default -> throw new IllegalArgumentException("executionType must be either 'run' or 'runtimeStudy'");
         }
 
-        return new PrepareRunResponse(sessionId, executionId);
+        return new PrepareRunResponse(ids.sessionId(), ids.executionId());
     }
 
     /**
@@ -114,10 +109,6 @@ public class RunOrchestratorService {
     public void startPreparedRuntimeStudy(String studyId, String sessionId) {
         RuntimeStudyRequest request = executionRegistry.consumePreparedStudy(studyId, sessionId);
         startRuntimeStudy(request);
-    }
-
-    private String resolveSessionId(String requestedSessionId) {
-        return requestedSessionId != null && !requestedSessionId.isBlank() ? requestedSessionId : UUID.randomUUID().toString();
     }
 
     private String normalizeExecutionType(String executionType) {
@@ -192,8 +183,6 @@ public class RunOrchestratorService {
      * @param request the run request containing all necessary information to execute the run
      */
     public void startRun(RunRequest request) {
-        runRequestValidator.validateRunRequest(request);
-
         String sessionId = request.sessionId();
         String runId = request.runId();
 
@@ -319,12 +308,8 @@ public class RunOrchestratorService {
      * @return run request for this size
      */
     private RunRequest buildRunRequestForSize(RuntimeStudyRequest request, int problemSize, int sizeIndex) {
-        Map<String, Object> searchSpaceParams = new LinkedHashMap<>(
-            request.searchSpaceParams() != null ? request.searchSpaceParams() : Map.of()
-        );
-
+        Map<String, Object> searchSpaceParams = new LinkedHashMap<>(request.searchSpaceParams() != null ? request.searchSpaceParams() : Map.of());
         searchSpaceParams.put("n", problemSize);
-
         long seed = request.seed() + (long) sizeIndex * 1_000_000L;
 
         return new RunRequest(

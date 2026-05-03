@@ -31,7 +31,6 @@ export function useRuntimeStudyWebSocket({
   setStreaming,
 }) {
   // These refs track websocket lifecycle state without causing re-renders.
-  const readySentRef = useRef(false);
   const startSentRef = useRef(false);
   const latestPointsRef = useRef([]);
 
@@ -39,7 +38,6 @@ export function useRuntimeStudyWebSocket({
     if (!enabled || !studyId || !runtimeStudyRequest) return;
 
     // Reset per-study lifecycle state when connecting to a new live study.
-    readySentRef.current = false;
     startSentRef.current = false;
     latestPointsRef.current = [];
 
@@ -53,22 +51,6 @@ export function useRuntimeStudyWebSocket({
         studyId,
         code: event.code,
         reason: event.reason,
-      });
-    };
-
-    const handleStudyConnected = () => {
-      if (startSentRef.current) return;
-
-      // The frontend first subscribes and sends "ready". The backend then
-      // confirms STUDY_CONNECTED, after which the actual study is started.
-      startSentRef.current = true;
-      setStudyStatus("ONGOING");
-
-      client.publish({
-        destination: `/app/study/${studyId}/start`,
-        body: JSON.stringify({
-          sessionId: runtimeStudyRequest.sessionId,
-        }),
       });
     };
 
@@ -129,10 +111,6 @@ export function useRuntimeStudyWebSocket({
       if (!message.studyId || message.studyId !== studyId) return;
 
       switch (message.type) {
-        case "STUDY_CONNECTED":
-          handleStudyConnected();
-          return;
-
         case "STUDY_PROGRESS":
           handleStudyProgress(message);
           return;
@@ -153,13 +131,14 @@ export function useRuntimeStudyWebSocket({
     client.onConnect = () => {
       client.subscribe(`/topic/study/${studyId}`, handleSocketMessage);
 
-      if (readySentRef.current) return;
+      if (startSentRef.current) return;
 
-      // Tell the backend that the frontend is subscribed and ready to receive
-      // progress before the backend starts the study.
-      readySentRef.current = true;
+      // Start the study after subscribing so progress packets are not missed.
+      startSentRef.current = true;
+      setStudyStatus("ONGOING");
+
       client.publish({
-        destination: `/app/study/${studyId}/ready`,
+        destination: `/app/study/${studyId}/start`,
         body: JSON.stringify({
           sessionId: runtimeStudyRequest.sessionId,
         }),

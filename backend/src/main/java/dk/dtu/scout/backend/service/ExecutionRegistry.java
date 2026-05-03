@@ -4,6 +4,7 @@ import dk.dtu.scout.backend.dto.request.RunRequest;
 import dk.dtu.scout.backend.dto.request.RuntimeStudyRequest;
 import org.springframework.stereotype.Component;
 
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 
@@ -22,6 +23,9 @@ public class ExecutionRegistry {
         STUDY
     }
 
+    public record PreparedExecutionIds(String sessionId, String executionId) {
+    }
+
     private record ActiveTask(String id, Future<?> future) {
     }
 
@@ -36,6 +40,13 @@ public class ExecutionRegistry {
     private final ConcurrentHashMap<String, Boolean> startedStudyIds = new ConcurrentHashMap<>();
 
     private final ConcurrentHashMap<String, WebSocketBinding> websocketBindings = new ConcurrentHashMap<>();
+
+    public PreparedExecutionIds prepareIds(String requestedSessionId) {
+        String sessionId = requestedSessionId != null && !requestedSessionId.isBlank() ? requestedSessionId : UUID.randomUUID().toString();
+        String executionId = UUID.randomUUID().toString();
+        removePreparedForSession(sessionId);
+        return new PreparedExecutionIds(sessionId, executionId);
+    }
 
     /**
      * Stores a finalized and validated run request until the websocket start message arrives.
