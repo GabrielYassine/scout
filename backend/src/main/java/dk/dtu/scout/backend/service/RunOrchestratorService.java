@@ -186,10 +186,6 @@ public class RunOrchestratorService {
         String sessionId = request.sessionId();
         String runId = request.runId();
 
-        if (!executionRegistry.markRunStarted(runId)) {
-            return;
-        }
-
         Future<?> future = requestExecutor.submit(() -> run(request));
         executionRegistry.registerActive(sessionId, runId, future);
 
@@ -241,14 +237,9 @@ public class RunOrchestratorService {
      * @param request the runtime study request containing all necessary information to execute the study
      */
     public void startRuntimeStudy(RuntimeStudyRequest request) {
-        runRequestValidator.validateRuntimeStudyRequest(request);
-
         String sessionId = request.sessionId();
         String studyId = request.studyId();
 
-        if (!executionRegistry.markStudyStarted(studyId)) {
-            return;
-        }
 
         Future<?> future = requestExecutor.submit(() -> runRuntimeStudy(request));
         executionRegistry.registerActive(sessionId, studyId, future);

@@ -36,9 +36,6 @@ public class ExecutionRegistry {
     private final ConcurrentHashMap<String, RuntimeStudyRequest> preparedStudies = new ConcurrentHashMap<>();
 
     private final ConcurrentHashMap<String, ActiveTask> activeBySession = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, Boolean> startedRunIds = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, Boolean> startedStudyIds = new ConcurrentHashMap<>();
-
     private final ConcurrentHashMap<String, WebSocketBinding> websocketBindings = new ConcurrentHashMap<>();
 
     public PreparedExecutionIds prepareIds(String requestedSessionId) {
@@ -130,24 +127,6 @@ public class ExecutionRegistry {
     }
 
     /**
-     * Marks a run id as started.
-     * @param runId run id
-     * @return true if this is the first start for this run id
-     */
-    public boolean markRunStarted(String runId) {
-        return startedRunIds.putIfAbsent(runId, Boolean.TRUE) == null;
-    }
-
-    /**
-     * Marks a runtime study id as started.
-     * @param studyId runtime study id
-     * @return true if this is the first start for this study id
-     */
-    public boolean markStudyStarted(String studyId) {
-        return startedStudyIds.putIfAbsent(studyId, Boolean.TRUE) == null;
-    }
-
-    /**
      * Registers a new active task for the given session and task id.
      * If the same session already has an active task, the previous task is cancelled.
      * @param sessionId browser session id
@@ -213,10 +192,8 @@ public class ExecutionRegistry {
 
         if (binding.type() == ExecutionType.RUN) {
             preparedRuns.remove(binding.taskId());
-            startedRunIds.remove(binding.taskId());
         } else {
             preparedStudies.remove(binding.taskId());
-            startedStudyIds.remove(binding.taskId());
         }
 
         cancelActiveTask(binding.sessionId(), binding.taskId());
@@ -228,7 +205,6 @@ public class ExecutionRegistry {
      * @param runId run id
      */
     public void finishRun(String sessionId, String runId) {
-        startedRunIds.remove(runId);
         removeActiveTask(sessionId, runId);
     }
 
@@ -238,7 +214,6 @@ public class ExecutionRegistry {
      * @param studyId runtime study id
      */
     public void finishStudy(String sessionId, String studyId) {
-        startedStudyIds.remove(studyId);
         removeActiveTask(sessionId, studyId);
     }
 
