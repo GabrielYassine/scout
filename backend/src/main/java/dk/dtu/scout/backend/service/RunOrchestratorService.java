@@ -58,10 +58,8 @@ public class RunOrchestratorService {
      * Prepares an execution by generating/reusing a sessionId, generating a new executionId,
      * applying those ids to the provided draft request, validating the final request, and
      * storing it until websocket start.
-     *
      * For a standard run, the executionId is used as the runId.
      * For a runtime study, the executionId is used as the studyId.
-     *
      * @param request draft prepare request containing either a run request or runtime study request
      * @return sessionId and executionId
      */
@@ -89,26 +87,6 @@ public class RunOrchestratorService {
         }
 
         return new PrepareRunResponse(ids.sessionId(), ids.executionId());
-    }
-
-    /**
-     * Starts a previously prepared run.
-     * @param runId prepared run id
-     * @param sessionId browser session id that owns the prepared run
-     */
-    public void startPreparedRun(String runId, String sessionId) {
-        RunRequest request = executionRegistry.consumePreparedRun(runId, sessionId);
-        startRun(request);
-    }
-
-    /**
-     * Starts a previously prepared runtime study.
-     * @param studyId prepared runtime study id
-     * @param sessionId browser session id that owns the prepared runtime study
-     */
-    public void startPreparedRuntimeStudy(String studyId, String sessionId) {
-        RuntimeStudyRequest request = executionRegistry.consumePreparedStudy(studyId, sessionId);
-        startRuntimeStudy(request);
     }
 
     private String normalizeExecutionType(String executionType) {
@@ -179,7 +157,7 @@ public class RunOrchestratorService {
     }
 
     /**
-     * Starts a run asynchronously. Validates the request and registers it in the ExecutionRegistry.
+     * Starts a run asynchronously and registers it in the ExecutionRegistry.
      * @param request the run request containing all necessary information to execute the run
      */
     public void startRun(RunRequest request) {
@@ -206,7 +184,7 @@ public class RunOrchestratorService {
 
     /**
      * Synchronous run execution for testing purposes.
-     * Validates the request, executes the run, and sends a final websocket message with the summary or failure.
+     * Executes the run, and sends a final websocket message with the summary or failure.
      * @param request the run request containing all necessary information to execute the run
      */
     public void run(RunRequest request) {
@@ -233,13 +211,12 @@ public class RunOrchestratorService {
     }
 
     /**
-     * Starts a runtime study asynchronously. Validates the request and registers it in the ExecutionRegistry.
+     * Starts a runtime study asynchronously and registers it in the ExecutionRegistry.
      * @param request the runtime study request containing all necessary information to execute the study
      */
     public void startRuntimeStudy(RuntimeStudyRequest request) {
         String sessionId = request.sessionId();
         String studyId = request.studyId();
-
 
         Future<?> future = requestExecutor.submit(() -> runRuntimeStudy(request));
         executionRegistry.registerActive(sessionId, studyId, future);
