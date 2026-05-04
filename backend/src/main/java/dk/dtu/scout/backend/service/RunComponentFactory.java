@@ -3,6 +3,7 @@ package dk.dtu.scout.backend.service;
 import dk.dtu.scout.ScoutComponent;
 import dk.dtu.scout.selection.SelectionRule;
 import dk.dtu.scout.backend.exception.BadRequestException;
+import dk.dtu.scout.backend.instance.InstanceMapper;
 import dk.dtu.scout.crossover.Crossover;
 import dk.dtu.scout.generator.Generator;
 import dk.dtu.scout.observer.Observer;
@@ -108,8 +109,21 @@ public class RunComponentFactory {
         if (problemParams != null) {
             params.putAll(problemParams);
         }
+
+        prepareProblemSpecificParams(id, params);
+
         problem.configure(params);
         return problem;
+    }
+
+    private void prepareProblemSpecificParams(String problemId, Map<String, Object> params) {
+        if ("tsp".equals(problemId)) {
+            params.put("tspInstance", InstanceMapper.toTspInstance(asInstanceMap(params.get("tspInstance"), "tspInstance")));
+        }
+
+        if ("vrp".equals(problemId)) {
+            params.put("vrpInstance", InstanceMapper.toVrpInstance(asInstanceMap(params.get("vrpInstance"), "vrpInstance")));
+        }
     }
 
     /**
@@ -128,6 +142,7 @@ public class RunComponentFactory {
         if (!generator.supportedSearchSpaces().isEmpty() && !generator.supportedSearchSpaces().contains(searchSpaceId)) {
             throw new BadRequestException("Generator '" + id + "' does not support search space '" + searchSpaceId + "'");
         }
+
         return generator;
     }
 
@@ -168,6 +183,7 @@ public class RunComponentFactory {
         if (ids == null || ids.isEmpty()) {
             throw new BadRequestException("Stop condition must be specified");
         }
+
         Map<String, Object> effectiveParams = params != null ? params : Map.of();
         return ids.stream().map(id -> (StopCondition<S>) createAndConfigure(stopConditionRegistry, id, "Stop condition", effectiveParams)).toList();
     }
@@ -230,5 +246,13 @@ public class RunComponentFactory {
         if (!problem.supportedSearchSpaces().isEmpty() && !problem.supportedSearchSpaces().contains(searchSpaceId)) {
             throw new BadRequestException("Problem '" + problemId + "' does not support search space '" + searchSpaceId + "'");
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> asInstanceMap(Object value, String label) {
+        if (!(value instanceof Map<?, ?> raw)) {
+            throw new IllegalArgumentException(label + " must be a map");
+        }
+        return (Map<String, Object>) raw;
     }
 }

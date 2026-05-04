@@ -153,7 +153,7 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
         int dimension = resolveDimension();
 
         if (dimension <= 0) {
-            return;
+            throw new IllegalStateException("Cannot resolve pheromone bounds: dimension must be positive");
         }
 
         double resolvedMin = resolveFormulaOrNumber(minPheromone, dimension, "Minimum pheromone");

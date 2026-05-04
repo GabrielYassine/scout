@@ -5,7 +5,6 @@ import dk.dtu.scout.selection.SelectionRule;
 import dk.dtu.scout.backend.dto.request.RunRequest;
 import dk.dtu.scout.backend.dto.run.RunGroupResponse;
 import dk.dtu.scout.backend.dto.run.RunResponse;
-import dk.dtu.scout.backend.instance.InstanceMapper;
 import dk.dtu.scout.backend.util.ViewMapper;
 import dk.dtu.scout.backend.websocket.RunProgressObserver;
 import dk.dtu.scout.backend.websocket.WsSender;
@@ -65,12 +64,12 @@ public class RunExecutor {
      * @param logEveryIterations Determines how often to log progress for each run.
      * @param wsUpdateEveryIterations Determines how often to send WebSocket updates for each run.
      * @return A list of RunGroupResponse objects.
-     * @param <S> The solution type used in the search space and problems. This is a generic type that allows the method to work with any solution representation defined in the search space.
+     * @param <S> The solution type used in the search space and problems.
      */
     public <S> List<RunGroupResponse> runBatch(RunRequest request, int logEveryIterations, int wsUpdateEveryIterations) {
         checkCancelled();
 
-        long baseSeed = request.seed(); // Will be altered for each runtime to ensure different random sequences
+        long baseSeed = request.seed();
         int runtimes = request.runTimes();
 
         Map<String, Object> searchSpaceParams = copyParams(request.searchSpaceParams());
@@ -84,7 +83,6 @@ public class RunExecutor {
                 int runIndex = i;
                 long runSeed = baseSeed + i;
 
-                // Run each runtime asynchronously and collect the futures
                 futures.add(runExecutor.submit(() ->
                     runSingleIndex(
                         request,
@@ -96,8 +94,8 @@ public class RunExecutor {
                     )
                 ));
             }
+
             List<RunGroupResponse> results = collectFinishedRuns(futures);
-            // We return it sorted since there is no guarantee that parallel runs will finish in the order they were started.
             return results.stream().sorted(Comparator.comparingInt(RunGroupResponse::runIndex)).toList();
         } catch (RuntimeException ex) {
             cancelAll(futures);
@@ -106,38 +104,16 @@ public class RunExecutor {
     }
 
     /**
-     * Prepares the tsp and vrp problems by giving them their instance object.
-     * This includes mapping raw instance data to the appropriate problem-specific instance objects.
-     * @param request The original RunRequest containing the problem parameters.
-     * @param problemId The ID of the problem for which to prepare parameters. This is used to determine how to map instance data if present.
-     * @return A map of problem parameters with any necessary transformations applied. The original parameters from the request are copied and then modified as needed based on the problem ID.
-     */
-    private Map<String, Object> prepareProblemParams(RunRequest request, String problemId) {
-        Map<String, Object> problemParams = copyParams(request.problemParams());
-
-        if ("tsp".equals(problemId) && problemParams.containsKey("tspInstance")) {
-            problemParams.compute("tspInstance", (key, rawInstance) -> InstanceMapper.toTspInstance(asInstanceMap(rawInstance, "tspInstance")));
-        }
-
-        if ("vrp".equals(problemId) && problemParams.containsKey("vrpInstance")) {
-            problemParams.compute("vrpInstance", (key, rawInstance) -> InstanceMapper.toVrpInstance(asInstanceMap(rawInstance, "vrpInstance")));
-        }
-
-        return problemParams;
-    }
-
-    /**
-     * This is the core method that executes a single runtime
-     * The runtime uses one seed and one search space, while each selected problem
-     * is run sequentially within that runtime.
-     * @param request The original RunRequest containing all necessary information to execute the runtime..
-     * @param runIndex The index of the current runtime being executed.
-     * @param runSeed The random seed to use for this runtime, which ensures that each runtime has a different random sequence.
-     * @param searchSpaceFactory A supplier that creates a new instance of the SearchSpace for this runtime.
-     * @param logEveryIterations Determines how often to log progress for this runtime.
-     * @param wsUpdateEveryIterations Determines how often to send WebSocket updates for this runtime.
-     * @return A RunGroupResponse containing the results of all problem runs within this runtime.
-     * @param <S> The solution type used in the search space and problems.
+     * Executes one runtime. A runtime uses one seed and one search space,
+     * while each selected problem is executed sequentially within that runtime.
+     * @param request original run request
+     * @param runIndex index of the current runtime
+     * @param runSeed seed used for the current runtime
+     * @param searchSpaceFactory factory for creating the search space
+     * @param logEveryIterations logging interval
+     * @param wsUpdateEveryIterations websocket update interval
+     * @return grouped run result for this runtime
+     * @param <S> solution representation type
      */
     private <S> RunGroupResponse runSingleIndex(
         RunRequest request,
@@ -149,22 +125,20 @@ public class RunExecutor {
     ) {
         checkCancelled();
 
-        Random rng = new Random(runSeed); // Different seed for each runtime.
+        Random rng = new Random(runSeed);
 
         SearchSpace<S> searchSpace = searchSpaceFactory.get();
         Supplier<Generator<S>> generatorFactory = () -> factory.createGenerator(request.generatorId(), request.generatorParams(), searchSpace.id());
 
         List<RunResponse> perProblemRuns = new ArrayList<>();
 
-        // Each problem in this specific runtime will be run sequentially, but the entire runtime can be run in parallel with other runtimes
         for (String problemId : request.problemIds()) {
             checkCancelled();
 
-            Map<String, Object> problemParams = prepareProblemParams(request, problemId);
+            Map<String, Object> problemParams = copyParams(request.problemParams());
 
             Problem<S> problem = factory.createProblem(problemId, searchSpace.dimension(), problemParams);
 
-            // Before creating the rest of the components, we validate that the problem and search space are compatible
             factory.validateProblemSearchSpaceCompatibility(problem, problemId, searchSpace.id());
 
             SelectionRule<S> selection = factory.createSelectionRule(request.selectionRuleId(), request.selectionRuleParams());
@@ -174,8 +148,7 @@ public class RunExecutor {
             Crossover<S> crossover = factory.createOptionalCrossover(request.crossoverId(), request.crossoverParams());
             ParentSelectionRule<S> parentSelection = factory.createParentSelectionRule(request.parentSelectionRuleId(), request.parentSelectionRuleParams());
 
-            // By providing a RunProgressObserver, it will automatically update the frontend through ws at the specified intervals and at the end.
-            if (request.runId() != null && wsUpdateEveryIterations > 0) {
+            if (wsUpdateEveryIterations > 0) {
                 observers.add(new RunProgressObserver<>(
                     wsSender,
                     request.runId(),
@@ -189,7 +162,6 @@ public class RunExecutor {
 
             long startTime = System.nanoTime();
 
-            // Execute the simulation run with the specified components and collect the log
             RunLog log = new SimulationRunner().run(
                 populationModel,
                 generatorFactory,
@@ -209,7 +181,7 @@ public class RunExecutor {
             double runtimeMs = (System.nanoTime() - startTime) / 1_000_000.0;
 
             List<Integer> evaluations = log.getEvaluations();
-            int finalEvaluations = evaluations.isEmpty() ? 0 : evaluations.getLast();
+            int finalEvaluations = evaluations.getLast();
 
             perProblemRuns.add(ViewMapper.toRunResponse(
                 searchSpace.id(),
@@ -225,9 +197,9 @@ public class RunExecutor {
     }
 
     /**
-     * Helper method to collect results from a list of futures representing asynchronous runs.
-     * @param futures A list of Future objects.
-     * @return A list of RunGroupResponse objects collected from the completed futures.
+     * Collects results from asynchronous run futures.
+     * @param futures futures from submitted run tasks
+     * @return completed run groups
      */
     private List<RunGroupResponse> collectFinishedRuns(List<Future<RunGroupResponse>> futures) {
         List<RunGroupResponse> batches = new ArrayList<>(futures.size());
@@ -258,28 +230,20 @@ public class RunExecutor {
         return batches;
     }
 
-    private Map<String, Object> copyParams(Map<String, Object> params) {
-        return params != null ? new LinkedHashMap<>(params) : new LinkedHashMap<>();
-    }
-
     private void checkCancelled() {
         if (Thread.currentThread().isInterrupted()) {
             throw new CancellationException("Run cancelled");
         }
     }
 
+    private Map<String, Object> copyParams(Map<String, Object> params) {
+        return params != null ? new LinkedHashMap<>(params) : new LinkedHashMap<>();
+    }
+
+
     private void cancelAll(List<Future<RunGroupResponse>> futures) {
         for (Future<RunGroupResponse> future : futures) {
             future.cancel(true);
         }
-    }
-
-    @SuppressWarnings("unchecked")
-    private Map<String, Object> asInstanceMap(Object value, String label) {
-        if (!(value instanceof Map<?, ?> raw)) {
-            throw new IllegalArgumentException(label + " must be a map");
-        }
-
-        return (Map<String, Object>) raw;
     }
 }
