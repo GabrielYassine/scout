@@ -168,11 +168,13 @@ public class RunOrchestratorService {
             try {
                 future.get();
             } catch (CancellationException ignored) {
-                // cancelled
+                // The run was cancelled, likely because another run was started for the same session.
+                // Cancellation is a normal lifecycle event, so no failed payload is sent here.
             } catch (InterruptedException e) {
+                // Preserve the interrupt status so the executor can handle thread shutdown correctly.
                 Thread.currentThread().interrupt();
             } catch (ExecutionException ignored) {
-                // run() already emitted failed payload if needed
+                // run() already emitted a failed payload if needed.
             } finally {
                 executionRegistry.finishRun(sessionId, runId);
             }
@@ -180,9 +182,8 @@ public class RunOrchestratorService {
     }
 
     /**
-     * Synchronous run execution for testing purposes.
-     * Executes the run, and sends a final websocket message with the summary or failure.
-     * @param request the run request containing all necessary information to execute the run
+     * Executes the run and sends a final websocket message with the summary or failure.
+     * @param request the prepared run request containing all necessary information to execute the run
      */
     public void run(RunRequest request) {
         int logEvery = runRequestValidator.resolveLogEveryIterations(request);
@@ -190,18 +191,12 @@ public class RunOrchestratorService {
 
         try {
             List<RunGroupResponse> batches = runExecutor.runBatch(request, logEvery, wsUpdateEvery);
-
             BatchSummaryResponse summary = runStatisticsService.calculateSummary(batches);
-
-            if (request.runId() != null) {
-                wsSender.sendToRun(request.runId(), RunWsPayload.finished(request.runId(), request.searchSpaceId(), summary));
-            }
+            wsSender.sendToRun(request.runId(), RunWsPayload.finished(request.runId(), request.searchSpaceId(), summary));
         } catch (CancellationException ex) {
             throw ex;
         } catch (Exception ex) {
-            if (request.runId() != null) {
-                wsSender.sendToRun(request.runId(), RunWsPayload.failed(request.runId(), ex.getMessage()));
-            }
+            wsSender.sendToRun(request.runId(), RunWsPayload.failed(request.runId(), ex.getMessage()));
 
             throw ex;
         }
