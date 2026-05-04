@@ -19,11 +19,8 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
     private double evaporationRate = 0.1;
     private double reinforcementRate = 0.1;
 
-    private double minPheromone = 0.01;
-    private double maxPheromone = 0.99;
-
-    private Object minPheromoneParam = "1/n";
-    private Object maxPheromoneParam = "1 - 1/n";
+    private Object minPheromone = "1/n";
+    private Object maxPheromone = "1 - 1/n";
 
     private boolean reinforceBestOnly = true;
 
@@ -33,7 +30,6 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
     @Override
     public void init(State state) {
         this.state = state;
-        resolvePheromoneBounds();
     }
 
     @Override
@@ -56,8 +52,8 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
         return List.of(
                 new Parameter("evaporationRate", "Pheromone Evaporation Rate", "double", evaporationRate, 0.0, 1.0),
                 new Parameter("reinforcementRate", "Reinforcement Rate", "double", reinforcementRate, 0.0, 1.0),
-                new Parameter("minPheromone", "Minimum Pheromone", "string", "1/n", null, null),
-                new Parameter("maxPheromone", "Maximum Pheromone", "string", "1 - 1/n", null, null),
+                new Parameter("minPheromone", "Minimum Pheromone", "string", minPheromone, null, null),
+                new Parameter("maxPheromone", "Maximum Pheromone", "string", maxPheromone, null, null),
                 new Parameter("reinforceBestOnly", "Reinforce Best Only", "boolean", reinforceBestOnly, null, null)
         );
     }
@@ -85,11 +81,11 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
         }
 
         if (params.containsKey("minPheromone")) {
-            this.minPheromoneParam = params.get("minPheromone");
+            this.minPheromone = params.get("minPheromone");
         }
 
         if (params.containsKey("maxPheromone")) {
-            this.maxPheromoneParam = params.get("maxPheromone");
+            this.maxPheromone = params.get("maxPheromone");
         }
 
         if (params.containsKey("reinforceBestOnly")) {
@@ -139,9 +135,9 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
             throw new IllegalStateException("Cannot initialize BitstringAcoGenerator: dimension must be positive");
         }
 
-        resolvePheromoneBounds();
+        PheromoneBounds bounds = resolvePheromoneBounds();
 
-        double initialPheromone = clamp(0.5);
+        double initialPheromone = clamp(0.5, bounds);
 
         pheromoneVector = new double[dimension];
         for (int i = 0; i < dimension; i++) {
@@ -153,17 +149,19 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
         }
     }
 
-    private void resolvePheromoneBounds() {
+    private PheromoneBounds resolvePheromoneBounds() {
         int dimension = resolveDimension();
 
         if (dimension <= 0) {
             return;
         }
 
-        this.minPheromone = resolveFormulaOrNumber(minPheromoneParam, dimension, "Minimum pheromone");
-        this.maxPheromone = resolveFormulaOrNumber(maxPheromoneParam, dimension, "Maximum pheromone");
+        double resolvedMin = resolveFormulaOrNumber(minPheromone, dimension, "Minimum pheromone");
+        double resolvedMax = resolveFormulaOrNumber(maxPheromone, dimension, "Maximum pheromone");
 
-        validatePheromoneBounds();
+        validatePheromoneBounds(resolvedMin, resolvedMax);
+
+        return new PheromoneBounds(resolvedMin, resolvedMax);
     }
 
     private double resolveFormulaOrNumber(Object value, int dimension, String label) {
@@ -184,16 +182,16 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
         return resolved;
     }
 
-    private void validatePheromoneBounds() {
-        if (minPheromone < 0.0 || minPheromone > 1.0) {
+    private void validatePheromoneBounds(double min, double max) {
+        if (min < 0.0 || min > 1.0) {
             throw new IllegalArgumentException("Minimum pheromone must be between 0 and 1");
         }
 
-        if (maxPheromone < 0.0 || maxPheromone > 1.0) {
+        if (max < 0.0 || max > 1.0) {
             throw new IllegalArgumentException("Maximum pheromone must be between 0 and 1");
         }
 
-        if (minPheromone > maxPheromone) {
+        if (min > max) {
             throw new IllegalArgumentException("Minimum pheromone cannot be greater than maximum pheromone");
         }
     }
@@ -283,12 +281,16 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
     }
 
     private void clampPheromones() {
+        PheromoneBounds bounds = resolvePheromoneBounds();
+
         for (int i = 0; i < pheromoneVector.length; i++) {
-            pheromoneVector[i] = clamp(pheromoneVector[i]);
+            pheromoneVector[i] = clamp(pheromoneVector[i], bounds);
         }
     }
 
-    private double clamp(double value) {
-        return Math.max(minPheromone, Math.min(maxPheromone, value));
+    private double clamp(double value, PheromoneBounds bounds) {
+        return Math.max(bounds.min(), Math.min(bounds.max(), value));
     }
+    // Simple record to hold resolved pheromone bounds for internal use
+    private record PheromoneBounds(double min, double max) {}
 }
