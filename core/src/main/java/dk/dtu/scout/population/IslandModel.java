@@ -89,8 +89,6 @@ public class IslandModel<S> implements PopulationModel<S> {
         final State state;
         final Random rng;
         final List<ScoutComponent> components;
-        List<EvaluatedSolution<S>> previousGenerationEvaluated = new ArrayList<>();
-
         IslandState(
                 List<EvaluatedSolution<S>> parentsEvaluated,
                 S current,
@@ -274,8 +272,6 @@ public class IslandModel<S> implements PopulationModel<S> {
                 island.best = island.current;
                 island.bestFitness = island.currentFitness;
             }
-
-            island.previousGenerationEvaluated = generationEvaluated;
         }
 
         if (numIslands > 1 && (iteration + 1) % epochLength == 0) {
@@ -311,8 +307,7 @@ public class IslandModel<S> implements PopulationModel<S> {
                 StateKeys.CURRENT_FITNESS, island.currentFitness,
                 StateKeys.BEST, island.best,
                 StateKeys.BEST_FITNESS, island.bestFitness,
-                StateKeys.PARENTS_EVALUATED, List.copyOf(island.parentsEvaluated),
-                StateKeys.GENERATION_EVALUATED, List.copyOf(island.previousGenerationEvaluated)
+                StateKeys.PARENTS_EVALUATED, List.copyOf(island.parentsEvaluated)
         ));
     }
     // Updates the state variables of the island's components based on the current state of the island.
