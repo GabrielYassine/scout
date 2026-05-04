@@ -33,7 +33,6 @@ public class SimulationRunner {
 
     /**
      * Execute a full run with the provided components and return the aggregated log.
-     *
      * @param logEveryIterations tick interval for observer/log updates (must be positive)
      */
     public <S> RunLog run(
@@ -68,19 +67,15 @@ public class SimulationRunner {
         sharedComponents.add(space);
         sharedComponents.add(problem);
 
-        // Optional components:
-        if(crossover != null) {
+        if (crossover != null) {
             sharedComponents.add(crossover);
         }
         if (parentSelection != null) {
             sharedComponents.add(parentSelection);
         }
-        if (stopConditions != null) {
-            sharedComponents.addAll(stopConditions);
-        }
-        if (observers != null) {
-            sharedComponents.addAll(observers);
-        }
+
+        sharedComponents.addAll(stopConditions);
+        sharedComponents.addAll(observers);
 
         // #4 Initialize all shared components with the shared run state.
         for (ScoutComponent component : sharedComponents) {
@@ -107,12 +102,10 @@ public class SimulationRunner {
 
         // #7 Build the complete list of components that may publish runtime state variables.
         List<ScoutComponent> stateComponents = new ArrayList<>(sharedComponents);
-        if (initialization.stateComponents() != null) {
-            stateComponents.addAll(initialization.stateComponents());
-        }
+        stateComponents.addAll(initialization.stateComponents());
 
         // #8 Merge any shared-state values produced during initialization.
-        updateSharedState(sharedState, initialization.sharedStateVariables());
+        sharedState.update(initialization.sharedStateVariables());
         updateComponentStateVariables(sharedState, stateComponents);
 
         // #9 Notify observers that the run has started.
@@ -141,7 +134,7 @@ public class SimulationRunner {
             currentState = stepResult.runState();
 
             // #16 Merge runtime state published by the step and by participating components.
-            updateSharedState(sharedState, stepResult.sharedStateVariables());
+            sharedState.update(stepResult.sharedStateVariables());
             updateComponentStateVariables(sharedState, stateComponents);
 
             // #17 Only log/notify observers at the configured cadence.
@@ -166,17 +159,7 @@ public class SimulationRunner {
         return log;
     }
 
-    private void updateSharedState(State sharedState, Map<String, Object> vars) {
-        if (sharedState == null || vars == null || vars.isEmpty()) {
-            return;
-        }
-        sharedState.update(vars);
-    }
-
     private void updateComponentStateVariables(State state, List<ScoutComponent> components) {
-        if (state == null || components == null || components.isEmpty()) {
-            return;
-        }
         Map<String, Object> combinedStateVariables = new HashMap<>();
         for (ScoutComponent component : components) {
             combinedStateVariables.putAll(component.getStateVariables(state));
@@ -191,9 +174,6 @@ public class SimulationRunner {
         double bestFitness,
         S bestSolution
     ) {
-        if (conditions == null || conditions.isEmpty()) {
-            return false;
-        }
         for (StopCondition<S> condition : conditions) {
             if (condition.shouldStop(iteration, evaluations, bestFitness, bestSolution)) {
                 return true;
@@ -203,27 +183,18 @@ public class SimulationRunner {
     }
 
     private <S> void notifyOnStart(List<Observer<S>> observers, IterationSnapshot<S> state, RunLog log) {
-        if (observers == null) {
-            return;
-        }
         for (Observer<S> observer : observers) {
             observer.onStart(state, log);
         }
     }
 
     private <S> void notifyOnStep(List<Observer<S>> observers, IterationSnapshot<S> state, RunLog log) {
-        if (observers == null) {
-            return;
-        }
         for (Observer<S> observer : observers) {
             observer.onStep(state, log);
         }
     }
 
     private <S> void notifyOnEnd(List<Observer<S>> observers, IterationSnapshot<S> state, RunLog log) {
-        if (observers == null) {
-            return;
-        }
         for (Observer<S> observer : observers) {
             observer.onEnd(state, log);
         }

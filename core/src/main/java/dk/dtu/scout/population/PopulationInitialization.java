@@ -13,4 +13,8 @@ public record PopulationInitialization<S>(
         Map<String, Object> sharedStateVariables,
         List<ScoutComponent> stateComponents
 ) {
+    public PopulationInitialization {
+        sharedStateVariables = sharedStateVariables != null ? sharedStateVariables : Map.of();
+        stateComponents = stateComponents != null ? stateComponents : List.of();
+    }
 }

@@ -10,5 +10,4 @@ public record Parameter(
         Object defaultValue,
         Double min,
         Double max
-) {
-}
+) {}

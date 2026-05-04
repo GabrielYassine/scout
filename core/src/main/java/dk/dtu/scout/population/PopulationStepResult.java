@@ -17,4 +17,7 @@ public record PopulationStepResult<S>(
         int evaluationsDelta,
         Map<String, Object> sharedStateVariables
 ) {
+    public PopulationStepResult {
+        sharedStateVariables = sharedStateVariables != null ? sharedStateVariables : Map.of();
+    }
 }
