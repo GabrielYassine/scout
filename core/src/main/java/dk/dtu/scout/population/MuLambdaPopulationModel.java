@@ -46,23 +46,11 @@ public class MuLambdaPopulationModel<S> implements PopulationModel<S> {
 
     @Override
     public void configure(Map<String, Object> params) {
-        if (params == null) return;
-
-        if (params.containsKey("mu")) {
-            int value = ((Number) params.get("mu")).intValue();
-            if (value <= 0) {
-                throw new IllegalArgumentException("Mu must be positive");
-            }
-            this.mu = value;
+        if (params == null) {
+            return;
         }
-
-        if (params.containsKey("lambda")) {
-            int value = ((Number) params.get("lambda")).intValue();
-            if (value <= 0) {
-                throw new IllegalArgumentException("Lambda must be positive");
-            }
-            this.lambda = value;
-        }
+        this.mu = positiveIntParam(params, "mu", mu, "Mu must be positive");
+        this.lambda = positiveIntParam(params, "lambda", lambda, "Lambda must be positive");
     }
 
     private static final class MuLambdaState<S> implements PopulationState<S> {
@@ -288,5 +276,18 @@ public class MuLambdaPopulationModel<S> implements PopulationModel<S> {
         );
 
         return new PopulationStepResult<>(runState, evaluationsDelta, stateVariables);
+    }
+    private int positiveIntParam(Map<String, Object> params, String key, int currentValue, String errorMessage) {
+        if (!params.containsKey(key)) {
+            return currentValue;
+        }
+
+        int value = ((Number) params.get(key)).intValue();
+
+        if (value <= 0) {
+            throw new IllegalArgumentException(errorMessage);
+        }
+
+        return value;
     }
 }
