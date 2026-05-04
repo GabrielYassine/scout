@@ -22,9 +22,6 @@ public class RunRequestValidator {
      * @param request the run request to validate, which should contain all settings.
      */
     public void validateRunRequest(RunRequest request) {
-        if (request == null) {
-            throw new BadRequestException("Request must be provided");
-        }
         if (request.searchSpaceId() == null || request.searchSpaceId().isBlank()) {
             throw new BadRequestException("Search space must be specified");
         }
@@ -46,9 +43,6 @@ public class RunRequestValidator {
         if (request.stopConditionIds() == null || request.stopConditionIds().isEmpty()) {
             throw new BadRequestException("Stop condition must be specified");
         }
-        if (request.runId() == null || request.runId().isBlank()) {
-            throw new BadRequestException("runId must be specified");
-        }
         if (request.runTimes() <= 0) {
             throw new BadRequestException("runTimes must be positive");
         }
@@ -65,12 +59,6 @@ public class RunRequestValidator {
      * @param request the runtime study request to validate
      */
     public void validateRuntimeStudyRequest(RuntimeStudyRequest request) {
-        if (request == null) {
-            throw new BadRequestException("Request must be provided");
-        }
-        if (request.studyId() == null || request.studyId().isBlank()) {
-            throw new BadRequestException("studyId must be specified");
-        }
         if (request.searchSpaceId() == null || request.searchSpaceId().isBlank()) {
             throw new BadRequestException("Search space must be specified");
         }

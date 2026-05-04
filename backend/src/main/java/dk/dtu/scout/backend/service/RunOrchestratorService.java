@@ -10,6 +10,7 @@ import dk.dtu.scout.backend.dto.run.RuntimeStudyPointResponse;
 import dk.dtu.scout.backend.dto.ws.RunWsPayload;
 import dk.dtu.scout.backend.dto.ws.RuntimeStudyWsPayload;
 import dk.dtu.scout.backend.websocket.WsSender;
+import dk.dtu.scout.backend.exception.BadRequestException;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
@@ -64,10 +65,6 @@ public class RunOrchestratorService {
      * @return sessionId and executionId
      */
     public PrepareRunResponse prepareRun(PrepareRunRequest request) {
-        if (request == null) {
-            throw new IllegalArgumentException("Prepare request must be provided");
-        }
-
         ExecutionRegistry.PreparedExecutionIds ids = executionRegistry.prepareIds(request.sessionId());
 
         switch (normalizeExecutionType(request.executionType())) {
@@ -83,7 +80,7 @@ public class RunOrchestratorService {
                 executionRegistry.storePreparedStudy(finalRequest);
             }
 
-            default -> throw new IllegalArgumentException("executionType must be either 'run' or 'runtimeStudy'");
+            default -> throw new BadRequestException("executionType must be either 'run' or 'runtimeStudy'");
         }
 
         return new PrepareRunResponse(ids.sessionId(), ids.executionId());
@@ -95,7 +92,7 @@ public class RunOrchestratorService {
 
     private RunRequest withRunIds(RunRequest request, String sessionId, String runId) {
         if (request == null) {
-            throw new IllegalArgumentException("Run request must be provided");
+            throw new BadRequestException("Run request must be provided");
         }
 
         return new RunRequest(
@@ -128,7 +125,7 @@ public class RunOrchestratorService {
 
     private RuntimeStudyRequest withStudyIds(RuntimeStudyRequest request, String sessionId, String studyId) {
         if (request == null) {
-            throw new IllegalArgumentException("Runtime study request must be provided");
+            throw new BadRequestException("Runtime study request must be provided");
         }
 
         return new RuntimeStudyRequest(

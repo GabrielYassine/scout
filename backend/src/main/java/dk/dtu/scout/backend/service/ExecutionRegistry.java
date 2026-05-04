@@ -50,10 +50,6 @@ public class ExecutionRegistry {
      * @param request finalized run request
      */
     public void storePreparedRun(RunRequest request) {
-        if (request == null || request.runId() == null || request.runId().isBlank()) {
-            throw new IllegalArgumentException("Prepared run must have a runId");
-        }
-
         preparedRuns.put(request.runId(), request);
     }
 
@@ -62,10 +58,6 @@ public class ExecutionRegistry {
      * @param request finalized runtime study request
      */
     public void storePreparedStudy(RuntimeStudyRequest request) {
-        if (request == null || request.studyId() == null || request.studyId().isBlank()) {
-            throw new IllegalArgumentException("Prepared runtime study must have a studyId");
-        }
-
         preparedStudies.put(request.studyId(), request);
     }
 

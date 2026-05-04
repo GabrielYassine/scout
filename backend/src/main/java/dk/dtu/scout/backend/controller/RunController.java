@@ -24,9 +24,7 @@ public class RunController {
     /**
      * Prepares an execution by generating a sessionId and executionId, injecting
      * them into the provided draft request, and validating the final request.
-     *
      * This lets validation errors appear on the LabPage before navigation to RunPage.
-     *
      * @param request the draft execution request to validate
      * @return a DTO containing the sessionId and executionId to use for websocket execution
      */
