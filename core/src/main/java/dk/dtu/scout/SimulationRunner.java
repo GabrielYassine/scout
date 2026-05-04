@@ -37,17 +37,17 @@ public class SimulationRunner {
      * @param logEveryIterations tick interval for observer/log updates (must be positive)
      */
     public <S> RunLog run(
-            PopulationModel<S> populationModel,
-            Supplier<Generator<S>> generatorFactory,
-            Crossover<S> crossover,
-            ParentSelectionRule<S> parentSelection,
-            SelectionRule<S> selection,
-            SearchSpace<S> space,
-            Problem<S> problem,
-            Random rng,
-            List<StopCondition<S>> stopConditions,
-            List<Observer<S>> observers,
-            int logEveryIterations
+        PopulationModel<S> populationModel,
+        Supplier<Generator<S>> generatorFactory,
+        Crossover<S> crossover,
+        ParentSelectionRule<S> parentSelection,
+        SelectionRule<S> selection,
+        SearchSpace<S> space,
+        Problem<S> problem,
+        Random rng,
+        List<StopCondition<S>> stopConditions,
+        List<Observer<S>> observers,
+        int logEveryIterations
     ) {
         // #1 Create the per-run output log and shared runtime state.
         RunLog log = new RunLog();
@@ -185,11 +185,11 @@ public class SimulationRunner {
     }
 
     private <S> boolean shouldStop(
-            List<StopCondition<S>> conditions,
-            int iteration,
-            int evaluations,
-            double bestFitness,
-            S bestSolution
+        List<StopCondition<S>> conditions,
+        int iteration,
+        int evaluations,
+        double bestFitness,
+        S bestSolution
     ) {
         if (conditions == null || conditions.isEmpty()) {
             return false;

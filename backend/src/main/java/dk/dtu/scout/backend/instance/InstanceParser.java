@@ -17,6 +17,12 @@ public final class InstanceParser {
     private static final String EDGE_WEIGHT_TYPE = "EUC_2D";
     private static final Pattern HEADER_PATTERN = Pattern.compile("^([A-Z_]+)\\s*:?\\s*(.*)$", Pattern.CASE_INSENSITIVE);
 
+    private enum VrpSection {
+        NODE,
+        DEMAND,
+        DEPOT
+    }
+
     private InstanceParser() {
     }
 
@@ -57,7 +63,7 @@ public final class InstanceParser {
             }
 
             if (!inNodes) {
-                addHeaderIfPresent(headers, line);
+                addHeader(headers, line);
                 continue;
             }
 
@@ -102,7 +108,7 @@ public final class InstanceParser {
         Map<Integer, Double> demands = new LinkedHashMap<>();
         List<Integer> depotIds = new ArrayList<>();
 
-        String section = null;
+        VrpSection section = null;
 
         for (String rawLine : content.split("\\R")) {
             String line = rawLine.trim();
@@ -110,37 +116,36 @@ public final class InstanceParser {
             if (isEof(line)) break;
 
             if (isSection(line, "NODE_COORD_SECTION")) {
-                section = "NODE";
+                section = VrpSection.NODE;
                 continue;
             }
 
             if (isSection(line, "DEMAND_SECTION")) {
-                section = "DEMAND";
+                section = VrpSection.DEMAND;
                 continue;
             }
 
             if (isSection(line, "DEPOT_SECTION")) {
-                section = "DEPOT";
+                section = VrpSection.DEPOT;
                 continue;
             }
 
             if (section == null) {
-                addHeaderIfPresent(headers, line);
+                addHeader(headers, line);
                 continue;
             }
 
-            switch (section) {
-                case "NODE" -> parseCoordinateLine(line, coords);
-                case "DEMAND" -> parseDemandLine(line, demands);
-                case "DEPOT" -> {
-                    int depotId = toInt(line);
-                    if (depotId < 0) {
-                        section = null;
-                    } else if (depotId > 0) {
-                        depotIds.add(depotId);
-                    }
+            if (section == VrpSection.NODE) {
+                parseCoordinateLine(line, coords);
+            } else if (section == VrpSection.DEMAND) {
+                parseDemandLine(line, demands);
+            } else {
+                int depotId = toInt(line);
+                if (depotId < 0) {
+                    section = null;
+                } else if (depotId > 0) {
+                    depotIds.add(depotId);
                 }
-                default -> throw new IllegalArgumentException("Unknown VRP section: " + section);
             }
         }
 
@@ -247,21 +252,19 @@ public final class InstanceParser {
             String line = rawLine.trim();
             if (line.isEmpty()) continue;
 
-            if (isEof(line) || isKnownSection(line)) {
+            if (isKnownSection(line)) {
                 break;
             }
 
-            addHeaderIfPresent(headers, line);
+            addHeader(headers, line);
         }
 
         return headers;
     }
 
-    private static void addHeaderIfPresent(Map<String, String> headers, String line) {
+    private static void addHeader(Map<String, String> headers, String line) {
         HeaderLine parsed = parseHeaderLine(line);
-        if (parsed != null) {
-            headers.put(parsed.key(), parsed.value());
-        }
+        headers.put(parsed.key(), parsed.value());
     }
 
     private static void requireSupportedEdgeWeightType(Map<String, String> headers) {
@@ -323,16 +326,16 @@ public final class InstanceParser {
         var matcher = HEADER_PATTERN.matcher(line);
 
         if (!matcher.matches()) {
-            return null;
+            throw new IllegalArgumentException("Invalid header line: " + line);
         }
 
-        return new HeaderLine(matcher.group(1).toUpperCase(), matcher.group(2) == null ? "" : matcher.group(2).trim());
+        return new HeaderLine(matcher.group(1).toUpperCase(), matcher.group(2).trim());
     }
 
     private static boolean isKnownSection(String line) {
         return isSection(line, "NODE_COORD_SECTION")
-            || isSection(line, "DEMAND_SECTION")
-            || isSection(line, "DEPOT_SECTION");
+                || isSection(line, "DEMAND_SECTION")
+                || isSection(line, "DEPOT_SECTION");
     }
 
     private static boolean isSection(String line, String sectionName) {
@@ -343,16 +346,12 @@ public final class InstanceParser {
         return "EOF".equalsIgnoreCase(line);
     }
 
-    private static double toDouble(Object value) {
-        if (value instanceof Number number) return number.doubleValue();
-        if (value == null) throw new IllegalArgumentException("Missing numeric value");
-        return Double.parseDouble(value.toString());
+    private static double toDouble(String value) {
+        return Double.parseDouble(value);
     }
 
-    private static int toInt(Object value) {
-        if (value instanceof Number number) return number.intValue();
-        if (value == null) throw new IllegalArgumentException("Missing integer value");
-        return Integer.parseInt(value.toString());
+    private static int toInt(String value) {
+        return Integer.parseInt(value);
     }
 
     private record HeaderLine(String key, String value) {

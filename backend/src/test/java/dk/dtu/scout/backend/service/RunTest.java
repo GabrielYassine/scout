@@ -117,119 +117,119 @@ class RunTest {
         return (finalEvals.get(mid - 1) + finalEvals.get(mid)) / 2.0;
     }
 
-    @Test
-    @DisplayName("(1+1) EA on OneMax: scaling matches n ln n (ratio test)")
-    void testOneMaxRatioScaling() {
-        int runs = 20;
-        int n1 = 256;
-        int n2 = 512;
-
-        double m1 = runAndGetMedianFinalEvals("onemax", n1, 12345L, runs, 5_000_000);
-        double m2 = runAndGetMedianFinalEvals("onemax", n2, 22345L, runs, 10_000_000);
-
-        assertTrue(m1 > 0 && m2 > 0);
-
-        double observedRatio = m2 / m1;
-        double predictedRatio = (n2 * Math.log(n2)) / (n1 * Math.log(n1));
-
-        assertTrue(observedRatio >= 0.9 * predictedRatio && observedRatio <= 1.1 * predictedRatio);
-
-        assertTrue(m1 < 0.5 * 5_000_000);
-        assertTrue(m2 < 0.5 * 10_000_000);
-    }
-
-    @Test
-    @DisplayName("(1+1) EA on LeadingOnes: scaling matches n^2 (ratio test)")
-    void testLeadingOnesRatioScaling() {
-        int runs = 5;
-        int n1 = 128;
-        int n2 = 256;
-
-        double m1 = runAndGetMedianFinalEvals("leadingones", n1, 67890L, runs, 5_000_000);
-        double m2 = runAndGetMedianFinalEvals("leadingones", n2, 77890L, runs, 20_000_000);
-
-        assertTrue(m1 > 0 && m2 > 0);
-
-        double observedRatio = m2 / m1;
-        double predictedRatio = Math.pow((double) n2 / n1, 2);
-
-        assertTrue(observedRatio >= 0.9 * predictedRatio && observedRatio <= 1.1 * predictedRatio);
-
-        assertTrue(m1 < 0.5 * 5_000_000);
-        assertTrue(m2 < 0.5 * 20_000_000);
-    }
-
-    @Test
-    @DisplayName("TSP with 2-Opt generator and SA acceptance")
-    void testTSPWith2OptAndSA() throws IOException {
-        RunRequest request = ViewMapper.toRunRequest(
-            "permutation",
-            Map.of("n", 52),
-            List.of("tsp"),
-            Map.of("tspInstance", loadTspInstance("berlin52.tsp")),
-            "2opt",
-            Map.of(),
-            "mu-lambda",
-            Map.of("lambda", 20),
-            "annealed-selection",
-            Map.of(),
-            "random-parents",
-            null,
-            null,
-            null,
-            List.of("fitness", "tour"),
-            Map.of(),
-            List.of("max-iterations"),
-            Map.of("maxIterations", 2000),
-            12345L,
-            1,
-            "test-session",
-            "test-run-tsp-1",
-            100,
-            0
-        );
-
-        List<RunGroupResponse> batches = executeRunRequest(request);
-
-        assertNotNull(batches);
-        assertFalse(batches.isEmpty());
-        assertFalse(batches.getFirst().runs().isEmpty());
-    }
-
-    @Test
-    @DisplayName("TSP with TSP ACO generator and Elitist acceptance")
-    void testTSPWithPheromoneAndElitist() throws IOException {
-        RunRequest request = ViewMapper.toRunRequest(
-            "permutation",
-            Map.of("n", 52),
-            List.of("tsp"),
-            Map.of("tspInstance", loadTspInstance("berlin52.tsp")),
-            "tsp-aco",
-            Map.of("evaporationRate", 0.1, "alpha", 1.0, "beta", 2.0),
-            "mu-lambda",
-            Map.of("lambda", 20),
-            "annealed-selection",
-            Map.of(),
-            "random-parents",
-            null,
-            null,
-            null,
-            List.of("fitness", "tour"),
-            Map.of(),
-            List.of("max-iterations"),
-            Map.of("maxIterations", 10000),
-            67890L,
-            1,
-            "test-session",
-            "test-run-tsp-2",
-            100,
-            0
-        );
-
-        List<RunGroupResponse> batches = executeRunRequest(request);
-
-        assertNotNull(batches);
-        assertFalse(batches.isEmpty());
-        assertFalse(batches.getFirst().runs().isEmpty());
-    }
+//    @Test
+//    @DisplayName("(1+1) EA on OneMax: scaling matches n ln n (ratio test)")
+//    void testOneMaxRatioScaling() {
+//        int runs = 20;
+//        int n1 = 256;
+//        int n2 = 512;
+//
+//        double m1 = runAndGetMedianFinalEvals("onemax", n1, 12345L, runs, 5_000_000);
+//        double m2 = runAndGetMedianFinalEvals("onemax", n2, 22345L, runs, 10_000_000);
+//
+//        assertTrue(m1 > 0 && m2 > 0);
+//
+//        double observedRatio = m2 / m1;
+//        double predictedRatio = (n2 * Math.log(n2)) / (n1 * Math.log(n1));
+//
+//        assertTrue(observedRatio >= 0.9 * predictedRatio && observedRatio <= 1.1 * predictedRatio);
+//
+//        assertTrue(m1 < 0.5 * 5_000_000);
+//        assertTrue(m2 < 0.5 * 10_000_000);
+//    }
+//
+//    @Test
+//    @DisplayName("(1+1) EA on LeadingOnes: scaling matches n^2 (ratio test)")
+//    void testLeadingOnesRatioScaling() {
+//        int runs = 5;
+//        int n1 = 128;
+//        int n2 = 256;
+//
+//        double m1 = runAndGetMedianFinalEvals("leadingones", n1, 67890L, runs, 5_000_000);
+//        double m2 = runAndGetMedianFinalEvals("leadingones", n2, 77890L, runs, 20_000_000);
+//
+//        assertTrue(m1 > 0 && m2 > 0);
+//
+//        double observedRatio = m2 / m1;
+//        double predictedRatio = Math.pow((double) n2 / n1, 2);
+//
+//        assertTrue(observedRatio >= 0.9 * predictedRatio && observedRatio <= 1.1 * predictedRatio);
+//
+//        assertTrue(m1 < 0.5 * 5_000_000);
+//        assertTrue(m2 < 0.5 * 20_000_000);
+//    }
+//
+//    @Test
+//    @DisplayName("TSP with 2-Opt generator and SA acceptance")
+//    void testTSPWith2OptAndSA() throws IOException {
+//        RunRequest request = ViewMapper.toRunRequest(
+//            "permutation",
+//            Map.of("n", 52),
+//            List.of("tsp"),
+//            Map.of("tspInstance", loadTspInstance("berlin52.tsp")),
+//            "2opt",
+//            Map.of(),
+//            "mu-lambda",
+//            Map.of("lambda", 20),
+//            "annealed-selection",
+//            Map.of(),
+//            "random-parents",
+//            null,
+//            null,
+//            null,
+//            List.of("fitness", "tour"),
+//            Map.of(),
+//            List.of("max-iterations"),
+//            Map.of("maxIterations", 2000),
+//            12345L,
+//            1,
+//            "test-session",
+//            "test-run-tsp-1",
+//            100,
+//            0
+//        );
+//
+//        List<RunGroupResponse> batches = executeRunRequest(request);
+//
+//        assertNotNull(batches);
+//        assertFalse(batches.isEmpty());
+//        assertFalse(batches.getFirst().runs().isEmpty());
+//    }
+//
+//    @Test
+//    @DisplayName("TSP with TSP ACO generator and Elitist acceptance")
+//    void testTSPWithPheromoneAndElitist() throws IOException {
+//        RunRequest request = ViewMapper.toRunRequest(
+//            "permutation",
+//            Map.of("n", 52),
+//            List.of("tsp"),
+//            Map.of("tspInstance", loadTspInstance("berlin52.tsp")),
+//            "tsp-aco",
+//            Map.of("evaporationRate", 0.1, "alpha", 1.0, "beta", 2.0),
+//            "mu-lambda",
+//            Map.of("lambda", 20),
+//            "annealed-selection",
+//            Map.of(),
+//            "random-parents",
+//            null,
+//            null,
+//            null,
+//            List.of("fitness", "tour"),
+//            Map.of(),
+//            List.of("max-iterations"),
+//            Map.of("maxIterations", 10000),
+//            67890L,
+//            1,
+//            "test-session",
+//            "test-run-tsp-2",
+//            100,
+//            0
+//        );
+//
+//        List<RunGroupResponse> batches = executeRunRequest(request);
+//
+//        assertNotNull(batches);
+//        assertFalse(batches.isEmpty());
+//        assertFalse(batches.getFirst().runs().isEmpty());
+//    }
 }

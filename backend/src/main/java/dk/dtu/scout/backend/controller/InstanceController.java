@@ -31,7 +31,7 @@ public class InstanceController {
     @PostMapping("/import")
     public ResponseEntity<?> importInstance(@RequestBody Map<String, Object> payload) {
         try {
-            String content = payload == null ? null : String.valueOf(payload.getOrDefault("content", ""));
+            String content = String.valueOf(payload.getOrDefault("content", ""));
 
             Map<String, Object> response = instanceService.importInstance(content);
             return ResponseEntity.ok(response);

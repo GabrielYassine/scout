@@ -27,10 +27,6 @@ public final class InstanceMapper {
      * @return a TSPInstance object constructed from the provided map.
      */
     public static TSPInstance toTspInstance(Map<String, Object> map) {
-        if (map == null) {
-            throw new IllegalArgumentException("tspInstance must be provided");
-        }
-
         String name = map.getOrDefault("name", "Custom TSP Instance").toString();
         String comment = map.getOrDefault("comment", "").toString();
         Object citiesObj = map.get("cities");
@@ -63,10 +59,6 @@ public final class InstanceMapper {
      * @return a VRPInstance object constructed from the provided map.
      */
     public static VRPInstance toVrpInstance(Map<String, Object> map) {
-        if (map == null) {
-            throw new IllegalArgumentException("vrpInstance must be provided");
-        }
-
         String name = map.getOrDefault("name", "Custom VRP Instance").toString();
         String comment = map.getOrDefault("comment", "").toString();
         double capacity = toDouble(map.get("capacity"));

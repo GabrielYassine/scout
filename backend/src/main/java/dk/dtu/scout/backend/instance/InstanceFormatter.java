@@ -105,18 +105,16 @@ public final class InstanceFormatter {
     }
 
     private static String normalizeName(String name, String fallback) {
-        if (name == null || name.isBlank()) {
+        if (name.isBlank()) {
             return fallback;
         }
-
         return name.trim();
     }
 
     private static String cleanComment(String comment) {
-        if (comment == null || comment.isBlank()) {
+        if (comment.isBlank()) {
             return null;
         }
-
         return comment.trim().replaceAll("\\s+", " ");
     }
 
