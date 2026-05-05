@@ -72,25 +72,13 @@ public class TspAcoGenerator implements Generator<int[]> {
         params.add(new Parameter("beta", "Heuristic Influence", "double", beta, 0.1, 10.0, null));
         params.add(new Parameter("minPheromone", "Minimum Pheromone", "double", minPheromone, 0.0, null, null));
         params.add(new Parameter("maxPheromone", "Maximum Pheromone", "double", maxPheromone, 0.0, null, null));
-        params.add(new Parameter(
-                "reinforcementMode",
-                "Reinforcement Mode",
-                "enum",
-                reinforcementMode.name(),
-                null,
-                null,
-                List.of("BEST_SO_FAR", "ITERATION_BEST", "ALL")
-        ));
+        params.add(new Parameter("reinforcementMode", "Reinforcement Mode", "enum", reinforcementMode.name(), null, null, List.of("BEST_SO_FAR", "ITERATION_BEST", "ALL")));
         params.add(new Parameter("acceptEqualFitness", "Accept Equal Fitness", "boolean", acceptEqualFitness, null, null, null));
         return params;
     }
 
     @Override
     public void configure(Map<String, Object> params) {
-        if (params == null) {
-            return;
-        }
-
         if (params.containsKey("evaporationRate")) {
             double value = ((Number) params.get("evaporationRate")).doubleValue();
             if (value < 0.0 || value > 1.0) {
@@ -146,9 +134,7 @@ public class TspAcoGenerator implements Generator<int[]> {
 
         if (params.containsKey("reinforceBestOnly") && !hasReinforcementMode) {
             boolean reinforceBestOnly = (Boolean) params.get("reinforceBestOnly");
-            this.reinforcementMode = reinforceBestOnly
-                    ? ReinforcementMode.ITERATION_BEST
-                    : ReinforcementMode.ALL;
+            this.reinforcementMode = reinforceBestOnly ? ReinforcementMode.ITERATION_BEST : ReinforcementMode.ALL;
         }
 
         if (params.containsKey("acceptEqualFitness")) {
@@ -237,61 +223,52 @@ public class TspAcoGenerator implements Generator<int[]> {
     }
 
     private int selectNextCity(int current, boolean[] visited, Random rng) {
-        int dimension = pheromoneMatrix.length;
-        double[] weights = new double[dimension];
-        double totalWeight = 0.0;
+        List<Integer> candidates = new ArrayList<>();
 
-        for (int city = 0; city < dimension; city++) {
+        for (int city = 0; city < visited.length; city++) {
             if (!visited[city]) {
-                double pheromone = Math.pow(pheromoneMatrix[current][city], alpha);
-                double visibility = Math.pow(1.0 / safeDistance(current, city), beta);
-                double weight = pheromone * visibility;
-
-                weights[city] = weight;
-                totalWeight += weight;
+                candidates.add(city);
             }
         }
 
-        if (totalWeight <= 0.0 || Double.isNaN(totalWeight) || Double.isInfinite(totalWeight)) {
-            return firstUnvisited(visited);
+        double[] weights = new double[candidates.size()];
+        double totalWeight = 0.0;
+
+        for (int i = 0; i < candidates.size(); i++) {
+            int city = candidates.get(i);
+            double pheromone = Math.pow(pheromoneMatrix[current][city], alpha);
+            double visibility = Math.pow(1.0 / safeDistance(current, city), beta);
+            double weight = pheromone * visibility;
+
+            weights[i] = weight;
+            totalWeight += weight;
+        }
+
+        if (totalWeight <= 0.0) {
+            return candidates.getFirst();
         }
 
         double threshold = rng.nextDouble() * totalWeight;
         double cumulative = 0.0;
 
-        for (int city = 0; city < dimension; city++) {
-            if (!visited[city]) {
-                cumulative += weights[city];
-                if (threshold <= cumulative) {
-                    return city;
-                }
+        for (int i = 0; i < weights.length - 1; i++) {
+            cumulative += weights[i];
+
+            if (threshold <= cumulative) {
+                return candidates.get(i);
             }
         }
 
-        return firstUnvisited(visited);
+        return candidates.getLast();
     }
 
     private double safeDistance(int from, int to) {
-        if (from == to) {
-            return 1e-9;
+        if (tspInstance == null) {
+            return 1.0;
         }
 
-        if (tspInstance != null) {
-            double distance = tspInstance.getDistance(from, to);
-            return Math.max(distance, 1e-9);
-        }
-
-        return 1.0;
-    }
-
-    private int firstUnvisited(boolean[] visited) {
-        for (int city = 0; city < visited.length; city++) {
-            if (!visited[city]) {
-                return city;
-            }
-        }
-
-        return 0;
+        double distance = tspInstance.getDistance(from, to);
+        return Math.max(distance, 1e-9);
     }
 
     private void updatePheromoneMatrix(State state) {
@@ -300,30 +277,32 @@ public class TspAcoGenerator implements Generator<int[]> {
             return;
         }
 
-        switch (reinforcementMode) {
-            case BEST_SO_FAR -> {
-                updateBestSoFar(evaluated);
-                if (bestSoFar == null) {
-                    return;
-                }
-                evaporate();
-                depositPheromone(bestSoFar.value(), bestSoFar.fitness(), reinforcementRate);
+        if (reinforcementMode == ReinforcementMode.BEST_SO_FAR) {
+            updateBestSoFar(evaluated);
+
+            if (bestSoFar == null) {
+                return;
             }
-            case ITERATION_BEST -> {
-                EvaluatedSolution<int[]> best = bestOf(evaluated);
-                if (best == null) {
-                    return;
-                }
-                evaporate();
-                depositPheromone(best.value(), best.fitness(), reinforcementRate);
+
+            evaporate();
+            depositPheromone(bestSoFar.value(), bestSoFar.fitness(), reinforcementRate);
+        } else if (reinforcementMode == ReinforcementMode.ITERATION_BEST) {
+            EvaluatedSolution<int[]> best = bestOf(evaluated);
+
+            if (best == null) {
+                return;
             }
-            case ALL -> {
-                evaporate();
-                double scaledRate = reinforcementRate / evaluated.size();
-                for (Object entry : evaluated) {
-                    if (entry instanceof EvaluatedSolution<?>(Object value, double fitness) && value instanceof int[] tour) {
-                        depositPheromone(tour, fitness, scaledRate);
-                    }
+
+            evaporate();
+            depositPheromone(best.value(), best.fitness(), reinforcementRate);
+        } else {
+            evaporate();
+
+            double scaledRate = reinforcementRate / evaluated.size();
+
+            for (Object entry : evaluated) {
+                if (entry instanceof EvaluatedSolution<?>(Object value, double fitness) && value instanceof int[] tour) {
+                    depositPheromone(tour, fitness, scaledRate);
                 }
             }
         }
@@ -336,6 +315,7 @@ public class TspAcoGenerator implements Generator<int[]> {
         if (generationBest == null) {
             return;
         }
+
         if (bestSoFar == null || isAcceptedAsBestSoFar(generationBest)) {
             bestSoFar = new EvaluatedSolution<>(generationBest.value().clone(), generationBest.fitness());
         }
@@ -345,6 +325,7 @@ public class TspAcoGenerator implements Generator<int[]> {
         if (acceptEqualFitness) {
             return candidate.fitness() >= bestSoFar.fitness();
         }
+
         return candidate.fitness() > bestSoFar.fitness();
     }
 
@@ -392,7 +373,9 @@ public class TspAcoGenerator implements Generator<int[]> {
         if (value == null) {
             throw new IllegalArgumentException("Reinforcement mode must be provided");
         }
+
         String normalized = value.toString().trim().toUpperCase();
+
         try {
             return ReinforcementMode.valueOf(normalized);
         } catch (IllegalArgumentException ex) {

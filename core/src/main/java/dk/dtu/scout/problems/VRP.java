@@ -49,27 +49,7 @@ public class VRP implements Problem<List<List<Integer>>> {
 
     @Override
     public void configure(Map<String, Object> params) {
-        if (params == null) {
-            return;
-        }
-
-        if (params.containsKey("vrpInstance")) {
-            Object vrpInstanceObj = params.get("vrpInstance");
-            if (!(vrpInstanceObj instanceof VRPInstance)) {
-                throw new IllegalArgumentException("vrpInstance must be a VRPInstance");
-            }
-            this.instance = (VRPInstance) vrpInstanceObj;
-            validateInstance(this.instance);
-        }
-    }
-
-    private void validateInstance(VRPInstance instance) {
-        for (int customerIndex = 0; customerIndex < instance.getCustomerCount(); customerIndex++) {
-            double demand = instance.getDemand(customerIndex);
-            if (demand > instance.getCapacity()) {
-                throw new IllegalArgumentException("Customer demand exceeds vehicle capacity for customer " + customerIndex + ": " + demand);
-            }
-        }
+        this.instance = (VRPInstance) params.get("vrpInstance");
     }
 
     public VRPInstance getInstance() {
@@ -170,18 +150,14 @@ public class VRP implements Problem<List<List<Integer>>> {
     }
 
     private void validateRoutes(List<List<Integer>> routes) {
-        if (routes == null || routes.isEmpty()) {
-            throw new IllegalArgumentException("Routes cannot be null or empty");
+        if (routes.isEmpty()) {
+            throw new IllegalArgumentException("Routes cannot be empty");
         }
 
         boolean[] seen = new boolean[instance.getCustomerCount()];
         int seenCustomers = 0;
 
         for (List<Integer> route : routes) {
-            if (route == null) {
-                throw new IllegalArgumentException("Route cannot be null");
-            }
-
             for (int customerIndex : route) {
                 if (customerIndex < 0 || customerIndex >= instance.getCustomerCount()) {
                     throw new IllegalArgumentException("Customer index out of range: " + customerIndex);
@@ -197,7 +173,12 @@ public class VRP implements Problem<List<List<Integer>>> {
         }
 
         if (seenCustomers != instance.getCustomerCount()) {
-            throw new IllegalArgumentException("Routes must contain each customer exactly once. Found " + seenCustomers + " of " + instance.getCustomerCount());
+            throw new IllegalArgumentException(
+                    "Routes must contain each customer exactly once. Found "
+                            + seenCustomers
+                            + " of "
+                            + instance.getCustomerCount()
+            );
         }
     }
 }

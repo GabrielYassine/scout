@@ -1,8 +1,8 @@
 package dk.dtu.scout.observer;
 
 import dk.dtu.scout.dto.Parameter;
-import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.logging.IterationSnapshot;
+import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.logging.SeriesMode;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -26,7 +26,7 @@ public class FitnessPhaseObserver<S> implements Observer<S> {
     private final Deque<Double> fitnessBlock = new ArrayDeque<>();
     private final Deque<Integer> evaluationBlock = new ArrayDeque<>();
 
-    private Integer lastIntervalEndEvaluation = null;
+    private Integer lastIntervalEndEvaluation;
 
     private enum Phase {
         IMPROVING,
@@ -59,14 +59,12 @@ public class FitnessPhaseObserver<S> implements Observer<S> {
 
     @Override
     public void configure(Map<String, Object> params) {
-        if (params == null) return;
-
         if (params.containsKey("windowSize")) {
             int value = ((Number) params.get("windowSize")).intValue();
             if (value <= 0) {
                 throw new IllegalArgumentException("windowSize must be positive");
             }
-            this.windowSize = value;
+            windowSize = value;
         }
 
         if (params.containsKey("epsilon")) {
@@ -74,7 +72,7 @@ public class FitnessPhaseObserver<S> implements Observer<S> {
             if (value < 0.0) {
                 throw new IllegalArgumentException("epsilon must be non-negative");
             }
-            this.epsilon = value;
+            epsilon = value;
         }
     }
 
@@ -87,53 +85,29 @@ public class FitnessPhaseObserver<S> implements Observer<S> {
 
     @Override
     public void onStep(IterationSnapshot<S> state, RunLog log) {
-        double fitness = state.currentFitness();
-        int evaluation = Math.max(0, state.evaluations() - 1);
+        fitnessBlock.addLast(state.currentFitness());
+        evaluationBlock.addLast(Math.max(0, state.evaluations() - 1));
 
-        fitnessBlock.addLast(fitness);
-        evaluationBlock.addLast(evaluation);
-
-        // Wait until the whole block is complete before classifying/coloring it
         if (fitnessBlock.size() < windowSize) {
             return;
         }
 
-        double firstFitness = fitnessBlock.getFirst();
-        double lastFitness = fitnessBlock.getLast();
-        Phase phase = classify(lastFitness - firstFitness);
+        emitCurrentBlock(log);
 
-        int startEvaluation = evaluationBlock.getFirst();
-        int endEvaluation = evaluationBlock.getLast();
-
-        if (lastIntervalEndEvaluation != null) {
-            startEvaluation = lastIntervalEndEvaluation;
-        }
-
-        lastIntervalEndEvaluation = endEvaluation;
-
-        Map<String, Object> interval = newInterval(
-                startEvaluation,
-                endEvaluation,
-                phase
-        );
-
-        emitInterval(log, interval);
-
-        // Start a fresh new block after emitting this one
         fitnessBlock.clear();
         evaluationBlock.clear();
     }
 
     @Override
     public void onEnd(IterationSnapshot<S> state, RunLog log) {
-        // even if the last block is not full, we can still classify and emit it
-        if (fitnessBlock.isEmpty()) {
-            return;
+        if (!fitnessBlock.isEmpty()) {
+            emitCurrentBlock(log);
         }
+    }
 
-        double firstFitness = fitnessBlock.getFirst();
-        double lastFitness = fitnessBlock.getLast();
-        Phase phase = classify(lastFitness - firstFitness);
+    private void emitCurrentBlock(RunLog log) {
+        double delta = fitnessBlock.getLast() - fitnessBlock.getFirst();
+        Phase phase = classify(delta);
 
         int startEvaluation = evaluationBlock.getFirst();
         int endEvaluation = evaluationBlock.getLast();
@@ -144,39 +118,30 @@ public class FitnessPhaseObserver<S> implements Observer<S> {
 
         lastIntervalEndEvaluation = endEvaluation;
 
-        Map<String, Object> interval = newInterval(
-                startEvaluation,
-                endEvaluation,
-                phase
+        log.putSeries(
+            "fitnessPhaseIntervals",
+            newInterval(startEvaluation, endEvaluation, phase),
+            SeriesMode.ALL
         );
-
-        emitInterval(log, interval);
     }
 
     private Phase classify(double delta) {
         if (delta > epsilon) {
             return Phase.IMPROVING;
         }
+
         if (delta < -epsilon) {
             return Phase.WORSENING;
         }
+
         return Phase.STAGNANT;
     }
 
-    private Map<String, Object> newInterval(
-        int startEvaluation,
-        int endEvaluation,
-        Phase phase
-    ) {
+    private Map<String, Object> newInterval(int startEvaluation, int endEvaluation, Phase phase) {
         Map<String, Object> interval = new LinkedHashMap<>();
         interval.put("startEvaluation", startEvaluation);
         interval.put("endEvaluation", endEvaluation);
         interval.put("phase", phase.name());
         return interval;
-    }
-
-    private void emitInterval(RunLog log, Map<String, Object> interval) {
-        if (interval == null) return;
-        log.putSeries("fitnessPhaseIntervals", new LinkedHashMap<>(interval), SeriesMode.ALL);
     }
 }

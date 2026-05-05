@@ -55,29 +55,25 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
     @Override
     public List<Parameter> params() {
         return List.of(
-                new Parameter("evaporationRate", "Pheromone Evaporation Rate", "double", evaporationRate, 0.0, 1.0, null),
-                new Parameter("reinforcementRate", "Pheromone Reinforcement Rate", "double", reinforcementRate, 0.0, 1.0, null),
-                new Parameter("minPheromone", "Minimum Pheromone", "string", minPheromone, null, null, null),
-                new Parameter("maxPheromone", "Maximum Pheromone", "string", maxPheromone, null, null, null),
-                new Parameter(
-                        "reinforcementMode",
-                        "Reinforcement Mode",
-                        "enum",
-                        reinforcementMode.name(),
-                        null,
-                        null,
-                        List.of("BEST_SO_FAR", "ITERATION_BEST", "ALL")
-                ),
-                new Parameter("acceptEqualFitness", "Accept Equal Fitness", "boolean", acceptEqualFitness, null, null, null)
+            new Parameter("evaporationRate", "Pheromone Evaporation Rate", "double", evaporationRate, 0.0, 1.0, null),
+            new Parameter("reinforcementRate", "Pheromone Reinforcement Rate", "double", reinforcementRate, 0.0, 1.0, null),
+            new Parameter("minPheromone", "Minimum Pheromone", "string", minPheromone, null, null, null),
+            new Parameter("maxPheromone", "Maximum Pheromone", "string", maxPheromone, null, null, null),
+            new Parameter(
+                "reinforcementMode",
+                "Reinforcement Mode",
+                "enum",
+                reinforcementMode.name(),
+                null,
+                null,
+                List.of("BEST_SO_FAR", "ITERATION_BEST", "ALL")
+            ),
+            new Parameter("acceptEqualFitness", "Accept Equal Fitness", "boolean", acceptEqualFitness, null, null, null)
         );
     }
 
     @Override
     public void configure(Map<String, Object> params) {
-        if (params == null) {
-            return;
-        }
-
         if (params.containsKey("evaporationRate")) {
             this.evaporationRate = resolveRate(params.get("evaporationRate"), "Pheromone evaporation rate");
         }
@@ -101,19 +97,11 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
 
         if (params.containsKey("reinforceBestOnly") && !hasReinforcementMode) {
             boolean reinforceBestOnly = (Boolean) params.get("reinforceBestOnly");
-            this.reinforcementMode = reinforceBestOnly
-                    ? ITERATION_BEST
-                    : ALL;
+            this.reinforcementMode = reinforceBestOnly ? ITERATION_BEST : ALL;
         }
 
         if (params.containsKey("acceptEqualFitness")) {
             this.acceptEqualFitness = (Boolean) params.get("acceptEqualFitness");
-        }
-
-        if (params.containsKey("rho")) {
-            double rate = resolveRate(params.get("rho"), "Pheromone update strength");
-            this.evaporationRate = rate;
-            this.reinforcementRate = rate;
         }
     }
 
@@ -224,10 +212,7 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
         }
 
         if (bestSoFar == null || isAcceptedAsBestSoFar(generationBest)) {
-            bestSoFar = new EvaluatedSolution<>(
-                    generationBest.value().clone(),
-                    generationBest.fitness()
-            );
+            bestSoFar = new EvaluatedSolution<>(generationBest.value().clone(), generationBest.fitness());
         }
     }
 

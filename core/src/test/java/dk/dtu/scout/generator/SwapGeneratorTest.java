@@ -31,20 +31,6 @@ class SwapGeneratorTest {
     }
 
     @Test
-    void generate_fallsBackToSelectedParentWhenOffspringBaseMissing() {
-        SwapGenerator generator = new SwapGenerator();
-        int[] parent = new int[] {0, 1, 2, 3, 4};
-
-        State state = new State();
-        state.update(Map.of(StateKeys.SELECTED_PARENT_1, parent));
-        generator.init(state);
-
-        int[] result = generator.generate(new Random(1234L));
-
-        assertArrayEquals(sorted(parent), sorted(result));
-    }
-
-    @Test
     void generate_returnsCloneWhenLengthIsLessThanTwo() {
         SwapGenerator generator = new SwapGenerator();
         int[] base = new int[] {42};
@@ -57,15 +43,6 @@ class SwapGeneratorTest {
 
         assertArrayEquals(base, result);
         assertNotSame(base, result);
-    }
-
-    @Test
-    void generate_rejectsMissingBaseAndParent() {
-        SwapGenerator generator = new SwapGenerator();
-
-        generator.init(new State());
-
-        assertThrows(IllegalStateException.class, () -> generator.generate(new Random(1234L)));
     }
 
     @Test

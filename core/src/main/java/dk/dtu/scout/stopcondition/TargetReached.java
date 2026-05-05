@@ -39,32 +39,26 @@ public class TargetReached<S> implements StopCondition<S> {
     @Override
     public List<Parameter> params() {
         return List.of(
-                new Parameter("targetFitness", "Target fitness", "double", targetFitness, null, null, null),
-                new Parameter("targetIsDistance", "Target is distance (TSP)", "boolean", targetIsDistance, null, null, null)
+            new Parameter("targetFitness", "Target fitness", "double", targetFitness, null, null, null),
+            new Parameter("targetIsDistance", "Target is distance (TSP)", "boolean", targetIsDistance, null, null, null)
         );
     }
 
     @Override
     public void configure(Map<String, Object> params) {
-        if (params == null) return;
         if (params.containsKey("targetFitness")) {
             this.targetFitness = ((Number) params.get("targetFitness")).doubleValue();
         }
+
         if (params.containsKey("targetIsDistance")) {
-            Object value = params.get("targetIsDistance");
-            if (value instanceof Boolean b) {
-                this.targetIsDistance = b;
-            }
+            this.targetIsDistance = (boolean) params.get("targetIsDistance");
         }
     }
 
     @Override
     public void init(State state) {
-        if (state == null) return;
         Object problemObj = state.get(StateKeys.PROBLEM);
-        if (problemObj instanceof Problem<?> p) {
-            this.problem = p;
-        }
+        this.problem = (Problem<?>) problemObj;
     }
 
     @Override

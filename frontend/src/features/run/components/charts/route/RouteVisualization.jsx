@@ -278,6 +278,8 @@ export default function RouteVisualization({
 
   const handleWheel = useCallback(
     (event) => {
+      if (!editable) return;
+
       event.preventDefault();
 
       const point = getSVGPoint(event.clientX, event.clientY);
@@ -298,7 +300,7 @@ export default function RouteVisualization({
         panY: point.y - worldY * nextZoom,
       });
     },
-    [getSVGPoint]
+    [editable, getSVGPoint]
   );
 
   const depotIndex = useMemo(
@@ -478,10 +480,11 @@ export default function RouteVisualization({
             const isDragging = draggedCity === index;
             const displayCity = isDragging && dragPosition ? dragPosition : city;
             const coords = toSVGCoords(displayCity.x, displayCity.y);
+            const cityKey = city.id ?? city.nodeId ?? `city-${index}`;
 
             return (
               <g
-                key={city.id}
+                key={cityKey}
                 className={`city ${isDragging ? "dragging" : ""} ${
                   editable ? "editable" : "readonly"
                 }`}

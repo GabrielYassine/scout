@@ -48,7 +48,6 @@ public class KPointCrossover implements Crossover<boolean[]> {
 
     @Override
     public void configure(Map<String, Object> params) {
-        if (params == null) return;
         if (params.containsKey("k")) {
             int value = ((Number) params.get("k")).intValue();
             if (value <= 0) {
@@ -63,13 +62,8 @@ public class KPointCrossover implements Crossover<boolean[]> {
         Object p1Obj = state.get(StateKeys.SELECTED_PARENT_1);
         Object p2Obj = state.get(StateKeys.SELECTED_PARENT_2);
 
-        if (!(p1Obj instanceof boolean[] parent1) || !(p2Obj instanceof boolean[] parent2)) {
-            throw new IllegalStateException("KPointBitstringCrossover requires 'selectedParent1' and 'selectedParent2' in state");
-        }
-
-        if (parent1.length != parent2.length) {
-            throw new IllegalArgumentException("Parents must have same length");
-        }
+        boolean[] parent1 = (boolean[]) p1Obj;
+        boolean[] parent2 = (boolean[]) p2Obj;
 
         int n = parent1.length;
         if (n == 0) return new boolean[0];

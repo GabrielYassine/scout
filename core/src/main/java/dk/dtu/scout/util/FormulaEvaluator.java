@@ -1,194 +1,194 @@
 package dk.dtu.scout.util;
 
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.List;
 
 public final class FormulaEvaluator {
 
     private FormulaEvaluator() {}
 
-    /** Evaluate an expression using only the variable n. */
-    public static double eval(String expr, int n) {
-        if (expr == null || expr.isBlank()) {
-            throw new IllegalArgumentException("Empty formula");
-        }
-        if (n <= 0) {
-            throw new IllegalArgumentException("n must be > 0");
+    public static double eval(String expression, int n) {
+        if (expression == null || expression.isBlank()) {
+            throw new IllegalArgumentException("Formula cannot be empty");
         }
 
-        List<String> tokens = tokenize(expr);
+        if (n <= 0) {
+            throw new IllegalArgumentException("n must be positive");
+        }
+
+        List<String> tokens = tokenize(expression);
         List<String> rpn = toRpn(tokens);
         return evalRpn(rpn, n);
     }
 
-    private static List<String> tokenize(String s) {
-        List<String> out = new ArrayList<>();
+    private static List<String> tokenize(String expression) {
+        List<String> tokens = new ArrayList<>();
         int i = 0;
 
-        while (i < s.length()) {
-            char c = s.charAt(i);
+        while (i < expression.length()) {
+            char c = expression.charAt(i);
 
-            if (Character.isWhitespace(c)) { i++; continue; }
-
-            // number: 12, 12.3, .5, 1e-3
-            if (Character.isDigit(c) || c == '.') {
-                int start = i;
+            if (Character.isWhitespace(c)) {
                 i++;
-                while (i < s.length()) {
-                    char d = s.charAt(i);
-                    if (Character.isDigit(d) || d == '.' || d == 'e' || d == 'E' || d == '+' || d == '-') {
-                        // allow + or - only right after e/E
-                        if ((d == '+' || d == '-') && !(s.charAt(i - 1) == 'e' || s.charAt(i - 1) == 'E')) break;
-                        i++;
-                    } else break;
+            } else if (Character.isDigit(c) || c == '.') {
+                int start = i++;
+
+                while (i < expression.length()) {
+                    char next = expression.charAt(i);
+
+                    if (!Character.isDigit(next) && next != '.') {
+                        break;
+                    }
+
+                    i++;
                 }
-                out.add(s.substring(start, i));
-                continue;
-            }
 
-            // identifier: n, min, max
-            if (Character.isLetter(c)) {
-                int start = i;
+                tokens.add(expression.substring(start, i));
+            } else if (c == 'n' || c == 'N') {
+                tokens.add("n");
                 i++;
-                while (i < s.length() && Character.isLetterOrDigit(s.charAt(i))) i++;
-                out.add(s.substring(start, i));
-                continue;
-            }
-
-            // operators / punctuation
-            if ("+-*/(),".indexOf(c) >= 0) {
-                out.add(String.valueOf(c));
+            } else if (isOperator(c) || c == '(' || c == ')') {
+                tokens.add(String.valueOf(c));
                 i++;
-                continue;
+            } else {
+                throw new IllegalArgumentException("Invalid character in formula: '" + c + "'");
             }
-
-            throw new IllegalArgumentException("Invalid character in formula: '" + c + "'");
         }
 
-        // handle unary minus: convert "-x" to "0 - x"
-        List<String> fixed = new ArrayList<>();
-        for (int j = 0; j < out.size(); j++) {
-            String t = out.get(j);
-            if (t.equals("-")) {
-                String prev = (j == 0) ? null : out.get(j - 1);
-                if (j == 0 || isOperator(prev) || prev.equals("(") || prev.equals(",")) {
-                    fixed.add("0");
-                    fixed.add("-");
-                    continue;
-                }
+        return handleUnaryMinus(tokens);
+    }
+
+    private static List<String> handleUnaryMinus(List<String> tokens) {
+        List<String> result = new ArrayList<>();
+
+        for (int i = 0; i < tokens.size(); i++) {
+            String token = tokens.get(i);
+
+            if (token.equals("-") && isUnaryMinus(tokens, i)) {
+                result.add("0");
+                result.add("-");
+            } else {
+                result.add(token);
             }
-            fixed.add(t);
         }
-        return fixed;
+
+        return result;
     }
 
-    private static boolean isOperator(String t) {
-        return t != null && (t.equals("+") || t.equals("-") || t.equals("*") || t.equals("/"));
-    }
+    private static boolean isUnaryMinus(List<String> tokens, int index) {
+        if (index == 0) {
+            return true;
+        }
 
-    private static int precedence(String op) {
-        return (op.equals("*") || op.equals("/")) ? 2 : 1;
-    }
-
-    private static boolean isFunction(String t) {
-        return t.equalsIgnoreCase("min") || t.equalsIgnoreCase("max");
+        String previous = tokens.get(index - 1);
+        return isOperator(previous) || previous.equals("(");
     }
 
     private static List<String> toRpn(List<String> tokens) {
         List<String> output = new ArrayList<>();
         Deque<String> stack = new ArrayDeque<>();
 
-        for (String t : tokens) {
-            if (isNumber(t) || isIdentifier(t)) {
-                output.add(t);
-            } else if (isFunction(t)) {
-                stack.push(t);
-            } else if (t.equals(",")) {
+        for (String token : tokens) {
+            if (isNumber(token) || token.equals("n")) {
+                output.add(token);
+            } else if (isOperator(token)) {
+                while (!stack.isEmpty() && isOperator(stack.peek()) && precedence(stack.peek()) >= precedence(token)) {
+                    output.add(stack.pop());
+                }
+
+                stack.push(token);
+            } else if (token.equals("(")) {
+                stack.push(token);
+            } else if (token.equals(")")) {
                 while (!stack.isEmpty() && !stack.peek().equals("(")) {
                     output.add(stack.pop());
                 }
-                if (stack.isEmpty()) throw new IllegalArgumentException("Misplaced comma");
-            } else if (isOperator(t)) {
-                while (!stack.isEmpty() && isOperator(stack.peek())
-                        && precedence(stack.peek()) >= precedence(t)) {
-                    output.add(stack.pop());
+
+                if (stack.isEmpty()) {
+                    throw new IllegalArgumentException("Mismatched parentheses");
                 }
-                stack.push(t);
-            } else if (t.equals("(")) {
-                stack.push(t);
-            } else if (t.equals(")")) {
-                while (!stack.isEmpty() && !stack.peek().equals("(")) {
-                    output.add(stack.pop());
-                }
-                if (stack.isEmpty()) throw new IllegalArgumentException("Mismatched parentheses");
-                stack.pop(); // pop "("
-                if (!stack.isEmpty() && isFunction(stack.peek())) {
-                    output.add(stack.pop()); // function call
-                }
-            } else {
-                throw new IllegalArgumentException("Unknown token: " + t);
+
+                stack.pop();
             }
         }
 
         while (!stack.isEmpty()) {
-            String t = stack.pop();
-            if (t.equals("(") || t.equals(")")) throw new IllegalArgumentException("Mismatched parentheses");
-            output.add(t);
+            String token = stack.pop();
+
+            if (token.equals("(")) {
+                throw new IllegalArgumentException("Mismatched parentheses");
+            }
+
+            output.add(token);
         }
+
         return output;
     }
 
     private static double evalRpn(List<String> rpn, int n) {
-        Deque<Double> st = new ArrayDeque<>();
+        Deque<Double> stack = new ArrayDeque<>();
 
-        for (String t : rpn) {
-            if (isNumberToken(t)) {
-                st.push(Double.parseDouble(t));
-            } else if (isFunction(t)) {
-                double b = popOrFail(st, t);
-                double a = popOrFail(st, t);
-                if (t.equalsIgnoreCase("min")) st.push(Math.min(a, b));
-                else st.push(Math.max(a, b));
-            } else if (isOperator(t)) {
-                double b = popOrFail(st, t);
-                double a = popOrFail(st, t);
-                switch (t) {
-                    case "+" -> st.push(a + b);
-                    case "-" -> st.push(a - b);
-                    case "*" -> st.push(a * b);
-                    case "/" -> st.push(a / b);
-                    default -> throw new IllegalStateException("Unexpected operator: " + t);
-                }
+        for (String token : rpn) {
+            if (isNumber(token)) {
+                stack.push(Double.parseDouble(token));
+            } else if (token.equals("n")) {
+                stack.push((double) n);
             } else {
-                // only allowed variable is "n"
-                if (!t.equalsIgnoreCase("n")) {
-                    throw new IllegalArgumentException("Unknown variable: " + t + " (only 'n' is supported)");
-                }
-                st.push((double) n);
+                applyOperator(token, stack);
             }
         }
 
-        if (st.size() != 1) throw new IllegalArgumentException("Invalid expression");
-        return st.pop();
+        if (stack.size() != 1) {
+            throw new IllegalArgumentException("Invalid expression");
+        }
+
+        return stack.pop();
     }
 
-    private static double popOrFail(Deque<Double> st, String ctx) {
-        if (st.isEmpty()) throw new IllegalArgumentException("Invalid expression near: " + ctx);
-        return st.pop();
+    private static void applyOperator(String operator, Deque<Double> stack) {
+        double b = popOrFail(stack, operator);
+        double a = popOrFail(stack, operator);
+
+        switch (operator) {
+            case "+" -> stack.push(a + b);
+            case "-" -> stack.push(a - b);
+            case "*" -> stack.push(a * b);
+            case "/" -> stack.push(a / b);
+            default -> throw new IllegalArgumentException("Unknown operator: " + operator);
+        }
     }
 
-    private static boolean isIdentifier(String t) {
-        return Character.isLetter(t.charAt(0)) && !isFunction(t);
+    private static double popOrFail(Deque<Double> stack, String context) {
+        if (stack.isEmpty()) {
+            throw new IllegalArgumentException("Invalid expression near: " + context);
+        }
+
+        return stack.pop();
     }
 
-    private static boolean isNumber(String t) {
-        return isNumberToken(t);
+    private static boolean isOperator(char c) {
+        return c == '+' || c == '-' || c == '*' || c == '/';
     }
 
-    private static boolean isNumberToken(String t) {
+    private static boolean isOperator(String token) {
+        return token.equals("+") || token.equals("-") || token.equals("*") || token.equals("/");
+    }
+
+    private static int precedence(String operator) {
+        if (operator.equals("*") || operator.equals("/")) {
+            return 2;
+        }
+
+        return 1;
+    }
+
+    private static boolean isNumber(String token) {
         try {
-            Double.parseDouble(t);
+            Double.parseDouble(token);
             return true;
-        } catch (NumberFormatException e) {
+        } catch (NumberFormatException ex) {
             return false;
         }
     }

@@ -21,18 +21,11 @@ public final class OptimaLookup {
             props.load(stream);
 
             for (String key : props.stringPropertyNames()) {
-                String value = props.getProperty(key);
-                if (key == null || value == null) {
-                    continue;
-                }
-
                 String normalizedKey = normalizeInstanceKey(key);
-                if (normalizedKey.isEmpty()) {
-                    continue;
-                }
+                String value = props.getProperty(key).trim();
 
                 try {
-                    result.put(normalizedKey, Double.parseDouble(value.trim()));
+                    result.put(normalizedKey, Double.parseDouble(value));
                 } catch (NumberFormatException ignored) {
                 }
             }

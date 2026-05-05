@@ -61,20 +61,6 @@ public final class TourVisualizationMapper {
         return List.of(route);
     }
 
-    public static List<List<Integer>> copyRoutes(List<List<Integer>> routes) {
-        List<List<Integer>> copy = new ArrayList<>(routes.size());
-
-        for (List<Integer> route : routes) {
-            if (route == null) {
-                copy.add(List.of());
-            } else {
-                copy.add(new ArrayList<>(route));
-            }
-        }
-
-        return copy;
-    }
-
     public static List<List<Integer>> shiftRoutesForDepot(List<List<Integer>> routes) {
         List<List<Integer>> shifted = new ArrayList<>(routes.size());
 

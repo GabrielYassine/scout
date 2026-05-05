@@ -32,7 +32,7 @@ class MaxIterationsTest {
     void configure_ignoresNullParamsAndUsesDefault() {
         MaxIterations<Object> stopCondition = new MaxIterations<>();
 
-        stopCondition.configure(null);
+        stopCondition.configure(Map.of());
 
         assertFalse(stopCondition.shouldStop(9_999, 0, 0.0, null));
         assertTrue(stopCondition.shouldStop(10_000, 0, 0.0, null));

@@ -62,10 +62,6 @@ public class AnnealedSelection<S> implements SelectionRule<S> {
 
     @Override
     public void configure(Map<String, Object> params) {
-        if (params == null) {
-            return;
-        }
-
         if (params.containsKey("initialTemperature")) {
             double value = ((Number) params.get("initialTemperature")).doubleValue();
             if (value <= 0.0) {
@@ -192,7 +188,7 @@ public class AnnealedSelection<S> implements SelectionRule<S> {
             double shiftedFitness = candidates.get(i).fitness() - bestFitness;
             double weight = Math.exp(shiftedFitness / temperature);
 
-            if (Double.isNaN(weight) || Double.isInfinite(weight)) {
+            if (Double.isNaN(weight)) {
                 weight = 0.0;
             }
 
@@ -207,7 +203,7 @@ public class AnnealedSelection<S> implements SelectionRule<S> {
         double threshold = rng.nextDouble() * totalWeight;
         double cumulative = 0.0;
 
-        for (int i = 0; i < weights.length; i++) {
+        for (int i = 0; i < weights.length - 1; i++) {
             cumulative += weights[i];
             if (threshold <= cumulative) {
                 return i;

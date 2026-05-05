@@ -24,11 +24,11 @@ import java.util.Map;
 public class TourObserver implements Observer<Object> {
 
     private List<Map<String, Object>> cities;
-    private boolean citiesLogged = false;
+    private boolean citiesLogged;
     private TSPInstance tspInstance;
     private VRPInstance vrpInstance;
     private State state;
-    private boolean includePheromone = false;
+    private boolean includePheromone;
 
     @Override
     public String id() {
@@ -52,7 +52,7 @@ public class TourObserver implements Observer<Object> {
                         "includePheromone",
                         "Include Pheromone Heatmap",
                         "boolean",
-                        false,
+                        includePheromone,
                         null,
                         null,
                         null
@@ -61,45 +61,30 @@ public class TourObserver implements Observer<Object> {
     }
 
     @Override
-    public void init(State state) {
-        this.state = state;
-
-        if (state == null) {
-            return;
-        }
-
-        Object problemObj = state.get(StateKeys.PROBLEM);
-
-        if (problemObj instanceof TSP tsp) {
-            this.tspInstance = tsp.getInstance();
-
-            if (tspInstance != null) {
-                this.cities = TourVisualizationMapper.buildTspCities(tspInstance);
-            }
-        } else if (problemObj instanceof VRP vrp) {
-            this.vrpInstance = vrp.getInstance();
-
-            if (vrpInstance != null) {
-                this.cities = TourVisualizationMapper.buildVrpCities(vrpInstance);
-            }
+    public void configure(Map<String, Object> params) {
+        if (params.containsKey("includePheromone")) {
+            includePheromone = (boolean) params.get("includePheromone");
         }
     }
 
     @Override
-    public void configure(Map<String, Object> params) {
-        if (params == null) {
-            return;
-        }
+    public void init(State state) {
+        this.state = state;
 
-        Object pheromoneParam = params.get("includePheromone");
-        if (pheromoneParam instanceof Boolean value) {
-            this.includePheromone = value;
+        Object problem = state.get(StateKeys.PROBLEM);
+
+        if (problem instanceof TSP tsp) {
+            tspInstance = tsp.getInstance();
+            cities = TourVisualizationMapper.buildTspCities(tspInstance);
+        } else if (problem instanceof VRP vrp) {
+            vrpInstance = vrp.getInstance();
+            cities = TourVisualizationMapper.buildVrpCities(vrpInstance);
         }
     }
 
     @Override
     public void onStart(IterationSnapshot<Object> state, RunLog log) {
-        if (!citiesLogged && cities != null) {
+        if (!citiesLogged) {
             log.putSeries("tspCities", cities, SeriesMode.LATEST_ONLY);
             citiesLogged = true;
         }
@@ -115,21 +100,7 @@ public class TourObserver implements Observer<Object> {
     }
 
     private void logTourSnapshot(IterationSnapshot<Object> state, RunLog log) {
-        Object solution;
-
-        try {
-            solution = state.currentSolution();
-
-            if (solution == null) {
-                solution = state.bestSolution();
-            }
-        } catch (ClassCastException ex) {
-            return;
-        }
-
-        if (solution == null) {
-            return;
-        }
+        Object solution = state.currentSolution();
 
         Map<String, Object> tourData = new HashMap<>();
         Double length = null;
@@ -144,22 +115,14 @@ public class TourObserver implements Observer<Object> {
         } else if (solution instanceof List<?> list) {
             List<List<Integer>> routes = coerceRoutes(list);
 
-            if (routes.isEmpty()) {
-                return;
-            }
-
             if (vrpInstance != null) {
                 routesToLog = TourVisualizationMapper.shiftRoutesForDepot(routes);
-                length = totalDistance(routes, vrpInstance);
+                length = totalDistance(routes);
             } else {
                 routesToLog = routes;
 
                 if (tspInstance != null && routes.size() == 1) {
-                    int[] tour = toIntArray(routes.getFirst());
-
-                    if (tour.length > 0) {
-                        length = tspInstance.getTourLength(tour);
-                    }
+                    length = tspInstance.getTourLength(toIntArray(routes.getFirst()));
                 }
             }
         } else {
@@ -175,39 +138,20 @@ public class TourObserver implements Observer<Object> {
         log.putSeries("tspTour", tourData, SeriesMode.LATEST_ONLY);
     }
 
+    @SuppressWarnings("unchecked")
     private List<List<Integer>> coerceRoutes(List<?> raw) {
-        if (raw.isEmpty()) {
-            return List.of();
-        }
-
-        Object first = raw.getFirst();
-
-        if (first instanceof Number) {
+        if (raw.getFirst() instanceof Number) {
             return List.of(copyRoute(raw));
         }
 
-        List<List<Integer>> routes = new ArrayList<>();
-
-        for (Object routeObj : raw) {
-            if (routeObj instanceof List<?> route) {
-                List<Integer> copy = copyRoute(route);
-
-                if (!copy.isEmpty()) {
-                    routes.add(copy);
-                }
-            }
-        }
-
-        return routes;
+        return (List<List<Integer>>) raw;
     }
 
     private List<Integer> copyRoute(List<?> raw) {
         List<Integer> copy = new ArrayList<>(raw.size());
 
         for (Object value : raw) {
-            if (value instanceof Number number) {
-                copy.add(number.intValue());
-            }
+            copy.add(((Number) value).intValue());
         }
 
         return copy;
@@ -217,60 +161,46 @@ public class TourObserver implements Observer<Object> {
         int[] result = new int[route.size()];
 
         for (int i = 0; i < route.size(); i++) {
-            Integer value = route.get(i);
-            result[i] = value == null ? 0 : value;
+            result[i] = route.get(i);
         }
 
         return result;
     }
 
-    private double totalDistance(List<List<Integer>> routes, VRPInstance instance) {
+    private double totalDistance(List<List<Integer>> routes) {
         double sum = 0.0;
 
         for (List<Integer> route : routes) {
-            sum += routeDistance(route, instance);
+            sum += routeDistance(route);
         }
 
         return sum;
     }
 
-    private double routeDistance(List<Integer> route, VRPInstance instance) {
-        if (route == null || route.isEmpty()) {
-            return 0.0;
-        }
-
+    private double routeDistance(List<Integer> route) {
         double distance = 0.0;
         int previousNode = 0;
 
         for (int customerIndex : route) {
             int nodeIndex = customerIndex + 1;
-            distance += instance.getDistance(previousNode, nodeIndex);
+            distance += vrpInstance.getDistance(previousNode, nodeIndex);
             previousNode = nodeIndex;
         }
 
-        distance += instance.getDistance(previousNode, 0);
+        distance += vrpInstance.getDistance(previousNode, 0);
         return distance;
     }
 
     private void logPheromoneHeatmap(RunLog log) {
-        if (!includePheromone || state == null) {
+        if (!includePheromone) {
             return;
         }
 
-        Object pheromoneObj = state.get(StateKeys.PHEROMONE_MATRIX);
-        List<List<Double>> matrixList = null;
+        Object pheromone = state.get(StateKeys.PHEROMONE_MATRIX);
 
-        if (pheromoneObj instanceof double[][] pheromoneMatrix) {
-            matrixList = toMatrixList(pheromoneMatrix);
-        } else if (pheromoneObj instanceof List<?> outer && !outer.isEmpty() && outer.getFirst() instanceof List<?>) {
-            matrixList = toMatrixList(outer);
-        } else {
-            matrixList = zeroMatrixFromDimension();
-        }
+        List<List<Double>> matrix = pheromone instanceof double[][] pheromoneMatrix ? toMatrixList(pheromoneMatrix) : zeroMatrixFromDimension();
 
-        if (matrixList != null && !matrixList.isEmpty()) {
-            log.putSeries("pheromoneHeatmap", matrixList, SeriesMode.LATEST_ONLY);
-        }
+        log.putSeries("pheromoneHeatmap", matrix, SeriesMode.LATEST_ONLY);
     }
 
     private List<List<Double>> toMatrixList(double[][] matrix) {
@@ -289,44 +219,8 @@ public class TourObserver implements Observer<Object> {
         return matrixList;
     }
 
-    private List<List<Double>> toMatrixList(List<?> outer) {
-        List<List<Double>> matrixList = new ArrayList<>(outer.size());
-
-        for (Object rowObj : outer) {
-            if (rowObj instanceof List<?> inner) {
-                List<Double> rowList = new ArrayList<>(inner.size());
-
-                for (Object value : inner) {
-                    if (value instanceof Number number) {
-                        rowList.add(number.doubleValue());
-                    }
-                }
-
-                matrixList.add(rowList);
-            }
-        }
-
-        return matrixList;
-    }
-
     private List<List<Double>> zeroMatrixFromDimension() {
-        int dimension = 0;
-
-        if (tspInstance != null) {
-            dimension = tspInstance.getDimension();
-        }
-
-        if (dimension <= 0) {
-            Object dimensionObj = state.get(StateKeys.DIMENSION);
-
-            if (dimensionObj instanceof Number number) {
-                dimension = number.intValue();
-            }
-        }
-
-        if (dimension <= 0) {
-            return null;
-        }
+        int dimension = (int) state.get(StateKeys.DIMENSION);
 
         List<List<Double>> matrix = new ArrayList<>(dimension);
 

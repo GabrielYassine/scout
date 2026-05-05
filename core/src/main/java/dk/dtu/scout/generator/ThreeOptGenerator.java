@@ -53,16 +53,13 @@ public class ThreeOptGenerator implements Generator<int[]> {
         }
 
         if (!(baseObj instanceof int[] tour)) {
-            throw new IllegalStateException(
-                    "ThreeOptGenerator requires 'offspringBase' or 'selectedParent1' in state"
-            );
+            throw new IllegalStateException("ThreeOptGenerator requires 'offspringBase' or 'selectedParent1' in state");
         }
 
         int n = tour.length;
         if (n < 4) {
             return tour.clone();
         }
-
 
         int i = rng.nextInt(n - 3);
         int j = i + 1 + rng.nextInt(n - i - 2);

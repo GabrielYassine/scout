@@ -12,17 +12,6 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 
 class TemperatureObserverTest {
-
-    @Test
-    void onStep_doesNothingWhenStateWasNotInitialized() {
-        TemperatureObserver<Object> observer = new TemperatureObserver<>();
-        RunLog log = new RunLog();
-
-        observer.onStep(new IterationSnapshot<>(0, 0, null, null, false), log);
-
-        assertTrue(log.getSeries().isEmpty());
-    }
-
     @Test
     void onStep_logsTemperatureWhenStateContainsNumber() {
         TemperatureObserver<Object> observer = new TemperatureObserver<>();

@@ -54,9 +54,9 @@ public class SimulationRunner {
 
         // #2 Seed the shared state with core invariants that other components may need.
         sharedState.update(Map.of(
-                StateKeys.PROBLEM, problem,
-                StateKeys.DIMENSION, space.dimension(),
-                StateKeys.SEARCH_SPACE_ID, space.id()
+            StateKeys.PROBLEM, problem,
+            StateKeys.DIMENSION, space.dimension(),
+            StateKeys.SEARCH_SPACE_ID, space.id()
         ));
 
         // #3 Collect all components that participate in shared initialization/state publication.

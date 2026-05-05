@@ -254,6 +254,10 @@ class SimulationRunnerTest {
         }
 
         @Override
+        public boolean isOptimal(double fitness) {
+            return false;
+        }
+        @Override
         public String id() {
             return "test-problem";
         }

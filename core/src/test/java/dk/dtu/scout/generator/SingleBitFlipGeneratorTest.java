@@ -28,20 +28,6 @@ class SingleBitFlipGeneratorTest {
     }
 
     @Test
-    void generate_fallsBackToSelectedParentWhenOffspringBaseMissing() {
-        SingleBitFlipGenerator generator = new SingleBitFlipGenerator();
-        boolean[] parent = new boolean[] {false, false, false, false};
-
-        State state = new State();
-        state.update(Map.of(StateKeys.SELECTED_PARENT_1, parent));
-        generator.init(state);
-
-        boolean[] result = generator.generate(new Random(1234L));
-
-        assertEquals(1, countDifferences(parent, result));
-    }
-
-    @Test
     void generate_withEmptyBitstringReturnsSameArray() {
         SingleBitFlipGenerator generator = new SingleBitFlipGenerator();
         boolean[] base = new boolean[0];
@@ -53,15 +39,6 @@ class SingleBitFlipGeneratorTest {
         boolean[] result = generator.generate(new Random(1234L));
 
         assertSame(base, result);
-    }
-
-    @Test
-    void generate_rejectsMissingBaseAndParent() {
-        SingleBitFlipGenerator generator = new SingleBitFlipGenerator();
-
-        generator.init(new State());
-
-        assertThrows(IllegalStateException.class, () -> generator.generate(new Random(1234L)));
     }
 
     @Test

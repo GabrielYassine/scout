@@ -6,11 +6,11 @@ import dk.dtu.scout.dto.EvaluatedSolution;
  * Immutable snapshot of the algorithm state at a given iteration.
  */
 public record IterationSnapshot<S>(
-        int iteration,
-        int evaluations,
-        EvaluatedSolution<S> current,
-        EvaluatedSolution<S> best,
-        boolean accepted
+    int iteration,
+    int evaluations,
+    EvaluatedSolution<S> current,
+    EvaluatedSolution<S> best,
+    boolean accepted
 ) {
     public S currentSolution() {
         return current == null ? null : current.value();

@@ -14,7 +14,5 @@ public interface Problem<S> extends ScoutComponent {
      * Problems with known optima, such as OneMax, LeadingOnes, TSP instances with
      * stored optima, or VRP instances with stored optima, should override this method.
      */
-    default boolean isOptimal(double fitness) {
-        return false;
-    }
+    boolean isOptimal(double fitness);
 }

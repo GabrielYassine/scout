@@ -61,9 +61,6 @@ public class IslandModel<S> implements PopulationModel<S> {
 
     @Override
     public void configure(Map<String, Object> params) {
-        if (params == null) {
-            return;
-        }
         this.numIslands = positiveIntParam(params, "numIslands", numIslands, "Number of islands must be positive");
         this.mu = positiveIntParam(params, "mu", mu, "Mu must be positive");
         this.lambda = positiveIntParam(params, "lambda", lambda, "Lambda must be positive");
@@ -312,10 +309,6 @@ public class IslandModel<S> implements PopulationModel<S> {
     }
     // Updates the state variables of the island's components based on the current state of the island.
     private void updateComponentStateVariables(State state, List<ScoutComponent> components) {
-        if (state == null || components == null || components.isEmpty()) {
-            return;
-        }
-
         Map<String, Object> combinedStateVariables = new HashMap<>();
 
         for (ScoutComponent component : components) {
@@ -351,10 +344,6 @@ public class IslandModel<S> implements PopulationModel<S> {
     }
 
     private void replaceWorstParentIfBetter(IslandState<S> island, S immigrant, double immigrantFitness) {
-        if (island.parentsEvaluated == null || island.parentsEvaluated.isEmpty()) {
-            throw new IllegalStateException("Island has no parents");
-        }
-
         int worstIndex = 0;
         double worstFitness = island.parentsEvaluated.get(0).fitness();
 
@@ -388,10 +377,6 @@ public class IslandModel<S> implements PopulationModel<S> {
     }
 
     private EvaluatedSolution<S> bestOf(List<EvaluatedSolution<S>> evaluatedSolutions) {
-        if (evaluatedSolutions == null || evaluatedSolutions.isEmpty()) {
-            throw new IllegalStateException("No evaluated solutions available");
-        }
-
         EvaluatedSolution<S> best = evaluatedSolutions.get(0);
 
         for (int i = 1; i < evaluatedSolutions.size(); i++) {
@@ -406,10 +391,6 @@ public class IslandModel<S> implements PopulationModel<S> {
     }
 
     private IslandState<S> globalBestCurrentIsland(List<IslandState<S>> islands) {
-        if (islands == null || islands.isEmpty()) {
-            throw new IllegalStateException("No islands available");
-        }
-
         IslandState<S> best = islands.get(0);
 
         for (int i = 1; i < islands.size(); i++) {
@@ -422,10 +403,6 @@ public class IslandModel<S> implements PopulationModel<S> {
     }
 
     private IslandState<S> globalBestEverIsland(List<IslandState<S>> islands) {
-        if (islands == null || islands.isEmpty()) {
-            throw new IllegalStateException("No islands available");
-        }
-
         IslandState<S> best = islands.get(0);
 
         for (int i = 1; i < islands.size(); i++) {

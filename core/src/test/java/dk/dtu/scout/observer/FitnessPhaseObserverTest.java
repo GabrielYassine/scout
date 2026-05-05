@@ -180,7 +180,7 @@ class FitnessPhaseObserverTest {
     void configure_ignoresNullParams() {
         FitnessPhaseObserver<Object> observer = new FitnessPhaseObserver<>();
 
-        observer.configure(null);
+        observer.configure(Map.of());
 
         assertEquals(2, observer.params().size());
     }
@@ -193,6 +193,60 @@ class FitnessPhaseObserverTest {
         assertEquals("Fitness Phase Observer", observer.displayName());
         assertFalse(observer.description().isBlank());
         assertEquals(2, observer.params().size());
+    }
+
+    @Test
+    void secondIntervalStartsAtPreviousIntervalEnd() {
+        FitnessPhaseObserver<Object> observer = new FitnessPhaseObserver<>();
+        RunLog log = new RunLog();
+
+        observer.configure(Map.of("windowSize", 2, "epsilon", 0.0));
+        observer.onStart(snapshot(1, 1.0), log);
+
+        observer.onStep(snapshot(1, 1.0), log);
+        observer.onStep(snapshot(2, 2.0), log);
+
+        observer.onStep(snapshot(3, 2.0), log);
+        observer.onStep(snapshot(4, 3.0), log);
+
+        List<?> intervals = log.getSeries().get("fitnessPhaseIntervals").getValues();
+
+        Map<?, ?> first = (Map<?, ?>) intervals.get(0);
+        Map<?, ?> second = (Map<?, ?>) intervals.get(1);
+
+        assertEquals(0, first.get("startEvaluation"));
+        assertEquals(1, first.get("endEvaluation"));
+
+        assertEquals(1, second.get("startEvaluation"));
+        assertEquals(3, second.get("endEvaluation"));
+    }
+
+    @Test
+    void onEnd_partialIntervalStartsAtPreviousIntervalEnd() {
+        FitnessPhaseObserver<Object> observer = new FitnessPhaseObserver<>();
+        RunLog log = new RunLog();
+
+        observer.configure(Map.of("windowSize", 3, "epsilon", 0.0));
+        observer.onStart(snapshot(0, 1.0), log);
+
+        observer.onStep(snapshot(1, 1.0), log);
+        observer.onStep(snapshot(2, 2.0), log);
+        observer.onStep(snapshot(3, 3.0), log);
+
+        observer.onStep(snapshot(4, 3.0), log);
+
+        observer.onEnd(snapshot(4, 3.0), log);
+
+        List<?> intervals = log.getSeries().get("fitnessPhaseIntervals").getValues();
+
+        Map<?, ?> first = (Map<?, ?>) intervals.get(0);
+        Map<?, ?> second = (Map<?, ?>) intervals.get(1);
+
+        assertEquals(0, first.get("startEvaluation"));
+        assertEquals(2, first.get("endEvaluation"));
+
+        assertEquals(2, second.get("startEvaluation"));
+        assertEquals(3, second.get("endEvaluation"));
     }
 
     private static IterationSnapshot<Object> snapshot(int evaluations, double fitness) {

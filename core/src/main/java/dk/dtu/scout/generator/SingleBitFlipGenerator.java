@@ -1,8 +1,8 @@
 package dk.dtu.scout.generator;
 
-import dk.dtu.scout.dto.Parameter;
 import dk.dtu.scout.State;
 import dk.dtu.scout.datatypes.StateKeys;
+import dk.dtu.scout.dto.Parameter;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -21,31 +21,42 @@ public class SingleBitFlipGenerator implements Generator<boolean[]> {
     }
 
     @Override
-    public String id() { return "single-bit-flip"; }
+    public String id() {
+        return "single-bit-flip";
+    }
+
     @Override
-    public String displayName() { return "Single Bit Flip"; }
+    public String displayName() {
+        return "Single Bit Flip";
+    }
+
     @Override
-    public String description() { return "Flips exactly one random bit."; }
+    public String description() {
+        return "Flips exactly one random bit.";
+    }
+
     @Override
-    public List<Parameter> params() { return List.of(); }
+    public List<Parameter> params() {
+        return List.of();
+    }
+
     @Override
-    public List<String> supportedSearchSpaces() { return List.of("bitstring"); }
+    public List<String> supportedSearchSpaces() {
+        return List.of("bitstring");
+    }
 
     @Override
     public boolean[] generate(Random rng) {
-        Object baseObj = state.get(StateKeys.OFFSPRING_BASE);
-        if (baseObj == null) {
-            baseObj = state.get(StateKeys.SELECTED_PARENT_1);
+        boolean[] bits = (boolean[]) state.get(StateKeys.OFFSPRING_BASE);
+
+        if (bits.length == 0) {
+            return bits;
         }
 
-        if (!(baseObj instanceof boolean[] bits)) {
-            throw new IllegalStateException("SingleBitFlipGenerator requires 'crossoverChild' or 'selectedParent' in state");
-        }
-        int n = bits.length;
-        if (n == 0) return bits;
         boolean[] mutated = bits.clone();
-        int i = rng.nextInt(n);
-        mutated[i] = !mutated[i];
+        int index = rng.nextInt(mutated.length);
+        mutated[index] = !mutated[index];
+
         return mutated;
     }
 }

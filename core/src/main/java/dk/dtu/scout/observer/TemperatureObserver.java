@@ -51,10 +51,6 @@ public class TemperatureObserver<S> implements Observer<S> {
 
     @Override
     public void onStep(IterationSnapshot<S> snapshot, RunLog log) {
-        if (state == null) {
-            return;
-        }
-
         Object temperatureObj = state.get(StateKeys.TEMPERATURE);
         if (temperatureObj instanceof Number temperature) {
             log.putSeries("temperature", temperature.doubleValue(), SeriesMode.ALL);

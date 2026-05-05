@@ -56,31 +56,6 @@ class TourObserverTest {
     }
 
     @Test
-    void onStep_usesBestSolutionWhenCurrentSolutionIsNull() {
-        TourObserver observer = new TourObserver();
-        RunLog log = new RunLog();
-
-        State state = new State();
-        state.update(Map.of(StateKeys.PROBLEM, tspProblem()));
-
-        observer.init(state);
-
-        IterationSnapshot<Object> snapshot = new IterationSnapshot<>(
-            0,
-            0,
-            null,
-            new EvaluatedSolution<>((Object) new int[] {0, 1, 2}, 0.0),
-            true
-        );
-
-        observer.onStep(snapshot, log);
-
-        Map<?, ?> tourData = tourData(log);
-        assertEquals(List.of(List.of(0, 1, 2)), tourData.get("tour"));
-        assertEquals(16.0, (double) tourData.get("length"), 1e-9);
-    }
-
-    @Test
     void onStep_logsListRouteForTsp() {
         TourObserver observer = new TourObserver();
         RunLog log = new RunLog();
@@ -98,17 +73,19 @@ class TourObserverTest {
     }
 
     @Test
-    void onStep_logsNestedRoutesWithoutProblemLength() {
+    void onStep_doesNotComputeTspLengthForMultipleRoutes() {
         TourObserver observer = new TourObserver();
         RunLog log = new RunLog();
 
-        observer.init(new State());
+        State state = new State();
+        state.update(Map.of(StateKeys.PROBLEM, tspProblem()));
 
-        observer.onStep(snapshot(List.of(List.of(0, 1), List.of(2))), log);
+        observer.init(state);
+        observer.onStep(snapshot(List.of(List.of(0), List.of(1, 2))), log);
 
         Map<?, ?> tourData = tourData(log);
 
-        assertEquals(List.of(List.of(0, 1), List.of(2)), tourData.get("tour"));
+        assertEquals(List.of(List.of(0), List.of(1, 2)), tourData.get("tour"));
         assertFalse(tourData.containsKey("length"));
     }
 
@@ -151,49 +128,7 @@ class TourObserverTest {
     }
 
     @Test
-    void onStep_ignoresNullSolution() {
-        TourObserver observer = new TourObserver();
-        RunLog log = new RunLog();
-
-        observer.init(new State());
-
-        IterationSnapshot<Object> snapshot = new IterationSnapshot<>(
-            0,
-            0,
-            null,
-            null,
-            false
-        );
-
-        observer.onStep(snapshot, log);
-
-        assertFalse(log.getSeries().containsKey("tspTour"));
-    }
-
-    @Test
-    void onStep_ignoresUnsupportedSolutionType() {
-        TourObserver observer = new TourObserver();
-        RunLog log = new RunLog();
-
-        observer.init(new State());
-        observer.onStep(snapshot("not-a-tour"), log);
-
-        assertFalse(log.getSeries().containsKey("tspTour"));
-    }
-
-    @Test
-    void onStep_ignoresEmptyRoutes() {
-        TourObserver observer = new TourObserver();
-        RunLog log = new RunLog();
-
-        observer.init(new State());
-        observer.onStep(snapshot(List.of(List.of(), List.of())), log);
-
-        assertFalse(log.getSeries().containsKey("tspTour"));
-    }
-
-    @Test
-    void configure_ignoresNullParamsAndNonBooleanPheromoneFlag() {
+    void configure_usesDefaultWhenParamsAreEmpty() {
         TourObserver observer = new TourObserver();
         RunLog log = new RunLog();
 
@@ -206,10 +141,8 @@ class TourObserverTest {
             }
         ));
 
-        observer.configure(null);
-        observer.configure(Map.of("includePheromone", "true"));
+        observer.configure(Map.of());
         observer.init(state);
-
         observer.onStep(snapshot(new int[] {0, 1}), log);
 
         assertFalse(log.getSeries().containsKey("pheromoneHeatmap"));
@@ -234,35 +167,7 @@ class TourObserverTest {
 
         observer.onStep(snapshot(new int[] {0, 1}), log);
 
-        assertEquals(
-            List.of(List.of(1.0, 2.0), List.of(3.0, 4.0)),
-            log.getSeries().get("pheromoneHeatmap").getValues().getFirst()
-        );
-    }
-
-    @Test
-    void onStep_logsPheromoneHeatmapFromNestedList() {
-        TourObserver observer = new TourObserver();
-        RunLog log = new RunLog();
-
-        State state = new State();
-        state.update(Map.of(
-            StateKeys.DIMENSION, 2,
-            StateKeys.PHEROMONE_MATRIX, List.of(
-                List.of(1, 2.5),
-                List.of(3L, "ignored")
-            )
-        ));
-
-        observer.configure(Map.of("includePheromone", true));
-        observer.init(state);
-
-        observer.onStep(snapshot(new int[] {0, 1}), log);
-
-        assertEquals(
-            List.of(List.of(1.0, 2.5), List.of(3.0)),
-            log.getSeries().get("pheromoneHeatmap").getValues().getFirst()
-        );
+        assertEquals(List.of(List.of(1.0, 2.0), List.of(3.0, 4.0)), log.getSeries().get("pheromoneHeatmap").getValues().getFirst());
     }
 
     @Test
@@ -278,23 +183,7 @@ class TourObserverTest {
 
         observer.onStep(snapshot(new int[] {0, 1}), log);
 
-        assertEquals(
-            List.of(List.of(0.0, 0.0), List.of(0.0, 0.0)),
-            log.getSeries().get("pheromoneHeatmap").getValues().getFirst()
-        );
-    }
-
-    @Test
-    void onStep_doesNotLogPheromoneWhenEnabledButStateIsMissing() {
-        TourObserver observer = new TourObserver();
-        RunLog log = new RunLog();
-
-        observer.configure(Map.of("includePheromone", true));
-        observer.init(null);
-
-        observer.onStep(snapshot(new int[] {0, 1}), log);
-
-        assertFalse(log.getSeries().containsKey("pheromoneHeatmap"));
+        assertEquals(List.of(List.of(0.0, 0.0), List.of(0.0, 0.0)), log.getSeries().get("pheromoneHeatmap").getValues().getFirst());
     }
 
     @Test

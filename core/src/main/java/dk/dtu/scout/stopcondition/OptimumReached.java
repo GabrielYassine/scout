@@ -48,17 +48,12 @@ public class OptimumReached<S> implements StopCondition<S> {
 
     @Override
     public void init(State state) {
-        if (state == null) {
-            return;
-        }
         Object problemObj = state.get(StateKeys.PROBLEM);
-        if (problemObj instanceof Problem<?> p) {
-            this.problem = p;
-        }
+        this.problem = (Problem<?>) problemObj;
     }
 
     @Override
     public boolean shouldStop(int iteration, int evaluations, double bestFitness, S bestSolution) {
-        return problem != null && problem.isOptimal(bestFitness);
+        return problem.isOptimal(bestFitness);
     }
 }

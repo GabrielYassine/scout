@@ -362,6 +362,291 @@ class BitstringAcoGeneratorTest {
         assertArrayEquals(new double[] {0.6, 0.5, 0.5}, pheromones, 1e-9);
     }
 
+    @Test
+    void configure_ignoresNullParams() {
+        BitstringAcoGenerator generator = new BitstringAcoGenerator();
+
+        assertDoesNotThrow(() -> generator.configure(Map.of()));
+    }
+
+    @Test
+    void configure_usesExplicitReinforcementMode() {
+        BitstringAcoGenerator generator = new BitstringAcoGenerator();
+        State state = stateWithDimension(3);
+
+        generator.configure(Map.of(
+                "reinforcementMode", "ITERATION_BEST",
+                "evaporationRate", 0.0,
+                "reinforcementRate", 0.2,
+                "minPheromone", 0.0,
+                "maxPheromone", 1.0
+        ));
+
+        generator.init(state);
+        generator.generate(new FixedDoubleRandom(1.0, 1.0, 1.0));
+
+        state.update(Map.of(StateKeys.GENERATION_EVALUATED, List.of(
+                new EvaluatedSolution<>(new boolean[] {true, false, false}, 1.0),
+                new EvaluatedSolution<>(new boolean[] {false, true, true}, 10.0)
+        )));
+
+        double[] pheromones = (double[]) generator.getStateVariables(state)
+                .get(StateKeys.PHEROMONE_VECTOR);
+
+        assertArrayEquals(new double[] {0.5, 0.7, 0.7}, pheromones, 1e-9);
+    }
+
+    @Test
+    void configure_explicitReinforcementModeOverridesLegacyReinforceBestOnly() {
+        BitstringAcoGenerator generator = new BitstringAcoGenerator();
+        State state = stateWithDimension(3);
+
+        generator.configure(Map.of(
+                "reinforcementMode", "ALL",
+                "reinforceBestOnly", true,
+                "evaporationRate", 0.0,
+                "reinforcementRate", 0.3,
+                "minPheromone", 0.0,
+                "maxPheromone", 1.0
+        ));
+
+        generator.init(state);
+        generator.generate(new FixedDoubleRandom(1.0, 1.0, 1.0));
+
+        state.update(Map.of(StateKeys.GENERATION_EVALUATED, List.of(
+                new EvaluatedSolution<>(new boolean[] {true, false, false}, 10.0),
+                new EvaluatedSolution<>(new boolean[] {false, true, false}, 5.0)
+        )));
+
+        double[] pheromones = (double[]) generator.getStateVariables(state)
+                .get(StateKeys.PHEROMONE_VECTOR);
+
+        assertArrayEquals(new double[] {0.65, 0.65, 0.5}, pheromones, 1e-9);
+    }
+
+    @Test
+    void configure_legacyReinforceBestOnlyTrueUsesIterationBest() {
+        BitstringAcoGenerator generator = new BitstringAcoGenerator();
+        State state = stateWithDimension(3);
+
+        generator.configure(Map.of(
+                "reinforceBestOnly", true,
+                "evaporationRate", 0.0,
+                "reinforcementRate", 0.2,
+                "minPheromone", 0.0,
+                "maxPheromone", 1.0
+        ));
+
+        generator.init(state);
+        generator.generate(new FixedDoubleRandom(1.0, 1.0, 1.0));
+
+        state.update(Map.of(StateKeys.GENERATION_EVALUATED, List.of(
+                new EvaluatedSolution<>(new boolean[] {true, false, false}, 1.0),
+                new EvaluatedSolution<>(new boolean[] {false, true, true}, 10.0)
+        )));
+
+        double[] pheromones = (double[]) generator.getStateVariables(state)
+                .get(StateKeys.PHEROMONE_VECTOR);
+
+        assertArrayEquals(new double[] {0.5, 0.7, 0.7}, pheromones, 1e-9);
+    }
+
+    @Test
+    void configure_acceptEqualFitnessFalseKeepsEarlierBestWhenFitnessIsEqual() {
+        BitstringAcoGenerator generator = new BitstringAcoGenerator();
+        State state = stateWithDimension(3);
+
+        generator.configure(Map.of(
+                "acceptEqualFitness", false,
+                "evaporationRate", 0.0,
+                "reinforcementRate", 0.2,
+                "minPheromone", 0.0,
+                "maxPheromone", 1.0
+        ));
+
+        generator.init(state);
+        generator.generate(new FixedDoubleRandom(1.0, 1.0, 1.0));
+
+        state.update(Map.of(StateKeys.GENERATION_EVALUATED, List.of(
+                new EvaluatedSolution<>(new boolean[] {true, false, false}, 10.0)
+        )));
+
+        generator.getStateVariables(state);
+
+        state.update(Map.of(StateKeys.GENERATION_EVALUATED, List.of(
+                new EvaluatedSolution<>(new boolean[] {false, true, true}, 10.0)
+        )));
+
+        double[] pheromones = (double[]) generator.getStateVariables(state)
+                .get(StateKeys.PHEROMONE_VECTOR);
+
+        assertArrayEquals(new double[] {0.9, 0.5, 0.5}, pheromones, 1e-9);
+    }
+
+    @Test
+    void bestSoFarAcceptsEqualFitnessByDefault() {
+        BitstringAcoGenerator generator = new BitstringAcoGenerator();
+        State state = stateWithDimension(3);
+
+        generator.configure(Map.of(
+                "evaporationRate", 0.0,
+                "reinforcementRate", 0.2,
+                "minPheromone", 0.0,
+                "maxPheromone", 1.0
+        ));
+
+        generator.init(state);
+        generator.generate(new FixedDoubleRandom(1.0, 1.0, 1.0));
+
+        state.update(Map.of(StateKeys.GENERATION_EVALUATED, List.of(
+                new EvaluatedSolution<>(new boolean[] {true, false, false}, 10.0)
+        )));
+
+        generator.getStateVariables(state);
+
+        state.update(Map.of(StateKeys.GENERATION_EVALUATED, List.of(
+                new EvaluatedSolution<>(new boolean[] {false, true, true}, 10.0)
+        )));
+
+        double[] pheromones = (double[]) generator.getStateVariables(state)
+                .get(StateKeys.PHEROMONE_VECTOR);
+
+        assertArrayEquals(new double[] {0.7, 0.7, 0.7}, pheromones, 1e-9);
+    }
+
+    @Test
+    void configure_rejectsNullReinforcementMode() {
+        BitstringAcoGenerator generator = new BitstringAcoGenerator();
+        Map<String, Object> params = new java.util.HashMap<>();
+
+        params.put("reinforcementMode", null);
+
+        assertThrows(IllegalArgumentException.class, () ->
+                generator.configure(params)
+        );
+    }
+
+    @Test
+    void configure_rejectsInvalidReinforcementMode() {
+        BitstringAcoGenerator generator = new BitstringAcoGenerator();
+
+        assertThrows(IllegalArgumentException.class, () ->
+                generator.configure(Map.of("reinforcementMode", "invalid-mode"))
+        );
+    }
+
+    @Test
+    void configure_acceptsLowercaseReinforcementModeWithWhitespace() {
+        BitstringAcoGenerator generator = new BitstringAcoGenerator();
+        State state = stateWithDimension(3);
+
+        generator.configure(Map.of(
+                "reinforcementMode", " iteration_best ",
+                "evaporationRate", 0.0,
+                "reinforcementRate", 0.2,
+                "minPheromone", 0.0,
+                "maxPheromone", 1.0
+        ));
+
+        generator.init(state);
+        generator.generate(new FixedDoubleRandom(1.0, 1.0, 1.0));
+
+        state.update(Map.of(StateKeys.GENERATION_EVALUATED, List.of(
+                new EvaluatedSolution<>(new boolean[] {false, true, true}, 10.0)
+        )));
+
+        double[] pheromones = (double[]) generator.getStateVariables(state)
+                .get(StateKeys.PHEROMONE_VECTOR);
+
+        assertArrayEquals(new double[] {0.5, 0.7, 0.7}, pheromones, 1e-9);
+    }
+
+    @Test
+    void bestSoFarKeepsEarlierBestWhenEqualFitnessIsAcceptedButCandidateIsWorse() {
+        BitstringAcoGenerator generator = new BitstringAcoGenerator();
+        State state = stateWithDimension(3);
+
+        generator.configure(Map.of(
+                "evaporationRate", 0.0,
+                "reinforcementRate", 0.2,
+                "minPheromone", 0.0,
+                "maxPheromone", 1.0
+        ));
+
+        generator.init(state);
+        generator.generate(new FixedDoubleRandom(1.0, 1.0, 1.0));
+
+        state.update(Map.of(StateKeys.GENERATION_EVALUATED, List.of(
+                new EvaluatedSolution<>(new boolean[] {true, false, false}, 10.0)
+        )));
+        generator.getStateVariables(state);
+
+        state.update(Map.of(StateKeys.GENERATION_EVALUATED, List.of(
+                new EvaluatedSolution<>(new boolean[] {false, true, true}, 9.0)
+        )));
+        double[] pheromones = (double[]) generator.getStateVariables(state)
+                .get(StateKeys.PHEROMONE_VECTOR);
+
+        assertArrayEquals(new double[] {0.9, 0.5, 0.5}, pheromones, 1e-9);
+    }
+
+    @Test
+    void acceptEqualFitnessFalseAcceptsStrictlyBetterCandidate() {
+        BitstringAcoGenerator generator = new BitstringAcoGenerator();
+        State state = stateWithDimension(3);
+
+        generator.configure(Map.of(
+                "acceptEqualFitness", false,
+                "evaporationRate", 0.0,
+                "reinforcementRate", 0.2,
+                "minPheromone", 0.0,
+                "maxPheromone", 1.0
+        ));
+
+        generator.init(state);
+        generator.generate(new FixedDoubleRandom(1.0, 1.0, 1.0));
+
+        state.update(Map.of(StateKeys.GENERATION_EVALUATED, List.of(
+                new EvaluatedSolution<>(new boolean[] {true, false, false}, 10.0)
+        )));
+        generator.getStateVariables(state);
+
+        state.update(Map.of(StateKeys.GENERATION_EVALUATED, List.of(
+                new EvaluatedSolution<>(new boolean[] {false, true, true}, 11.0)
+        )));
+        double[] pheromones = (double[]) generator.getStateVariables(state)
+                .get(StateKeys.PHEROMONE_VECTOR);
+
+        assertArrayEquals(new double[] {0.7, 0.7, 0.7}, pheromones, 1e-9);
+    }
+
+    @Test
+    void iterationBestModeDoesNotUpdateWhenBestSolutionCannotBeFound() {
+        BitstringAcoGenerator generator = new BitstringAcoGenerator();
+        State state = stateWithDimension(3);
+
+        generator.configure(Map.of(
+                "reinforcementMode", "ITERATION_BEST",
+                "evaporationRate", 0.0,
+                "reinforcementRate", 0.2,
+                "minPheromone", 0.0,
+                "maxPheromone", 1.0
+        ));
+
+        generator.init(state);
+        generator.generate(new FixedDoubleRandom(1.0, 1.0, 1.0));
+
+        state.update(Map.of(StateKeys.GENERATION_EVALUATED, List.of(
+                "not-an-evaluated-solution",
+                new EvaluatedSolution<>("wrong-value-type", 10.0)
+        )));
+
+        double[] pheromones = (double[]) generator.getStateVariables(state)
+                .get(StateKeys.PHEROMONE_VECTOR);
+
+        assertArrayEquals(new double[] {0.5, 0.5, 0.5}, pheromones, 1e-9);
+    }
+
     private static State stateWithDimension(int dimension) {
         State state = new State();
         state.update(Map.of(StateKeys.DIMENSION, dimension));

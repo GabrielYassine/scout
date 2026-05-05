@@ -52,7 +52,8 @@ export function mergeSeries(existingSeries, seriesDelta, seriesMerge) {
   // Normal series usually append, while latest-only visual series can replace.
   for (const [key, value] of Object.entries(seriesDelta ?? {})) {
     const operation = seriesMerge?.[key] ?? "APPEND";
-    nextSeries[key] = mergeList(nextSeries[key], operation, value);
+    const incomingValue = Array.isArray(value) ? [value] : value;
+    nextSeries[key] = mergeList(nextSeries[key], operation, incomingValue);
   }
 
   return nextSeries;

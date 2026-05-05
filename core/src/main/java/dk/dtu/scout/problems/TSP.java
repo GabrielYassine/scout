@@ -47,16 +47,7 @@ public class TSP implements Problem<int[]> {
 
     @Override
     public void configure(Map<String, Object> params) {
-        if (params == null) {
-            return;
-        }
-        if (params.containsKey("tspInstance")) {
-            Object tspInstanceObj = params.get("tspInstance");
-            if (!(tspInstanceObj instanceof TSPInstance)) {
-                throw new IllegalArgumentException("tspInstance must be a TSPInstance");
-            }
-            this.instance = (TSPInstance) tspInstanceObj;
-        }
+        this.instance = (TSPInstance) params.get("tspInstance");
     }
 
     public TSPInstance getInstance() {

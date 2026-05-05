@@ -14,13 +14,6 @@ import static org.junit.jupiter.api.Assertions.*;
 class OptimumReachedTest {
 
     @Test
-    void shouldStop_isFalseWhenProblemIsMissing() {
-        OptimumReached<Object> stopCondition = new OptimumReached<>();
-
-        assertFalse(stopCondition.shouldStop(0, 0, 10.0, null));
-    }
-
-    @Test
     void shouldStop_usesProblemSetDirectly() {
         OptimumReached<Object> stopCondition = new OptimumReached<>();
 
@@ -40,26 +33,6 @@ class OptimumReachedTest {
 
         assertFalse(stopCondition.shouldStop(0, 0, 2.0, null));
         assertTrue(stopCondition.shouldStop(0, 0, 3.0, null));
-    }
-
-    @Test
-    void init_ignoresNullState() {
-        OptimumReached<Object> stopCondition = new OptimumReached<>();
-
-        stopCondition.init(null);
-
-        assertFalse(stopCondition.shouldStop(0, 0, 10.0, null));
-    }
-
-    @Test
-    void init_ignoresNonProblemStateValue() {
-        OptimumReached<Object> stopCondition = new OptimumReached<>();
-        State state = new State();
-
-        state.update(Map.of(StateKeys.PROBLEM, "not-a-problem"));
-        stopCondition.init(state);
-
-        assertFalse(stopCondition.shouldStop(0, 0, 10.0, null));
     }
 
     @Test

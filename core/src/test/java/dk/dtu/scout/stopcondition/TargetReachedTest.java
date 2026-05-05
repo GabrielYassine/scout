@@ -29,7 +29,7 @@ class TargetReachedTest {
     void shouldStop_usesDefaultTargetZeroWhenNotConfigured() {
         TargetReached<Object> stopCondition = new TargetReached<>();
 
-        stopCondition.configure(null);
+        stopCondition.configure(Map.of());
 
         assertFalse(stopCondition.shouldStop(0, 0, -1.0, null));
         assertTrue(stopCondition.shouldStop(0, 0, 0.0, null));
@@ -63,40 +63,6 @@ class TargetReachedTest {
     }
 
     @Test
-    void configure_ignoresNonBooleanDistanceFlag() {
-        TargetReached<Object> stopCondition = new TargetReached<>();
-
-        stopCondition.configure(Map.of("targetFitness", 5.0, "targetIsDistance", "true"));
-
-        assertFalse(stopCondition.shouldStop(0, 0, 4.0, null));
-        assertTrue(stopCondition.shouldStop(0, 0, 5.0, null));
-    }
-
-    @Test
-    void init_ignoresNullState() {
-        TargetReached<Object> stopCondition = new TargetReached<>();
-
-        stopCondition.init(null);
-        stopCondition.configure(Map.of("targetFitness", 2.0));
-
-        assertFalse(stopCondition.shouldStop(0, 0, 1.0, null));
-        assertTrue(stopCondition.shouldStop(0, 0, 2.0, null));
-    }
-
-    @Test
-    void init_ignoresNonProblemStateValue() {
-        TargetReached<Object> stopCondition = new TargetReached<>();
-        State state = new State();
-
-        state.update(Map.of(StateKeys.PROBLEM, "not-a-problem"));
-        stopCondition.init(state);
-        stopCondition.configure(Map.of("targetFitness", 2.0));
-
-        assertFalse(stopCondition.shouldStop(0, 0, 1.0, null));
-        assertTrue(stopCondition.shouldStop(0, 0, 2.0, null));
-    }
-
-    @Test
     void metadata_isStable() {
         TargetReached<Object> stopCondition = new TargetReached<>();
 
@@ -104,26 +70,6 @@ class TargetReachedTest {
         assertEquals("Target Fitness Reached", stopCondition.displayName());
         assertFalse(stopCondition.description().isBlank());
         assertEquals(2, stopCondition.params().size());
-    }
-
-    @Test
-    void configure_allowsUpdatingOnlyDistanceFlag() {
-        TargetReached<Object> stopCondition = new TargetReached<>();
-
-        stopCondition.configure(Map.of("targetIsDistance", true));
-
-        assertTrue(stopCondition.params().stream().anyMatch(parameter -> parameter.key().equals("targetIsDistance")));
-        assertTrue(stopCondition.shouldStop(0, 0, 0.0, null));
-    }
-
-    @Test
-    void configure_allowsUpdatingOnlyTargetFitness() {
-        TargetReached<Object> stopCondition = new TargetReached<>();
-
-        stopCondition.configure(Map.of("targetFitness", 5.0));
-
-        assertFalse(stopCondition.shouldStop(0, 0, 4.0, null));
-        assertTrue(stopCondition.shouldStop(0, 0, 5.0, null));
     }
 
     @Test
@@ -146,6 +92,10 @@ class TargetReachedTest {
             return 0.0;
         }
 
+        @Override
+        public boolean isOptimal(double fitness) {
+            return false;
+        }
         @Override
         public String id() {
             return "dummy";

@@ -37,7 +37,6 @@ public class FitnessObserver<S> implements Observer<S> {
         return List.of();
     }
 
-
     @Override
     public void onStep(IterationSnapshot<S> state, RunLog log) {
         log.putSeries("fitness", state.currentFitness(), SeriesMode.ALL);
