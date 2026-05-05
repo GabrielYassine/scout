@@ -25,9 +25,7 @@ public class RouteList implements SearchSpace<List<List<Integer>>> {
 
     @Override
     public void init(State state) {
-        if (state != null) {
-            state.update(Map.of(StateKeys.DIMENSION, n));
-        }
+        state.update(Map.of(StateKeys.DIMENSION, n));
     }
 
     @Override
@@ -60,33 +58,23 @@ public class RouteList implements SearchSpace<List<List<Integer>>> {
 
     @Override
     public void configure(Map<String, Object> params) {
-        if (params == null) {
-            return;
+        int customerCount = ((Number) params.get("n")).intValue();
+        if (customerCount <= 0) {
+            throw new IllegalArgumentException("Route-list customer count must be positive");
         }
-
-        if (params.containsKey("n")) {
-            int value = ((Number) params.get("n")).intValue();
-            if (value <= 0) {
-                throw new IllegalArgumentException("Route-list customer count must be positive");
-            }
-            this.n = value;
-        }
+        this.n = customerCount;
 
         if (params.containsKey("routeCount")) {
-            int value = ((Number) params.get("routeCount")).intValue();
-            if (value <= 0) {
+            int configuredRouteCount = ((Number) params.get("routeCount")).intValue();
+            if (configuredRouteCount <= 0) {
                 throw new IllegalArgumentException("Route count must be positive");
             }
-            this.routeCount = value;
+            this.routeCount = configuredRouteCount;
         }
     }
 
     @Override
     public List<List<Integer>> randomSolution(Random rng) {
-        if (n <= 0) {
-            throw new IllegalStateException("Route-list customer count must be positive");
-        }
-
         List<Integer> customers = new ArrayList<>(n);
         for (int i = 0; i < n; i++) {
             customers.add(i);
@@ -94,7 +82,7 @@ public class RouteList implements SearchSpace<List<List<Integer>>> {
 
         Collections.shuffle(customers, rng);
 
-        int routes = Math.max(1, Math.min(routeCount, n));
+        int routes = Math.min(routeCount, n);
         if (routes == 1) {
             return List.of(new ArrayList<>(customers));
         }

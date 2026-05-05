@@ -25,9 +25,7 @@ public class BitString implements SearchSpace<boolean[]> {
 
     @Override
     public void init(State state) {
-        if (state != null) {
-            state.update(Map.of(StateKeys.DIMENSION, n));
-        }
+        state.update(Map.of(StateKeys.DIMENSION, n));
     }
 
     @Override
@@ -54,14 +52,11 @@ public class BitString implements SearchSpace<boolean[]> {
 
     @Override
     public void configure(Map<String, Object> params) {
-        if (params == null) return;
-        if (params.containsKey("n")) {
-            int value = ((Number) params.get("n")).intValue();
-            if (value <= 0) {
-                throw new IllegalArgumentException("Bitstring length must be positive");
-            }
-            this.n = value;
+        int value = ((Number) params.get("n")).intValue();
+        if (value <= 0) {
+            throw new IllegalArgumentException("Bitstring length must be positive");
         }
+        this.n = value;
     }
 
     @Override

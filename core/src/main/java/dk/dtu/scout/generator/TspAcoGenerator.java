@@ -38,11 +38,9 @@ public class TspAcoGenerator implements Generator<int[]> {
     public void init(State state) {
         this.state = state;
 
-        if (state != null) {
-            Object problemObj = state.get(StateKeys.PROBLEM);
-            if (problemObj instanceof TSP tsp) {
-                this.tspInstance = tsp.getInstance();
-            }
+        Object problemObj = state.get(StateKeys.PROBLEM);
+        if (problemObj instanceof TSP tsp) {
+            this.tspInstance = tsp.getInstance();
         }
     }
 
@@ -75,10 +73,6 @@ public class TspAcoGenerator implements Generator<int[]> {
 
     @Override
     public void configure(Map<String, Object> params) {
-        if (params == null) {
-            return;
-        }
-
         if (params.containsKey("evaporationRate")) {
             double value = ((Number) params.get("evaporationRate")).doubleValue();
             if (value < 0.0 || value > 1.0) {
@@ -165,9 +159,7 @@ public class TspAcoGenerator implements Generator<int[]> {
 
         updatePheromoneMatrix(state);
 
-        if (this.state != null) {
-            this.state.update(Map.of(StateKeys.PHEROMONE_MATRIX, pheromoneMatrix));
-        }
+        this.state.update(Map.of(StateKeys.PHEROMONE_MATRIX, pheromoneMatrix));
 
         return Map.of(StateKeys.PHEROMONE_MATRIX, pheromoneMatrix);
     }
@@ -190,9 +182,7 @@ public class TspAcoGenerator implements Generator<int[]> {
             }
         }
 
-        if (state != null) {
-            state.update(Map.of(StateKeys.PHEROMONE_MATRIX, pheromoneMatrix));
-        }
+        state.update(Map.of(StateKeys.PHEROMONE_MATRIX, pheromoneMatrix));
     }
 
     private int resolveDimension() {
@@ -200,11 +190,9 @@ public class TspAcoGenerator implements Generator<int[]> {
             return tspInstance.getDimension();
         }
 
-        if (state != null) {
-            Object dimObj = state.get(StateKeys.DIMENSION);
-            if (dimObj instanceof Number dimension) {
-                return dimension.intValue();
-            }
+        Object dimObj = state.get(StateKeys.DIMENSION);
+        if (dimObj instanceof Number dimension) {
+            return dimension.intValue();
         }
 
         return 0;
@@ -269,10 +257,6 @@ public class TspAcoGenerator implements Generator<int[]> {
     }
 
     private void updatePheromoneMatrix(State state) {
-        if (state == null || pheromoneMatrix == null || pheromoneMatrix.length == 0) {
-            return;
-        }
-
         Object evaluatedObj = state.get(StateKeys.GENERATION_EVALUATED);
         if (!(evaluatedObj instanceof List<?> evaluated) || evaluated.isEmpty()) {
             return;

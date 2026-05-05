@@ -125,9 +125,7 @@ class SimulationRunnerTest {
         Thread.currentThread().interrupt();
 
         try {
-            assertThrows(CancellationException.class, () ->
-                    run(populationModel, List.of(new StopAtIteration(10)), List.of(), 1)
-            );
+            assertThrows(CancellationException.class, () -> run(populationModel, List.of(new StopAtIteration(10)), List.of(), 1));
         } finally {
             Thread.interrupted();
         }
@@ -190,8 +188,7 @@ class SimulationRunnerTest {
             int nextIteration = iteration + 1;
             int boundedIteration = Math.min(nextIteration, maxIteration);
 
-            return new PopulationStepResult<>(snapshot(boundedIteration), 1, Map.of("phase", "step-" + boundedIteration)
-            );
+            return new PopulationStepResult<>(snapshot(boundedIteration), 1, Map.of("phase", "step-" + boundedIteration));
         }
 
         @Override

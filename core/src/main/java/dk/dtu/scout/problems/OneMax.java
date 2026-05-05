@@ -48,29 +48,16 @@ public class OneMax implements Problem<boolean[]> {
 
     @Override
     public void configure(Map<String, Object> params) {
-        if (params == null) return;
-        if (params.containsKey("n")) {
-            int value = ((Number) params.get("n")).intValue();
-            if (value <= 0) {
-                throw new IllegalArgumentException("n must be positive");
-            }
-            this.n = value;
+        int value = ((Number) params.get("n")).intValue();
+        if (value <= 0) {
+            throw new IllegalArgumentException("n must be positive");
         }
+        this.n = value;
     }
 
     @Override
     public void init(State state) {
-        if (state == null) {
-            return;
-        }
-
-        Object dimObj = state.get(StateKeys.DIMENSION);
-        if (dimObj instanceof Number dimension) {
-            int value = dimension.intValue();
-            if (value > 0) {
-                this.n = value;
-            }
-        }
+        this.n = ((Number) state.get(StateKeys.DIMENSION)).intValue();
     }
 
     /**

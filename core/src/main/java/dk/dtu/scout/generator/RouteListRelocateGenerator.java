@@ -72,13 +72,7 @@ public class RouteListRelocateGenerator implements Generator<List<List<Integer>>
         int targetRouteIndex = rng.nextInt(routes.size());
         List<Integer> targetRoute = routes.get(targetRouteIndex);
 
-        int insertPos;
-        if (targetRouteIndex == sourceRouteIndex) {
-            insertPos = rng.nextInt(targetRoute.size() + 1);
-        } else {
-            insertPos = rng.nextInt(targetRoute.size() + 1);
-        }
-
+        int insertPos = rng.nextInt(targetRoute.size() + 1);
         targetRoute.add(insertPos, customer);
 
         return routes;
@@ -86,8 +80,9 @@ public class RouteListRelocateGenerator implements Generator<List<List<Integer>>
 
     private int pickNonEmptyRouteIndex(List<List<Integer>> routes, Random rng) {
         List<Integer> eligible = new ArrayList<>();
+
         for (int i = 0; i < routes.size(); i++) {
-            if (routes.get(i) != null && !routes.get(i).isEmpty()) {
+            if (!routes.get(i).isEmpty()) {
                 eligible.add(i);
             }
         }

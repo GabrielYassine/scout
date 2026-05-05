@@ -36,37 +36,20 @@ public class BitFlipGenerator implements Generator<boolean[]> {
 
     @Override
     public void configure(Map<String, Object> params) {
-        if (params == null) return;
-        if (params.containsKey("flipProbability")) {
-            this.flipProbabilityParam = params.get("flipProbability");
-        }
+        this.flipProbabilityParam = params.get("flipProbability");
     }
 
     private void resolveFlipProbability(State state) {
-        int dimension = 0;
-        if (state != null) {
-            Object dimObj = state.get(StateKeys.DIMENSION);
-            if (dimObj instanceof Number n) {
-                dimension = n.intValue();
-            }
-        }
+        int dimension = ((Number) state.get(StateKeys.DIMENSION)).intValue();
+        Object value = flipProbabilityParam != null ? flipProbabilityParam : "1/n";
 
-        Object value = flipProbabilityParam;
-        double p;
-        if (value instanceof String formula) {
-            if (dimension > 0) {
-                p = FormulaEvaluator.eval(formula, dimension);
-            } else {
-                p = 0.0;
-            }
-        } else if (value instanceof Number n) {
-            p = n.doubleValue();
-        } else {
-            p = dimension > 0 ? (1.0 / dimension) : 0.0;
-        }
+        double probability = switch (value) {
+            case String formula -> FormulaEvaluator.eval(formula, dimension);
+            case Number number -> number.doubleValue();
+            default -> throw new IllegalArgumentException("flipProbability must be a number or formula");
+        };
 
-        p = Math.max(0.0, Math.min(1.0, p));
-        this.flipProbability = p;
+        this.flipProbability = Math.max(0.0, Math.min(1.0, probability));
     }
 
     @Override

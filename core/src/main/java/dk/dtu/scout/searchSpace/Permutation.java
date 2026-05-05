@@ -27,9 +27,7 @@ public class Permutation implements SearchSpace<int[]> {
 
     @Override
     public void init(State state) {
-        if (state != null) {
-            state.update(Map.of(StateKeys.DIMENSION, n));
-        }
+        state.update(Map.of(StateKeys.DIMENSION, n));
     }
 
     @Override public int dimension() {
@@ -54,14 +52,11 @@ public class Permutation implements SearchSpace<int[]> {
 
     @Override
     public void configure(Map<String, Object> params) {
-        if (params == null) return;
-        if (params.containsKey("n")) {
-            int value = ((Number) params.get("n")).intValue();
-            if (value <= 0) {
-                throw new IllegalArgumentException("Permutation length must be positive");
-            }
-            this.n = value;
+        int value = ((Number) params.get("n")).intValue();
+        if (value <= 0) {
+            throw new IllegalArgumentException("Permutation length must be positive");
         }
+        this.n = value;
     }
 
     @Override

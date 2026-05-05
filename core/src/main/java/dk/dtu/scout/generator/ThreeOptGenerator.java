@@ -82,8 +82,7 @@ public class ThreeOptGenerator implements Generator<int[]> {
             case 4 -> concat(a, c, b, d);
             case 5 -> concat(a, reverse(c), b, d);
             case 6 -> concat(a, c, reverse(b), d);
-            case 7 -> concat(a, reverse(c), reverse(b), d);
-            default -> throw new IllegalStateException("Unexpected 3-opt move: " + move);
+            default -> concat(a, reverse(c), reverse(b), d);
         };
     }
 

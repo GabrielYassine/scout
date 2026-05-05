@@ -50,20 +50,16 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
     @Override
     public List<Parameter> params() {
         return List.of(
-                new Parameter("evaporationRate", "Pheromone Evaporation Rate", "double", evaporationRate, 0.0, 1.0),
-                new Parameter("reinforcementRate", "Reinforcement Rate", "double", reinforcementRate, 0.0, 1.0),
-                new Parameter("minPheromone", "Minimum Pheromone", "string", minPheromone, null, null),
-                new Parameter("maxPheromone", "Maximum Pheromone", "string", maxPheromone, null, null),
-                new Parameter("reinforceBestOnly", "Reinforce Best Only", "boolean", reinforceBestOnly, null, null)
+            new Parameter("evaporationRate", "Pheromone Evaporation Rate", "double", evaporationRate, 0.0, 1.0),
+            new Parameter("reinforcementRate", "Reinforcement Rate", "double", reinforcementRate, 0.0, 1.0),
+            new Parameter("minPheromone", "Minimum Pheromone", "string", minPheromone, null, null),
+            new Parameter("maxPheromone", "Maximum Pheromone", "string", maxPheromone, null, null),
+            new Parameter("reinforceBestOnly", "Reinforce Best Only", "boolean", reinforceBestOnly, null, null)
         );
     }
 
     @Override
     public void configure(Map<String, Object> params) {
-        if (params == null) {
-            return;
-        }
-
         if (params.containsKey("evaporationRate")) {
             double value = ((Number) params.get("evaporationRate")).doubleValue();
             if (value < 0.0 || value > 1.0) {
@@ -121,9 +117,7 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
 
         updatePheromones(state);
 
-        if (this.state != null) {
-            this.state.update(Map.of(StateKeys.PHEROMONE_VECTOR, pheromoneVector));
-        }
+        state.update(Map.of(StateKeys.PHEROMONE_VECTOR, pheromoneVector));
 
         return Map.of(StateKeys.PHEROMONE_VECTOR, pheromoneVector);
     }
@@ -144,17 +138,11 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
             pheromoneVector[i] = initialPheromone;
         }
 
-        if (state != null) {
-            state.update(Map.of(StateKeys.PHEROMONE_VECTOR, pheromoneVector));
-        }
+        state.update(Map.of(StateKeys.PHEROMONE_VECTOR, pheromoneVector));
     }
 
     private PheromoneBounds resolvePheromoneBounds() {
         int dimension = resolveDimension();
-
-        if (dimension <= 0) {
-            throw new IllegalStateException("Cannot resolve pheromone bounds: dimension must be positive");
-        }
 
         double resolvedMin = resolveFormulaOrNumber(minPheromone, dimension, "Minimum pheromone");
         double resolvedMax = resolveFormulaOrNumber(maxPheromone, dimension, "Maximum pheromone");
@@ -197,26 +185,15 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
     }
 
     private int resolveDimension() {
-        if (state != null) {
-            Object dimObj = state.get(StateKeys.DIMENSION);
-            if (dimObj instanceof Number dimension) {
-                return dimension.intValue();
-            }
-
-            Object nObj = state.get("n");
-            if (nObj instanceof Number n) {
-                return n.intValue();
-            }
+        Object dimObj = state.get(StateKeys.DIMENSION);
+        if (dimObj instanceof Number dimension) {
+            return dimension.intValue();
         }
 
         return 0;
     }
 
     private void updatePheromones(State state) {
-        if (state == null || pheromoneVector == null || pheromoneVector.length == 0) {
-            return;
-        }
-
         Object evaluatedObj = state.get(StateKeys.GENERATION_EVALUATED);
         if (!(evaluatedObj instanceof List<?> evaluated) || evaluated.isEmpty()) {
             return;
