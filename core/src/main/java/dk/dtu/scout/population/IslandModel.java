@@ -52,10 +52,10 @@ public class IslandModel<S> implements PopulationModel<S> {
     @Override
     public List<Parameter> params() {
         return List.of(
-                new Parameter("numIslands", "Number of islands", "int", numIslands, 1.0, null),
-                new Parameter("mu", "μ (parents per island)", "int", mu, 1.0, null),
-                new Parameter("lambda", "λ (offspring per island)", "int", lambda, 1.0, null),
-                new Parameter("epochLength", "Epoch length (iterations)", "int", epochLength, 1.0, null)
+                new Parameter("numIslands", "Number of islands", "int", numIslands, 1.0, null, null),
+                new Parameter("mu", "μ (parents per island)", "int", mu, 1.0, null, null),
+                new Parameter("lambda", "λ (offspring per island)", "int", lambda, 1.0, null, null),
+                new Parameter("epochLength", "Epoch length (iterations)", "int", epochLength, 1.0, null, null)
         );
     }
 

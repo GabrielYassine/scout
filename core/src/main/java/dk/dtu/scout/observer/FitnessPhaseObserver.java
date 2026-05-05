@@ -52,8 +52,8 @@ public class FitnessPhaseObserver<S> implements Observer<S> {
     @Override
     public List<Parameter> params() {
         return List.of(
-                new Parameter("windowSize", "Window Size (k)", "int", windowSize, 1.0, null),
-                new Parameter("epsilon", "Phase Threshold (epsilon)", "double", epsilon, 0.0, null)
+                new Parameter("windowSize", "Window Size (k)", "int", windowSize, 1.0, null, null),
+                new Parameter("epsilon", "Phase Threshold (epsilon)", "double", epsilon, 0.0, null, null)
         );
     }
 

@@ -21,6 +21,7 @@ public class TspAcoGenerator implements Generator<int[]> {
     private static final double Q = 1.0;
 
     private double evaporationRate = 0.1;
+    private double reinforcementRate = 1.0;
 
     private double alpha = 1.0;
     private double beta = 2.0;
@@ -28,11 +29,14 @@ public class TspAcoGenerator implements Generator<int[]> {
     private double minPheromone = 1e-12;
     private double maxPheromone = 1e12;
 
-    private boolean reinforceBestOnly = true;
+    private ReinforcementMode reinforcementMode = ReinforcementMode.BEST_SO_FAR;
+    private boolean acceptEqualFitness = true;
 
     private double[][] pheromoneMatrix;
     private State state;
     private TSPInstance tspInstance;
+
+    private EvaluatedSolution<int[]> bestSoFar;
 
     @Override
     public void init(State state) {
@@ -62,23 +66,45 @@ public class TspAcoGenerator implements Generator<int[]> {
     @Override
     public List<Parameter> params() {
         List<Parameter> params = new ArrayList<>();
-        params.add(new Parameter("evaporationRate", "Pheromone Evaporation Rate", "double", evaporationRate, 0.0, 1.0));
-        params.add(new Parameter("alpha", "Pheromone Influence", "double", alpha, 0.1, 5.0));
-        params.add(new Parameter("beta", "Heuristic Influence", "double", beta, 0.1, 10.0));
-        params.add(new Parameter("minPheromone", "Minimum Pheromone", "double", minPheromone, 0.0, null));
-        params.add(new Parameter("maxPheromone", "Maximum Pheromone", "double", maxPheromone, 0.0, null));
-        params.add(new Parameter("reinforceBestOnly", "Reinforce Best Only", "boolean", reinforceBestOnly, null, null));
+        params.add(new Parameter("evaporationRate", "Pheromone Evaporation Rate", "double", evaporationRate, 0.0, 1.0, null));
+        params.add(new Parameter("reinforcementRate", "Pheromone Reinforcement Rate", "double", reinforcementRate, 0.0, null, null));
+        params.add(new Parameter("alpha", "Pheromone Influence", "double", alpha, 0.1, 5.0, null));
+        params.add(new Parameter("beta", "Heuristic Influence", "double", beta, 0.1, 10.0, null));
+        params.add(new Parameter("minPheromone", "Minimum Pheromone", "double", minPheromone, 0.0, null, null));
+        params.add(new Parameter("maxPheromone", "Maximum Pheromone", "double", maxPheromone, 0.0, null, null));
+        params.add(new Parameter(
+                "reinforcementMode",
+                "Reinforcement Mode",
+                "enum",
+                reinforcementMode.name(),
+                null,
+                null,
+                List.of("BEST_SO_FAR", "ITERATION_BEST", "ALL")
+        ));
+        params.add(new Parameter("acceptEqualFitness", "Accept Equal Fitness", "boolean", acceptEqualFitness, null, null, null));
         return params;
     }
 
     @Override
     public void configure(Map<String, Object> params) {
+        if (params == null) {
+            return;
+        }
+
         if (params.containsKey("evaporationRate")) {
             double value = ((Number) params.get("evaporationRate")).doubleValue();
             if (value < 0.0 || value > 1.0) {
                 throw new IllegalArgumentException("Evaporation rate must be between 0 and 1");
             }
             this.evaporationRate = value;
+        }
+
+        if (params.containsKey("reinforcementRate")) {
+            double value = ((Number) params.get("reinforcementRate")).doubleValue();
+            if (value < 0.0) {
+                throw new IllegalArgumentException("Reinforcement rate must be non-negative");
+            }
+            this.reinforcementRate = value;
         }
 
         if (params.containsKey("alpha")) {
@@ -113,8 +139,20 @@ public class TspAcoGenerator implements Generator<int[]> {
             this.maxPheromone = value;
         }
 
-        if (params.containsKey("reinforceBestOnly")) {
-            this.reinforceBestOnly = (Boolean) params.get("reinforceBestOnly");
+        boolean hasReinforcementMode = params.containsKey("reinforcementMode");
+        if (hasReinforcementMode) {
+            this.reinforcementMode = parseReinforcementMode(params.get("reinforcementMode"));
+        }
+
+        if (params.containsKey("reinforceBestOnly") && !hasReinforcementMode) {
+            boolean reinforceBestOnly = (Boolean) params.get("reinforceBestOnly");
+            this.reinforcementMode = reinforceBestOnly
+                    ? ReinforcementMode.ITERATION_BEST
+                    : ReinforcementMode.ALL;
+        }
+
+        if (params.containsKey("acceptEqualFitness")) {
+            this.acceptEqualFitness = (Boolean) params.get("acceptEqualFitness");
         }
 
         if (minPheromone > maxPheromone) {
@@ -262,38 +300,52 @@ public class TspAcoGenerator implements Generator<int[]> {
             return;
         }
 
-        evaporate();
-
-        if (reinforceBestOnly) {
-            reinforceBest(evaluated);
-        } else {
-            reinforceAll(evaluated);
+        switch (reinforcementMode) {
+            case BEST_SO_FAR -> {
+                updateBestSoFar(evaluated);
+                if (bestSoFar == null) {
+                    return;
+                }
+                evaporate();
+                depositPheromone(bestSoFar.value(), bestSoFar.fitness(), reinforcementRate);
+            }
+            case ITERATION_BEST -> {
+                EvaluatedSolution<int[]> best = bestOf(evaluated);
+                if (best == null) {
+                    return;
+                }
+                evaporate();
+                depositPheromone(best.value(), best.fitness(), reinforcementRate);
+            }
+            case ALL -> {
+                evaporate();
+                double scaledRate = reinforcementRate / evaluated.size();
+                for (Object entry : evaluated) {
+                    if (entry instanceof EvaluatedSolution<?>(Object value, double fitness) && value instanceof int[] tour) {
+                        depositPheromone(tour, fitness, scaledRate);
+                    }
+                }
+            }
         }
 
         clampPheromones();
     }
 
-    private void evaporate() {
-        for (int i = 0; i < pheromoneMatrix.length; i++) {
-            for (int j = 0; j < pheromoneMatrix.length; j++) {
-                pheromoneMatrix[i][j] *= (1.0 - evaporationRate);
-            }
+    private void updateBestSoFar(List<?> evaluated) {
+        EvaluatedSolution<int[]> generationBest = bestOf(evaluated);
+        if (generationBest == null) {
+            return;
+        }
+        if (bestSoFar == null || isAcceptedAsBestSoFar(generationBest)) {
+            bestSoFar = new EvaluatedSolution<>(generationBest.value().clone(), generationBest.fitness());
         }
     }
 
-    private void reinforceBest(List<?> evaluated) {
-        EvaluatedSolution<int[]> best = bestOf(evaluated);
-        if (best != null) {
-            depositPheromone(best.value(), best.fitness());
+    private boolean isAcceptedAsBestSoFar(EvaluatedSolution<int[]> candidate) {
+        if (acceptEqualFitness) {
+            return candidate.fitness() >= bestSoFar.fitness();
         }
-    }
-
-    private void reinforceAll(List<?> evaluated) {
-        for (Object entry : evaluated) {
-            if (entry instanceof EvaluatedSolution<?>(Object value, double fitness) && value instanceof int[] tour) {
-                depositPheromone(tour, fitness);
-            }
-        }
+        return candidate.fitness() > bestSoFar.fitness();
     }
 
     private EvaluatedSolution<int[]> bestOf(List<?> evaluated) {
@@ -310,14 +362,14 @@ public class TspAcoGenerator implements Generator<int[]> {
         return best;
     }
 
-    private void depositPheromone(int[] tour, double fitness) {
+    private void depositPheromone(int[] tour, double fitness, double rate) {
         double tourLength = -fitness;
 
         if (tourLength <= 0.0 || Double.isNaN(tourLength) || Double.isInfinite(tourLength)) {
             return;
         }
 
-        double deposit = Q / tourLength;
+        double deposit = (rate * Q) / tourLength;
 
         for (int i = 0; i < tour.length; i++) {
             int from = tour[i];
@@ -325,6 +377,26 @@ public class TspAcoGenerator implements Generator<int[]> {
 
             pheromoneMatrix[from][to] += deposit;
             pheromoneMatrix[to][from] += deposit;
+        }
+    }
+
+    private void evaporate() {
+        for (int i = 0; i < pheromoneMatrix.length; i++) {
+            for (int j = 0; j < pheromoneMatrix.length; j++) {
+                pheromoneMatrix[i][j] *= (1.0 - evaporationRate);
+            }
+        }
+    }
+
+    private ReinforcementMode parseReinforcementMode(Object value) {
+        if (value == null) {
+            throw new IllegalArgumentException("Reinforcement mode must be provided");
+        }
+        String normalized = value.toString().trim().toUpperCase();
+        try {
+            return ReinforcementMode.valueOf(normalized);
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException("Invalid reinforcement mode: " + value, ex);
         }
     }
 

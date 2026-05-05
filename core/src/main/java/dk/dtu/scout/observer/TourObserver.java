@@ -1,15 +1,16 @@
 package dk.dtu.scout.observer;
 
-import dk.dtu.scout.dto.Parameter;
 import dk.dtu.scout.State;
 import dk.dtu.scout.datatypes.StateKeys;
 import dk.dtu.scout.datatypes.TSPInstance;
 import dk.dtu.scout.datatypes.VRPInstance;
+import dk.dtu.scout.dto.Parameter;
+import dk.dtu.scout.logging.IterationSnapshot;
 import dk.dtu.scout.logging.RunLog;
 import dk.dtu.scout.logging.SeriesMode;
 import dk.dtu.scout.problems.TSP;
 import dk.dtu.scout.problems.VRP;
-import dk.dtu.scout.logging.IterationSnapshot;
+import dk.dtu.scout.util.TourVisualizationMapper;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -47,33 +48,39 @@ public class TourObserver implements Observer<Object> {
     @Override
     public List<Parameter> params() {
         return List.of(
-            new Parameter(
-                "includePheromone",
-                "Include Pheromone Heatmap",
-                "boolean",
-                false,
-                null,
-                null
-            )
+                new Parameter(
+                        "includePheromone",
+                        "Include Pheromone Heatmap",
+                        "boolean",
+                        false,
+                        null,
+                        null,
+                        null
+                )
         );
     }
 
     @Override
     public void init(State state) {
         this.state = state;
+
         if (state == null) {
             return;
         }
+
         Object problemObj = state.get(StateKeys.PROBLEM);
+
         if (problemObj instanceof TSP tsp) {
             this.tspInstance = tsp.getInstance();
+
             if (tspInstance != null) {
-                this.cities = TourObserverSupport.buildTspCities(tspInstance);
+                this.cities = TourVisualizationMapper.buildTspCities(tspInstance);
             }
         } else if (problemObj instanceof VRP vrp) {
             this.vrpInstance = vrp.getInstance();
+
             if (vrpInstance != null) {
-                this.cities = TourObserverSupport.buildVrpCities(vrpInstance);
+                this.cities = TourVisualizationMapper.buildVrpCities(vrpInstance);
             }
         }
     }
@@ -83,9 +90,10 @@ public class TourObserver implements Observer<Object> {
         if (params == null) {
             return;
         }
+
         Object pheromoneParam = params.get("includePheromone");
-        if (pheromoneParam instanceof Boolean) {
-            this.includePheromone = (Boolean) pheromoneParam;
+        if (pheromoneParam instanceof Boolean value) {
+            this.includePheromone = value;
         }
     }
 
@@ -95,6 +103,7 @@ public class TourObserver implements Observer<Object> {
             log.putSeries("tspCities", cities, SeriesMode.LATEST_ONLY);
             citiesLogged = true;
         }
+
         logTourSnapshot(state, log);
         logPheromoneHeatmap(log);
     }
@@ -107,14 +116,17 @@ public class TourObserver implements Observer<Object> {
 
     private void logTourSnapshot(IterationSnapshot<Object> state, RunLog log) {
         Object solution;
+
         try {
             solution = state.currentSolution();
+
             if (solution == null) {
                 solution = state.bestSolution();
             }
         } catch (ClassCastException ex) {
             return;
         }
+
         if (solution == null) {
             return;
         }
@@ -124,23 +136,27 @@ public class TourObserver implements Observer<Object> {
         List<List<Integer>> routesToLog;
 
         if (solution instanceof int[] tour) {
-            routesToLog = TourObserverSupport.wrapTour(tour);
+            routesToLog = TourVisualizationMapper.wrapTour(tour);
+
             if (tspInstance != null) {
                 length = tspInstance.getTourLength(tour);
             }
         } else if (solution instanceof List<?> list) {
             List<List<Integer>> routes = coerceRoutes(list);
+
             if (routes.isEmpty()) {
                 return;
             }
 
             if (vrpInstance != null) {
-                routesToLog = TourObserverSupport.shiftRoutesForDepot(routes);
+                routesToLog = TourVisualizationMapper.shiftRoutesForDepot(routes);
                 length = totalDistance(routes, vrpInstance);
             } else {
                 routesToLog = routes;
+
                 if (tspInstance != null && routes.size() == 1) {
-                    int[] tour = toIntArray(routes.get(0));
+                    int[] tour = toIntArray(routes.getFirst());
+
                     if (tour.length > 0) {
                         length = tspInstance.getTourLength(tour);
                     }
@@ -151,6 +167,7 @@ public class TourObserver implements Observer<Object> {
         }
 
         tourData.put("tour", routesToLog);
+
         if (length != null) {
             tourData.put("length", length);
         }
@@ -163,47 +180,57 @@ public class TourObserver implements Observer<Object> {
             return List.of();
         }
 
-        Object first = raw.get(0);
+        Object first = raw.getFirst();
+
         if (first instanceof Number) {
             return List.of(copyRoute(raw));
         }
 
         List<List<Integer>> routes = new ArrayList<>();
+
         for (Object routeObj : raw) {
             if (routeObj instanceof List<?> route) {
                 List<Integer> copy = copyRoute(route);
+
                 if (!copy.isEmpty()) {
                     routes.add(copy);
                 }
             }
         }
+
         return routes;
     }
 
     private List<Integer> copyRoute(List<?> raw) {
         List<Integer> copy = new ArrayList<>(raw.size());
+
         for (Object value : raw) {
             if (value instanceof Number number) {
                 copy.add(number.intValue());
             }
         }
+
         return copy;
     }
 
     private int[] toIntArray(List<Integer> route) {
         int[] result = new int[route.size()];
+
         for (int i = 0; i < route.size(); i++) {
             Integer value = route.get(i);
             result[i] = value == null ? 0 : value;
         }
+
         return result;
     }
 
     private double totalDistance(List<List<Integer>> routes, VRPInstance instance) {
         double sum = 0.0;
+
         for (List<Integer> route : routes) {
             sum += routeDistance(route, instance);
         }
+
         return sum;
     }
 
@@ -214,59 +241,105 @@ public class TourObserver implements Observer<Object> {
 
         double distance = 0.0;
         int previousNode = 0;
+
         for (int customerIndex : route) {
             int nodeIndex = customerIndex + 1;
             distance += instance.getDistance(previousNode, nodeIndex);
             previousNode = nodeIndex;
         }
+
         distance += instance.getDistance(previousNode, 0);
         return distance;
     }
 
     private void logPheromoneHeatmap(RunLog log) {
-        if (!includePheromone) return;
-        if (this.state == null) return;
+        if (!includePheromone || state == null) {
+            return;
+        }
 
-        Object pheromoneObj = this.state.get(StateKeys.PHEROMONE_MATRIX);
+        Object pheromoneObj = state.get(StateKeys.PHEROMONE_MATRIX);
         List<List<Double>> matrixList = null;
 
         if (pheromoneObj instanceof double[][] pheromoneMatrix) {
-            matrixList = new ArrayList<>(pheromoneMatrix.length);
-            for (double[] row : pheromoneMatrix) {
-                List<Double> rowList = new ArrayList<>(row.length);
-                for (double v : row) rowList.add(v);
-                matrixList.add(rowList);
-            }
-        } else if (pheromoneObj instanceof List<?> outer && !outer.isEmpty() && outer.get(0) instanceof List<?>) {
-            matrixList = new ArrayList<>(outer.size());
-            for (Object r : outer) {
-                if (r instanceof List<?> inner) {
-                    List<Double> rowList = new ArrayList<>(inner.size());
-                    for (Object v : inner) {
-                        if (v instanceof Number n) rowList.add(n.doubleValue());
-                    }
-                    matrixList.add(rowList);
-                }
-            }
+            matrixList = toMatrixList(pheromoneMatrix);
+        } else if (pheromoneObj instanceof List<?> outer && !outer.isEmpty() && outer.getFirst() instanceof List<?>) {
+            matrixList = toMatrixList(outer);
         } else {
-            int dim = 0;
-            if (tspInstance != null) dim = tspInstance.getDimension();
-            if (dim <= 0) {
-                Object dimObj = this.state.get(StateKeys.DIMENSION);
-                if (dimObj instanceof Number n) dim = n.intValue();
-            }
-            if (dim > 0) {
-                matrixList = new ArrayList<>(dim);
-                for (int i = 0; i < dim; i++) {
-                    List<Double> row = new ArrayList<>(dim);
-                    for (int j = 0; j < dim; j++) row.add(0.0);
-                    matrixList.add(row);
-                }
-            }
+            matrixList = zeroMatrixFromDimension();
         }
 
         if (matrixList != null && !matrixList.isEmpty()) {
             log.putSeries("pheromoneHeatmap", matrixList, SeriesMode.LATEST_ONLY);
         }
+    }
+
+    private List<List<Double>> toMatrixList(double[][] matrix) {
+        List<List<Double>> matrixList = new ArrayList<>(matrix.length);
+
+        for (double[] row : matrix) {
+            List<Double> rowList = new ArrayList<>(row.length);
+
+            for (double value : row) {
+                rowList.add(value);
+            }
+
+            matrixList.add(rowList);
+        }
+
+        return matrixList;
+    }
+
+    private List<List<Double>> toMatrixList(List<?> outer) {
+        List<List<Double>> matrixList = new ArrayList<>(outer.size());
+
+        for (Object rowObj : outer) {
+            if (rowObj instanceof List<?> inner) {
+                List<Double> rowList = new ArrayList<>(inner.size());
+
+                for (Object value : inner) {
+                    if (value instanceof Number number) {
+                        rowList.add(number.doubleValue());
+                    }
+                }
+
+                matrixList.add(rowList);
+            }
+        }
+
+        return matrixList;
+    }
+
+    private List<List<Double>> zeroMatrixFromDimension() {
+        int dimension = 0;
+
+        if (tspInstance != null) {
+            dimension = tspInstance.getDimension();
+        }
+
+        if (dimension <= 0) {
+            Object dimensionObj = state.get(StateKeys.DIMENSION);
+
+            if (dimensionObj instanceof Number number) {
+                dimension = number.intValue();
+            }
+        }
+
+        if (dimension <= 0) {
+            return null;
+        }
+
+        List<List<Double>> matrix = new ArrayList<>(dimension);
+
+        for (int i = 0; i < dimension; i++) {
+            List<Double> row = new ArrayList<>(dimension);
+
+            for (int j = 0; j < dimension; j++) {
+                row.add(0.0);
+            }
+
+            matrix.add(row);
+        }
+
+        return matrix;
     }
 }

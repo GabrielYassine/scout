@@ -186,7 +186,7 @@ class BitstringAcoGeneratorTest {
         assertEquals("bitstring-aco", generator.id());
         assertEquals("Bitstring ACO Generator", generator.displayName());
         assertFalse(generator.description().isBlank());
-        assertEquals(5, generator.params().size());
+        assertEquals(6, generator.params().size());
         assertEquals(List.of("bitstring"), generator.supportedSearchSpaces());
     }
 

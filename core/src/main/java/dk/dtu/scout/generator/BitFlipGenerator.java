@@ -31,7 +31,7 @@ public class BitFlipGenerator implements Generator<boolean[]> {
     public String description() { return "Flips each bit independently with probability p."; }
     @Override
     public List<Parameter> params() {
-        return List.of(new Parameter("flipProbability", "Flip Probability", "string", "1/n", null, null));
+        return List.of(new Parameter("flipProbability", "Flip Probability", "string", "1/n", null, null, null));
     }
 
     @Override

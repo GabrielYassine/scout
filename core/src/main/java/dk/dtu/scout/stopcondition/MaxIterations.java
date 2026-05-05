@@ -31,7 +31,7 @@ public class MaxIterations<S> implements StopCondition<S> {
 
     @Override
     public List<Parameter> params() {
-        return List.of(new Parameter("maxIterations", "Max iterations", "int", maxIterations, 1.0, null));
+        return List.of(new Parameter("maxIterations", "Max iterations", "int", maxIterations, 1.0, null, null));
     }
 
     @Override

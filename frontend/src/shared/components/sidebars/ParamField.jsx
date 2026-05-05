@@ -5,10 +5,30 @@
 import FieldRow from "./FieldRow.jsx";
 
 export default function ParamField({ def, value, onValueChange, disabled }) {
-  const { key, label, type, min, max } = def;
+  const { key, label, type, min, max, options } = def;
 
   const resolvedValue = value ?? "";
   const fieldLabel = label ?? key;
+
+  if (type === "enum" || type === "select") {
+    const fallbackValue = resolvedValue ?? options?.[0] ?? "";
+    return (
+      <FieldRow label={fieldLabel}>
+        <select
+          className="field-input"
+          value={fallbackValue}
+          disabled={disabled}
+          onChange={(e) => onValueChange(e.target.value)}
+        >
+          {(options ?? []).map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
+      </FieldRow>
+    );
+  }
 
   if (type === "boolean") {
     return (

@@ -111,7 +111,7 @@ class TspAcoGeneratorTest {
         assertEquals("tsp-aco", generator.id());
         assertEquals("TSP ACO Generator", generator.displayName());
         assertFalse(generator.description().isBlank());
-        assertEquals(6, generator.params().size());
+        assertEquals(8, generator.params().size());
         assertEquals(List.of("permutation"), generator.supportedSearchSpaces());
     }
 

@@ -39,8 +39,8 @@ public class TargetReached<S> implements StopCondition<S> {
     @Override
     public List<Parameter> params() {
         return List.of(
-            new Parameter("targetFitness", "Target fitness", "double", targetFitness, null, null),
-            new Parameter("targetIsDistance", "Target is distance (TSP)", "boolean", targetIsDistance, null, null)
+                new Parameter("targetFitness", "Target fitness", "double", targetFitness, null, null, null),
+                new Parameter("targetIsDistance", "Target is distance (TSP)", "boolean", targetIsDistance, null, null, null)
         );
     }
 

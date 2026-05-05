@@ -32,7 +32,7 @@ class CatalogControllerTest {
             "bitstring",
             "Bitstring",
             "Bitstring search space",
-            List.of(new ParamDef("n", "N", "int", 10, 1.0, null)),
+            List.of(new ParamDef("n", "N", "int", 10, 1.0, null, null)),
             List.of("bitstring")
         );
 

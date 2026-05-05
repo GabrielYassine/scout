@@ -39,8 +39,8 @@ public class MuLambdaPopulationModel<S> implements PopulationModel<S> {
     @Override
     public List<Parameter> params() {
         return List.of(
-                new Parameter("mu", "mu (Parents Amount)", "int", mu, 1.0, null),
-                new Parameter("lambda", "lambda (Children Amount)", "int", lambda, 1.0, null)
+                new Parameter("mu", "mu (Parents Amount)", "int", mu, 1.0, null, null),
+                new Parameter("lambda", "lambda (Children Amount)", "int", lambda, 1.0, null, null)
         );
     }
 

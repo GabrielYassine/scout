@@ -51,8 +51,8 @@ public class RouteList implements SearchSpace<List<List<Integer>>> {
     @Override
     public List<Parameter> params() {
         return List.of(
-            new Parameter("n", "Customer count (n)", "int", n, 1.0, null),
-            new Parameter("routeCount", "Initial route count", "int", routeCount, 1.0, null)
+                new Parameter("n", "Customer count (n)", "int", n, 1.0, null, null),
+                new Parameter("routeCount", "Initial route count", "int", routeCount, 1.0, null, null)
         );
     }
 

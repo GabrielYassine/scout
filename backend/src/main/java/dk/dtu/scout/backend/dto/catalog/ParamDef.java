@@ -1,5 +1,7 @@
 package dk.dtu.scout.backend.dto.catalog;
 
+import java.util.List;
+
 /**
  * Defines a parameter for a Scout component, including its key, label, type, default value, and optional min/max for numeric parameters.
  * @param key the unique key used in the backend to identify this parameter (e.g., "populationSize")
@@ -16,5 +18,6 @@ public record ParamDef(
     String type,
     Object defaultValue,
     Double min,
-    Double max
+    Double max,
+    List<String> options
 ) {}

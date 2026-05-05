@@ -1,4 +1,4 @@
-package dk.dtu.scout.observer;
+package dk.dtu.scout.util;
 
 import dk.dtu.scout.datatypes.TSPInstance;
 import dk.dtu.scout.datatypes.VRPInstance;
@@ -8,11 +8,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-final class TourObserverSupport {
+public final class TourVisualizationMapper {
 
-    private TourObserverSupport() {}
+    private TourVisualizationMapper() {
+    }
 
-    static List<Map<String, Object>> buildVrpCities(VRPInstance instance) {
+    public static List<Map<String, Object>> buildVrpCities(VRPInstance instance) {
         List<Map<String, Object>> cities = new ArrayList<>();
 
         double[] depot = instance.getDepotCoordinates();
@@ -33,57 +34,66 @@ final class TourObserverSupport {
         return cities;
     }
 
-    static List<Map<String, Object>> buildTspCities(TSPInstance instance) {
+    public static List<Map<String, Object>> buildTspCities(TSPInstance instance) {
         List<Map<String, Object>> cities = new ArrayList<>();
         double[][] coords = instance.getCoordinates();
+
         for (double[] coord : coords) {
             Map<String, Object> city = new HashMap<>();
             city.put("x", coord[0]);
             city.put("y", coord[1]);
             cities.add(city);
         }
+
         return cities;
     }
 
-    static List<List<Integer>> wrapTour(int[] tour) {
+    public static List<List<Integer>> wrapTour(int[] tour) {
         if (tour == null || tour.length == 0) {
             return List.of();
         }
+
         List<Integer> route = new ArrayList<>(tour.length);
         for (int city : tour) {
             route.add(city);
         }
+
         return List.of(route);
     }
 
-    static List<List<Integer>> copyRoutes(List<List<Integer>> routes) {
+    public static List<List<Integer>> copyRoutes(List<List<Integer>> routes) {
         List<List<Integer>> copy = new ArrayList<>(routes.size());
+
         for (List<Integer> route : routes) {
             if (route == null) {
                 copy.add(List.of());
-                continue;
+            } else {
+                copy.add(new ArrayList<>(route));
             }
-            copy.add(new ArrayList<>(route));
         }
+
         return copy;
     }
 
-    static List<List<Integer>> shiftRoutesForDepot(List<List<Integer>> routes) {
+    public static List<List<Integer>> shiftRoutesForDepot(List<List<Integer>> routes) {
         List<List<Integer>> shifted = new ArrayList<>(routes.size());
+
         for (List<Integer> route : routes) {
             if (route == null || route.isEmpty()) {
                 shifted.add(List.of());
                 continue;
             }
-            List<Integer> routeShifted = new ArrayList<>(route.size());
-            for (Integer idx : route) {
-                if (idx == null) {
-                    continue;
+
+            List<Integer> shiftedRoute = new ArrayList<>(route.size());
+            for (Integer customerIndex : route) {
+                if (customerIndex != null) {
+                    shiftedRoute.add(customerIndex + 1);
                 }
-                routeShifted.add(idx + 1);
             }
-            shifted.add(routeShifted);
+
+            shifted.add(shiftedRoute);
         }
+
         return shifted;
     }
 }

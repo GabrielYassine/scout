@@ -37,7 +37,7 @@ public class KPointCrossover implements Crossover<boolean[]> {
     @Override
     public List<Parameter> params() {
         return List.of(
-                new Parameter("k", "Number of crossover points", "int", k, 1.0, null)
+                new Parameter("k", "Number of crossover points", "int", k, 1.0, null, null)
         );
     }
 

@@ -47,7 +47,7 @@ public class Permutation implements SearchSpace<int[]> {
     }
 
     @Override public List<Parameter> params() {
-        return List.of(new Parameter("n", "Length (n)", "int", n, 1.0, null));
+        return List.of(new Parameter("n", "Length (n)", "int", n, 1.0, null, null));
     }
 
     @Override

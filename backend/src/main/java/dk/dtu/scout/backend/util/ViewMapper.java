@@ -40,7 +40,8 @@ public final class ViewMapper {
             param.type(),
             param.defaultValue(),
             param.min(),
-            param.max()
+            param.max(),
+            param.options()
         );
     }
 
