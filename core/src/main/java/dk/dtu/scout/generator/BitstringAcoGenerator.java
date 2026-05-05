@@ -16,16 +16,17 @@ import java.util.Random;
 @Scope("prototype")
 public class BitstringAcoGenerator implements Generator<boolean[]> {
 
-    private double evaporationRate = 0.1;
-    private double reinforcementRate = 0.1;
+    private double rho = 0.1;
 
     private Object minPheromone = "1/n";
     private Object maxPheromone = "1 - 1/n";
 
-    private boolean reinforceBestOnly = true;
+    private boolean acceptEqualFitness = true;
 
     private double[] pheromoneVector;
     private State state;
+
+    private EvaluatedSolution<boolean[]> bestSoFar;
 
     @Override
     public void init(State state) {
@@ -39,41 +40,50 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
 
     @Override
     public String displayName() {
-        return "Bitstring ACO Generator";
+        return "Bitstring MMAS Generator";
     }
 
     @Override
     public String description() {
-        return "Ant colony generator for bitstrings using bounded position pheromones";
+        return "MMAS generator for bitstrings using bounded position pheromones";
     }
 
     @Override
     public List<Parameter> params() {
         return List.of(
-            new Parameter("evaporationRate", "Pheromone Evaporation Rate", "double", evaporationRate, 0.0, 1.0),
-            new Parameter("reinforcementRate", "Reinforcement Rate", "double", reinforcementRate, 0.0, 1.0),
-            new Parameter("minPheromone", "Minimum Pheromone", "string", minPheromone, null, null),
-            new Parameter("maxPheromone", "Maximum Pheromone", "string", maxPheromone, null, null),
-            new Parameter("reinforceBestOnly", "Reinforce Best Only", "boolean", reinforceBestOnly, null, null)
+                new Parameter("rho", "Pheromone Update Strength", "double", rho, 0.0, 1.0),
+                new Parameter("minPheromone", "Minimum Pheromone", "string", minPheromone, null, null),
+                new Parameter("maxPheromone", "Maximum Pheromone", "string", maxPheromone, null, null),
+                new Parameter("acceptEqualFitness", "Accept Equal Fitness", "boolean", acceptEqualFitness, null, null)
         );
     }
 
     @Override
     public void configure(Map<String, Object> params) {
-        if (params.containsKey("evaporationRate")) {
-            double value = ((Number) params.get("evaporationRate")).doubleValue();
-            if (value < 0.0 || value > 1.0) {
-                throw new IllegalArgumentException("Evaporation rate must be between 0 and 1");
-            }
-            this.evaporationRate = value;
+        if (params.containsKey("rho")) {
+            this.rho = resolveRate(params.get("rho"), "Pheromone update strength");
         }
 
-        if (params.containsKey("reinforcementRate")) {
-            double value = ((Number) params.get("reinforcementRate")).doubleValue();
-            if (value < 0.0 || value > 1.0) {
-                throw new IllegalArgumentException("Reinforcement rate must be between 0 and 1");
+        // Compatibility with older saved configurations.
+        if (!params.containsKey("rho") && params.containsKey("evaporationRate")) {
+            this.rho = resolveRate(params.get("evaporationRate"), "Evaporation rate");
+        }
+
+        if (!params.containsKey("rho") && params.containsKey("reinforcementRate")) {
+            this.rho = resolveRate(params.get("reinforcementRate"), "Reinforcement rate");
+        }
+
+        if (params.containsKey("evaporationRate") && params.containsKey("reinforcementRate")) {
+            double evaporationRate = resolveRate(params.get("evaporationRate"), "Evaporation rate");
+            double reinforcementRate = resolveRate(params.get("reinforcementRate"), "Reinforcement rate");
+
+            if (Double.compare(evaporationRate, reinforcementRate) != 0) {
+                throw new IllegalArgumentException(
+                        "Bitstring MMAS uses one update strength rho. Evaporation and reinforcement must be equal."
+                );
             }
-            this.reinforcementRate = value;
+
+            this.rho = evaporationRate;
         }
 
         if (params.containsKey("minPheromone")) {
@@ -84,9 +94,19 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
             this.maxPheromone = params.get("maxPheromone");
         }
 
-        if (params.containsKey("reinforceBestOnly")) {
-            this.reinforceBestOnly = (Boolean) params.get("reinforceBestOnly");
+        if (params.containsKey("acceptEqualFitness")) {
+            this.acceptEqualFitness = (Boolean) params.get("acceptEqualFitness");
         }
+    }
+
+    private double resolveRate(Object value, String label) {
+        double resolved = ((Number) value).doubleValue();
+
+        if (resolved < 0.0 || resolved > 1.0) {
+            throw new IllegalArgumentException(label + " must be between 0 and 1");
+        }
+
+        return resolved;
     }
 
     @Override
@@ -141,6 +161,74 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
         state.update(Map.of(StateKeys.PHEROMONE_VECTOR, pheromoneVector));
     }
 
+    private void updatePheromones(State state) {
+        Object evaluatedObj = state.get(StateKeys.GENERATION_EVALUATED);
+        if (!(evaluatedObj instanceof List<?> evaluated) || evaluated.isEmpty()) {
+            return;
+        }
+
+        updateBestSoFar(evaluated);
+
+        if (bestSoFar == null) {
+            return;
+        }
+
+        applyMmasUpdate(bestSoFar.value());
+
+        clampPheromones();
+    }
+
+    private void updateBestSoFar(List<?> evaluated) {
+        EvaluatedSolution<boolean[]> generationBest = bestOf(evaluated);
+
+        if (generationBest == null) {
+            return;
+        }
+
+        if (bestSoFar == null || isAcceptedAsBestSoFar(generationBest)) {
+            bestSoFar = new EvaluatedSolution<>(
+                    generationBest.value().clone(),
+                    generationBest.fitness()
+            );
+        }
+    }
+
+    private boolean isAcceptedAsBestSoFar(EvaluatedSolution<boolean[]> candidate) {
+        if (acceptEqualFitness) {
+            return candidate.fitness() >= bestSoFar.fitness();
+        }
+
+        return candidate.fitness() > bestSoFar.fitness();
+    }
+
+    private void applyMmasUpdate(boolean[] reinforcedSolution) {
+        int limit = Math.min(pheromoneVector.length, reinforcedSolution.length);
+
+        for (int i = 0; i < pheromoneVector.length; i++) {
+            pheromoneVector[i] *= (1.0 - rho);
+        }
+
+        for (int i = 0; i < limit; i++) {
+            if (reinforcedSolution[i]) {
+                pheromoneVector[i] += rho;
+            }
+        }
+    }
+
+    private EvaluatedSolution<boolean[]> bestOf(List<?> evaluated) {
+        EvaluatedSolution<boolean[]> best = null;
+
+        for (Object entry : evaluated) {
+            if (entry instanceof EvaluatedSolution<?>(Object value, double fitness) && value instanceof boolean[] bits) {
+                if (best == null || fitness > best.fitness()) {
+                    best = new EvaluatedSolution<>(bits, fitness);
+                }
+            }
+        }
+
+        return best;
+    }
+
     private PheromoneBounds resolvePheromoneBounds() {
         int dimension = resolveDimension();
 
@@ -193,70 +281,6 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
         return 0;
     }
 
-    private void updatePheromones(State state) {
-        Object evaluatedObj = state.get(StateKeys.GENERATION_EVALUATED);
-        if (!(evaluatedObj instanceof List<?> evaluated) || evaluated.isEmpty()) {
-            return;
-        }
-
-        evaporate();
-
-        if (reinforceBestOnly) {
-            reinforceBest(evaluated);
-        } else {
-            reinforceAll(evaluated);
-        }
-
-        clampPheromones();
-    }
-
-    private void evaporate() {
-        for (int i = 0; i < pheromoneVector.length; i++) {
-            pheromoneVector[i] *= (1.0 - evaporationRate);
-        }
-    }
-
-    private void reinforceBest(List<?> evaluated) {
-        EvaluatedSolution<boolean[]> best = bestOf(evaluated);
-        if (best != null) {
-            deposit(best.value(), reinforcementRate);
-        }
-    }
-
-    private void reinforceAll(List<?> evaluated) {
-        double scaledReinforcement = reinforcementRate / evaluated.size();
-
-        for (Object entry : evaluated) {
-            if (entry instanceof EvaluatedSolution<?>(Object value, double fitness) && value instanceof boolean[] bits) {
-                deposit(bits, scaledReinforcement);
-            }
-        }
-    }
-
-    private void deposit(boolean[] solution, double amount) {
-        int limit = Math.min(pheromoneVector.length, solution.length);
-
-        for (int i = 0; i < limit; i++) {
-            if (solution[i]) {
-                pheromoneVector[i] += amount;
-            }
-        }
-    }
-
-    private EvaluatedSolution<boolean[]> bestOf(List<?> evaluated) {
-        EvaluatedSolution<boolean[]> best = null;
-
-        for (Object entry : evaluated) {
-            if (entry instanceof EvaluatedSolution<?>(Object value, double fitness) && value instanceof boolean[] bits) {
-                if (best == null || fitness > best.fitness()) {
-                    best = new EvaluatedSolution<>(bits, fitness);
-                }
-            }
-        }
-
-        return best;
-    }
-
     private void clampPheromones() {
         PheromoneBounds bounds = resolvePheromoneBounds();
 
@@ -268,6 +292,6 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
     private double clamp(double value, PheromoneBounds bounds) {
         return Math.max(bounds.min(), Math.min(bounds.max(), value));
     }
-    // Simple record to hold resolved pheromone bounds for internal use
+
     private record PheromoneBounds(double min, double max) {}
 }
