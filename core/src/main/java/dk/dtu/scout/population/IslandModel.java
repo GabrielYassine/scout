@@ -208,13 +208,16 @@ public class IslandModel<S> implements PopulationModel<S> {
 
     private boolean stepIsland(PopulationModelContext<S> context, IslandState<S> island, int iteration) {
         updateIslandState(island);
-        updateComponentStateVariables(island);
 
         List<EvaluatedSolution<S>> generationEvaluated = new ArrayList<>(lambda);
 
         for (int i = 0; i < lambda; i++) {
             generationEvaluated.add(createChild(context, island));
         }
+
+        island.state.update(Map.of(StateKeys.GENERATION_EVALUATED, List.copyOf(generationEvaluated)));
+
+        updateComponentStateVariables(island);
 
         S previousCurrent = island.current;
 
@@ -387,12 +390,21 @@ public class IslandModel<S> implements PopulationModel<S> {
     }
 
     private Map<String, Object> stateVariables(IslandState<S> globalCurrent, IslandState<S> globalBest) {
-        return Map.of(
-            StateKeys.CURRENT, globalCurrent.current,
-            StateKeys.CURRENT_FITNESS, globalCurrent.currentFitness,
-            StateKeys.BEST, globalBest.best,
-            StateKeys.BEST_FITNESS, globalBest.bestFitness
-        );
+        Map<String, Object> variables = new HashMap<>();
+        variables.put(StateKeys.CURRENT, globalCurrent.current);
+        variables.put(StateKeys.CURRENT_FITNESS, globalCurrent.currentFitness);
+        variables.put(StateKeys.BEST, globalBest.best);
+        variables.put(StateKeys.BEST_FITNESS, globalBest.bestFitness);
+
+        Object pheromoneMatrix = globalBest.state.get(StateKeys.PHEROMONE_MATRIX);
+        if (pheromoneMatrix != null) {
+            variables.put(StateKeys.PHEROMONE_MATRIX, pheromoneMatrix);
+        }
+        Object pheromoneVector = globalBest.state.get(StateKeys.PHEROMONE_VECTOR);
+        if (pheromoneVector != null) {
+            variables.put(StateKeys.PHEROMONE_VECTOR, pheromoneVector);
+        }
+        return variables;
     }
 
     private int positiveIntParam(
