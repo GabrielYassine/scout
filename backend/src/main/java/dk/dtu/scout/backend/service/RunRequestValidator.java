@@ -4,7 +4,6 @@ import dk.dtu.scout.backend.dto.request.RunRequest;
 import dk.dtu.scout.backend.dto.request.RuntimeStudyRequest;
 import dk.dtu.scout.backend.exception.BadRequestException;
 import dk.dtu.scout.backend.instance.InstanceMapper;
-import dk.dtu.scout.backend.instance.InstanceValidator;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -115,7 +114,7 @@ public class RunRequestValidator {
             }
 
             try {
-                InstanceValidator.validateTsp(InstanceMapper.toTspInstance(asInstanceMap(tspInstance, "tspInstance")));
+                InstanceMapper.toTspInstance(asInstanceMap(tspInstance, "tspInstance"));
             } catch (IllegalArgumentException ex) {
                 throw new BadRequestException("Invalid TSP instance: " + ex.getMessage());
             }
@@ -128,7 +127,7 @@ public class RunRequestValidator {
             }
 
             try {
-                InstanceValidator.validateVrp(InstanceMapper.toVrpInstance(asInstanceMap(vrpInstance, "vrpInstance")));
+                InstanceMapper.toVrpInstance(asInstanceMap(vrpInstance, "vrpInstance"));
             } catch (IllegalArgumentException ex) {
                 throw new BadRequestException("Invalid VRP instance: " + ex.getMessage());
             }

@@ -4,6 +4,7 @@ import dk.dtu.scout.backend.dto.request.RunRequest;
 import dk.dtu.scout.backend.dto.request.RuntimeStudyRequest;
 import org.springframework.stereotype.Component;
 
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
@@ -40,8 +41,12 @@ public class ExecutionRegistry {
 
     public PreparedExecutionIds prepareIds(String requestedSessionId) {
         String sessionId = requestedSessionId != null && !requestedSessionId.isBlank() ? requestedSessionId : UUID.randomUUID().toString();
+
         String executionId = UUID.randomUUID().toString();
-        removePreparedForSession(sessionId);
+
+        preparedRuns.entrySet().removeIf(entry -> sessionId.equals(entry.getValue().sessionId()));
+        preparedStudies.entrySet().removeIf(entry -> sessionId.equals(entry.getValue().sessionId()));
+
         return new PreparedExecutionIds(sessionId, executionId);
     }
 
@@ -104,21 +109,6 @@ public class ExecutionRegistry {
     }
 
     /**
-     * Removes prepared executions for a session.
-     * This prevents old prepared-but-never-started executions from accumulating
-     * when the user prepares a new execution from the same browser session.
-     * @param sessionId browser session id
-     */
-    public void removePreparedForSession(String sessionId) {
-        if (sessionId == null || sessionId.isBlank()) {
-            return;
-        }
-
-        preparedRuns.entrySet().removeIf(entry -> sessionId.equals(entry.getValue().sessionId()));
-        preparedStudies.entrySet().removeIf(entry -> sessionId.equals(entry.getValue().sessionId()));
-    }
-
-    /**
      * Registers a new active task for the given session and task id.
      * If the same session already has an active task, the previous task is cancelled.
      * @param sessionId browser session id
@@ -126,12 +116,15 @@ public class ExecutionRegistry {
      * @param future asynchronous task future
      */
     public void registerActive(String sessionId, String taskId, Future<?> future) {
-        ActiveTask previous = activeBySession.get(sessionId);
-        if (previous != null && previous.future() != null) {
-            previous.future().cancel(true);
-        }
+        Objects.requireNonNull(future, "future must not be null");
 
-        activeBySession.put(sessionId, new ActiveTask(taskId, future));
+        activeBySession.compute(sessionId, (sid, previous) -> {
+            if (previous != null) {
+                previous.future().cancel(true);
+            }
+
+            return new ActiveTask(taskId, future);
+        });
     }
 
     /**
@@ -141,7 +134,7 @@ public class ExecutionRegistry {
      * @param runId run id
      */
     public void attachRunWebSocket(String websocketSessionId, String sessionId, String runId) {
-        attachWebSocket(websocketSessionId, sessionId, runId, ExecutionType.RUN);
+        websocketBindings.put(websocketSessionId, new WebSocketBinding(sessionId, runId, ExecutionType.RUN));
     }
 
     /**
@@ -151,23 +144,7 @@ public class ExecutionRegistry {
      * @param studyId runtime study id
      */
     public void attachStudyWebSocket(String websocketSessionId, String sessionId, String studyId) {
-        attachWebSocket(websocketSessionId, sessionId, studyId, ExecutionType.STUDY);
-    }
-
-    private void attachWebSocket(String websocketSessionId, String sessionId, String taskId, ExecutionType type) {
-        if (websocketSessionId == null || websocketSessionId.isBlank()) {
-            return;
-        }
-
-        if (sessionId == null || sessionId.isBlank()) {
-            return;
-        }
-
-        if (taskId == null || taskId.isBlank()) {
-            return;
-        }
-
-        websocketBindings.put(websocketSessionId, new WebSocketBinding(sessionId, taskId, type));
+        websocketBindings.put(websocketSessionId, new WebSocketBinding(sessionId, studyId, ExecutionType.STUDY));
     }
 
     /**
@@ -188,7 +165,14 @@ public class ExecutionRegistry {
             preparedStudies.remove(binding.taskId());
         }
 
-        cancelActiveTask(binding.sessionId(), binding.taskId());
+        activeBySession.computeIfPresent(binding.sessionId(), (sid, active) -> {
+            if (!binding.taskId().equals(active.id())) {
+                return active;
+            }
+
+            active.future().cancel(true);
+            return null;
+        });
     }
 
     /**
@@ -197,7 +181,7 @@ public class ExecutionRegistry {
      * @param runId run id
      */
     public void finishRun(String sessionId, String runId) {
-        removeActiveTask(sessionId, runId);
+        activeBySession.computeIfPresent(sessionId, (sid, active) -> runId.equals(active.id()) ? null : active);
     }
 
     /**
@@ -206,30 +190,6 @@ public class ExecutionRegistry {
      * @param studyId runtime study id
      */
     public void finishStudy(String sessionId, String studyId) {
-        removeActiveTask(sessionId, studyId);
-    }
-
-    private void cancelActiveTask(String sessionId, String taskId) {
-        activeBySession.computeIfPresent(sessionId, (sid, active) -> {
-            if (!taskId.equals(active.id())) {
-                return active;
-            }
-
-            if (active.future() != null) {
-                active.future().cancel(true);
-            }
-
-            return null;
-        });
-    }
-
-    /**
-     * Removes the active task for the given session if the task id matches.
-     * This prevents an old finishing task from removing a newer task from the same session.
-     * @param sessionId browser session id
-     * @param taskId run or study id
-     */
-    private void removeActiveTask(String sessionId, String taskId) {
-        activeBySession.computeIfPresent(sessionId, (sid, active) -> taskId.equals(active.id()) ? null : active);
+        activeBySession.computeIfPresent(sessionId, (sid, active) -> studyId.equals(active.id()) ? null : active);
     }
 }

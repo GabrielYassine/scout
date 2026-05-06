@@ -105,10 +105,8 @@ public class RunComponentFactory {
     public <S> Problem<S> createProblem(String id, int n, Map<String, Object> problemParams) {
         Problem<S> problem = (Problem<S>) problemRegistry.create(id);
 
-        Map<String, Object> params = new HashMap<>(Map.of("n", n));
-        if (problemParams != null) {
-            params.putAll(problemParams);
-        }
+        Map<String, Object> params = new HashMap<>(problemParams != null ? problemParams : Map.of());
+        params.put("n", n);
 
         prepareProblemSpecificParams(id, params);
 
@@ -119,9 +117,7 @@ public class RunComponentFactory {
     private void prepareProblemSpecificParams(String problemId, Map<String, Object> params) {
         if ("tsp".equals(problemId)) {
             params.put("tspInstance", InstanceMapper.toTspInstance(asInstanceMap(params.get("tspInstance"), "tspInstance")));
-        }
-
-        if ("vrp".equals(problemId)) {
+        } else if ("vrp".equals(problemId)) {
             params.put("vrpInstance", InstanceMapper.toVrpInstance(asInstanceMap(params.get("vrpInstance"), "vrpInstance")));
         }
     }
@@ -229,9 +225,6 @@ public class RunComponentFactory {
      */
     @SuppressWarnings("unchecked")
     public <S> ParentSelectionRule<S> createParentSelectionRule(String id, Map<String, Object> params) {
-        if (id == null || id.isBlank()) {
-            throw new BadRequestException("Parent selection rule must be specified");
-        }
         return (ParentSelectionRule<S>) createAndConfigure(parentSelectionRegistry, id, "Parent selection rule", params);
     }
 

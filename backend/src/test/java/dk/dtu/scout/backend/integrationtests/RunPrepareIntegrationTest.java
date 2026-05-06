@@ -1,9 +1,12 @@
-package dk.dtu.scout.backend.controller;
+package dk.dtu.scout.backend.integrationtests;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dk.dtu.scout.backend.dto.request.RunRequest;
 import dk.dtu.scout.backend.dto.request.RuntimeStudyRequest;
 import dk.dtu.scout.backend.service.ExecutionRegistry;
+import dk.dtu.scout.backend.service.RunComponentFactory;
+import dk.dtu.scout.problems.TSP;
+import dk.dtu.scout.problems.VRP;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -26,6 +29,8 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -41,6 +46,9 @@ class RunPrepareIntegrationTest {
 
     @Autowired
     private ExecutionRegistry executionRegistry;
+
+    @Autowired
+    private RunComponentFactory runComponentFactory;
 
     @Nested
     class StandardRunPreparation {
@@ -196,7 +204,7 @@ class RunPrepareIntegrationTest {
         }
 
         @ParameterizedTest(name = "{0}")
-        @MethodSource("dk.dtu.scout.backend.controller.RunPrepareIntegrationTest#invalidRunPreparePayloads")
+        @MethodSource("dk.dtu.scout.backend.integrationtests.RunPrepareIntegrationTest#invalidRunPreparePayloads")
         void prepareRun_rejectsInvalidRunRequests(String label, Map<String, Object> payload, String expectedMessage) throws Exception {
             postPrepare(payload).andExpect(status().isBadRequest()).andExpect(jsonPath("$.message").value(expectedMessage));
         }
@@ -256,7 +264,7 @@ class RunPrepareIntegrationTest {
         }
 
         @ParameterizedTest(name = "{0}")
-        @MethodSource("dk.dtu.scout.backend.controller.RunPrepareIntegrationTest#invalidRuntimeStudyPreparePayloads")
+        @MethodSource("dk.dtu.scout.backend.integrationtests.RunPrepareIntegrationTest#invalidRuntimeStudyPreparePayloads")
         void prepareRuntimeStudy_rejectsInvalidRuntimeStudyRequests(String label, Map<String, Object> payload, String expectedMessage) throws Exception {
             postPrepare(payload).andExpect(status().isBadRequest()).andExpect(jsonPath("$.message").value(expectedMessage));
         }
@@ -279,6 +287,34 @@ class RunPrepareIntegrationTest {
             payload.put("executionType", null);
 
             postPrepare(payload).andExpect(status().isBadRequest()).andExpect(jsonPath("$.message").value("executionType must be either 'run' or 'runtimeStudy'"));
+        }
+    }
+
+    @Nested
+    class ProblemSpecificParamMapping {
+
+        @Test
+        void createProblem_mapsTspInstanceParams() {
+            Map<String, Object> params = Map.of("tspInstance", validTspInstancePayload());
+
+            Object problem = runComponentFactory.createProblem("tsp", 2, params);
+
+            TSP tspProblem = assertInstanceOf(TSP.class, problem);
+            assertNotNull(tspProblem.getInstance());
+            assertEquals("tiny", tspProblem.getInstance().getName());
+            assertEquals(2, tspProblem.getInstance().getDimension());
+        }
+
+        @Test
+        void createProblem_mapsVrpInstanceParams() {
+            Map<String, Object> params = Map.of("vrpInstance", validVrpInstancePayload());
+
+            Object problem = runComponentFactory.createProblem("vrp", 0, params);
+
+            VRP vrpProblem = assertInstanceOf(VRP.class, problem);
+            assertNotNull(vrpProblem.getInstance());
+            assertEquals("tiny", vrpProblem.getInstance().getName());
+            assertEquals(1, vrpProblem.getInstance().getCustomerCount());
         }
     }
 
@@ -515,3 +551,4 @@ class RunPrepareIntegrationTest {
         return vrp;
     }
 }
+

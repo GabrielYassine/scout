@@ -3,20 +3,16 @@ package dk.dtu.scout.backend.instance;
 import dk.dtu.scout.datatypes.TSPInstance;
 import dk.dtu.scout.datatypes.VRPInstance;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
  * Mapper for converting between raw map representations of TSP and VRP instances
  * and the internal TSPInstance and VRPInstance data types.
- * It is also responsible for converting TSPInstance and VRPInstance objects back into map format suitable for frontend use and export.
+ * It validates required structure and simple semantic constraints while mapping.
  * @author s235257
  */
 public final class InstanceMapper {
-
-    private static final String EDGE_WEIGHT_TYPE = "EUC_2D";
 
     private InstanceMapper() {
     }
@@ -61,8 +57,16 @@ public final class InstanceMapper {
     public static VRPInstance toVrpInstance(Map<String, Object> map) {
         String name = map.getOrDefault("name", "Custom VRP Instance").toString();
         String comment = map.getOrDefault("comment", "").toString();
+
         double capacity = toDouble(map.get("capacity"));
+        if (capacity < 0) {
+            throw new IllegalArgumentException("VRP capacity cannot be negative");
+        }
+
         int numberOfVehicles = toInt(map.getOrDefault("numberOfVehicles", 1));
+        if (numberOfVehicles <= 0) {
+            throw new IllegalArgumentException("Number of vehicles must be positive");
+        }
 
         double[] depotCoordinates = extractDepot(map);
 
@@ -85,17 +89,27 @@ public final class InstanceMapper {
 
             customerCoordinates[i][0] = toDouble(customer.get("x"));
             customerCoordinates[i][1] = toDouble(customer.get("y"));
-            customerDemands[i] = toDouble(customer.get("demand"));
+
+            double demand = toDouble(customer.get("demand"));
+            if (demand < 0) {
+                throw new IllegalArgumentException("VRP customer " + (i + 1) + " demand cannot be negative");
+            }
+
+            if (demand > capacity) {
+                throw new IllegalArgumentException("VRP customer " + (i + 1) + " demand exceeds vehicle capacity");
+            }
+
+            customerDemands[i] = demand;
         }
 
         return new VRPInstance(
-            name,
-            comment,
-            depotCoordinates,
-            customerCoordinates,
-            customerDemands,
-            capacity,
-            numberOfVehicles
+                name,
+                comment,
+                depotCoordinates,
+                customerCoordinates,
+                customerDemands,
+                capacity,
+                numberOfVehicles
         );
     }
 

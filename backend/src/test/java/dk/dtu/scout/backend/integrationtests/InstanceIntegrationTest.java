@@ -1,4 +1,4 @@
-package dk.dtu.scout.backend.controller;
+package dk.dtu.scout.backend.integrationtests;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Nested;
@@ -24,6 +24,10 @@ import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+/**
+ * Integration tests for the InstanceController. Tests both the /api/instance/import and /api/instance/export endpoints.
+ * This covers the whole instance folder and service file.
+ */
 @SpringBootTest
 @AutoConfigureMockMvc
 class InstanceIntegrationTest {
@@ -99,11 +103,9 @@ class InstanceIntegrationTest {
         }
 
         @ParameterizedTest(name = "{0}")
-        @MethodSource("dk.dtu.scout.backend.controller.InstanceIntegrationTest#invalidImportPayloads")
+        @MethodSource("dk.dtu.scout.backend.integrationtests.InstanceIntegrationTest#invalidImportPayloads")
         void importInstance_rejectsInvalidPayloads(String label, Object payload, String expectedMessage) throws Exception {
-            postImport(payload)
-                .andExpect(status().isBadRequest())
-                .andExpect(content().string(expectedMessage));
+            postImport(payload).andExpect(status().isBadRequest()).andExpect(content().string(expectedMessage));
         }
     }
 
@@ -185,7 +187,7 @@ class InstanceIntegrationTest {
         }
 
         @ParameterizedTest(name = "{0}")
-        @MethodSource("dk.dtu.scout.backend.controller.InstanceIntegrationTest#invalidExportPayloads")
+        @MethodSource("dk.dtu.scout.backend.integrationtests.InstanceIntegrationTest#invalidExportPayloads")
         void exportInstance_rejectsInvalidPayloads(String label, Object payload, String expectedMessage) throws Exception {
             postExport(payload)
                 .andExpect(status().isBadRequest())

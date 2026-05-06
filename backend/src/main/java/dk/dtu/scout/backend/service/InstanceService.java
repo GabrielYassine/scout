@@ -3,7 +3,6 @@ package dk.dtu.scout.backend.service;
 import dk.dtu.scout.backend.instance.InstanceFormatter;
 import dk.dtu.scout.backend.instance.InstanceMapper;
 import dk.dtu.scout.backend.instance.InstanceParser;
-import dk.dtu.scout.backend.instance.InstanceValidator;
 import dk.dtu.scout.datatypes.TSPInstance;
 import dk.dtu.scout.datatypes.VRPInstance;
 import org.springframework.stereotype.Service;
@@ -26,7 +25,7 @@ public class InstanceService {
      * @return a map containing the instance type and a normalized instance payload ready for use in run execution
      */
     public Map<String, Object> importInstance(String content) {
-        if (content == null || content.isBlank()) {
+        if (content.isBlank()) {
             throw new IllegalArgumentException("Instance file content must be provided");
         }
 
@@ -35,14 +34,12 @@ public class InstanceService {
         return switch (instanceType) {
             case "VRP" -> {
                 Map<String, Object> parsed = InstanceParser.parseVrpContent(content);
-                VRPInstance instance = InstanceMapper.toVrpInstance(parsed);
-                InstanceValidator.validateVrp(instance);
+                InstanceMapper.toVrpInstance(parsed);
                 yield Map.of("instanceType", "VRP", "instance", parsed);
             }
             case "TSP" -> {
                 Map<String, Object> parsed = InstanceParser.parseTspContent(content);
-                TSPInstance instance = InstanceMapper.toTspInstance(parsed);
-                InstanceValidator.validateTsp(instance);
+                InstanceMapper.toTspInstance(parsed);
                 yield Map.of("instanceType", "TSP", "instance", parsed);
             }
             default -> throw new IllegalArgumentException("Unsupported instance type: " + instanceType);
@@ -55,10 +52,6 @@ public class InstanceService {
      * @return a string containing the instance in the appropriate file format for download
      */
     public String exportInstance(Map<String, Object> payload) {
-        if (payload == null) {
-            throw new IllegalArgumentException("Export payload must be provided");
-        }
-
         Object rawExportType = payload.get("exportType");
         if (rawExportType == null || rawExportType.toString().isBlank()) {
             throw new IllegalArgumentException("exportType must be provided");
@@ -72,12 +65,10 @@ public class InstanceService {
         return switch (normalizedType) {
             case "TSP" -> {
                 TSPInstance instance = InstanceMapper.toTspInstance(instanceData);
-                InstanceValidator.validateTsp(instance);
                 yield InstanceFormatter.formatTsp(instance);
             }
             case "VRP" -> {
                 VRPInstance instance = InstanceMapper.toVrpInstance(instanceData);
-                InstanceValidator.validateVrp(instance);
                 yield InstanceFormatter.formatVrp(instance);
             }
             default -> throw new IllegalArgumentException("Unsupported exportType: " + rawExportType);
