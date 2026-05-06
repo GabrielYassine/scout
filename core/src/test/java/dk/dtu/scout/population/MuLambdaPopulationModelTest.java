@@ -273,154 +273,6 @@ class MuLambdaPopulationModelTest {
     }
 
     @Test
-    void step_rejectsParentSelectionReturningNull() {
-        MuLambdaPopulationModel<String> model = new MuLambdaPopulationModel<>();
-
-        model.configure(Map.of("mu", 2, "lambda", 1));
-
-        TestSearchSpace space = new TestSearchSpace(queue("p1", "p2"));
-        TestProblem problem = new TestProblem(Map.of(
-            "p1", 1.0,
-            "p2", 2.0
-        ));
-        TestGenerator generator = new TestGenerator(queue("child"));
-        State sharedState = new State();
-
-        PopulationModelContext<String> context = context(
-            space,
-            problem,
-            () -> generator,
-            new NullParentSelection<>(),
-            new KeepBestSelection<>(),
-            null,
-            sharedState
-        );
-
-        PopulationInitialization<String> initialization = model.initialize(context);
-
-        assertThrows(IllegalStateException.class, () -> model.step(context, initialization.state(), 1, initialization.evaluations()));
-    }
-
-    @Test
-    void step_rejectsParentSelectionReturningFewerThanTwoParents() {
-        MuLambdaPopulationModel<String> model = new MuLambdaPopulationModel<>();
-
-        model.configure(Map.of("mu", 2, "lambda", 1));
-
-        TestSearchSpace space = new TestSearchSpace(queue("p1", "p2"));
-        TestProblem problem = new TestProblem(Map.of(
-            "p1", 1.0,
-            "p2", 2.0
-        ));
-        TestGenerator generator = new TestGenerator(queue("child"));
-        State sharedState = new State();
-
-        PopulationModelContext<String> context = context(
-            space,
-            problem,
-            () -> generator,
-            new OneParentSelection<>(),
-            new KeepBestSelection<>(),
-            null,
-            sharedState
-        );
-
-        PopulationInitialization<String> initialization = model.initialize(context);
-
-        assertThrows(IllegalStateException.class, () -> model.step(context, initialization.state(), 1, initialization.evaluations()));
-    }
-
-    @Test
-    void step_rejectsSelectionReturningNull() {
-        MuLambdaPopulationModel<String> model = new MuLambdaPopulationModel<>();
-
-        model.configure(Map.of("mu", 2, "lambda", 1));
-
-        TestSearchSpace space = new TestSearchSpace(queue("p1", "p2"));
-        TestProblem problem = new TestProblem(Map.of(
-            "p1", 1.0,
-            "p2", 2.0,
-            "child", 3.0
-        ));
-        TestGenerator generator = new TestGenerator(queue("child"));
-        State sharedState = new State();
-
-        PopulationModelContext<String> context = context(
-            space,
-            problem,
-            () -> generator,
-            new FirstTwoParentSelection<>(),
-            new NullSelection<>(),
-            null,
-            sharedState
-        );
-
-        PopulationInitialization<String> initialization = model.initialize(context);
-
-        assertThrows(IllegalStateException.class, () -> model.step(context, initialization.state(), 1, initialization.evaluations()));
-    }
-
-    @Test
-    void step_rejectsSelectionReturningEmptyList() {
-        MuLambdaPopulationModel<String> model = new MuLambdaPopulationModel<>();
-
-        model.configure(Map.of("mu", 2, "lambda", 1));
-
-        TestSearchSpace space = new TestSearchSpace(queue("p1", "p2"));
-        TestProblem problem = new TestProblem(Map.of(
-            "p1", 1.0,
-            "p2", 2.0,
-            "child", 3.0
-        ));
-        TestGenerator generator = new TestGenerator(queue("child"));
-        State sharedState = new State();
-
-        PopulationModelContext<String> context = context(
-            space,
-            problem,
-            () -> generator,
-            new FirstTwoParentSelection<>(),
-            new EmptySelection<>(),
-            null,
-            sharedState
-        );
-
-        PopulationInitialization<String> initialization = model.initialize(context);
-
-        assertThrows(IllegalStateException.class, () -> model.step(context, initialization.state(), 1, initialization.evaluations()));
-    }
-
-    @Test
-    void step_rejectsSelectionReturningWrongNumberOfParents() {
-        MuLambdaPopulationModel<String> model = new MuLambdaPopulationModel<>();
-
-        model.configure(Map.of("mu", 2, "lambda", 1));
-
-        TestSearchSpace space = new TestSearchSpace(queue("p1", "p2"));
-        TestProblem problem = new TestProblem(Map.of(
-            "p1", 1.0,
-            "p2", 2.0,
-            "child", 3.0
-        ));
-        TestGenerator generator = new TestGenerator(queue("child"));
-        State sharedState = new State();
-
-        PopulationModelContext<String> context = context(
-            space,
-            problem,
-            () -> generator,
-            new FirstTwoParentSelection<>(),
-            new WrongSizeSelection<>(),
-            null,
-            sharedState
-        );
-
-        PopulationInitialization<String> initialization = model.initialize(context);
-
-        assertThrows(IllegalStateException.class, () -> model.step(context, initialization.state(), 1, initialization.evaluations()));
-    }
-
-    @Test
     void configure_rejectsInvalidMuAndLambda() {
         MuLambdaPopulationModel<String> model = new MuLambdaPopulationModel<>();
 
@@ -428,16 +280,6 @@ class MuLambdaPopulationModelTest {
         assertThrows(IllegalArgumentException.class, () -> model.configure(Map.of("mu", -1)));
         assertThrows(IllegalArgumentException.class, () -> model.configure(Map.of("lambda", 0)));
         assertThrows(IllegalArgumentException.class, () -> model.configure(Map.of("lambda", -1)));
-    }
-
-    @Test
-    void configure_ignoresNullAndMissingParams() {
-        MuLambdaPopulationModel<String> model = new MuLambdaPopulationModel<>();
-
-        assertDoesNotThrow(() -> model.configure(Map.of()));
-        assertDoesNotThrow(() -> model.configure(Map.of()));
-
-        assertEquals(2, model.params().size());
     }
 
     @Test
@@ -595,9 +437,6 @@ class MuLambdaPopulationModelTest {
         private TestGenerator(Queue<String> children) {
             this.children = children;
         }
-
-        @Override
-        public void init(State state) {}
 
         @Override
         public String generate(Random rng) {

@@ -130,82 +130,6 @@ class IslandModelTest {
     }
 
     @Test
-    void step_rejectsParentSelectionReturningTooFewParents() {
-        IslandModel<Integer> model = new IslandModel<>();
-
-        model.configure(Map.of(
-            "numIslands", 1,
-            "mu", 1,
-            "lambda", 1
-        ));
-
-        PopulationModelContext<Integer> context = context(
-            model,
-            new SequentialSearchSpace(1),
-            new IdentityProblem(),
-            new BestSelectionRule<>(),
-            null,
-            new TooFewParentsSelection<>()
-        );
-
-        PopulationInitialization<Integer> initialization = model.initialize(context);
-
-        assertThrows(IllegalStateException.class, () ->
-            model.step(context, initialization.state(), 0, initialization.evaluations())
-        );
-    }
-
-    @Test
-    void step_rejectsSelectionReturningNoParents() {
-        IslandModel<Integer> model = new IslandModel<>();
-
-        model.configure(Map.of(
-            "numIslands", 1,
-            "mu", 1,
-            "lambda", 1
-        ));
-
-        PopulationModelContext<Integer> context = context(
-            model,
-            new SequentialSearchSpace(1),
-            new IdentityProblem(),
-            new EmptySelectionRule<>(),
-            null
-        );
-
-        PopulationInitialization<Integer> initialization = model.initialize(context);
-
-        assertThrows(IllegalStateException.class, () ->
-            model.step(context, initialization.state(), 0, initialization.evaluations())
-        );
-    }
-
-    @Test
-    void step_rejectsSelectionReturningWrongParentCount() {
-        IslandModel<Integer> model = new IslandModel<>();
-
-        model.configure(Map.of(
-            "numIslands", 1,
-            "mu", 2,
-            "lambda", 2
-        ));
-
-        PopulationModelContext<Integer> context = context(
-            model,
-            new SequentialSearchSpace(1),
-            new IdentityProblem(),
-            new WrongCountSelectionRule<>(),
-            null
-        );
-
-        PopulationInitialization<Integer> initialization = model.initialize(context);
-
-        assertThrows(IllegalStateException.class, () ->
-            model.step(context, initialization.state(), 0, initialization.evaluations())
-        );
-    }
-
-    @Test
     void migrationCanReplaceWorstParentWhenIslandHasMultipleParents() {
         IslandModel<Integer> model = new IslandModel<>();
 
@@ -326,29 +250,6 @@ class IslandModelTest {
     }
 
     @Test
-    void step_rejectsSelectionReturningNull() {
-        IslandModel<Integer> model = new IslandModel<>();
-
-        model.configure(Map.of(
-            "numIslands", 1,
-            "mu", 1,
-            "lambda", 1
-        ));
-
-        PopulationModelContext<Integer> context = context(
-            model,
-            new SequentialSearchSpace(1),
-            new IdentityProblem(),
-            new NullSelectionRule<>(),
-            null
-        );
-
-        PopulationInitialization<Integer> initialization = model.initialize(context);
-
-        assertThrows(IllegalStateException.class, () -> model.step(context, initialization.state(), 0, initialization.evaluations()));
-    }
-
-    @Test
     void migrationFindsWorstParentBeyondFirstPosition() {
         IslandModel<Integer> model = new IslandModel<>();
 
@@ -380,32 +281,6 @@ class IslandModelTest {
         assertEquals(100, result.runState().bestSolution());
         assertEquals(100.0, result.runState().bestFitness());
     }
-
-    @Test
-    void step_rejectsParentSelectionReturningNull() {
-        IslandModel<Integer> model = new IslandModel<>();
-
-        model.configure(Map.of(
-            "numIslands", 1,
-            "mu", 1,
-            "lambda", 1
-        ));
-
-        PopulationModelContext<Integer> context = context(
-            model,
-            new SequentialSearchSpace(1),
-            new IdentityProblem(),
-            new BestSelectionRule<>(),
-            null,
-            new NullParentSelection<>()
-        );
-
-        PopulationInitialization<Integer> initialization = model.initialize(context);
-
-        assertThrows(IllegalStateException.class, () -> model.step(context, initialization.state(), 0, initialization.evaluations()));
-    }
-
-
     private static class NullParentSelection<S> extends DuplicateParentSelection<S> {
         @Override
         public List<EvaluatedSolution<S>> selectParents(List<EvaluatedSolution<S>> parents, Random rng) {

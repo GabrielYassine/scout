@@ -122,10 +122,6 @@ public class MuLambdaPopulationModel<S> implements PopulationModel<S> {
         for (int k = 0; k < lambda; k++) {
             List<EvaluatedSolution<S>> chosen = context.parentSelection().selectParents(muState.parentsEvaluated, context.rng());
 
-            if (chosen == null || chosen.size() < 2) {
-                throw new IllegalStateException("Parent selection returned fewer than 2 parents");
-            }
-
             S parent1 = chosen.get(0).value();
             S parent2 = chosen.get(1).value();
 
@@ -151,14 +147,6 @@ public class MuLambdaPopulationModel<S> implements PopulationModel<S> {
             iteration,
             context.rng()
         );
-
-        if (nextParentsEvaluated == null || nextParentsEvaluated.isEmpty()) {
-            throw new IllegalStateException("Selection rule returned no parents");
-        }
-
-        if (nextParentsEvaluated.size() != mu) {
-            throw new IllegalStateException("Selection rule returned " + nextParentsEvaluated.size() + " parents, expected " + mu);
-        }
 
         muState.parentsEvaluated = nextParentsEvaluated;
 

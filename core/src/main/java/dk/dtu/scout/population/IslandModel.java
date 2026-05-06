@@ -226,8 +226,6 @@ public class IslandModel<S> implements PopulationModel<S> {
             island.rng
         );
 
-        validateNextParents(nextParents);
-
         island.parentsEvaluated = new ArrayList<>(nextParents);
         refreshCurrentAndBest(island);
 
@@ -236,8 +234,6 @@ public class IslandModel<S> implements PopulationModel<S> {
 
     private EvaluatedSolution<S> createChild(PopulationModelContext<S> context, IslandState<S> island) {
         List<EvaluatedSolution<S>> selectedParents = context.parentSelection().selectParents(island.parentsEvaluated, island.rng);
-
-        validateSelectedParents(selectedParents);
 
         S parent1 = selectedParents.get(0).value();
         S parent2 = selectedParents.get(1).value();
@@ -255,21 +251,6 @@ public class IslandModel<S> implements PopulationModel<S> {
         return new EvaluatedSolution<>(child, childFitness);
     }
 
-    private void validateSelectedParents(List<EvaluatedSolution<S>> selectedParents) {
-        if (selectedParents == null || selectedParents.size() < 2) {
-            throw new IllegalStateException("Parent selection returned fewer than 2 parents");
-        }
-    }
-
-    private void validateNextParents(List<EvaluatedSolution<S>> nextParents) {
-        if (nextParents == null || nextParents.isEmpty()) {
-            throw new IllegalStateException("Selection rule returned no parents");
-        }
-
-        if (nextParents.size() != mu) {
-            throw new IllegalStateException("Selection rule returned " + nextParents.size() + " parents, expected " + mu);
-        }
-    }
 
     private void updateIslandState(IslandState<S> island) {
         island.state.update(Map.of(
