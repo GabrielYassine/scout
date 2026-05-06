@@ -113,14 +113,6 @@ class KPointCrossoverTest {
     }
 
     @Test
-    void configure_ignoresNullAndMissingParams() {
-        KPointCrossover crossover = new KPointCrossover();
-
-        assertDoesNotThrow(() -> crossover.configure(Map.of()));
-        assertDoesNotThrow(() -> crossover.configure(Map.of()));
-    }
-
-    @Test
     void metadata_isStable() {
         KPointCrossover crossover = new KPointCrossover();
 

@@ -12,7 +12,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import static dk.dtu.scout.generator.ReinforcementMode.*;
+import static dk.dtu.scout.generator.ReinforcementMode.ALL;
+import static dk.dtu.scout.generator.ReinforcementMode.BEST_SO_FAR;
+import static dk.dtu.scout.generator.ReinforcementMode.ITERATION_BEST;
 
 @Component
 @Scope("prototype")
@@ -29,7 +31,6 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
 
     private double[] pheromoneVector;
     private State state;
-
     private EvaluatedSolution<boolean[]> bestSoFar;
 
     @Override
@@ -59,15 +60,7 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
             new Parameter("reinforcementRate", "Pheromone Reinforcement Rate", "double", reinforcementRate, 0.0, 1.0, null),
             new Parameter("minPheromone", "Minimum Pheromone", "string", minPheromone, null, null, null),
             new Parameter("maxPheromone", "Maximum Pheromone", "string", maxPheromone, null, null, null),
-            new Parameter(
-                "reinforcementMode",
-                "Reinforcement Mode",
-                "enum",
-                reinforcementMode.name(),
-                null,
-                null,
-                List.of("BEST_SO_FAR", "ITERATION_BEST", "ALL")
-            ),
+            new Parameter("reinforcementMode", "Reinforcement Mode", "enum", reinforcementMode.name(), null, null, List.of("BEST_SO_FAR", "ITERATION_BEST", "ALL")),
             new Parameter("acceptEqualFitness", "Accept Equal Fitness", "boolean", acceptEqualFitness, null, null, null)
         );
     }
@@ -75,44 +68,30 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
     @Override
     public void configure(Map<String, Object> params) {
         if (params.containsKey("evaporationRate")) {
-            this.evaporationRate = resolveRate(params.get("evaporationRate"), "Pheromone evaporation rate");
+            evaporationRate = resolveRate(params.get("evaporationRate"), "Pheromone evaporation rate");
         }
 
         if (params.containsKey("reinforcementRate")) {
-            this.reinforcementRate = resolveRate(params.get("reinforcementRate"), "Pheromone reinforcement rate");
+            reinforcementRate = resolveRate(params.get("reinforcementRate"), "Pheromone reinforcement rate");
         }
 
         if (params.containsKey("minPheromone")) {
-            this.minPheromone = params.get("minPheromone");
+            minPheromone = params.get("minPheromone");
         }
 
         if (params.containsKey("maxPheromone")) {
-            this.maxPheromone = params.get("maxPheromone");
+            maxPheromone = params.get("maxPheromone");
         }
 
         boolean hasReinforcementMode = params.containsKey("reinforcementMode");
-        if (hasReinforcementMode) {
-            this.reinforcementMode = parseReinforcementMode(params.get("reinforcementMode"));
-        }
 
-        if (params.containsKey("reinforceBestOnly") && !hasReinforcementMode) {
-            boolean reinforceBestOnly = (Boolean) params.get("reinforceBestOnly");
-            this.reinforcementMode = reinforceBestOnly ? ITERATION_BEST : ALL;
+        if (hasReinforcementMode) {
+            reinforcementMode = parseReinforcementMode(params.get("reinforcementMode"));
         }
 
         if (params.containsKey("acceptEqualFitness")) {
-            this.acceptEqualFitness = (Boolean) params.get("acceptEqualFitness");
+            acceptEqualFitness = (Boolean) params.get("acceptEqualFitness");
         }
-    }
-
-    private double resolveRate(Object value, String label) {
-        double resolved = ((Number) value).doubleValue();
-
-        if (resolved < 0.0 || resolved > 1.0) {
-            throw new IllegalArgumentException(label + " must be between 0 and 1");
-        }
-
-        return resolved;
     }
 
     @Override
@@ -142,7 +121,6 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
         }
 
         updatePheromones(state);
-
         state.update(Map.of(StateKeys.PHEROMONE_VECTOR, pheromoneVector));
 
         return Map.of(StateKeys.PHEROMONE_VECTOR, pheromoneVector);
@@ -150,16 +128,11 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
 
     private void initializePheromones() {
         int dimension = resolveDimension();
-
-        if (dimension <= 0) {
-            throw new IllegalStateException("Cannot initialize BitstringAcoGenerator: dimension must be positive");
-        }
-
         PheromoneBounds bounds = resolvePheromoneBounds();
-
         double initialPheromone = clamp(0.5, bounds);
 
         pheromoneVector = new double[dimension];
+
         for (int i = 0; i < dimension; i++) {
             pheromoneVector[i] = initialPheromone;
         }
@@ -169,65 +142,57 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
 
     private void updatePheromones(State state) {
         Object evaluatedObj = state.get(StateKeys.GENERATION_EVALUATED);
+
         if (!(evaluatedObj instanceof List<?> evaluated) || evaluated.isEmpty()) {
             return;
         }
 
         switch (reinforcementMode) {
-            case BEST_SO_FAR -> {
-                updateBestSoFar(evaluated);
-                if (bestSoFar == null) {
-                    return;
-                }
-                evaporate();
-                applyReinforcement(bestSoFar.value(), reinforcementRate);
-            }
-            case ITERATION_BEST -> {
-                EvaluatedSolution<boolean[]> generationBest = bestOf(evaluated);
-                if (generationBest == null) {
-                    return;
-                }
-                evaporate();
-                applyReinforcement(generationBest.value(), reinforcementRate);
-            }
-            case ALL -> {
-                evaporate();
-                double scaledRate = reinforcementRate / evaluated.size();
-                for (Object entry : evaluated) {
-                    if (entry instanceof EvaluatedSolution<?>(Object value, double fitness) && value instanceof boolean[] bits) {
-                        applyReinforcement(bits, scaledRate);
-                    }
-                }
-            }
+            case BEST_SO_FAR -> reinforceBestSoFar(evaluated);
+            case ITERATION_BEST -> reinforceIterationBest(evaluated);
+            case ALL -> reinforceAll(evaluated);
         }
 
         clampPheromones();
     }
 
+    private void reinforceBestSoFar(List<?> evaluated) {
+        updateBestSoFar(evaluated);
+        evaporate();
+        applyReinforcement(bestSoFar.value(), reinforcementRate);
+    }
+
+    private void reinforceIterationBest(List<?> evaluated) {
+        EvaluatedSolution<boolean[]> generationBest = bestOf(evaluated);
+        evaporate();
+        applyReinforcement(generationBest.value(), reinforcementRate);
+    }
+
+    @SuppressWarnings("unchecked")
+    private void reinforceAll(List<?> evaluated) {
+        evaporate();
+
+        double scaledRate = reinforcementRate / evaluated.size();
+
+        for (Object entry : evaluated) {
+            EvaluatedSolution<boolean[]> solution = (EvaluatedSolution<boolean[]>) entry;
+            applyReinforcement(solution.value(), scaledRate);
+        }
+    }
+
     private void updateBestSoFar(List<?> evaluated) {
         EvaluatedSolution<boolean[]> generationBest = bestOf(evaluated);
-
-        if (generationBest == null) {
-            return;
-        }
-
         if (bestSoFar == null || isAcceptedAsBestSoFar(generationBest)) {
             bestSoFar = new EvaluatedSolution<>(generationBest.value().clone(), generationBest.fitness());
         }
     }
 
     private boolean isAcceptedAsBestSoFar(EvaluatedSolution<boolean[]> candidate) {
-        if (acceptEqualFitness) {
-            return candidate.fitness() >= bestSoFar.fitness();
-        }
-
-        return candidate.fitness() > bestSoFar.fitness();
+        return acceptEqualFitness ? candidate.fitness() >= bestSoFar.fitness() : candidate.fitness() > bestSoFar.fitness();
     }
 
     private void applyReinforcement(boolean[] reinforcedSolution, double rate) {
-        int limit = Math.min(pheromoneVector.length, reinforcedSolution.length);
-
-        for (int i = 0; i < limit; i++) {
+        for (int i = 0; i < pheromoneVector.length; i++) {
             if (reinforcedSolution[i]) {
                 pheromoneVector[i] += rate;
             }
@@ -240,18 +205,33 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private EvaluatedSolution<boolean[]> bestOf(List<?> evaluated) {
         EvaluatedSolution<boolean[]> best = null;
 
         for (Object entry : evaluated) {
-            if (entry instanceof EvaluatedSolution<?>(Object value, double fitness) && value instanceof boolean[] bits) {
-                if (best == null || fitness > best.fitness()) {
-                    best = new EvaluatedSolution<>(bits, fitness);
-                }
+            EvaluatedSolution<boolean[]> candidate = (EvaluatedSolution<boolean[]>) entry;
+
+            if (best == null || candidate.fitness() > best.fitness()) {
+                best = candidate;
             }
         }
 
         return best;
+    }
+
+    private double resolveRate(Object value, String label) {
+        double resolved = ((Number) value).doubleValue();
+
+        if (resolved < 0.0 || resolved > 1.0) {
+            throw new IllegalArgumentException(label + " must be between 0 and 1");
+        }
+
+        return resolved;
+    }
+
+    private int resolveDimension() {
+        return ((Number) state.get(StateKeys.DIMENSION)).intValue();
     }
 
     private PheromoneBounds resolvePheromoneBounds() {
@@ -266,17 +246,13 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
     }
 
     private double resolveFormulaOrNumber(Object value, int dimension, String label) {
-        double resolved;
+        double resolved = switch (value) {
+            case String formula -> FormulaEvaluator.eval(formula, dimension);
+            case Number number -> number.doubleValue();
+            default -> throw new IllegalArgumentException(label + " must be a number or formula");
+        };
 
-        if (value instanceof String formula) {
-            resolved = FormulaEvaluator.eval(formula, dimension);
-        } else if (value instanceof Number number) {
-            resolved = number.doubleValue();
-        } else {
-            throw new IllegalArgumentException(label + " must be a number or formula");
-        }
-
-        if (Double.isNaN(resolved) || Double.isInfinite(resolved)) {
+        if (!Double.isFinite(resolved)) {
             throw new IllegalArgumentException(label + " must resolve to a finite number");
         }
 
@@ -297,15 +273,6 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
         }
     }
 
-    private int resolveDimension() {
-        Object dimObj = state.get(StateKeys.DIMENSION);
-        if (dimObj instanceof Number dimension) {
-            return dimension.intValue();
-        }
-
-        return 0;
-    }
-
     private void clampPheromones() {
         PheromoneBounds bounds = resolvePheromoneBounds();
 
@@ -319,10 +286,8 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
     }
 
     private ReinforcementMode parseReinforcementMode(Object value) {
-        if (value == null) {
-            throw new IllegalArgumentException("Reinforcement mode must be provided");
-        }
         String normalized = value.toString().trim().toUpperCase();
+
         try {
             return ReinforcementMode.valueOf(normalized);
         } catch (IllegalArgumentException ex) {
@@ -330,5 +295,6 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
         }
     }
 
-    private record PheromoneBounds(double min, double max) {}
+    private record PheromoneBounds(double min, double max) {
+    }
 }

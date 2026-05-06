@@ -173,12 +173,7 @@ public class VRP implements Problem<List<List<Integer>>> {
         }
 
         if (seenCustomers != instance.getCustomerCount()) {
-            throw new IllegalArgumentException(
-                    "Routes must contain each customer exactly once. Found "
-                            + seenCustomers
-                            + " of "
-                            + instance.getCustomerCount()
-            );
+            throw new IllegalArgumentException("Routes must contain each customer exactly once. Found " + seenCustomers + " of " + instance.getCustomerCount());
         }
     }
 }

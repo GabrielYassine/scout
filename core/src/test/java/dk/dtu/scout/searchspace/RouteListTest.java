@@ -18,9 +18,7 @@ class RouteListTest {
     @Test
     void configure_setsDimensionAndRouteCount() {
         RouteList searchSpace = new RouteList();
-
         searchSpace.configure(Map.of("n", 6, "routeCount", 3));
-
         assertEquals(6, searchSpace.dimension());
     }
 
@@ -35,9 +33,7 @@ class RouteListTest {
     @Test
     void configure_rejectsNonPositiveRouteCount() {
         RouteList searchSpace = new RouteList();
-
         assertThrows(IllegalArgumentException.class, () -> searchSpace.configure(Map.of("n", 5, "routeCount", 0)));
-
         assertThrows(IllegalArgumentException.class, () -> searchSpace.configure(Map.of("n", 5, "routeCount", -1)));
     }
 
@@ -61,7 +57,7 @@ class RouteListTest {
 
         assertEquals(3, solution.size());
         assertEquals(List.of(0, 1, 2, 3, 4, 5), sortedFlattened(solution));
-        assertTrue(solution.stream().allMatch(route -> !route.isEmpty()));
+        assertTrue(solution.stream().noneMatch(List::isEmpty));
     }
 
     @Test

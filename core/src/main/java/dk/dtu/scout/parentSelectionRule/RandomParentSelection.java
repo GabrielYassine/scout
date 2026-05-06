@@ -40,9 +40,11 @@ public class RandomParentSelection<S> implements ParentSelectionRule<S> {
         }
 
         List<EvaluatedSolution<S>> chosen = new ArrayList<>(2);
+
         for (int i = 0; i < 2; i++) {
             chosen.add(parents.get(rng.nextInt(parents.size())));
         }
+
         return chosen;
     }
 }

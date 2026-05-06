@@ -73,23 +73,6 @@ class TourObserverTest {
     }
 
     @Test
-    void onStep_doesNotComputeTspLengthForMultipleRoutes() {
-        TourObserver observer = new TourObserver();
-        RunLog log = new RunLog();
-
-        State state = new State();
-        state.update(Map.of(StateKeys.PROBLEM, tspProblem()));
-
-        observer.init(state);
-        observer.onStep(snapshot(List.of(List.of(0), List.of(1, 2))), log);
-
-        Map<?, ?> tourData = tourData(log);
-
-        assertEquals(List.of(List.of(0), List.of(1, 2)), tourData.get("tour"));
-        assertFalse(tourData.containsKey("length"));
-    }
-
-    @Test
     void onStep_logsVrpRoutesShiftedForDepotAndLength() {
         TourObserver observer = new TourObserver();
         RunLog log = new RunLog();
@@ -128,34 +111,14 @@ class TourObserverTest {
     }
 
     @Test
-    void configure_usesDefaultWhenParamsAreEmpty() {
-        TourObserver observer = new TourObserver();
-        RunLog log = new RunLog();
-
-        State state = new State();
-        state.update(Map.of(
-            StateKeys.DIMENSION, 2,
-            StateKeys.PHEROMONE_MATRIX, new double[][] {
-                {1.0, 2.0},
-                {3.0, 4.0}
-            }
-        ));
-
-        observer.configure(Map.of());
-        observer.init(state);
-        observer.onStep(snapshot(new int[] {0, 1}), log);
-
-        assertFalse(log.getSeries().containsKey("pheromoneHeatmap"));
-    }
-
-    @Test
     void onStep_logsPheromoneHeatmapFromDoubleArray() {
         TourObserver observer = new TourObserver();
         RunLog log = new RunLog();
 
         State state = new State();
         state.update(Map.of(
-            StateKeys.DIMENSION, 2,
+            StateKeys.PROBLEM, tspProblem(),
+            StateKeys.DIMENSION, 3,
             StateKeys.PHEROMONE_MATRIX, new double[][] {
                 {1.0, 2.0},
                 {3.0, 4.0}
@@ -165,8 +128,7 @@ class TourObserverTest {
         observer.configure(Map.of("includePheromone", true));
         observer.init(state);
 
-        observer.onStep(snapshot(new int[] {0, 1}), log);
-
+        observer.onStep(snapshot(new int[] {0, 1, 2}), log);
         assertEquals(List.of(List.of(1.0, 2.0), List.of(3.0, 4.0)), log.getSeries().get("pheromoneHeatmap").getValues().getFirst());
     }
 
@@ -176,14 +138,45 @@ class TourObserverTest {
         RunLog log = new RunLog();
 
         State state = new State();
-        state.update(Map.of(StateKeys.DIMENSION, 2));
+        state.update(Map.of(StateKeys.PROBLEM, tspProblem(), StateKeys.DIMENSION, 3));
 
         observer.configure(Map.of("includePheromone", true));
         observer.init(state);
 
-        observer.onStep(snapshot(new int[] {0, 1}), log);
+        observer.onStep(snapshot(new int[] {0, 1, 2}), log);
 
-        assertEquals(List.of(List.of(0.0, 0.0), List.of(0.0, 0.0)), log.getSeries().get("pheromoneHeatmap").getValues().getFirst());
+        assertEquals(
+            List.of(
+                List.of(0.0, 0.0, 0.0),
+                List.of(0.0, 0.0, 0.0),
+                List.of(0.0, 0.0, 0.0)
+            ),
+            log.getSeries().get("pheromoneHeatmap").getValues().getFirst()
+        );
+    }
+
+    @Test
+    void configure_keepsPheromoneHeatmapDisabledWhenParamIsMissing() {
+        TourObserver observer = new TourObserver();
+        RunLog log = new RunLog();
+
+        State state = new State();
+        state.update(Map.of(
+            StateKeys.PROBLEM, tspProblem(),
+            StateKeys.DIMENSION, 3,
+            StateKeys.PHEROMONE_MATRIX, new double[][] {
+                {1.0, 2.0},
+                {3.0, 4.0}
+            }
+        ));
+
+        observer.configure(Map.of());
+        observer.init(state);
+
+        observer.onStep(snapshot(new int[] {0, 1, 2}), log);
+
+        assertFalse(log.getSeries().containsKey("pheromoneHeatmap"));
+        assertTrue(log.getSeries().containsKey("tspTour"));
     }
 
     @Test
@@ -194,6 +187,7 @@ class TourObserverTest {
         assertEquals("Tour Observer", observer.displayName());
         assertFalse(observer.description().isBlank());
         assertEquals(1, observer.params().size());
+        assertEquals(List.of("permutation", "route-list"), observer.supportedSearchSpaces());
     }
 
     private static IterationSnapshot<Object> snapshot(Object solution) {

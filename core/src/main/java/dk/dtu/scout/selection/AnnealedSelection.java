@@ -54,9 +54,9 @@ public class AnnealedSelection<S> implements SelectionRule<S> {
     @Override
     public List<Parameter> params() {
         return List.of(
-                new Parameter("initialTemperature", "Initial temperature (T0)", "double", initialTemperature, null, null, null),
-                new Parameter("coolingRate", "Cooling rate", "double", coolingRate, null, null, null),
-                new Parameter("minTemperature", "Min temperature", "double", minTemperature, null, null, null)
+            new Parameter("initialTemperature", "Initial temperature (T0)", "double", initialTemperature, null, null, null),
+            new Parameter("coolingRate", "Cooling rate", "double", coolingRate, null, null, null),
+            new Parameter("minTemperature", "Min temperature", "double", minTemperature, null, null, null)
         );
     }
 

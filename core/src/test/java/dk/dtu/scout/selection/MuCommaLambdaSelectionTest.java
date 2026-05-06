@@ -61,9 +61,7 @@ class MuCommaLambdaSelectionTest {
     @Test
     void select_rejectsMuLargerThanChildCount() {
         MuCommaLambdaSelection<String> selection = new MuCommaLambdaSelection<>();
-
         List<EvaluatedSolution<String>> children = List.of(evaluated("child", 1.0));
-
         assertThrows(IllegalArgumentException.class, () -> selection.select(List.of(), children, 2, 0, new Random(1234L)));
     }
 

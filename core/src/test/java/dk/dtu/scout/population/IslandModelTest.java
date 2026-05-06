@@ -210,27 +210,27 @@ class IslandModelTest {
         IslandModel<Integer> model = new IslandModel<>();
 
         model.configure(Map.of(
-                "numIslands", 2,
-                "mu", 2,
-                "lambda", 1,
-                "epochLength", 1
+            "numIslands", 2,
+            "mu", 2,
+            "lambda", 1,
+            "epochLength", 1
         ));
 
         PopulationModelContext<Integer> context = context(
-                model,
-                new FixedValuesSearchSpace(1, 2, 100, 101),
-                new IdentityProblem(),
-                new KeepParentsSelectionRule<>(),
-                null
+            model,
+            new FixedValuesSearchSpace(1, 2, 100, 101),
+            new IdentityProblem(),
+            new KeepParentsSelectionRule<>(),
+            null
         );
 
         PopulationInitialization<Integer> initialization = model.initialize(context);
 
         PopulationStepResult<Integer> result = model.step(
-                context,
-                initialization.state(),
-                0,
-                initialization.evaluations()
+            context,
+            initialization.state(),
+            0,
+            initialization.evaluations()
         );
 
         assertEquals(2, result.evaluationsDelta());
@@ -245,17 +245,17 @@ class IslandModelTest {
         IslandModel<Integer> model = new IslandModel<>();
 
         model.configure(Map.of(
-                "numIslands", 1,
-                "mu", 2,
-                "lambda", 1
+            "numIslands", 1,
+            "mu", 2,
+            "lambda", 1
         ));
 
         PopulationInitialization<Integer> initialization = model.initialize(context(
-                model,
-                new FixedValuesSearchSpace(10, 1),
-                new IdentityProblem(),
-                new BestSelectionRule<>(),
-                null
+            model,
+            new FixedValuesSearchSpace(10, 1),
+            new IdentityProblem(),
+            new BestSelectionRule<>(),
+            null
         ));
 
         assertEquals(10, initialization.initialState().currentSolution());
@@ -267,27 +267,27 @@ class IslandModelTest {
         IslandModel<Integer> model = new IslandModel<>();
 
         model.configure(Map.of(
-                "numIslands", 2,
-                "mu", 1,
-                "lambda", 1,
-                "epochLength", 1
+            "numIslands", 2,
+            "mu", 1,
+            "lambda", 1,
+            "epochLength", 1
         ));
 
         PopulationModelContext<Integer> context = context(
-                model,
-                new FixedValuesSearchSpace(1, 100),
-                new IdentityProblem(),
-                new KeepParentsSelectionRule<>(),
-                null
+            model,
+            new FixedValuesSearchSpace(1, 100),
+            new IdentityProblem(),
+            new KeepParentsSelectionRule<>(),
+            null
         );
 
         PopulationInitialization<Integer> initialization = model.initialize(context);
 
         PopulationStepResult<Integer> result = model.step(
-                context,
-                initialization.state(),
-                0,
-                initialization.evaluations()
+            context,
+            initialization.state(),
+            0,
+            initialization.evaluations()
         );
 
         assertEquals(2, result.evaluationsDelta());
@@ -330,24 +330,22 @@ class IslandModelTest {
         IslandModel<Integer> model = new IslandModel<>();
 
         model.configure(Map.of(
-                "numIslands", 1,
-                "mu", 1,
-                "lambda", 1
+            "numIslands", 1,
+            "mu", 1,
+            "lambda", 1
         ));
 
         PopulationModelContext<Integer> context = context(
-                model,
-                new SequentialSearchSpace(1),
-                new IdentityProblem(),
-                new NullSelectionRule<>(),
-                null
+            model,
+            new SequentialSearchSpace(1),
+            new IdentityProblem(),
+            new NullSelectionRule<>(),
+            null
         );
 
         PopulationInitialization<Integer> initialization = model.initialize(context);
 
-        assertThrows(IllegalStateException.class, () ->
-                model.step(context, initialization.state(), 0, initialization.evaluations())
-        );
+        assertThrows(IllegalStateException.class, () -> model.step(context, initialization.state(), 0, initialization.evaluations()));
     }
 
     @Test
@@ -355,27 +353,27 @@ class IslandModelTest {
         IslandModel<Integer> model = new IslandModel<>();
 
         model.configure(Map.of(
-                "numIslands", 2,
-                "mu", 2,
-                "lambda", 1,
-                "epochLength", 1
+            "numIslands", 2,
+            "mu", 2,
+            "lambda", 1,
+            "epochLength", 1
         ));
 
         PopulationModelContext<Integer> context = context(
-                model,
-                new FixedValuesSearchSpace(10, 1, 100, 50),
-                new IdentityProblem(),
-                new KeepParentsSelectionRule<>(),
-                null
+            model,
+            new FixedValuesSearchSpace(10, 1, 100, 50),
+            new IdentityProblem(),
+            new KeepParentsSelectionRule<>(),
+            null
         );
 
         PopulationInitialization<Integer> initialization = model.initialize(context);
 
         PopulationStepResult<Integer> result = model.step(
-                context,
-                initialization.state(),
-                0,
-                initialization.evaluations()
+            context,
+            initialization.state(),
+            0,
+            initialization.evaluations()
         );
 
         assertEquals(2, result.evaluationsDelta());
@@ -388,25 +386,23 @@ class IslandModelTest {
         IslandModel<Integer> model = new IslandModel<>();
 
         model.configure(Map.of(
-                "numIslands", 1,
-                "mu", 1,
-                "lambda", 1
+            "numIslands", 1,
+            "mu", 1,
+            "lambda", 1
         ));
 
         PopulationModelContext<Integer> context = context(
-                model,
-                new SequentialSearchSpace(1),
-                new IdentityProblem(),
-                new BestSelectionRule<>(),
-                null,
-                new NullParentSelection<>()
+            model,
+            new SequentialSearchSpace(1),
+            new IdentityProblem(),
+            new BestSelectionRule<>(),
+            null,
+            new NullParentSelection<>()
         );
 
         PopulationInitialization<Integer> initialization = model.initialize(context);
 
-        assertThrows(IllegalStateException.class, () ->
-                model.step(context, initialization.state(), 0, initialization.evaluations())
-        );
+        assertThrows(IllegalStateException.class, () -> model.step(context, initialization.state(), 0, initialization.evaluations()));
     }
 
 
@@ -775,11 +771,11 @@ class IslandModelTest {
     private static class NullSelectionRule<S> extends BestSelectionRule<S> {
         @Override
         public List<EvaluatedSolution<S>> select(
-                List<EvaluatedSolution<S>> parents,
-                List<EvaluatedSolution<S>> children,
-                int mu,
-                int iteration,
-                Random rng
+            List<EvaluatedSolution<S>> parents,
+            List<EvaluatedSolution<S>> children,
+            int mu,
+            int iteration,
+            Random rng
         ) {
             return null;
         }

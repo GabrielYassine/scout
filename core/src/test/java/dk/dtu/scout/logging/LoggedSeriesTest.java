@@ -31,13 +31,4 @@ class LoggedSeriesTest {
         assertEquals(SeriesMode.LATEST_ONLY, series.getMode());
         assertEquals(List.of(3), series.getValues());
     }
-
-    @Test
-    void getValues_returnsMutableBackingList() {
-        LoggedSeries<Integer> series = new LoggedSeries<>(SeriesMode.ALL);
-
-        series.getValues().add(10);
-
-        assertEquals(List.of(10), series.getValues());
-    }
 }

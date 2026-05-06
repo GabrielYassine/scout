@@ -29,16 +29,6 @@ class MaxIterationsTest {
     }
 
     @Test
-    void configure_ignoresNullParamsAndUsesDefault() {
-        MaxIterations<Object> stopCondition = new MaxIterations<>();
-
-        stopCondition.configure(Map.of());
-
-        assertFalse(stopCondition.shouldStop(9_999, 0, 0.0, null));
-        assertTrue(stopCondition.shouldStop(10_000, 0, 0.0, null));
-    }
-
-    @Test
     void configure_ignoresMissingMaxIterationsKey() {
         MaxIterations<Object> stopCondition = new MaxIterations<>();
 

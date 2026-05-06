@@ -36,11 +36,11 @@ public class MuPlusLambdaSelection<S> implements SelectionRule<S> {
 
     @Override
     public List<EvaluatedSolution<S>> select(
-            List<EvaluatedSolution<S>> parents,
-            List<EvaluatedSolution<S>> children,
-            int mu,
-            int iteration,
-            Random rng
+        List<EvaluatedSolution<S>> parents,
+        List<EvaluatedSolution<S>> children,
+        int mu,
+        int iteration,
+        Random rng
     ) {
         List<EvaluatedSolution<S>> combined = new ArrayList<>(parents.size() + children.size());
         combined.addAll(parents);

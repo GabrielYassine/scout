@@ -100,14 +100,14 @@ class TSPTest {
 
     private static TSPInstance knownOptimumInstance() {
         return new TSPInstance(
-                "berlin52",
-                "known optimum test",
-                3,
-                new double[][] {
-                        {0.0, 0.0},
-                        {3.0, 4.0},
-                        {6.0, 0.0}
-                }
+            "berlin52",
+            "known optimum test",
+            3,
+            new double[][] {
+                {0.0, 0.0},
+                {3.0, 4.0},
+                {6.0, 0.0}
+            }
         );
     }
 

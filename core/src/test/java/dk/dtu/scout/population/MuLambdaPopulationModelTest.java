@@ -32,21 +32,18 @@ class MuLambdaPopulationModelTest {
 
         Queue<String> initialSolutions = queue("a", "best");
         TestSearchSpace space = new TestSearchSpace(initialSolutions);
-        TestProblem problem = new TestProblem(Map.of(
-                "a", 1.0,
-                "best", 5.0
-        ));
+        TestProblem problem = new TestProblem(Map.of("a", 1.0, "best", 5.0));
         TestGenerator generator = new TestGenerator(queue("unused"));
         State sharedState = new State();
 
         PopulationInitialization<String> initialization = model.initialize(context(
-                space,
-                problem,
-                () -> generator,
-                new FirstTwoParentSelection<>(),
-                new KeepBestSelection<>(),
-                null,
-                sharedState
+            space,
+            problem,
+            () -> generator,
+            new FirstTwoParentSelection<>(),
+            new KeepBestSelection<>(),
+            null,
+            sharedState
         ));
 
         assertEquals(2, initialization.evaluations());
@@ -82,31 +79,31 @@ class MuLambdaPopulationModelTest {
 
         TestSearchSpace space = new TestSearchSpace(queue("p1", "p2"));
         TestProblem problem = new TestProblem(Map.of(
-                "p1", 1.0,
-                "p2", 2.0,
-                "c1", 3.0,
-                "c2", 4.0
+            "p1", 1.0,
+            "p2", 2.0,
+            "c1", 3.0,
+            "c2", 4.0
         ));
         TestGenerator generator = new TestGenerator(queue("c1", "c2"));
         State sharedState = new State();
 
         PopulationModelContext<String> context = context(
-                space,
-                problem,
-                () -> generator,
-                new FirstTwoParentSelection<>(),
-                new KeepBestSelection<>(),
-                null,
-                sharedState
+            space,
+            problem,
+            () -> generator,
+            new FirstTwoParentSelection<>(),
+            new KeepBestSelection<>(),
+            null,
+            sharedState
         );
 
         PopulationInitialization<String> initialization = model.initialize(context);
 
         PopulationStepResult<String> result = model.step(
-                context,
-                initialization.state(),
-                1,
-                initialization.evaluations()
+            context,
+            initialization.state(),
+            1,
+            initialization.evaluations()
         );
 
         assertEquals(2, result.evaluationsDelta());
@@ -134,22 +131,22 @@ class MuLambdaPopulationModelTest {
 
         TestSearchSpace space = new TestSearchSpace(queue("p1", "p2"));
         TestProblem problem = new TestProblem(Map.of(
-                "p1", 1.0,
-                "p2", 2.0,
-                "child", 3.0
+            "p1", 1.0,
+            "p2", 2.0,
+            "child", 3.0
         ));
         TestGenerator generator = new TestGenerator(queue("child"));
         TestCrossover crossover = new TestCrossover("crossed");
         State sharedState = new State();
 
         PopulationModelContext<String> context = context(
-                space,
-                problem,
-                () -> generator,
-                new FirstTwoParentSelection<>(),
-                new KeepBestSelection<>(),
-                crossover,
-                sharedState
+            space,
+            problem,
+            () -> generator,
+            new FirstTwoParentSelection<>(),
+            new KeepBestSelection<>(),
+            crossover,
+            sharedState
         );
 
         PopulationInitialization<String> initialization = model.initialize(context);
@@ -170,21 +167,21 @@ class MuLambdaPopulationModelTest {
 
         TestSearchSpace space = new TestSearchSpace(queue("p1", "p2"));
         TestProblem problem = new TestProblem(Map.of(
-                "p1", 1.0,
-                "p2", 2.0,
-                "child", 3.0
+            "p1", 1.0,
+            "p2", 2.0,
+            "child", 3.0
         ));
         TestGenerator generator = new TestGenerator(queue("child"));
         State sharedState = new State();
 
         PopulationModelContext<String> context = context(
-                space,
-                problem,
-                () -> generator,
-                new FirstTwoParentSelection<>(),
-                new KeepBestSelection<>(),
-                null,
-                sharedState
+            space,
+            problem,
+            () -> generator,
+            new FirstTwoParentSelection<>(),
+            new KeepBestSelection<>(),
+            null,
+            sharedState
         );
 
         PopulationInitialization<String> initialization = model.initialize(context);
@@ -204,30 +201,30 @@ class MuLambdaPopulationModelTest {
 
         TestSearchSpace space = new TestSearchSpace(queue("p1", "p2"));
         TestProblem problem = new TestProblem(Map.of(
-                "p1", 5.0,
-                "p2", 1.0,
-                "child", 0.0
+            "p1", 5.0,
+            "p2", 1.0,
+            "child", 0.0
         ));
         TestGenerator generator = new TestGenerator(queue("child"));
         State sharedState = new State();
 
         PopulationModelContext<String> context = context(
-                space,
-                problem,
-                () -> generator,
-                new FirstTwoParentSelection<>(),
-                new KeepExistingParentsSelection<>(),
-                null,
-                sharedState
+            space,
+            problem,
+            () -> generator,
+            new FirstTwoParentSelection<>(),
+            new KeepExistingParentsSelection<>(),
+            null,
+            sharedState
         );
 
         PopulationInitialization<String> initialization = model.initialize(context);
 
         PopulationStepResult<String> result = model.step(
-                context,
-                initialization.state(),
-                1,
-                initialization.evaluations()
+            context,
+            initialization.state(),
+            1,
+            initialization.evaluations()
         );
 
         assertEquals("p1", result.runState().currentSolution());
@@ -242,30 +239,30 @@ class MuLambdaPopulationModelTest {
 
         TestSearchSpace space = new TestSearchSpace(queue("best", "weak"));
         TestProblem problem = new TestProblem(Map.of(
-                "best", 10.0,
-                "weak", 1.0,
-                "child", 0.0
+            "best", 10.0,
+            "weak", 1.0,
+            "child", 0.0
         ));
         TestGenerator generator = new TestGenerator(queue("child"));
         State sharedState = new State();
 
         PopulationModelContext<String> context = context(
-                space,
-                problem,
-                () -> generator,
-                new FirstTwoParentSelection<>(),
-                new SelectWeakParentsSelection<>(),
-                null,
-                sharedState
+            space,
+            problem,
+            () -> generator,
+            new FirstTwoParentSelection<>(),
+            new SelectWeakParentsSelection<>(),
+            null,
+            sharedState
         );
 
         PopulationInitialization<String> initialization = model.initialize(context);
 
         PopulationStepResult<String> result = model.step(
-                context,
-                initialization.state(),
-                1,
-                initialization.evaluations()
+            context,
+            initialization.state(),
+            1,
+            initialization.evaluations()
         );
 
         assertEquals("weak", result.runState().currentSolution());
@@ -283,27 +280,25 @@ class MuLambdaPopulationModelTest {
 
         TestSearchSpace space = new TestSearchSpace(queue("p1", "p2"));
         TestProblem problem = new TestProblem(Map.of(
-                "p1", 1.0,
-                "p2", 2.0
+            "p1", 1.0,
+            "p2", 2.0
         ));
         TestGenerator generator = new TestGenerator(queue("child"));
         State sharedState = new State();
 
         PopulationModelContext<String> context = context(
-                space,
-                problem,
-                () -> generator,
-                new NullParentSelection<>(),
-                new KeepBestSelection<>(),
-                null,
-                sharedState
+            space,
+            problem,
+            () -> generator,
+            new NullParentSelection<>(),
+            new KeepBestSelection<>(),
+            null,
+            sharedState
         );
 
         PopulationInitialization<String> initialization = model.initialize(context);
 
-        assertThrows(IllegalStateException.class, () ->
-                model.step(context, initialization.state(), 1, initialization.evaluations())
-        );
+        assertThrows(IllegalStateException.class, () -> model.step(context, initialization.state(), 1, initialization.evaluations()));
     }
 
     @Test
@@ -314,27 +309,25 @@ class MuLambdaPopulationModelTest {
 
         TestSearchSpace space = new TestSearchSpace(queue("p1", "p2"));
         TestProblem problem = new TestProblem(Map.of(
-                "p1", 1.0,
-                "p2", 2.0
+            "p1", 1.0,
+            "p2", 2.0
         ));
         TestGenerator generator = new TestGenerator(queue("child"));
         State sharedState = new State();
 
         PopulationModelContext<String> context = context(
-                space,
-                problem,
-                () -> generator,
-                new OneParentSelection<>(),
-                new KeepBestSelection<>(),
-                null,
-                sharedState
+            space,
+            problem,
+            () -> generator,
+            new OneParentSelection<>(),
+            new KeepBestSelection<>(),
+            null,
+            sharedState
         );
 
         PopulationInitialization<String> initialization = model.initialize(context);
 
-        assertThrows(IllegalStateException.class, () ->
-                model.step(context, initialization.state(), 1, initialization.evaluations())
-        );
+        assertThrows(IllegalStateException.class, () -> model.step(context, initialization.state(), 1, initialization.evaluations()));
     }
 
     @Test
@@ -345,28 +338,26 @@ class MuLambdaPopulationModelTest {
 
         TestSearchSpace space = new TestSearchSpace(queue("p1", "p2"));
         TestProblem problem = new TestProblem(Map.of(
-                "p1", 1.0,
-                "p2", 2.0,
-                "child", 3.0
+            "p1", 1.0,
+            "p2", 2.0,
+            "child", 3.0
         ));
         TestGenerator generator = new TestGenerator(queue("child"));
         State sharedState = new State();
 
         PopulationModelContext<String> context = context(
-                space,
-                problem,
-                () -> generator,
-                new FirstTwoParentSelection<>(),
-                new NullSelection<>(),
-                null,
-                sharedState
+            space,
+            problem,
+            () -> generator,
+            new FirstTwoParentSelection<>(),
+            new NullSelection<>(),
+            null,
+            sharedState
         );
 
         PopulationInitialization<String> initialization = model.initialize(context);
 
-        assertThrows(IllegalStateException.class, () ->
-                model.step(context, initialization.state(), 1, initialization.evaluations())
-        );
+        assertThrows(IllegalStateException.class, () -> model.step(context, initialization.state(), 1, initialization.evaluations()));
     }
 
     @Test
@@ -377,28 +368,26 @@ class MuLambdaPopulationModelTest {
 
         TestSearchSpace space = new TestSearchSpace(queue("p1", "p2"));
         TestProblem problem = new TestProblem(Map.of(
-                "p1", 1.0,
-                "p2", 2.0,
-                "child", 3.0
+            "p1", 1.0,
+            "p2", 2.0,
+            "child", 3.0
         ));
         TestGenerator generator = new TestGenerator(queue("child"));
         State sharedState = new State();
 
         PopulationModelContext<String> context = context(
-                space,
-                problem,
-                () -> generator,
-                new FirstTwoParentSelection<>(),
-                new EmptySelection<>(),
-                null,
-                sharedState
+            space,
+            problem,
+            () -> generator,
+            new FirstTwoParentSelection<>(),
+            new EmptySelection<>(),
+            null,
+            sharedState
         );
 
         PopulationInitialization<String> initialization = model.initialize(context);
 
-        assertThrows(IllegalStateException.class, () ->
-                model.step(context, initialization.state(), 1, initialization.evaluations())
-        );
+        assertThrows(IllegalStateException.class, () -> model.step(context, initialization.state(), 1, initialization.evaluations()));
     }
 
     @Test
@@ -409,28 +398,26 @@ class MuLambdaPopulationModelTest {
 
         TestSearchSpace space = new TestSearchSpace(queue("p1", "p2"));
         TestProblem problem = new TestProblem(Map.of(
-                "p1", 1.0,
-                "p2", 2.0,
-                "child", 3.0
+            "p1", 1.0,
+            "p2", 2.0,
+            "child", 3.0
         ));
         TestGenerator generator = new TestGenerator(queue("child"));
         State sharedState = new State();
 
         PopulationModelContext<String> context = context(
-                space,
-                problem,
-                () -> generator,
-                new FirstTwoParentSelection<>(),
-                new WrongSizeSelection<>(),
-                null,
-                sharedState
+            space,
+            problem,
+            () -> generator,
+            new FirstTwoParentSelection<>(),
+            new WrongSizeSelection<>(),
+            null,
+            sharedState
         );
 
         PopulationInitialization<String> initialization = model.initialize(context);
 
-        assertThrows(IllegalStateException.class, () ->
-                model.step(context, initialization.state(), 1, initialization.evaluations())
-        );
+        assertThrows(IllegalStateException.class, () -> model.step(context, initialization.state(), 1, initialization.evaluations()));
     }
 
     @Test
@@ -461,30 +448,30 @@ class MuLambdaPopulationModelTest {
 
         TestSearchSpace space = new TestSearchSpace(queue("p1", "p2"));
         TestProblem problem = new TestProblem(Map.of(
-                "p1", 1.0,
-                "p2", 2.0,
-                "child", 0.0
+            "p1", 1.0,
+            "p2", 2.0,
+            "child", 0.0
         ));
         TestGenerator generator = new TestGenerator(queue("child"));
         State sharedState = new State();
 
         PopulationModelContext<String> context = context(
-                space,
-                problem,
-                () -> generator,
-                new FirstTwoParentSelection<>(),
-                new KeepExistingParentsSelection<>(),
-                null,
-                sharedState
+            space,
+            problem,
+            () -> generator,
+            new FirstTwoParentSelection<>(),
+            new KeepExistingParentsSelection<>(),
+            null,
+            sharedState
         );
 
         PopulationInitialization<String> initialization = model.initialize(context);
 
         PopulationStepResult<String> result = model.step(
-                context,
-                initialization.state(),
-                1,
-                initialization.evaluations()
+            context,
+            initialization.state(),
+            1,
+            initialization.evaluations()
         );
 
         assertEquals("p2", result.runState().currentSolution());
@@ -502,23 +489,23 @@ class MuLambdaPopulationModelTest {
     }
 
     private static PopulationModelContext<String> context(
-            SearchSpace<String> space,
-            Problem<String> problem,
-            Supplier<Generator<String>> generatorFactory,
-            ParentSelectionRule<String> parentSelection,
-            SelectionRule<String> selection,
-            Crossover<String> crossover,
-            State sharedState
+        SearchSpace<String> space,
+        Problem<String> problem,
+        Supplier<Generator<String>> generatorFactory,
+        ParentSelectionRule<String> parentSelection,
+        SelectionRule<String> selection,
+        Crossover<String> crossover,
+        State sharedState
     ) {
         return new PopulationModelContext<>(
-                generatorFactory,
-                parentSelection,
-                crossover,
-                selection,
-                space,
-                problem,
-                new Random(1234L),
-                sharedState
+            generatorFactory,
+            parentSelection,
+            crossover,
+            selection,
+            space,
+            problem,
+            new Random(1234L),
+            sharedState
         );
     }
 
@@ -721,11 +708,11 @@ class MuLambdaPopulationModelTest {
     private static class KeepBestSelection<S> implements SelectionRule<S> {
         @Override
         public List<EvaluatedSolution<S>> select(
-                List<EvaluatedSolution<S>> parents,
-                List<EvaluatedSolution<S>> children,
-                int mu,
-                int iteration,
-                Random rng
+            List<EvaluatedSolution<S>> parents,
+            List<EvaluatedSolution<S>> children,
+            int mu,
+            int iteration,
+            Random rng
         ) {
             List<EvaluatedSolution<S>> combined = new ArrayList<>();
             combined.addAll(parents);
@@ -760,11 +747,11 @@ class MuLambdaPopulationModelTest {
     private static final class KeepExistingParentsSelection<S> extends KeepBestSelection<S> {
         @Override
         public List<EvaluatedSolution<S>> select(
-                List<EvaluatedSolution<S>> parents,
-                List<EvaluatedSolution<S>> children,
-                int mu,
-                int iteration,
-                Random rng
+            List<EvaluatedSolution<S>> parents,
+            List<EvaluatedSolution<S>> children,
+            int mu,
+            int iteration,
+            Random rng
         ) {
             return parents;
         }
@@ -773,11 +760,11 @@ class MuLambdaPopulationModelTest {
     private static final class SelectWeakParentsSelection<S> extends KeepBestSelection<S> {
         @Override
         public List<EvaluatedSolution<S>> select(
-                List<EvaluatedSolution<S>> parents,
-                List<EvaluatedSolution<S>> children,
-                int mu,
-                int iteration,
-                Random rng
+            List<EvaluatedSolution<S>> parents,
+            List<EvaluatedSolution<S>> children,
+            int mu,
+            int iteration,
+            Random rng
         ) {
             return List.of(parents.get(1), children.getFirst());
         }
@@ -786,11 +773,11 @@ class MuLambdaPopulationModelTest {
     private static final class NullSelection<S> extends KeepBestSelection<S> {
         @Override
         public List<EvaluatedSolution<S>> select(
-                List<EvaluatedSolution<S>> parents,
-                List<EvaluatedSolution<S>> children,
-                int mu,
-                int iteration,
-                Random rng
+            List<EvaluatedSolution<S>> parents,
+            List<EvaluatedSolution<S>> children,
+            int mu,
+            int iteration,
+            Random rng
         ) {
             return null;
         }
@@ -799,11 +786,11 @@ class MuLambdaPopulationModelTest {
     private static final class EmptySelection<S> extends KeepBestSelection<S> {
         @Override
         public List<EvaluatedSolution<S>> select(
-                List<EvaluatedSolution<S>> parents,
-                List<EvaluatedSolution<S>> children,
-                int mu,
-                int iteration,
-                Random rng
+            List<EvaluatedSolution<S>> parents,
+            List<EvaluatedSolution<S>> children,
+            int mu,
+            int iteration,
+            Random rng
         ) {
             return List.of();
         }
@@ -812,11 +799,11 @@ class MuLambdaPopulationModelTest {
     private static final class WrongSizeSelection<S> extends KeepBestSelection<S> {
         @Override
         public List<EvaluatedSolution<S>> select(
-                List<EvaluatedSolution<S>> parents,
-                List<EvaluatedSolution<S>> children,
-                int mu,
-                int iteration,
-                Random rng
+            List<EvaluatedSolution<S>> parents,
+            List<EvaluatedSolution<S>> children,
+            int mu,
+            int iteration,
+            Random rng
         ) {
             return List.of(parents.getFirst());
         }

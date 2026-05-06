@@ -23,6 +23,15 @@ import java.util.Map;
 @Scope("prototype")
 public class TourObserver implements Observer<Object> {
 
+    private enum RouteMode {
+        TSP,
+        VRP
+    }
+
+    private record TourSnapshot(List<List<Integer>> routes, double length) {
+    }
+
+    private RouteMode routeMode;
     private List<Map<String, Object>> cities;
     private boolean citiesLogged;
     private TSPInstance tspInstance;
@@ -48,16 +57,21 @@ public class TourObserver implements Observer<Object> {
     @Override
     public List<Parameter> params() {
         return List.of(
-                new Parameter(
-                        "includePheromone",
-                        "Include Pheromone Heatmap",
-                        "boolean",
-                        includePheromone,
-                        null,
-                        null,
-                        null
-                )
+            new Parameter(
+                "includePheromone",
+                "Include Pheromone Heatmap",
+                "boolean",
+                includePheromone,
+                null,
+                null,
+                null
+            )
         );
+    }
+
+    @Override
+    public List<String> supportedSearchSpaces() {
+        return List.of("permutation", "route-list");
     }
 
     @Override
@@ -71,14 +85,18 @@ public class TourObserver implements Observer<Object> {
     public void init(State state) {
         this.state = state;
 
-        Object problem = state.get(StateKeys.PROBLEM);
-
-        if (problem instanceof TSP tsp) {
-            tspInstance = tsp.getInstance();
-            cities = TourVisualizationMapper.buildTspCities(tspInstance);
-        } else if (problem instanceof VRP vrp) {
-            vrpInstance = vrp.getInstance();
-            cities = TourVisualizationMapper.buildVrpCities(vrpInstance);
+        switch (state.get(StateKeys.PROBLEM)) {
+            case TSP tsp -> {
+                routeMode = RouteMode.TSP;
+                tspInstance = tsp.getInstance();
+                cities = TourVisualizationMapper.buildTspCities(tspInstance);
+            }
+            case VRP vrp -> {
+                routeMode = RouteMode.VRP;
+                vrpInstance = vrp.getInstance();
+                cities = TourVisualizationMapper.buildVrpCities(vrpInstance);
+            }
+            default -> throw new IllegalStateException("TourObserver requires a TSP or VRP problem");
         }
     }
 
@@ -100,42 +118,35 @@ public class TourObserver implements Observer<Object> {
     }
 
     private void logTourSnapshot(IterationSnapshot<Object> state, RunLog log) {
-        Object solution = state.currentSolution();
+        TourSnapshot snapshot = tourSnapshot(state.currentSolution());
 
         Map<String, Object> tourData = new HashMap<>();
-        Double length = null;
-        List<List<Integer>> routesToLog;
-
-        if (solution instanceof int[] tour) {
-            routesToLog = TourVisualizationMapper.wrapTour(tour);
-
-            if (tspInstance != null) {
-                length = tspInstance.getTourLength(tour);
-            }
-        } else if (solution instanceof List<?> list) {
-            List<List<Integer>> routes = coerceRoutes(list);
-
-            if (vrpInstance != null) {
-                routesToLog = TourVisualizationMapper.shiftRoutesForDepot(routes);
-                length = totalDistance(routes);
-            } else {
-                routesToLog = routes;
-
-                if (tspInstance != null && routes.size() == 1) {
-                    length = tspInstance.getTourLength(toIntArray(routes.getFirst()));
-                }
-            }
-        } else {
-            return;
-        }
-
-        tourData.put("tour", routesToLog);
-
-        if (length != null) {
-            tourData.put("length", length);
-        }
+        tourData.put("tour", snapshot.routes());
+        tourData.put("length", snapshot.length());
 
         log.putSeries("tspTour", tourData, SeriesMode.LATEST_ONLY);
+    }
+
+    private TourSnapshot tourSnapshot(Object solution) {
+        if (solution instanceof int[] tour) {
+            return new TourSnapshot(
+                TourVisualizationMapper.wrapTour(tour),
+                tspInstance.getTourLength(tour)
+            );
+        }
+
+        List<List<Integer>> routes = coerceRoutes((List<?>) solution);
+
+        return switch (routeMode) {
+            case VRP -> new TourSnapshot(
+                TourVisualizationMapper.shiftRoutesForDepot(routes),
+                totalDistance(routes)
+            );
+            case TSP -> new TourSnapshot(
+                routes,
+                tspInstance.getTourLength(toIntArray(routes.getFirst()))
+            );
+        };
     }
 
     @SuppressWarnings("unchecked")
@@ -197,9 +208,7 @@ public class TourObserver implements Observer<Object> {
         }
 
         Object pheromone = state.get(StateKeys.PHEROMONE_MATRIX);
-
         List<List<Double>> matrix = pheromone instanceof double[][] pheromoneMatrix ? toMatrixList(pheromoneMatrix) : zeroMatrixFromDimension();
-
         log.putSeries("pheromoneHeatmap", matrix, SeriesMode.LATEST_ONLY);
     }
 

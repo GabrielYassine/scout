@@ -16,16 +16,13 @@ class PermutationTest {
     @Test
     void configure_setsDimension() {
         Permutation searchSpace = new Permutation();
-
         searchSpace.configure(Map.of("n", 5));
-
         assertEquals(5, searchSpace.dimension());
     }
 
     @Test
     void configure_rejectsNonPositiveDimension() {
         Permutation searchSpace = new Permutation();
-
         assertThrows(IllegalArgumentException.class, () -> searchSpace.configure(Map.of("n", 0)));
         assertThrows(IllegalArgumentException.class, () -> searchSpace.configure(Map.of("n", -1)));
     }

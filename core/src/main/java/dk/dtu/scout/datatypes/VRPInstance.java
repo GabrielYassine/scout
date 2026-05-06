@@ -14,13 +14,13 @@ public class VRPInstance {
     private final double[][] distanceMatrix;
 
     public VRPInstance(
-            String name,
-            String comment,
-            double[] depotCoordinates,
-            double[][] customerCoordinates,
-            double[] customerDemands,
-            double capacity,
-            int numberOfVehicles
+        String name,
+        String comment,
+        double[] depotCoordinates,
+        double[][] customerCoordinates,
+        double[] customerDemands,
+        double capacity,
+        int numberOfVehicles
     ) {
         this.name = name;
         this.comment = comment;

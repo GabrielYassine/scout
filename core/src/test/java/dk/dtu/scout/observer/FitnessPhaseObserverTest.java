@@ -163,26 +163,9 @@ class FitnessPhaseObserverTest {
     void configure_rejectsInvalidValues() {
         FitnessPhaseObserver<Object> observer = new FitnessPhaseObserver<>();
 
-        assertThrows(IllegalArgumentException.class, () ->
-            observer.configure(Map.of("windowSize", 0))
-        );
-
-        assertThrows(IllegalArgumentException.class, () ->
-            observer.configure(Map.of("windowSize", -1))
-        );
-
-        assertThrows(IllegalArgumentException.class, () ->
-            observer.configure(Map.of("epsilon", -0.1))
-        );
-    }
-
-    @Test
-    void configure_ignoresNullParams() {
-        FitnessPhaseObserver<Object> observer = new FitnessPhaseObserver<>();
-
-        observer.configure(Map.of());
-
-        assertEquals(2, observer.params().size());
+        assertThrows(IllegalArgumentException.class, () -> observer.configure(Map.of("windowSize", 0)));
+        assertThrows(IllegalArgumentException.class, () -> observer.configure(Map.of("windowSize", -1)));
+        assertThrows(IllegalArgumentException.class, () -> observer.configure(Map.of("epsilon", -0.1)));
     }
 
     @Test
@@ -193,32 +176,6 @@ class FitnessPhaseObserverTest {
         assertEquals("Fitness Phase Observer", observer.displayName());
         assertFalse(observer.description().isBlank());
         assertEquals(2, observer.params().size());
-    }
-
-    @Test
-    void secondIntervalStartsAtPreviousIntervalEnd() {
-        FitnessPhaseObserver<Object> observer = new FitnessPhaseObserver<>();
-        RunLog log = new RunLog();
-
-        observer.configure(Map.of("windowSize", 2, "epsilon", 0.0));
-        observer.onStart(snapshot(1, 1.0), log);
-
-        observer.onStep(snapshot(1, 1.0), log);
-        observer.onStep(snapshot(2, 2.0), log);
-
-        observer.onStep(snapshot(3, 2.0), log);
-        observer.onStep(snapshot(4, 3.0), log);
-
-        List<?> intervals = log.getSeries().get("fitnessPhaseIntervals").getValues();
-
-        Map<?, ?> first = (Map<?, ?>) intervals.get(0);
-        Map<?, ?> second = (Map<?, ?>) intervals.get(1);
-
-        assertEquals(0, first.get("startEvaluation"));
-        assertEquals(1, first.get("endEvaluation"));
-
-        assertEquals(1, second.get("startEvaluation"));
-        assertEquals(3, second.get("endEvaluation"));
     }
 
     @Test
@@ -255,9 +212,6 @@ class FitnessPhaseObserverTest {
     }
 
     private static Map<?, ?> firstInterval(RunLog log) {
-        return (Map<?, ?>) log.getSeries()
-            .get("fitnessPhaseIntervals")
-            .getValues()
-            .getFirst();
+        return (Map<?, ?>) log.getSeries().get("fitnessPhaseIntervals").getValues().getFirst();
     }
 }

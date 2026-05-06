@@ -94,7 +94,9 @@ public final class FormulaEvaluator {
             if (isNumber(token) || token.equals("n")) {
                 output.add(token);
             } else if (isOperator(token)) {
-                while (!stack.isEmpty() && isOperator(stack.peek()) && precedence(stack.peek()) >= precedence(token)) {
+                while (!stack.isEmpty() && isOperator(stack.peek())) {
+                    assert stack.peek() != null;
+                    if (!(precedence(stack.peek()) >= precedence(token))) break;
                     output.add(stack.pop());
                 }
 

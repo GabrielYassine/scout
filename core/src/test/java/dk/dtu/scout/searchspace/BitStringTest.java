@@ -15,16 +15,13 @@ class BitStringTest {
     @Test
     void configure_setsDimension() {
         BitString searchSpace = new BitString();
-
         searchSpace.configure(Map.of("n", 5));
-
         assertEquals(5, searchSpace.dimension());
     }
 
     @Test
     void configure_rejectsNonPositiveDimension() {
         BitString searchSpace = new BitString();
-
         assertThrows(IllegalArgumentException.class, () -> searchSpace.configure(Map.of("n", 0)));
         assertThrows(IllegalArgumentException.class, () -> searchSpace.configure(Map.of("n", -1)));
     }
@@ -33,9 +30,7 @@ class BitStringTest {
     void randomSolution_returnsBitStringOfConfiguredLength() {
         BitString searchSpace = new BitString();
         searchSpace.configure(Map.of("n", 8));
-
         boolean[] solution = searchSpace.randomSolution(new Random(1234L));
-
         assertEquals(8, solution.length);
     }
 
