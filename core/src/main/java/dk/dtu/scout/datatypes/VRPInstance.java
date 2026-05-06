@@ -29,11 +29,6 @@ public class VRPInstance {
         this.customerCount = customerCoordinates.length;
         this.depotCoordinates = depotCoordinates;
         this.capacity = capacity;
-
-        if (numberOfVehicles <= 0) {
-            throw new IllegalArgumentException("Number of vehicles must be positive");
-        }
-
         this.numberOfVehicles = numberOfVehicles;
         this.distanceMatrix = computeDistanceMatrix();
     }

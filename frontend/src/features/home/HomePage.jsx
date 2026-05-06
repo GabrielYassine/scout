@@ -1,51 +1,169 @@
-import { Link } from "react-router-dom";
 import "./HomePage.css";
+import ScoutLogo from "../../assets/icons/ScoutLogo.png";
+import SelectorImage from "./assets/selector.png";
+import RunConfigImage from "./assets/config.png";
+import RouteGraphEditorImage from "./assets/routeGraphEditor.png";
+import RunProgressImage from "./assets/runProgress.png";
 
 export default function HomePage() {
   return (
     <div className="home-page">
-      <div className="home-hero">
-        <h1>Scout: optimization puzzle lab</h1>
-        <p>
-          Scout is an interactive workspace for building problem instances, exploring solution
-          behavior, and comparing runs across multiple optimization puzzles and layouts. It
-          connects a Java core and Spring backend with a React frontend for live visualization.
-        </p>
-        <div className="home-cta">
-          <Link className="home-btn primary" to="/lab">Start in Lab</Link>
+      <div className="top-section">
+        <div className="title-container">
+          <div className="home-title">SCOUT - Metaheuristic Optimization Framework</div>
+          <div className="home-subtitle">
+            An interactive framework for configuring, running, visualizing,
+            and comparing nature-inspired metaheuristics on combinatorial optimization problems
+           </div>
+        </div>
+        <div className="logo-container">
+          <img className="home-logo" src={ScoutLogo} alt="Scout logo" />
         </div>
       </div>
 
-      <div className="home-sections">
-        <section className="home-card">
-          <h2>What you can do</h2>
-          <ul>
-            <li>Browse the catalog of problems, generators, selection rules, and operators.</li>
-            <li>Apply templates to load preset configurations and parameters.</li>
-            <li>Create or upload instances, then edit graphs and node data interactively.</li>
-            <li>Launch runs and runtime studies, then track progress live.</li>
-            <li>Compare results across runs with charts and history.</li>
-          </ul>
-        </section>
+      <div className="features-section">
+        <h2 className="features-title">SCOUT Features</h2>
+        <ul className="features-list">
+          <li>Create and run optimization experiments directly in the browser.</li>
+          <li>Choose between different problem types.</li>
+          <li>Use ready-made templates or build a custom algorithm from scratch.</li>
+          <li>Adjust parameters and stopping conditions before starting a run.</li>
+          <li>Follow the progress of a run through live charts and visualizations.</li>
+          <li>Compare results across repeated runs and different problem sizes.</li>
+          <li>Import, export and edit TSP and VRP instances for route-based experiments.</li>
+        </ul>
+      </div>
 
-        <section className="home-card">
-          <h2>How the Lab works</h2>
-          <ol>
-            <li>Pick a puzzle template or build a configuration from the catalog.</li>
-            <li>Use the right panel to set problem instance details and parameters.</li>
-            <li>Open the graph modal to add, remove, or drag nodes and update coordinates.</li>
-            <li>Set run limits, seeds, and observers, then launch a run.</li>
-          </ol>
-        </section>
+      <hr className="rounded home-divider" />
 
-        <section className="home-card">
-          <h2>Runs and analysis</h2>
-          <p>
-            Runs stream progress updates through WebSockets so charts can update in real time.
-            Use the Runs view to review histories, compare algorithms, and inspect runtime
-            behavior across problems and repetitions.
-          </p>
-        </section>
+      <div className="guide-section">
+        <h2 className="guide-title">How to use SCOUT</h2>
+
+        <div className="guide-block">
+          <div className="guide-block-title">Build an Experiment</div>
+
+          <div className="guide-block-content">
+            Experiments in SCOUT are created by choosing the parts that should make up
+            a run. The selector groups the available choices by role, such as problem
+            type, generator, selection rule, population model, stopping condition, and
+            observer. This makes it easier to see which parts are available before
+            assembling the final configuration.
+          </div>
+
+          <div className="image-container">
+            <img
+              className="guide-image"
+              src={SelectorImage}
+              alt="Selector showing available experiment components"
+            />
+          </div>
+
+          <div className="guide-block-subtitle">Run configuration</div>
+          <div className="guide-block-content">
+            The selected pieces are placed in the run configuration area. Together,
+            they define the full experiment: what problem should be solved, which
+            search space is used, how new solutions are generated, how solutions are
+            accepted or selected, when the run should stop, and which results should
+            be collected for visualization.
+          </div>
+
+          <div className="guide-block-content">
+            This visual setup is useful because the configuration becomes easier to
+            inspect before the run starts. Instead of hiding the algorithm setup in a
+            form, SCOUT shows the experiment as a collection of connected choices.
+          </div>
+
+          <div className="image-container">
+            <img
+              className="guide-image"
+              src={RunConfigImage}
+              alt="Run configuration puzzle with selected experiment components"
+            />
+          </div>
+        </div>
+
+        <div className="guide-block">
+          <div className="guide-block-title">Work with TSP and VRP Instances</div>
+
+          <div className="guide-block-content">
+            SCOUT supports route-based optimization problems such as the Traveling
+            Salesperson Problem and the Vehicle Routing Problem. These problems use
+            coordinates, routes, depots, and customers instead of simple bit strings,
+            so the instance itself becomes an important part of the experiment.
+          </div>
+
+          <div className="guide-block-content">
+            Existing instances can be imported, exported, and reused. Custom instances
+            can also be created or adjusted with the graph editor, making it possible
+            to test algorithms on smaller examples before moving to larger benchmark
+            instances.
+          </div>
+
+          <div className="image-container">
+            <img
+              className="guide-image"
+              src={RouteGraphEditorImage}
+              alt="Graph editor for TSP and VRP instances"
+            />
+          </div>
+        </div>
+
+        <div className="guide-block">
+          <div className="guide-block-title">Run Experiments and Follow Progress</div>
+
+          <div className="guide-block-content">
+            When an experiment starts, SCOUT opens the run page and begins streaming
+            progress updates from the backend. This allows the optimization process to
+            be followed while it is still running, instead of only showing a final
+            result after the computation has finished.
+          </div>
+
+          <div className="guide-block-content">
+            The run page shows important information such as the current progress,
+            runtime, best fitness values, and the visual data produced by the selected
+            observers. This makes it easier to understand how the algorithm behaves
+            over time.
+          </div>
+
+          <div className="image-container">
+            <img
+              className="guide-image"
+              src={RunProgressImage}
+              alt="Run page showing live progress and visualizations"
+            />
+          </div>
+
+          <div className="guide-block-subtitle">Explore visualizations</div>
+          <div className="guide-block-content">
+            Different visualizations show different aspects of the search process.
+            Fitness graphs show whether the run improves over time, route views show
+            how TSP or VRP solutions change, and hypercube plots show movement through
+            bit-string search spaces. Additional observers can show data such as
+            pheromone values, temperature changes, or fitness phase information.
+          </div>
+
+          <div className="guide-block-content">
+            The purpose of these visualizations is not only to show the final solution,
+            but also to make the working principles of the algorithm easier to inspect.
+          </div>
+        </div>
+
+        <div className="guide-block">
+          <div className="guide-block-title">Compare with Runtime Studies</div>
+
+          <div className="guide-block-content">
+            A single run can show how one configuration behaves, but randomized
+            algorithms may behave differently from run to run. Runtime studies repeat
+            experiments across multiple runs or problem sizes, which gives a more
+            reliable basis for comparison.
+          </div>
+
+          <div className="guide-block-content">
+            This mode is useful when comparing algorithms, parameter settings, or
+            problem sizes. Instead of focusing on one execution, runtime studies help
+            summarize performance across repeated experiments.
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -85,16 +85,8 @@ public class SeriesStatsService {
     }
 
     private void validateRequest(SeriesWindowStatsRequest request) {
-        if (request == null) {
-            throw new BadRequestException("Request body is required.");
-        }
-
         if (request.points() == null || request.points().isEmpty()) {
             throw new BadRequestException("points must not be empty.");
-        }
-
-        if (!Double.isFinite(request.xMin()) || !Double.isFinite(request.xMax())) {
-            throw new BadRequestException("xMin and xMax must be finite numbers.");
         }
 
         if (request.xMin() > request.xMax()) {
