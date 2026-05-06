@@ -355,12 +355,7 @@ class MuLambdaPopulationModelTest {
         return new ArrayDeque<>(List.of(values));
     }
 
-    private static final class TestSearchSpace implements SearchSpace<String> {
-        private final Queue<String> solutions;
-
-        private TestSearchSpace(Queue<String> solutions) {
-            this.solutions = solutions;
-        }
+    private record TestSearchSpace(Queue<String> solutions) implements SearchSpace<String> {
 
         @Override
         public String randomSolution(Random rng) {
@@ -393,12 +388,7 @@ class MuLambdaPopulationModelTest {
         }
     }
 
-    private static final class TestProblem implements Problem<String> {
-        private final Map<String, Double> fitnessValues;
-
-        private TestProblem(Map<String, Double> fitnessValues) {
-            this.fitnessValues = fitnessValues;
-        }
+    private record TestProblem(Map<String, Double> fitnessValues) implements Problem<String> {
 
         @Override
         public double fitness(String solution) {
@@ -431,12 +421,7 @@ class MuLambdaPopulationModelTest {
         }
     }
 
-    private static final class TestGenerator implements Generator<String> {
-        private final Queue<String> children;
-
-        private TestGenerator(Queue<String> children) {
-            this.children = children;
-        }
+    private record TestGenerator(Queue<String> children) implements Generator<String> {
 
         @Override
         public String generate(Random rng) {
@@ -530,20 +515,6 @@ class MuLambdaPopulationModelTest {
         }
     }
 
-    private static final class NullParentSelection<S> extends FirstTwoParentSelection<S> {
-        @Override
-        public List<EvaluatedSolution<S>> selectParents(List<EvaluatedSolution<S>> population, Random rng) {
-            return null;
-        }
-    }
-
-    private static final class OneParentSelection<S> extends FirstTwoParentSelection<S> {
-        @Override
-        public List<EvaluatedSolution<S>> selectParents(List<EvaluatedSolution<S>> population, Random rng) {
-            return List.of(population.getFirst());
-        }
-    }
-
     private static class KeepBestSelection<S> implements SelectionRule<S> {
         @Override
         public List<EvaluatedSolution<S>> select(
@@ -606,45 +577,6 @@ class MuLambdaPopulationModelTest {
             Random rng
         ) {
             return List.of(parents.get(1), children.getFirst());
-        }
-    }
-
-    private static final class NullSelection<S> extends KeepBestSelection<S> {
-        @Override
-        public List<EvaluatedSolution<S>> select(
-            List<EvaluatedSolution<S>> parents,
-            List<EvaluatedSolution<S>> children,
-            int mu,
-            int iteration,
-            Random rng
-        ) {
-            return null;
-        }
-    }
-
-    private static final class EmptySelection<S> extends KeepBestSelection<S> {
-        @Override
-        public List<EvaluatedSolution<S>> select(
-            List<EvaluatedSolution<S>> parents,
-            List<EvaluatedSolution<S>> children,
-            int mu,
-            int iteration,
-            Random rng
-        ) {
-            return List.of();
-        }
-    }
-
-    private static final class WrongSizeSelection<S> extends KeepBestSelection<S> {
-        @Override
-        public List<EvaluatedSolution<S>> select(
-            List<EvaluatedSolution<S>> parents,
-            List<EvaluatedSolution<S>> children,
-            int mu,
-            int iteration,
-            Random rng
-        ) {
-            return List.of(parents.getFirst());
         }
     }
 }

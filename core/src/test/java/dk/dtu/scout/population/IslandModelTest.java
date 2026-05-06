@@ -1,6 +1,5 @@
 package dk.dtu.scout.population;
 
-import dk.dtu.scout.ScoutComponent;
 import dk.dtu.scout.State;
 import dk.dtu.scout.crossover.Crossover;
 import dk.dtu.scout.datatypes.StateKeys;
@@ -232,14 +231,6 @@ class IslandModelTest {
     }
 
     @Test
-    void configure_ignoresNullAndMissingParams() {
-        IslandModel<Integer> model = new IslandModel<>();
-
-        assertDoesNotThrow(() -> model.configure(Map.of()));
-        assertDoesNotThrow(() -> model.configure(Map.of()));
-    }
-
-    @Test
     void metadata_isStable() {
         IslandModel<Integer> model = new IslandModel<>();
 
@@ -280,12 +271,6 @@ class IslandModelTest {
         assertEquals(2, result.evaluationsDelta());
         assertEquals(100, result.runState().bestSolution());
         assertEquals(100.0, result.runState().bestFitness());
-    }
-    private static class NullParentSelection<S> extends DuplicateParentSelection<S> {
-        @Override
-        public List<EvaluatedSolution<S>> selectParents(List<EvaluatedSolution<S>> parents, Random rng) {
-            return null;
-        }
     }
 
     private static PopulationModelContext<Integer> context(
@@ -537,13 +522,6 @@ class IslandModelTest {
         }
     }
 
-    private static class TooFewParentsSelection<S> extends DuplicateParentSelection<S> {
-        @Override
-        public List<EvaluatedSolution<S>> selectParents(List<EvaluatedSolution<S>> parents, Random rng) {
-            return List.of(parents.getFirst());
-        }
-    }
-
     private static class BestSelectionRule<S> implements SelectionRule<S> {
         @Override
         public List<EvaluatedSolution<S>> select(
@@ -611,48 +589,6 @@ class IslandModelTest {
         @Override
         public List<Parameter> params() {
             return List.of();
-        }
-    }
-
-    private static class EmptySelectionRule<S> extends BestSelectionRule<S> {
-        @Override
-        public List<EvaluatedSolution<S>> select(
-            List<EvaluatedSolution<S>> parents,
-            List<EvaluatedSolution<S>> children,
-            int mu,
-            int iteration,
-            Random rng
-        ) {
-            return List.of();
-        }
-    }
-
-    private static class WrongCountSelectionRule<S> extends BestSelectionRule<S> {
-        @Override
-        public List<EvaluatedSolution<S>> select(
-            List<EvaluatedSolution<S>> parents,
-            List<EvaluatedSolution<S>> children,
-            int mu,
-            int iteration,
-            Random rng
-        ) {
-            List<EvaluatedSolution<S>> combined = new ArrayList<>();
-            combined.addAll(parents);
-            combined.addAll(children);
-            return List.of(combined.getFirst());
-        }
-    }
-
-    private static class NullSelectionRule<S> extends BestSelectionRule<S> {
-        @Override
-        public List<EvaluatedSolution<S>> select(
-            List<EvaluatedSolution<S>> parents,
-            List<EvaluatedSolution<S>> children,
-            int mu,
-            int iteration,
-            Random rng
-        ) {
-            return null;
         }
     }
 }
