@@ -33,6 +33,15 @@ const ZOOM_SENSITIVITY = 0.0015;
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const toInt = (value) => Math.round(Number(value) || 0);
 
+function pheromoneStyle(intensity) {
+  const lightness = 88 - 40 * intensity;
+
+  return {
+    strokeWidth: 0.6 + 4.4 * intensity,
+    color: `hsl(24, 92%, ${lightness}%)`,
+  };
+}
+
 export default function RouteVisualization({
   tspData,
   run,
@@ -79,7 +88,6 @@ export default function RouteVisualization({
     if (lastInitialKeyRef.current === initialCitiesKey) return;
 
     lastInitialKeyRef.current = initialCitiesKey;
-
     setCities([...initialCities]);
   }, [initialCitiesKey, draggedCity, initialCities]);
 
@@ -373,7 +381,6 @@ export default function RouteVisualization({
     const size = Math.min(matrix.length, cities.length);
     if (size === 0) return [];
 
-    let maxValue = 0;
     const rawEdges = [];
 
     for (let i = 0; i < size; i += 1) {
@@ -383,17 +390,20 @@ export default function RouteVisualization({
           Number(matrix[j]?.[i] ?? 0)
         );
 
-        rawEdges.push({ a: i, b: j, value });
-        if (value > maxValue) maxValue = value;
+        if (Number.isFinite(value) && value > 0) {
+          rawEdges.push({ a: i, b: j, value });
+        }
       }
     }
 
-    if (maxValue <= 0) return [];
+    if (!rawEdges.length) return [];
 
-    const threshold = maxValue * 0.02;
+    const values = rawEdges.map((edge) => edge.value);
+    const minValue = Math.min(...values);
+    const maxValue = Math.max(...values);
+    const range = maxValue - minValue;
 
     return rawEdges
-      .filter(({ value }) => value >= threshold)
       .map(({ a, b, value }) => {
         const cityA = cities[a];
         const cityB = cities[b];
@@ -405,18 +415,19 @@ export default function RouteVisualization({
         const pointA = toSVGCoords(cityA.x, cityA.y);
         const pointB = toSVGCoords(cityB.x, cityB.y);
 
-        const normalized = value / maxValue;
-        const boosted = Math.pow(normalized, 0.55);
+        const intensity = range === 0 ? 0.45 : clamp((value - minValue) / range, 0, 1);
 
         return {
           x1: pointA.x,
           y1: pointA.y,
           x2: pointB.x,
           y2: pointB.y,
-          intensity: Math.max(0.06, Math.min(1, boosted)),
+          intensity,
+          ...pheromoneStyle(intensity),
         };
       })
-      .filter(Boolean);
+      .filter(Boolean)
+      .sort((a, b) => a.intensity - b.intensity);
   }, [run, cities, toSVGCoords]);
 
   return (
@@ -459,7 +470,8 @@ export default function RouteVisualization({
                 y1={edge.y1}
                 x2={edge.x2}
                 y2={edge.y2}
-                strokeWidth={0.5 + 3 * edge.intensity}
+                stroke={edge.color}
+                strokeWidth={edge.strokeWidth}
                 strokeLinecap="round"
               />
             ))}

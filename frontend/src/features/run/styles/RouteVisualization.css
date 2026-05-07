@@ -41,18 +41,16 @@
 }
 
 .pheromone-layer {
-  opacity: 0.35;
   isolation: isolate;
 }
 
 .pheromone-edge {
-  stroke: #ff6a2a;
   mix-blend-mode: normal;
 }
 
 .tour-path {
   fill: none;
-  stroke: #3b82f6;
+  stroke: #2563eb;
   stroke-width: 2;
   stroke-linejoin: round;
   transition: opacity 0.2s;
