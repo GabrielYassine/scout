@@ -28,7 +28,11 @@ export function useRunSelection({ batch, restoredRun, setSavedRun }) {
         averageByProblem,
         averageRunTimeByProblem,
         batch?.searchSpaceId
-      ),
+      ).map((run) => ({
+        ...run,
+        status: "finished",
+        isAverageRun: true,
+      })),
     [averageByProblem, averageRunTimeByProblem, batch?.searchSpaceId]
   );
 
