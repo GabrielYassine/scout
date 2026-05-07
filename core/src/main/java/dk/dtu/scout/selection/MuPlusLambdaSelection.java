@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Random;
 
 /**
- *
+ * Selection rule for (mu+lambda) evolutionary strategies, which selects the best mu solutions from the combined set of parents and children.
  * @author s235257 & s230632
  */
 @Component
@@ -38,6 +38,18 @@ public class MuPlusLambdaSelection<S> implements SelectionRule<S> {
         return List.of();
     }
 
+
+    /**
+     * Selects the next parent population from parents and children combined.
+     * The method sorts all candidate solutions by fitness in descending order and
+     * returns the best mu solutions.
+     * @param parents current evaluated parent population
+     * @param children evaluated offspring population
+     * @param mu number of solutions to keep for the next generation
+     * @param iteration current iteration number, unused by this deterministic rule
+     * @param rng random number generator, unused by this deterministic rule
+     * @return selected parent population for the next generation
+     */
     @Override
     public List<EvaluatedSolution<S>> select(
         List<EvaluatedSolution<S>> parents,

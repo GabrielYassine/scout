@@ -10,8 +10,12 @@ import java.util.List;
 import java.util.Random;
 
 /**
- *
- * @param <S>
+ * Parent selection rule that selects parents uniformly at random.
+ * The rule selects two parents from the current evaluated parent population.
+ * Selection is done with replacement, meaning the same parent can be selected
+ * twice. This allows the rule to work even when the population contains only
+ * one parent.
+ * @param <S> solution representation type
  * @author s230632
  */
 @Component
@@ -37,7 +41,12 @@ public class RandomParentSelection<S> implements ParentSelectionRule<S> {
     public List<Parameter> params() {
         return List.of();
     }
-
+    /**
+     * Selects two parents uniformly at random from the parent population.
+     * @param parents evaluated parent population to select from
+     * @param rng random number generator used for parent sampling
+     * @return two randomly selected parents
+     */
     @Override
     public List<EvaluatedSolution<S>> selectParents(List<EvaluatedSolution<S>> parents, Random rng) {
         if (parents == null || parents.isEmpty()) {

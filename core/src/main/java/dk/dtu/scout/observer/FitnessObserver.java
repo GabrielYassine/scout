@@ -10,8 +10,10 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 /**
- * Tracks fitness values over time.
- * @author s235257 & Ahmed
+ * Observer that records the current fitness and best fitness during a run.
+ * The current fitness represents the fitness of the current representative
+ * solution, while bestFitness represents the best solution found so far.
+ * @author s235257 & s230632
  */
 
 @Component
@@ -37,7 +39,11 @@ public class FitnessObserver<S> implements Observer<S> {
     public List<Parameter> params() {
         return List.of();
     }
-
+    /**
+     * Logs the current fitness and best fitness for the current evaluation point.
+     * @param state current iteration snapshot
+     * @param log run log where the fitness values are stored
+     */
     @Override
     public void onStep(IterationSnapshot<S> state, RunLog log) {
         log.putSeries("fitness", state.currentFitness(), SeriesMode.ALL);

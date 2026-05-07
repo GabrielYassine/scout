@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- *
+ * Centralized state management for the Scout framework, allowing components to share and update variables during execution.
  * @author s235257 & s230632
  */
 public class State {

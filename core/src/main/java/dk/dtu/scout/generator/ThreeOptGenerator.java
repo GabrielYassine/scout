@@ -10,7 +10,9 @@ import java.util.List;
 import java.util.Random;
 
 /**
- *
+ * Generator that creates a new permutation by applying a random 3-opt style mutation.
+ * The generator splits the permutation into four segments and then reconnects
+ * the middle segments in one of several possible ways. T
  * @author s230632
  */
 @Component
@@ -48,7 +50,12 @@ public class ThreeOptGenerator implements Generator<int[]> {
     public List<String> supportedSearchSpaces() {
         return List.of("permutation");
     }
-
+    /**
+     * Generates a mutated permutation using a random 3-opt style move.
+     *
+     * @param rng random number generator used to choose cut points and reconnection type
+     * @return mutated permutation
+     */
     @Override
     public int[] generate(Random rng) {
         Object baseObj = state.get(StateKeys.OFFSPRING_BASE);
@@ -87,12 +94,24 @@ public class ThreeOptGenerator implements Generator<int[]> {
         };
     }
 
+    /**
+     * Copies a slice of an array from index from, inclusive, to index to, exclusive.
+     *
+     * @param arr source array
+     * @param from start index, inclusive
+     * @param to end index, exclusive
+     * @return copied slice
+     */
     private int[] slice(int[] arr, int from, int to) {
         int[] out = new int[to - from];
         System.arraycopy(arr, from, out, 0, to - from);
         return out;
     }
-
+    /**
+     * Returns a reversed copy of the given array.
+     * @param arr array to reverse
+     * @return reversed copy
+     */
     private int[] reverse(int[] arr) {
         int[] out = arr.clone();
         int l = 0;
@@ -106,7 +125,11 @@ public class ThreeOptGenerator implements Generator<int[]> {
         }
         return out;
     }
-
+    /**
+     * Concatenates multiple array segments into one permutation.
+     * @param parts array segments to concatenate
+     * @return concatenated array
+     */
     private int[] concat(int[]... parts) {
         int total = 0;
         for (int[] part : parts) {

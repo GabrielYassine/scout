@@ -11,8 +11,11 @@ import java.util.List;
 import java.util.Random;
 
 /**
- *
- * @param <S>
+ * Parent selection rule that selects the best individuals from the current parent population.
+ * The rule returns the two highest-fitness parents. If the population only contains
+ * one parent, the same parent is returned twice so crossover-based components can
+ * still receive two parent references.
+ * @param <S> solution representation type
  * @author s230632
  */
 @Component
@@ -39,6 +42,12 @@ public class ElitistParentSelection<S> implements ParentSelectionRule<S> {
         return List.of();
     }
 
+    /**
+     * Selects the two best parents based on fitness.
+     * @param parents evaluated parent population to select from
+     * @param rng random number generator, unused because this rule is deterministic
+     * @return the two highest-fitness parents, or the same parent twice if only one exists
+     */
     @Override
     public List<EvaluatedSolution<S>> selectParents(List<EvaluatedSolution<S>> parents, Random rng) {
         if (parents == null || parents.isEmpty()) {

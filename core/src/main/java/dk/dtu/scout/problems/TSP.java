@@ -10,7 +10,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- *
+ * Implementation of the Traveling Salesman Problem (TSP), where the goal is to find the shortest possible tour
+ * that visits a set of cities exactly once and returns to the starting city.
  * @author s235257 & s230632
  */
 @Component
@@ -59,12 +60,23 @@ public class TSP implements Problem<int[]> {
     }
 
 
+    /**
+     * Checks whether the given fitness value corresponds to a known optimal tour.
+     * @param fitness fitness value to check
+     * @return true if the fitness matches the known optimum for this instance
+     */
     @Override
     public boolean isOptimal(double fitness) {
         Double optimum = OptimaLookup.resolve(TSP_OPTIMA, instance.getName());
         return optimum != null && fitness >= -optimum - EPSILON;
     }
-
+    /**
+     * Computes the fitness of a tour.
+     * The framework maximizes fitness, but TSP is a minimization problem.
+     * Therefore, the tour length is negated.
+     * @param tour permutation representing the order in which cities are visited
+     * @return negative tour length
+     */
     @Override
     public double fitness(int[] tour) {
         if (instance == null) {

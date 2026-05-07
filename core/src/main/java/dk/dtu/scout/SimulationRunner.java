@@ -26,14 +26,26 @@ import java.util.concurrent.CancellationException;
 import java.util.function.Supplier;
 
 /**
- *
+ * Coordinates the execution of a complete optimization run.
  * @author s235257 & s230632
  */
 public class SimulationRunner {
 
     /**
      * Execute a full run with the provided components and return the aggregated log.
-     * @param logEveryEvaluations tick interval for observer/log updates (must be positive)
+     * @param populationModel population model that controls the algorithmic loop
+     * @param generatorFactory factory for creating generator instances
+     * @param crossover optional crossover operator, or null if crossover is not used
+     * @param parentSelection optional parent selection rule
+     * @param selection selection rule used to choose the next population
+     * @param space search space used by the run
+     * @param problem optimization problem used to evaluate solutions
+     * @param rng random number generator used during the run
+     * @param stopConditions stop conditions that can terminate the run
+     * @param observers observers that record run data
+     * @param logEveryEvaluations logging interval measured in fitness evaluations
+     * @return run log containing evaluations and observer series
+     * @param <S> solution representation type
      */
     public <S> RunLog run(
         PopulationModel<S> populationModel,
@@ -161,7 +173,11 @@ public class SimulationRunner {
         notifyOnEnd(observers, currentState, log);
         return log;
     }
-
+    /**
+     * Helper method to collect and merge state variables from all components that publish runtime state.
+     * @param state shared state to update with collected variables
+     * @param components components that may publish state variables
+     */
     private void updateComponentStateVariables(State state, List<ScoutComponent> components) {
         Map<String, Object> combinedStateVariables = new HashMap<>();
         for (ScoutComponent component : components) {
@@ -169,7 +185,15 @@ public class SimulationRunner {
         }
         state.update(combinedStateVariables);
     }
-
+   /**
+     * Helper method to evaluate all stop conditions and determine if the run should terminate.
+     * @param conditions list of stop conditions to evaluate
+     * @param iteration current iteration number
+     * @param evaluations total number of fitness evaluations performed
+     * @param bestFitness best fitness value found so far
+     * @param bestSolution best solution found so far
+     * @return true if any stop condition is met, false otherwise
+     */
     private <S> boolean shouldStop(
         List<StopCondition<S>> conditions,
         int iteration,
@@ -184,7 +208,7 @@ public class SimulationRunner {
         }
         return false;
     }
-
+    
     private <S> void notifyOnStart(List<Observer<S>> observers, IterationSnapshot<S> state, RunLog log) {
         for (Observer<S> observer : observers) {
             observer.onStart(state, log);

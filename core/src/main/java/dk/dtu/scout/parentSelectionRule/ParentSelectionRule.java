@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Random;
 
 /**
- *
+ *  Parent selection rule for selecting parents for the next generation.
  * @param <S>
  * @author s230632
  */

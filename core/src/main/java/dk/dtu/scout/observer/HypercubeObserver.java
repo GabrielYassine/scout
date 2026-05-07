@@ -11,7 +11,10 @@ import java.util.List;
 
 
 /**
- *
+ * Observer that projects bitstring solutions onto a two-dimensional view
+ * of the Boolean hypercube.
+ * The x-coordinate is based on the positions of the 1-bits, while the
+ * y-coordinate is based on the fraction of 1-bits in the solution.
  * @author s230632
  */
 @Component
@@ -43,6 +46,12 @@ public class HypercubeObserver implements Observer<boolean[]> {
         return List.of("bitstring");
     }
 
+    /**
+     * Maps the current bitstring solution to a 2D point and stores the
+     * coordinates in the run log.
+     * @param state current iteration snapshot containing the current solution
+     * @param log run log where the projected coordinates are stored
+     */
     @Override
     public void onStep(IterationSnapshot<boolean[]> state, RunLog log) {
         Point2D point = map(state.currentSolution());
@@ -51,6 +60,15 @@ public class HypercubeObserver implements Observer<boolean[]> {
         log.putSeries("hypercubeY", point.y(), SeriesMode.ALL);
     }
 
+    /**
+     * Projects a bitstring to a two-dimensional point.
+     * The y-coordinate is the fraction of 1-bits. The x-coordinate is based on
+     * how far to the left or right the 1-bits are positioned among all bit
+     * positions. An envelope function narrows the projection near the top and
+     * bottom of the hypercube, where there are fewer possible solutions.
+     * @param bits bitstring solution to project
+     * @return projected 2D point
+     */
     static Point2D map(boolean[] bits) {
         int n = bits.length;
 

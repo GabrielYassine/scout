@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Random;
 
 /**
- *
+ * Contract for selection rules, which define how to select the next parent population from the current parents and offspring.
  * @author s235257 & s230632
  */
 public interface SelectionRule<S> extends ScoutComponent {

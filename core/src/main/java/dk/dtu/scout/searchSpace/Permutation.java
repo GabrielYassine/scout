@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.Random;
 
 /**
- *
+ * Implementation of a permutation search space, where solutions are represented as permutations of integers from 0 to n-1.
  * @author s235257 & s230632
  */
 @Component
@@ -57,6 +57,11 @@ public class Permutation implements SearchSpace<int[]> {
         }
         this.n = value;
     }
+    /**
+     * Generates a random permutation of integers from 0 to n-1.
+     * @param rng Random number generator to use for shuffling
+     * @return An array representing a random permutation
+     */
 
     @Override
     public int[] randomSolution(Random rng) {

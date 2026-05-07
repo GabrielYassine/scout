@@ -9,8 +9,11 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 
 /**
- *
- * @author Ahmed
+ * Performs k-point crossover for bitstring solutions.
+ * The crossover expects two selected parents to be available in the shared state.
+ * It chooses k distinct cut points and alternates between copying segments from
+ * the first and second parent.
+ * @author s230632
  */
 
 @Component
@@ -61,7 +64,14 @@ public class KPointCrossover implements Crossover<boolean[]> {
             this.k = value;
         }
     }
-
+    /**
+     * Performs k-point crossover using the two selected parents stored in the shared state.
+     * The method reads the parents from StateKeys.SELECTED_PARENT_1 and
+     * StateKeys.SELECTED_PARENT_2, chooses k random cut points, and alternates
+     * between the two parents to construct the child.
+     * @param rng random number generator used to choose cut points and handle edge cases
+     * @return a child bitstring created by combining the two selected parents
+     */
     @Override
     public boolean[] crossover(Random rng) {
         Object p1Obj = state.get(StateKeys.SELECTED_PARENT_1);
@@ -98,6 +108,15 @@ public class KPointCrossover implements Crossover<boolean[]> {
         return child;
     }
 
+    /**
+     * Selects k distinct crossover cut points between 1 and n - 1.
+     * The returned cut points are sorted so they can be processed from left to right
+     * while constructing the child.
+     * @param k number of cut points to generate
+     * @param n length of the parent bitstrings
+     * @param rng random number generator used to sample cut points
+     * @return sorted list of distinct cut points
+     */
     private List<Integer> randomDistinctCuts(int k, int n, Random rng) {
         Set<Integer> chosen = new HashSet<>();
         while (chosen.size() < k) {

@@ -14,8 +14,12 @@ import java.util.Map;
 
 
 /**
- *
- * @param <S>
+ * Population model based on the general mu-lambda evolutionary framework.
+ * The model keeps a parent population of size mu and generates lambda offspring
+ * in each iteration. Parents are selected using the configured parent selection
+ * rule, offspring are created using optional crossover and the configured generator,
+ * and the next parent population is chosen by the configured selection rule.
+ * @param <S> solution representation type
  * @author s230632 & s235257
  */
 @Component
@@ -53,7 +57,14 @@ public class MuLambdaPopulationModel<S> implements PopulationModel<S> {
         mu = positiveIntParam(params, "mu", mu, "Mu must be positive");
         lambda = positiveIntParam(params, "lambda", lambda, "Lambda must be positive");
     }
-
+    /**
+     * Initializes the parent population and creates the initial run snapshot.
+     * The method samples mu random parent solutions, evaluates them, and selects the
+     * best initial parent as both the current representative and the initial global
+     * best solution.
+     * @param context shared population model context
+     * @return initialized population state and initial run snapshot
+     */
     @Override
     public PopulationInitialization<S> initialize(PopulationModelContext<S> context) {
         Generator<S> generator = context.generatorFactory().get();
@@ -112,7 +123,19 @@ public class MuLambdaPopulationModel<S> implements PopulationModel<S> {
 
         return new PopulationInitialization<>(state, initial, evaluations, stateVariables, List.of(generator));
     }
-
+    /**
+     * Performs one evolutionary iteration.
+     * The method generates lambda offspring from the current parent population.
+     * For each offspring, two parents are selected, optional crossover creates an
+     * offspring base, and the configured generator creates the final child. After all
+     * children are evaluated, the configured selection rule chooses the next parent
+     * population.
+     * @param context shared population model context
+     * @param state current population model state
+     * @param iteration current iteration number
+     * @param evaluations current number of fitness evaluations
+     * @return result of one population model step
+     */
     @Override
     public PopulationStepResult<S> step(
         PopulationModelContext<S> context,
@@ -188,7 +211,11 @@ public class MuLambdaPopulationModel<S> implements PopulationModel<S> {
 
         return new PopulationStepResult<>(runState, evaluationsDelta, stateVariables);
     }
-
+    /**
+     * Finds the solution with the highest fitness in a list of evaluated solutions.
+     * @param evaluatedSolutions evaluated solutions to search
+     * @return solution with the highest fitness
+     */
     private EvaluatedSolution<S> bestOf(List<EvaluatedSolution<S>> evaluatedSolutions) {
         EvaluatedSolution<S> best = evaluatedSolutions.getFirst();
 
@@ -202,7 +229,16 @@ public class MuLambdaPopulationModel<S> implements PopulationModel<S> {
 
         return best;
     }
-
+    /**
+     * Builds the state variables published by the population model.
+     * @param current current representative solution
+     * @param best best solution found so far
+     * @param bestFitness fitness of the best solution found so far
+     * @param currentFitness fitness of the current representative
+     * @param parentsEvaluated current evaluated parent population
+     * @param generationEvaluated evaluated offspring from the latest generation
+     * @return state variables published by the population model
+     */
     private Map<String, Object> getPopulationStateVariables(
         S current,
         S best,
@@ -220,21 +256,31 @@ public class MuLambdaPopulationModel<S> implements PopulationModel<S> {
             StateKeys.GENERATION_EVALUATED, generationEvaluated
         );
     }
-
+    /**
+     * Reads a positive integer parameter from a configuration map.
+     * @param params parameter map
+     * @param key parameter name
+     * @param currentValue value to keep if the parameter is missing
+     * @param errorMessage error message used if the value is not positive
+     * @return configured positive integer value
+     */
     private int positiveIntParam(Map<String, Object> params, String key, int currentValue, String errorMessage) {
         if (!params.containsKey(key)) {
             return currentValue;
         }
-
         int value = ((Number) params.get(key)).intValue();
-
         if (value <= 0) {
             throw new IllegalArgumentException(errorMessage);
         }
-
         return value;
     }
 
+    /**
+     * Internal mutable state used by the mu-lambda population model.
+     * It stores the current parent population, the latest evaluated generation,
+     * the current representative, and the best solution found so far.
+     * @param <S> solution representation type
+     */
     private static final class MuLambdaState<S> implements PopulationState<S> {
         private final Generator<S> generator;
         private List<EvaluatedSolution<S>> parentsEvaluated;

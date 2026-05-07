@@ -6,13 +6,18 @@ import java.util.Deque;
 import java.util.List;
 
 /**
- *
+ *   utility class for evaluating mathematical formulas with 'n' as a variable. Supports +, -, *, / and parentheses.
  * @author s230632
  */
 public final class FormulaEvaluator {
 
     private FormulaEvaluator() {}
-
+    /**
+     * Evaluates a formula using the provided value of n.
+     * @param expression formula to evaluate, for example "1/n"
+     * @param n value used for the variable n
+     * @return numeric result of the formula
+     */
     public static double eval(String expression, int n) {
         if (expression == null || expression.isBlank()) {
             throw new IllegalArgumentException("Formula cannot be empty");
@@ -26,7 +31,13 @@ public final class FormulaEvaluator {
         List<String> rpn = toRpn(tokens);
         return evalRpn(rpn, n);
     }
-
+    /**
+     * Splits the input expression into tokens.
+     * The tokenizer recognizes numbers, the variable n, parentheses, binary
+     * operators, and unary minus.
+     * @param expression formula string
+     * @return list of tokens
+     */
     private static List<String> tokenize(String expression) {
         List<String> tokens = new ArrayList<>();
         int i = 0;
@@ -63,7 +74,11 @@ public final class FormulaEvaluator {
 
         return handleUnaryMinus(tokens);
     }
-
+    /**
+     * Converts unary minus operators to binary by inserting a 0 before them when they appear at the start of the expression or after an operator or an opening parenthesis.
+      * @param tokens list of tokens from the tokenizer
+      * @return list of tokens with unary minus handled
+     */
     private static List<String> handleUnaryMinus(List<String> tokens) {
         List<String> result = new ArrayList<>();
 
@@ -89,7 +104,13 @@ public final class FormulaEvaluator {
         String previous = tokens.get(index - 1);
         return isOperator(previous) || previous.equals("(");
     }
-
+    /**
+     * Converts infix notation to Reverse Polish Notation using the shunting-yard algorithm.
+     * Reverse Polish Notation is easier to evaluate because operator precedence
+     * and parentheses have already been resolved.
+     * @param tokens infix tokens
+     * @return tokens in Reverse Polish Notation
+     */
     private static List<String> toRpn(List<String> tokens) {
         List<String> output = new ArrayList<>();
         Deque<String> stack = new ArrayDeque<>();
@@ -132,7 +153,12 @@ public final class FormulaEvaluator {
 
         return output;
     }
-
+    /**
+     * Evaluates a formula represented in Reverse Polish Notation.
+     * @param rpn formula tokens in Reverse Polish Notation
+     * @param n value used for the variable n
+     * @return evaluated result
+     */
     private static double evalRpn(List<String> rpn, int n) {
         Deque<Double> stack = new ArrayDeque<>();
 
@@ -152,7 +178,12 @@ public final class FormulaEvaluator {
 
         return stack.pop();
     }
-
+    /**
+     * Applies an operator to the value stack.
+     * Binary operators consume two values, while unary minus consumes one value.
+     * @param operator operator to apply
+     * @param stack evaluation stack
+     */
     private static void applyOperator(String operator, Deque<Double> stack) {
         double b = popOrFail(stack, operator);
         double a = popOrFail(stack, operator);
@@ -166,6 +197,12 @@ public final class FormulaEvaluator {
         }
     }
 
+    /**
+     * Pops a value from the stack or throws a clear error if the expression is invalid.
+     * @param stack evaluation stack
+     * @param context operator being evaluated
+     * @return popped value
+     */
     private static double popOrFail(Deque<Double> stack, String context) {
         if (stack.isEmpty()) {
             throw new IllegalArgumentException("Invalid expression near: " + context);

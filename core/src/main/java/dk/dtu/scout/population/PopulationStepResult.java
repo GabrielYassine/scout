@@ -5,8 +5,11 @@ import dk.dtu.scout.logging.IterationSnapshot;
 import java.util.Map;
 
 /**
- *
- * @param <S>
+ * Result returned after one population model step.
+ * @param runState public snapshot after the step has been performed
+ * @param evaluationsDelta number of fitness evaluations used during this step
+ * @param sharedStateVariables state variables published by the population model
+ * @param <S> solution representation type
  * @author s230632 & s235257
  */
 public record PopulationStepResult<S>(

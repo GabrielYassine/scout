@@ -3,7 +3,10 @@ package dk.dtu.scout.datatypes;
 import dk.dtu.scout.util.DistanceUtils;
 
 /**
- *
+ * Represents a VRP instance with one depot, customer coordinates, demands,
+ * vehicle capacity, and a precomputed distance matrix.
+ * Node index 0 represents the depot. Customer nodes are indexed from 1 to
+ * customerCount in the distance matrix.
  * @author s235257 & Ahmed
  */
 public class VRPInstance {
@@ -36,7 +39,11 @@ public class VRPInstance {
         this.numberOfVehicles = numberOfVehicles;
         this.distanceMatrix = computeDistanceMatrix();
     }
-
+    /**
+     * Computes the full pairwise distance matrix between the depot and all customers.
+     * Node index 0 is the depot. Customer i is stored at node index i + 1.
+     * @return matrix where entry [i][j] is the distance from node i to node j
+     */
     private double[][] computeDistanceMatrix() {
         int size = customerCount + 1;
         double[][] matrix = new double[size][size];

@@ -5,7 +5,7 @@ import java.util.List;
 /**
  * A series of logged values, with a specified mode determining how values are stored.
  * @param <T>
- * @author s235257 & Ahmed
+ * @author s235257 & s230632
  */
 public class LoggedSeries<T> {
     private final SeriesMode mode;

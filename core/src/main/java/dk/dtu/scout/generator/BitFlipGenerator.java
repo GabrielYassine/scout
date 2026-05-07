@@ -11,9 +11,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+
 /**
- *
- * @author Ahmed
+ * Generator that creates a new bitstring by mutating an existing offspring base.
+ * Each bit is flipped independently with probability p. The probability can be
+ * configured either as a number or as a formula using the problem dimension.
+ * @author s230632
  */
 @Component
 @Scope("prototype")
@@ -42,7 +45,12 @@ public class BitFlipGenerator implements Generator<boolean[]> {
     public void configure(Map<String, Object> params) {
         this.flipProbabilityParam = params.get("flipProbability");
     }
-
+    /**
+     * Resolves the configured flip probability to a numeric value.
+     * Formula values are evaluated using the search space dimension n.
+     * The final probability must be finite and between 0 and 1.
+     * @param state shared run state containing the dimension
+     */
     private void resolveFlipProbability(State state) {
         int dimension = ((Number) state.get(StateKeys.DIMENSION)).intValue();
         Object value = flipProbabilityParam != null ? flipProbabilityParam : "1/n";
@@ -58,7 +66,11 @@ public class BitFlipGenerator implements Generator<boolean[]> {
 
     @Override
     public List<String> supportedSearchSpaces() { return List.of("bitstring"); }
-
+    /**
+     * Generates a mutated copy of the offspring base.
+     * @param rng random number generator used to decide whether each bit flips
+     * @return mutated bitstring
+     */
     @Override
     public boolean[] generate(Random rng) {
         Object baseObj = state.get(StateKeys.OFFSPRING_BASE);

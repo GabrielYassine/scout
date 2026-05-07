@@ -11,7 +11,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- *
+ *Implementation of the Vehicle Routing Problem (VRP), where the goal is to find optimal routes for a fleet of vehicles
+ *to deliver goods to a set of customers, while minimizing total distance traveled and respecting vehicle capacity constraints.
  * @author s235257 & s230632
  */
 @Component
@@ -60,12 +61,24 @@ public class VRP implements Problem<List<List<Integer>>> {
         return instance;
     }
 
+    /**
+     * Checks whether the given fitness value corresponds to a known optimal tour.
+     * @param fitness fitness value to check
+     * @return true if the fitness matches the known optimum for this instance
+     */
     @Override
     public boolean isOptimal(double fitness) {
         Double optimum = OptimaLookup.resolve(VRP_OPTIMA, instance.getName());
         return optimum != null && fitness >= -optimum - EPSILON;
     }
-
+    /**
+     * Computes the fitness of a VRP solution.
+     * The solution cost is the total distance plus penalties for capacity
+     * violations and excess vehicles. Since the framework maximizes fitness,
+     * the final cost is negated.
+     * @param routes route-list solution, where each route contains customer indices
+     * @return negative total cost including penalties
+     */
     @Override
     public double fitness(List<List<Integer>> routes) {
         if (instance == null) {
@@ -81,7 +94,11 @@ public class VRP implements Problem<List<List<Integer>>> {
 
         return -(totalDistance + capacityPenalty + vehiclePenalty);
     }
-
+    /**
+     * Removes null and empty routes from a route-list solution.
+     * @param routes raw route-list solution
+     * @return normalized route-list without null or empty routes
+     */
     private List<List<Integer>> normalizeRoutes(List<List<Integer>> routes) {
         if (routes == null) {
             return List.of();
@@ -96,7 +113,13 @@ public class VRP implements Problem<List<List<Integer>>> {
         }
         return normalized;
     }
-
+    /**
+     * Computes the distance of one route.
+     * The route is assumed to start at the depot, visit all customers in the
+     * given order, and return to the depot.
+     * @param route customer indices visited by one vehicle
+     * @return total distance of the route
+     */
     public double routeDistance(List<Integer> route) {
         if (route.isEmpty()) {
             return 0.0;
@@ -114,7 +137,11 @@ public class VRP implements Problem<List<List<Integer>>> {
         distance += instance.getDistance(previousNode, 0);
         return distance;
     }
-
+    /**
+     * Computes the total distance of all routes.
+     * @param routes route-list solution
+     * @return sum of all route distances
+     */
     public double totalDistance(List<List<Integer>> routes) {
         double sum = 0.0;
         for (List<Integer> route : routes) {
@@ -122,7 +149,11 @@ public class VRP implements Problem<List<List<Integer>>> {
         }
         return sum;
     }
-
+    /**
+     * Computes the total demand served by one route.
+     * @param route customer indices visited by one vehicle
+     * @return sum of customer demands on the route
+     */
     public double routeDemand(List<Integer> route) {
         double demand = 0.0;
         for (int customerIndex : route) {
@@ -130,7 +161,13 @@ public class VRP implements Problem<List<List<Integer>>> {
         }
         return demand;
     }
-
+    /**
+     * Computes the penalty for routes that exceed vehicle capacity.
+     * Only the overload amount is penalized. Routes within capacity receive no
+     * capacity penalty.
+     * @param routes route-list solution
+     * @return total capacity penalty
+     */
     public double capacityPenalty(List<List<Integer>> routes) {
         double penalty = 0.0;
         double capacity = instance.getCapacity();
@@ -144,7 +181,11 @@ public class VRP implements Problem<List<List<Integer>>> {
 
         return penalty;
     }
-
+    /**
+     * Computes the penalty for using more vehicles than allowed.
+     * @param routes route-list solution
+     * @return vehicle count penalty
+     */
     public double vehiclePenalty(List<List<Integer>> routes) {
         int excessVehicles = routes.size() - instance.getNumberOfVehicles();
         if (excessVehicles <= 0) {
@@ -152,7 +193,12 @@ public class VRP implements Problem<List<List<Integer>>> {
         }
         return excessVehicles * VEHICLE_PENALTY;
     }
-
+    /**
+     * Validates that the route-list solution contains each customer exactly once.
+     * The method rejects empty solutions, out-of-range customer indices,
+     * duplicate customers, and solutions that do not include all customers.
+     * @param routes normalized route-list solution
+     */
     private void validateRoutes(List<List<Integer>> routes) {
         if (routes.isEmpty()) {
             throw new IllegalArgumentException("Routes cannot be empty");

@@ -10,9 +10,11 @@ import java.util.List;
 import java.util.Random;
 
 
+
 /**
- *
- * @author Ahmed
+ * Generator that creates a new bitstring by flipping exactly one random bit
+ * in an existing offspring base.
+ * @author s230632
  */
 @Component
 @Scope("prototype")
@@ -50,6 +52,11 @@ public class SingleBitFlipGenerator implements Generator<boolean[]> {
         return List.of("bitstring");
     }
 
+    /**
+     * Generates a mutated copy of the offspring base by flipping exactly one bit.
+     * @param rng random number generator used to choose the bit index
+     * @return mutated bitstring
+     */
     @Override
     public boolean[] generate(Random rng) {
         boolean[] bits = (boolean[]) state.get(StateKeys.OFFSPRING_BASE);

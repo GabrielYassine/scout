@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.Random;
 
 /**
- *
+ * Implementation of a bitstring search space, where solutions are represented as binary strings of a specified length.
  * @author s235257 & s230632
  */
 @Component
@@ -57,7 +57,11 @@ public class BitString implements SearchSpace<boolean[]> {
         }
         this.n = value;
     }
-
+    /**
+     * Generates a random bitstring solution of length n.
+     * @param rng Random number generator to use for creating the solution
+     * @return A randomly generated boolean array representing the bitstring solution
+     */
     @Override
     public boolean[] randomSolution(Random rng) {
         boolean[] bits = new boolean[n];

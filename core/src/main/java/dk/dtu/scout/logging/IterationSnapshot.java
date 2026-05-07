@@ -3,8 +3,14 @@ package dk.dtu.scout.logging;
 import dk.dtu.scout.dto.EvaluatedSolution;
 
 /**
- * Immutable snapshot of the algorithm state at a given iteration.
- * @author s235257 & Ahmed
+ * Immutable snapshot of the algorithm state at a specific iteration.
+ * @param iteration current algorithm iteration
+ * @param evaluations number of fitness evaluations performed so far
+ * @param current current representative solution
+ * @param best best solution found so far
+ * @param accepted whether the current step accepted a new solution
+ * @param <S> solution representation type
+ * @author s235257 & s230632
  */
 public record IterationSnapshot<S>(
     int iteration,

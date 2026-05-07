@@ -3,8 +3,8 @@ package dk.dtu.scout.population;
 import dk.dtu.scout.ScoutComponent;
 
 /**
- *
- * @param <S>
+ * Defines how a population is initialized and updated during an optimization run.
+ * @param <S> solution representation type
  * @author s230632 & s235257
  */
 public interface PopulationModel<S> extends ScoutComponent {

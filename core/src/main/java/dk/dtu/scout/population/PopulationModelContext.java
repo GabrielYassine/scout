@@ -12,8 +12,18 @@ import java.util.Random;
 import java.util.function.Supplier;
 
 /**
- *
- * @param <S>
+ * Shared context passed to population models during initialization and execution.
+ * The context contains all components needed by a population model to generate,
+ * evaluate, and select solutions.
+ * @param generatorFactory factory for creating generator instances
+ * @param parentSelection rule used to select parents before offspring generation
+ * @param crossover optional crossover operator used to combine selected parents
+ * @param selection rule used to select the next parent population
+ * @param space search space used to create and validate solutions
+ * @param problem optimization problem used to evaluate fitness
+ * @param rng random number generator used during the run
+ * @param sharedState shared state used for communication between components
+ * @param <S> solution representation type
  * @author s230632 & s235257
  */
 public record PopulationModelContext<S>(

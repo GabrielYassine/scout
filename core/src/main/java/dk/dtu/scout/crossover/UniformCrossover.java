@@ -10,8 +10,12 @@ import java.util.List;
 import java.util.Random;
 
 /**
+ * Uniform crossover for bitstring solutions.
  *
- * @author Ahmed
+ * Each bit in the child is copied independently from either the first
+ * or the second selected parent with probability 1/2.
+ *
+ * @author s230632
  */
 
 @Component
@@ -47,6 +51,13 @@ public class UniformCrossover implements Crossover<boolean[]> {
         return List.of("bitstring");
     }
 
+    /**
+     * Performs uniform crossover using the two selected parents stored in the shared state.
+     * For each bit position, the child receives the bit from either parent with equal probability.
+     *
+     * @param rng random number generator used to choose the parent for each bit
+     * @return a child bitstring created by combining the two selected parents
+     */
     @Override
     public boolean[] crossover(Random rng) {
 

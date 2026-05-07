@@ -13,7 +13,8 @@ import java.util.Map;
 import java.util.Random;
 
 /**
- *
+ * Selection rule based on simulated annealing.
+ * @param <S> solution representation type
  * @author s230632
  */
 @Component
@@ -85,20 +86,33 @@ public class AnnealedSelection<S> implements SelectionRule<S> {
     }
 
     /**
-     * Geometric cooling schedule:
-     * T(i) = max(Tmin, T0 * coolingRate^i).
+     * Calculates the temperature at a given iteration using exponential cooling schedule.
+     * @param iteration the current iteration number (0-based)
+     * @return the temperature for the given iteration, not going below minTemperature
      */
     public double temperatureAt(int iteration) {
         int safeIteration = Math.max(0, iteration);
         double temperature = initialTemperature * Math.pow(coolingRate, safeIteration);
         return Math.max(minTemperature, temperature);
     }
-
+    /**
+     * Returns the current temperature as a state variable for monitoring purposes.
+     * @param state the current state of the optimization process
+     * @return a map containing the current temperature under the key StateKeys.TEMPERATURE
+    */
     @Override
     public Map<String, Object> getStateVariables(State state) {
         return Map.of(StateKeys.TEMPERATURE, currentTemperature);
     }
-
+    /**
+     * Selects the next parent population using annealed survivor selection.
+     * @param parents current evaluated parent population
+     * @param children evaluated offspring population
+     * @param mu number of parents to select for the next generation
+     * @param iteration current iteration number
+     * @param rng random number generator
+     * @return selected parent population for the next generation
+     */
     @Override
     public List<EvaluatedSolution<S>> select(
         List<EvaluatedSolution<S>> parents,
@@ -127,7 +141,17 @@ public class AnnealedSelection<S> implements SelectionRule<S> {
 
         return selectPopulationAnnealed(parents, children, mu, currentTemperature, rng);
     }
-
+    /**
+     * Applies the classical simulated annealing acceptance rule.
+     * Improving candidates are always accepted. Worsening candidates are accepted
+     * with probability exp(delta / temperature), where delta is the fitness
+     * difference between candidate and current solution.
+     * @param current current parent solution
+     * @param candidate candidate child solution
+     * @param temperature current temperature
+     * @param rng random number generator
+     * @return list containing the accepted solution
+     */
     private List<EvaluatedSolution<S>> selectClassicalAnnealing(
         EvaluatedSolution<S> current,
         EvaluatedSolution<S> candidate,
@@ -138,7 +162,17 @@ public class AnnealedSelection<S> implements SelectionRule<S> {
         boolean accept = delta >= 0.0 || rng.nextDouble() < Math.exp(delta / temperature);
         return List.of(accept ? candidate : current);
     }
-
+    /**
+     * Performs annealed selection for population-based runs.
+     * Parents and children are combined into one candidate pool. Candidates are then
+     * sampled without replacement using temperature-weighted fitness probabilities.
+     * @param parents current evaluated parent population
+     * @param children evaluated offspring population
+     * @param mu number of candidates to select
+     * @param temperature current temperature
+     * @param rng random number generator
+     * @return selected parent population
+     */
     private List<EvaluatedSolution<S>> selectPopulationAnnealed(
         List<EvaluatedSolution<S>> parents,
         List<EvaluatedSolution<S>> children,
@@ -163,7 +197,15 @@ public class AnnealedSelection<S> implements SelectionRule<S> {
 
         return selected;
     }
-
+    /**
+    * Samples a candidate index from the given list of candidates using temperature-weighted fitness probabilities.
+    * The fitness values are shifted by the best fitness to ensure numerical stability when computing weights.
+    * If all candidates have non-positive weights, a random candidate is selected uniformly.
+     * @param candidates candidates to sample from
+     * @param temperature current temperature
+     * @param rng random number generator
+     * @return selected candidate index
+     */
     private int sampleByTemperatureWeightedFitness(List<EvaluatedSolution<S>> candidates, double temperature, Random rng) {
         double bestFitness = Double.NEGATIVE_INFINITY;
 

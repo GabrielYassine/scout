@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- *
+ * Stop condition that terminates the algorithm after a specified maximum number of fitness evaluations.
  * @author s235257 & s230632
  */
 @Component
@@ -44,7 +44,14 @@ public class MaxEvaluations<S> implements StopCondition<S> {
             this.maxEvaluations = ((Number) params.get("maxEvaluations")).intValue();
         }
     }
-
+    /**
+     * Checks if the stop condition is met based on the number of evaluations.
+     * @param iteration current iteration number (not used in this condition)
+     * @param evaluations total number of fitness evaluations performed
+     * @param bestFitness best fitness value found so far (not used in this condition)
+     * @param bestSolution best solution found so far (not used in this condition)
+     * @return true if the number of evaluations has reached or exceeded the maximum, false otherwise
+     */
     @Override
     public boolean shouldStop(int iteration, int evaluations, double bestFitness, S bestSolution) {
         return evaluations >= maxEvaluations;

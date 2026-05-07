@@ -10,8 +10,9 @@ import java.util.List;
 import java.util.Random;
 
 /**
- *
- * @author s230632
+ * Generator that creates a new permutation by applying a random 2-opt mutation.
+ * The generator reverses a randomly selected segment of the permutation.
+ * @author s230632 & s235257
  */
 @Component
 @Scope("prototype")
@@ -48,7 +49,11 @@ public class TwoOptGenerator implements Generator<int[]> {
     public List<String> supportedSearchSpaces() {
         return List.of("permutation");
     }
-
+    /**
+     * Generates a mutated permutation by reversing a random segment.
+     * @param rng random number generator used to choose the segment endpoints
+     * @return mutated permutation
+     */
     @Override
     public int[] generate(Random rng) {
         Object baseObj = state.get(StateKeys.OFFSPRING_BASE);

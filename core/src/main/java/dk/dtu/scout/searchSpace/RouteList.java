@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.Random;
 
 /**
- *
+ * Implementation of a route-list search space, where solutions are represented as a list of routes, each route being an ordered list of customer indices.
  * @author s235257 & s230632
  */
 @Component
@@ -72,7 +72,12 @@ public class RouteList implements SearchSpace<List<List<Integer>>> {
             this.routeCount = configuredRouteCount;
         }
     }
-
+    /**
+     * Generates a random solution consisting of a list of routes, where each route is an ordered list of customer indices.
+     * The number of routes is determined by the routeCount parameter, and customers are randomly assigned to routes.
+     * @param rng Random number generator to use for shuffling
+     * @return A list of routes, where each route is a list of customer indices
+     */
     @Override
     public List<List<Integer>> randomSolution(Random rng) {
         List<Integer> customers = new ArrayList<>(n);

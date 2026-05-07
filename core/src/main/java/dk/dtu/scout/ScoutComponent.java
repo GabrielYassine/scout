@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- *
+ * Base interface for all components in the Scout framework, including problems, algorithms, stop conditions, and selection rules.
  * @author s235257 & s230632
  */
 public interface ScoutComponent {
