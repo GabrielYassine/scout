@@ -1,7 +1,7 @@
-export const OneMaxSa = [
+export const OneMaxAco = [
   {
-    id: "sa-bitstring-onemax-runtime",
-    displayName: "Simulated Annealing on OneMax",
+    id: "aco-bitstring-onemax-runtime",
+    displayName: "ACO on OneMax",
     runtimeStudyRequest: {
       searchSpaceId: "bitstring",
       searchSpaceParams: {},
@@ -9,21 +9,21 @@ export const OneMaxSa = [
       problemId: "onemax",
       problemParams: {},
 
-      generatorId: "single-bit-flip",
-      generatorParams: {},
-
-      selectionRuleId: "annealed-selection",
-      selectionRuleParams: {
-        initialTemperature: 500.0,
-        coolingRate: 0.99,
-        minTemperature: 0.000001,
+      generatorId: ["bitstring-aco"],
+      generatorParams: {
+         evaporationRate: 0.1,
+         alpha: 1.0,
+         beta: 2.0,
       },
+
+      selectionRuleId: ["mu-plus-lambda"],
+      selectionRuleParams: {},
 
       parentSelectionRuleId: "random-parents",
       parentSelectionRuleParams: {},
 
       populationModelId: "mu-lambda",
-      populationModelParams: { lambda: 1 },
+      populationModelParams: { lambda: 10 },
 
       crossoverId: null,
       crossoverParams: {},
