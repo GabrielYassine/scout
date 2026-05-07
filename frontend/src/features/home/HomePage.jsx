@@ -9,6 +9,8 @@ import SelectorImage from "./assets/selector.png";
 import RunConfigImage from "./assets/config.png";
 import RouteGraphEditorImage from "./assets/routeGraphEditor.png";
 import RunProgressImage from "./assets/runProgress.png";
+import RouteImage from "./assets/route.png";
+import HypercubeImage from "./assets/hypercube.png";
 
 export default function HomePage() {
   return (
@@ -53,18 +55,16 @@ export default function HomePage() {
           <aside className="guide-side guide-left"></aside>
 
           <div className="guide-content">
-
             <div className="guide-block">
               <div id="build-experiment" className="guide-block-title">
                 Build an Experiment
               </div>
 
               <div className="guide-block-content">
-                Experiments in SCOUT are created by choosing the parts that should
-                make up a run. The selector groups the available choices by role,
-                such as problem type, generator, selection rule, population model,
-                stopping condition, and observer. This makes it easier to see which
-                parts are available before assembling the final configuration.
+                Experiments in SCOUT are created by choosing the components that
+                should make up a run. The selector groups the available choices by
+                role, such as problem type, generator, selection rule, population
+                model, stopping condition, and observer.
               </div>
 
               <div className="image-container">
@@ -80,18 +80,16 @@ export default function HomePage() {
               </div>
 
               <div className="guide-block-content">
-                The selected pieces are placed in the run configuration area.
-                Together, they define the full experiment: what problem should be
-                solved, which search space is used, how new solutions are generated,
-                how solutions are accepted or selected, when the run should stop,
-                and which results should be collected for visualization.
+                The selected components are placed in the run configuration area.
+                Together, they define what problem is solved, which search space is
+                used, how new solutions are generated, how solutions are accepted or
+                selected, when the run stops, and which results are collected.
               </div>
 
               <div className="guide-block-content">
-                This visual setup is useful because the configuration becomes easier
-                to inspect before the run starts. Instead of hiding the algorithm
-                setup in a form, SCOUT shows the experiment as a collection of
-                connected choices.
+                Templates can be used to load predefined setups. After loading a
+                template, the selected components and their parameters can still be
+                changed before starting the run.
               </div>
 
               <div className="image-container">
@@ -111,16 +109,14 @@ export default function HomePage() {
               <div className="guide-block-content">
                 SCOUT supports route-based optimization problems such as the
                 Traveling Salesperson Problem and the Vehicle Routing Problem.
-                These problems use coordinates, routes, depots, and customers
-                instead of simple bit strings, so the instance itself becomes an
-                important part of the experiment.
+                These problems use coordinates, routes, depots, and customers as
+                part of the experiment setup.
               </div>
 
               <div className="guide-block-content">
-                Existing instances can be imported, exported, and reused. Custom
-                instances can also be created or adjusted with the graph editor,
-                making it possible to test algorithms on smaller examples before
-                moving to larger benchmark instances.
+                Instances can be imported, exported, and reused. Custom instances
+                can also be created or changed with the graph editor. The graph
+                editor can be opened from the instance section on the lab page.
               </div>
 
               <div className="image-container">
@@ -138,25 +134,23 @@ export default function HomePage() {
               </div>
 
               <div className="guide-block-content">
-                When an experiment starts, SCOUT opens the run page and begins
-                streaming progress updates from the backend. This allows the
-                optimization process to be followed while it is still running,
-                instead of only showing a final result after the computation has
-                finished.
+                When an experiment starts, SCOUT opens the run page and streams
+                progress updates from the backend. The run page shows the current
+                status, runtime, fitness values, and visualization data from the
+                selected observers.
               </div>
 
               <div className="guide-block-content">
-                The run page shows important information such as the current
-                progress, runtime, best fitness values, and the visual data produced
-                by the selected observers. This makes it easier to understand how
-                the algorithm behaves over time.
+                The run can be followed while it is executing. When the run is
+                finished, the same page shows the final result and the collected run
+                data.
               </div>
 
               <div className="image-container">
                 <img
                   className="guide-image"
                   src={RunProgressImage}
-                  alt="Run page showing live progress and visualizations"
+                  alt="Run page showing live progress and charts"
                 />
               </div>
 
@@ -165,18 +159,39 @@ export default function HomePage() {
               </div>
 
               <div className="guide-block-content">
-                Different visualizations show different aspects of the search
-                process. Fitness graphs show whether the run improves over time,
-                route views show how TSP or VRP solutions change, and hypercube
-                plots show movement through bit-string search spaces. Additional
-                observers can show data such as pheromone values, temperature
-                changes, or fitness phase information.
+                SCOUT provides several visualization types. Visualizations are
+                available on the run page when the corresponding observer has been
+                selected in the run configuration. SCOUT currently provides observers
+                for some linear charts, route visualizations, and a hypercube visualization.
               </div>
 
               <div className="guide-block-content">
-                The purpose of these visualizations is not only to show the final
-                solution, but also to make the working principles of the algorithm
-                easier to inspect.
+                The route visualization shows locations and route connections for
+                TSP and VRP runs. For TSP, the visualization shows one tour through
+                all cities. For VRP, it shows several routes starting and ending at
+                the depot.
+              </div>
+
+              <div className="image-container">
+                <img
+                  className="guide-image"
+                  src={RouteImage}
+                  alt="Route visualization showing a TSP or VRP solution"
+                />
+              </div>
+
+              <div className="guide-block-content">
+                The hypercube visualization is available for bit-string runs. It
+                projects visited bit strings into a two-dimensional view, so the
+                movement of the search can be followed during the run.
+              </div>
+
+              <div className="image-container">
+                <img
+                  className="guide-image"
+                  src={HypercubeImage}
+                  alt="Hypercube visualization for bit-string search spaces"
+                />
               </div>
 
               <div id="runtime-studies" className="guide-block-subtitle">
@@ -184,16 +199,14 @@ export default function HomePage() {
               </div>
 
               <div className="guide-block-content">
-                A single run can show how one configuration behaves, but randomized
-                algorithms may behave differently from run to run. Runtime studies
-                repeat experiments across multiple runs or problem sizes, which gives
-                a more reliable basis for comparison.
+                Runtime studies repeat a configuration across multiple runs or
+                problem sizes. This mode can be selected from the lab page before
+                starting the experiment.
               </div>
 
               <div className="guide-block-content">
-                This mode is useful when comparing algorithms, parameter settings, or
-                problem sizes. Instead of focusing on one execution, runtime studies
-                help summarize performance across repeated experiments.
+                The result is shown as aggregated data, such as average performance
+                across repetitions or comparisons between different problem sizes.
               </div>
             </div>
           </div>
