@@ -14,6 +14,7 @@ import LineChartStatsPanel from "../common/LineChartStatsPanel.jsx";
 import BoxPlotChart from "../common/BoxPlotChart.jsx";
 import RunChartHeader from "./RunChartHeader.jsx";
 import RunChartObserverControls from "../../controls/RunChartObserverControls.jsx";
+import { useRememberedObserver } from "@/features/run/hooks/useRememberedObserver.js";
 
 import {
   BEST_FITNESS_BOXPLOT_KEY,
@@ -67,15 +68,9 @@ function RunChart({
     [displayKeys]
   );
 
-  const [selectedObserver, setSelectedObserver] = useState(initialObserver);
+  const [selectedObserver, setSelectedObserver] = useRememberedObserver({problemId: run.problemId, displayKeys, initialObserver,});
   const [rightObserver, setRightObserver] = useState("");
   const [lineChartWindowRange, setLineChartWindowRange] = useState(null);
-
-  useEffect(() => {
-    setSelectedObserver((current) =>
-      displayKeys.includes(current) ? current : initialObserver
-    );
-  }, [displayKeys, initialObserver]);
 
   const activeObserver = displayKeys.includes(selectedObserver)
     ? selectedObserver
