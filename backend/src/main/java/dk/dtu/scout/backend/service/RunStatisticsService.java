@@ -38,9 +38,9 @@ public class RunStatisticsService {
         Map<String, List<RunResponse>> runsByProblem = groupRunsByProblem(batches);
 
         return new BatchSummaryResponse(
-            computeAverageByProblem(runsByProblem),
-            computeBestFitnessBoxPlotsByProblem(runsByProblem),
-            computeAverageRuntimeByProblem(runsByProblem)
+                computeAverageByProblem(runsByProblem),
+                computeBestFitnessBoxPlotsByProblem(runsByProblem),
+                computeAverageRuntimeByProblem(runsByProblem)
         );
     }
 
@@ -81,9 +81,9 @@ public class RunStatisticsService {
         totalEvaluations.sort(Double::compareTo);
 
         return new RuntimeStudyPointResponse(
-            problemSize,
-            StatisticsMath.mean(totalEvaluations),
-            StatisticsMath.fiveNumberSummary(totalEvaluations)
+                problemSize,
+                StatisticsMath.mean(totalEvaluations),
+                StatisticsMath.fiveNumberSummary(totalEvaluations)
         );
     }
 
@@ -142,13 +142,9 @@ public class RunStatisticsService {
      * @return averaged run response for the problem
      */
     private AverageRunResponse computeAverageRun(List<RunResponse> runs) {
-        if (runs.isEmpty()) {
-            return ViewMapper.toAverageRunResponse(List.of(), Map.of());
-        }
-
         RunResponse referenceRun = findReferenceRun(runs);
 
-        List<Integer> referenceEvaluations = safeIntegerList(referenceRun.evaluations());
+        List<Integer> referenceEvaluations = new ArrayList<>(referenceRun.evaluations());
         Map<String, List<Double>> averageSeries = computeAverageSeries(runs, referenceEvaluations);
 
         return ViewMapper.toAverageRunResponse(referenceEvaluations, averageSeries);
@@ -163,18 +159,11 @@ public class RunStatisticsService {
     private Map<String, List<Double>> computeAverageSeries(List<RunResponse> runs, List<Integer> referenceEvaluations) {
         Map<String, List<Double>> result = new LinkedHashMap<>();
 
-        if (runs.isEmpty() || referenceEvaluations == null || referenceEvaluations.isEmpty()) {
-            return result;
-        }
-
         Map<String, List<AlignedSeries>> seriesByName = collectAverageableSeries(runs);
 
         for (Map.Entry<String, List<AlignedSeries>> entry : seriesByName.entrySet()) {
             List<Double> averagedValues = averageSeriesAtReferenceEvaluations(entry.getValue(), referenceEvaluations);
-
-            if (!averagedValues.isEmpty()) {
-                result.put(entry.getKey(), averagedValues);
-            }
+            result.put(entry.getKey(), averagedValues);
         }
 
         return result;
@@ -190,10 +179,6 @@ public class RunStatisticsService {
         Map<String, List<AlignedSeries>> result = new LinkedHashMap<>();
 
         for (RunResponse run : runs) {
-            if (run.series() == null) {
-                continue;
-            }
-
             for (String seriesName : run.series().keySet()) {
                 if (!AVERAGE_SERIES_WHITELIST.contains(seriesName)) {
                     continue;
@@ -226,15 +211,10 @@ public class RunStatisticsService {
             List<Double> values = new ArrayList<>();
 
             for (AlignedSeries aligned : alignedRuns) {
-                Double value = valueAtEvaluation(aligned.evaluations(), aligned.values(), targetEvaluation);
-                if (value != null) {
-                    values.add(value);
-                }
+                values.add(valueAtEvaluation(aligned.evaluations(), aligned.values(), targetEvaluation));
             }
 
-            if (!values.isEmpty()) {
-                averaged.add(StatisticsMath.mean(values));
-            }
+            averaged.add(StatisticsMath.mean(values));
         }
 
         return averaged;
@@ -246,16 +226,8 @@ public class RunStatisticsService {
      * @return sampled best-fitness boxplot response
      */
     private SeriesBoxPlotResponse computeBestFitnessBoxPlot(List<RunResponse> runs) {
-        if (runs.isEmpty()) {
-            return new SeriesBoxPlotResponse(List.of(), List.of());
-        }
-
         RunResponse referenceRun = findReferenceRun(runs);
-        List<Integer> referenceEvaluations = safeIntegerList(referenceRun.evaluations());
-
-        if (referenceEvaluations.isEmpty()) {
-            return new SeriesBoxPlotResponse(List.of(), List.of());
-        }
+        List<Integer> referenceEvaluations = new ArrayList<>(referenceRun.evaluations());
 
         List<AlignedSeries> bestFitnessRuns = extractBestFitnessSeries(runs);
 
@@ -303,10 +275,6 @@ public class RunStatisticsService {
             int targetEvaluation = referenceEvaluations.get(i);
             List<Double> valuesAtEvaluation = valuesAtEvaluation(bestFitnessRuns, targetEvaluation);
 
-            if (valuesAtEvaluation.isEmpty()) {
-                continue;
-            }
-
             valuesAtEvaluation.sort(Double::compareTo);
 
             sampledEvaluations.add(targetEvaluation);
@@ -326,10 +294,7 @@ public class RunStatisticsService {
         List<Double> values = new ArrayList<>();
 
         for (AlignedSeries aligned : alignedRuns) {
-            Double value = valueAtEvaluation(aligned.evaluations(), aligned.values(), targetEvaluation);
-            if (value != null) {
-                values.add(value);
-            }
+            values.add(valueAtEvaluation(aligned.evaluations(), aligned.values(), targetEvaluation));
         }
 
         return values;
@@ -341,7 +306,9 @@ public class RunStatisticsService {
      * @return run with the most logged evaluation points
      */
     private RunResponse findReferenceRun(List<RunResponse> runs) {
-        return runs.stream().max(Comparator.comparingInt(run -> run.evaluations() != null ? run.evaluations().size() : 0)).orElse(runs.getFirst());
+        return runs.stream()
+                .max(Comparator.comparingInt(run -> run.evaluations().size()))
+                .orElseThrow();
     }
 
     /**
@@ -351,10 +318,6 @@ public class RunStatisticsService {
      * @return aligned numeric series, or null if the series is missing or non-numeric
      */
     private AlignedSeries extractAlignedSeries(RunResponse run, String seriesName) {
-        if (run == null || run.series() == null || run.evaluations() == null || run.evaluations().isEmpty()) {
-            return null;
-        }
-
         SeriesResponse<?> response = run.series().get(seriesName);
         if (response == null) {
             return null;
@@ -366,13 +329,10 @@ public class RunStatisticsService {
         }
 
         int usableLength = Math.min(run.evaluations().size(), numericValues.size());
-        if (usableLength == 0) {
-            return null;
-        }
 
         return new AlignedSeries(
-            new ArrayList<>(run.evaluations().subList(0, usableLength)),
-            new ArrayList<>(numericValues.subList(0, usableLength))
+                new ArrayList<>(run.evaluations().subList(0, usableLength)),
+                new ArrayList<>(numericValues.subList(0, usableLength))
         );
     }
 
@@ -383,10 +343,6 @@ public class RunStatisticsService {
      */
     private List<Double> toDoubleList(List<?> rawValues) {
         List<Double> result = new ArrayList<>();
-
-        if (rawValues == null) {
-            return result;
-        }
 
         for (Object value : rawValues) {
             if (!(value instanceof Number number)) {
@@ -405,13 +361,9 @@ public class RunStatisticsService {
      * @param evaluations evaluation axis for the series
      * @param values numeric values aligned with the evaluations
      * @param targetEvaluation evaluation to look up
-     * @return value at the target evaluation, or null if no value is available
+     * @return value at the target evaluation
      */
     private Double valueAtEvaluation(List<Integer> evaluations, List<Double> values, int targetEvaluation) {
-        if (evaluations == null || values == null || evaluations.isEmpty() || values.isEmpty()) {
-            return null;
-        }
-
         int usableLength = Math.min(evaluations.size(), values.size());
 
         if (targetEvaluation <= evaluations.getFirst()) {
@@ -425,10 +377,6 @@ public class RunStatisticsService {
         }
 
         return values.get(usableLength - 1);
-    }
-
-    private List<Integer> safeIntegerList(List<Integer> values) {
-        return values != null ? new ArrayList<>(values) : List.of();
     }
 
     /**

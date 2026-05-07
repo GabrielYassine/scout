@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Computes statistics for a series of (x,y) points within a specified x-range.
@@ -78,7 +79,7 @@ public class SeriesStatsService {
      */
     private List<SeriesPoint> filterPointsInRange(SeriesWindowStatsRequest request) {
         return request.points().stream()
-            .filter(point -> point != null && Double.isFinite(point.x()) && Double.isFinite(point.y()))
+            .filter(Objects::nonNull)
             .filter(point -> point.x() >= request.xMin() && point.x() <= request.xMax())
             .sorted(Comparator.comparingDouble(SeriesPoint::x))
             .toList();

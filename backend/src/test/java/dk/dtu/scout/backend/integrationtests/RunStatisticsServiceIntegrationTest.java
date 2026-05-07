@@ -30,6 +30,28 @@ class RunStatisticsServiceIntegrationTest {
     class CalculateSummary {
 
         @Test
+        void calculateSummary_ignoresWhitelistedSeriesWhenValuesAreNonNumeric() {
+            RunResponse run = run(
+                    "onemax",
+                    List.of(0, 1, 2),
+                    Map.of(
+                            "fitness", new SeriesResponse<>(SeriesMode.ALL, List.of("bad", "data", "here"))
+                    ),
+                    10.0,
+                    3
+            );
+
+            BatchSummaryResponse summary = service.calculateSummary(List.of(
+                    new RunGroupResponse(0, 100L, List.of(run))
+            ));
+
+            AverageRunResponse average = summary.averageByProblem().get("onemax");
+
+            assertEquals(List.of(0, 1, 2), average.evaluations());
+            assertTrue(average.series().isEmpty());
+        }
+
+        @Test
         void calculateSummary_groupsRunsByProblemAndComputesAverageRuntime() {
             RunResponse onemaxA = run(
                 "onemax",
@@ -130,55 +152,6 @@ class RunStatisticsServiceIntegrationTest {
             assertTrue(averageSeries.containsKey("bestFitness"));
             assertFalse(averageSeries.containsKey("temperature"));
             assertFalse(averageSeries.containsKey("label"));
-        }
-
-        @Test
-        void calculateSummary_ignoresRunsWithNullSeriesForAverageCurve() {
-            RunResponse withoutSeries = run(
-                "onemax",
-                List.of(0, 1, 2),
-                null,
-                10.0,
-                3
-            );
-
-            RunResponse withSeries = run(
-                "onemax",
-                List.of(0, 1, 2),
-                Map.of("fitness", series(2, 4, 6)),
-                20.0,
-                3
-            );
-
-            BatchSummaryResponse summary = service.calculateSummary(List.of(
-                new RunGroupResponse(0, 100L, List.of(withoutSeries, withSeries))
-            ));
-
-            assertEquals(List.of(0, 1, 2), summary.averageByProblem().get("onemax").evaluations());
-            assertEquals(List.of(2.0, 4.0, 6.0), summary.averageByProblem().get("onemax").series().get("fitness"));
-            assertEquals(15.0, summary.averageRunTimeByProblem().get("onemax"));
-        }
-
-        @Test
-        void calculateSummary_returnsEmptyAverageAndBoxplotWhenEvaluationsAreNull() {
-            RunResponse run = run(
-                "onemax",
-                null,
-                Map.of("fitness", series(1, 2, 3), "bestFitness", series(1, 2, 3)),
-                10.0,
-                3
-            );
-
-            BatchSummaryResponse summary = service.calculateSummary(List.of(
-                new RunGroupResponse(0, 100L, List.of(run))
-            ));
-
-            assertEquals(List.of(), summary.averageByProblem().get("onemax").evaluations());
-            assertTrue(summary.averageByProblem().get("onemax").series().isEmpty());
-
-            SeriesBoxPlotResponse boxPlot = summary.bestFitnessBoxPlotsByProblem().get("onemax");
-            assertEquals(List.of(), boxPlot.evaluations());
-            assertEquals(List.of(), boxPlot.boxplots());
         }
 
         @Test
