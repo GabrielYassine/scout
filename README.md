@@ -1,19 +1,22 @@
 # Scout
 
 Scout is an optimization laboratory for experimenting with evolutionary algorithms and heuristic optimization methods.
-It consists of a Java-based core framework and backend, plus a web-based frontend for visualization.
 
----
+The application makes it possible to configure, run, and visualize optimization experiments. Users can combine different search spaces, benchmark problems, population models, generators, selection rules, observers, and stop conditions to study how algorithmic components affect performance across different problem types.
 
-## Requirements
+Scout supports both single optimization runs and repeated runtime studies. During execution, the backend streams progress to the frontend using WebSockets, allowing users to follow the search process live through charts and visualizations. This includes fitness curves, search-space visualizations, TSP/VRP route visualizations, average-run plots, and box plots.
 
-- Java JDK 21
-- Node.js (includes npm)
+The goal of Scout is to provide a modular framework for implementing optimization algorithms together with a visual interface for comparing their behaviour across problems, representations, and parameter settings.
 
 ---
 
 ## Project structure
 
+The project consists of three main parts:
+
+- `core` — the Java framework containing search spaces, problems, population models, generators, selection rules, observers, and stop conditions.
+- `backend` — a Spring Boot backend that exposes the API, validates run configurations, executes experiments, and streams progress through WebSockets.
+- `frontend` — a React + Vite web application for configuring experiments and visualizing results.
 ```
 scout/
 ├── core/
@@ -23,81 +26,73 @@ scout/
 ├── build.gradle
 ├── settings.gradle
 └── run-dev.bat
+└── run-dev-mac.sh
+└──README.md
 ```
 
+## Requirements
+
+Before running Scout, make sure the following tools are installed:
+
+- Java JDK 17+ (required for Spring Boot / Gradle)
+- Node.js 18+ and npm (required for the React/Vite frontend)
+- Gradle
 ---
 
-## Build and test
 
-### Windows
+## Running the application
 
-```powershell
-.\gradlew.bat test
-```
+Scout can be started using the provided development scripts. These scripts start both the Spring Boot backend and the React frontend.
 
-### macOS / Linux
+#### Windows
+Double-click `run-dev.bat` or run it from PowerShell / CMD:
 
-```bash
-./gradlew test
-```
+.\run-dev.bat
 
-Backend-only tests:
+#### macOS / Linux
+Go to the project root and run:
 
-```powershell
-.\gradlew.bat :backend:test
-```
+    chmod +x run-dev-mac.sh
+    chmod +x ./gradlew
+    ./run-dev-mac.sh
 
----
+### Manual start
+If the development scripts do not work, the backend and frontend can be started manually.
 
-## Run backend (Spring Boot)
+#### 1) Start backend
+From the project root, run:
+#### macOS / Linux
+    ./gradlew :backend:bootRun
+#### Windows
+    .\gradlew.bat :backend:bootRun
 
-### Windows
+#### 3) Start frontend
 
-```powershell
-.\gradlew.bat :backend:bootRun
-```
+    cd frontend
+    npm install (if not done before)
+    npm run dev
 
-### macOS / Linux
 
-```bash
-./gradlew :backend:bootRun
-```
 
 Backend runs at:
 - http://localhost:8080
 - Health check: http://localhost:8080/api/health
 
----
-
-## Run frontend (React + Vite)
-
-```powershell
-cd frontend
-npm install
-npm run dev
-```
-
 Frontend runs at:
 - http://localhost:5173
 
----
-
-## Run both (Windows)
-
-```powershell
-.\run-dev.bat
-```
-
----
 
 ## Runtime configuration
 
-Executor pools are configurable in:
-- `backend/src/main/resources/application.properties`
+The backend uses executor pools for handling run requests and executing optimization tasks. These settings can be configured in:
 
-Default settings:
-
+```text
+backend/src/main/resources/application.properties
 ```
+
+Default configuration:
+
+```properties
 scout.executors.request.core-pool-size=4
 scout.executors.request.max-pool-size=16
 scout.executors.request.queue-capacity=200
@@ -110,13 +105,3 @@ scout.executors.run.await-termination-seconds=60
 ```
 
 ---
-
-## API and WebSocket
-
-- REST API base: `/api`
-- WebSocket endpoint: `/ws`
-- Run progress: `/topic/run/{runId}`
-
-Common endpoints:
-- `/api/catalog`
-- `/api/run/prepare`
