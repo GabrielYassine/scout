@@ -33,7 +33,7 @@ public class SimulationRunner {
 
     /**
      * Execute a full run with the provided components and return the aggregated log.
-     * @param logEveryIterations tick interval for observer/log updates (must be positive)
+     * @param logEveryEvaluations tick interval for observer/log updates (must be positive)
      */
     public <S> RunLog run(
         PopulationModel<S> populationModel,
@@ -46,7 +46,7 @@ public class SimulationRunner {
         Random rng,
         List<StopCondition<S>> stopConditions,
         List<Observer<S>> observers,
-        int logEveryIterations
+        int logEveryEvaluations
     ) {
         // #1 Create the per-run output log and shared runtime state.
         RunLog log = new RunLog();
@@ -115,6 +115,8 @@ public class SimulationRunner {
         log.tick(currentState.evaluations() - 1);
         notifyOnStep(observers, currentState, log);
 
+        int lastLoggedEvaluation = currentState.evaluations();
+
         int iteration = currentState.iteration();
 
         // #12 Main execution loop:
@@ -138,10 +140,11 @@ public class SimulationRunner {
             updateComponentStateVariables(sharedState, stateComponents);
 
             // #17 Only log/notify observers at the configured cadence.
-            if ((currentState.iteration() + 1) % logEveryIterations == 0) {
+            if (currentState.evaluations() - lastLoggedEvaluation >= logEveryEvaluations) {
                 // #18 Record a visible tick and let observers write their data series into the log.
                 log.tick(currentState.evaluations() - 1);
                 notifyOnStep(observers, currentState, log);
+                lastLoggedEvaluation = currentState.evaluations();
             }
 
             // #19 Advance the runner’s loop counter.
@@ -149,7 +152,7 @@ public class SimulationRunner {
         }
 
         // #20 If the run stopped between logging points, ensure the terminal state is still logged.
-        if (((currentState.iteration() + 1) % logEveryIterations) != 0) {
+        if (currentState.evaluations() != lastLoggedEvaluation) {
             log.tick(currentState.evaluations() - 1);
             notifyOnStep(observers, currentState, log);
         }

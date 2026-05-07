@@ -63,9 +63,9 @@ class SimulationRunnerTest {
 
         RunLog log = run(populationModel, List.of(stopCondition), List.of(observer), 2);
 
-        assertEquals(List.of(0, 1, 2), log.getEvaluations());
-        assertEquals(List.of("start-0", "step-0", "step-1", "step-2", "end-2"), observer.events);
-        assertEquals(List.of(0.0, 1.0, 2.0), log.getSeries().get("fitness").getValues());
+        assertEquals(List.of(0, 2), log.getEvaluations());
+        assertEquals(List.of("start-0", "step-0", "step-2", "end-2"), observer.events);
+        assertEquals(List.of(0.0, 2.0), log.getSeries().get("fitness").getValues());
     }
 
     @Test
@@ -76,9 +76,9 @@ class SimulationRunnerTest {
 
         RunLog log = run(populationModel, List.of(stopCondition), List.of(observer), 2);
 
-        assertEquals(List.of(0, 1, 3), log.getEvaluations());
-        assertEquals(List.of("start-0", "step-0", "step-1", "step-3", "end-3"), observer.events);
-        assertEquals(List.of(0.0, 1.0, 3.0), log.getSeries().get("fitness").getValues());
+        assertEquals(List.of(0, 2, 3), log.getEvaluations());
+        assertEquals(List.of("start-0", "step-0", "step-2", "step-3", "end-3"), observer.events);
+        assertEquals(List.of(0.0, 2.0, 3.0), log.getSeries().get("fitness").getValues());
     }
 
     @Test
@@ -135,7 +135,7 @@ class SimulationRunnerTest {
         TestPopulationModel populationModel,
         List<StopCondition<Integer>> stopConditions,
         List<Observer<Integer>> observers,
-        int logEveryIterations
+        int logEveryEvaluations
     ) {
         return new SimulationRunner().run(
             populationModel,
@@ -148,7 +148,7 @@ class SimulationRunnerTest {
             new Random(1234L),
             stopConditions,
             observers,
-            logEveryIterations
+            logEveryEvaluations
         );
     }
 

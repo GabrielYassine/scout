@@ -84,15 +84,15 @@ export default function GlobalSettingsSection({
         {runMode === "run" && (
           <ParamField
             def={{
-              key: "logEveryIterations",
-              label: "Backend log every X iterations",
+              key: "logEveryEvaluations",
+              label: "Backend log every X evaluations",
               type: "int",
               min: 10,
             }}
             disabled={disabled}
-            value={params.global?.logEveryIterations}
+            value={params.global?.logEveryEvaluations}
             onValueChange={(value) =>
-              setParam("global", { key: "logEveryIterations", type: "int" }, value)
+              setParam("global", { key: "logEveryEvaluations", type: "int" }, value)
             }
           />
         )}
@@ -100,17 +100,17 @@ export default function GlobalSettingsSection({
         {runMode === "run" && (
           <ParamField
             def={{
-              key: "wsUpdateEveryIterations",
-              label: "WebSocket update every X iterations",
+              key: "wsUpdateEveryEvaluations",
+              label: "WebSocket update every X evaluations",
               type: "int",
               min: 1,
             }}
             disabled={disabled}
-            value={params.global?.wsUpdateEveryIterations}
+            value={params.global?.wsUpdateEveryEvaluations}
             onValueChange={(value) =>
               setParam(
                 "global",
-                { key: "wsUpdateEveryIterations", type: "int" },
+                { key: "wsUpdateEveryEvaluations", type: "int" },
                 value
               )
             }

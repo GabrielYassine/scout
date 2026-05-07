@@ -192,7 +192,7 @@ export function buildRunRequest({
     runTimes: params.global?.runTimes ?? 1,
     sessionId,
     runId,
-    logEveryIterations: params.global?.logEveryIterations ?? 100,
-    wsUpdateEveryIterations: params.global?.wsUpdateEveryIterations ?? 100,
+    logEveryEvaluations: params.global?.logEveryEvaluations ?? 100,
+    wsUpdateEveryEvaluations: params.global?.wsUpdateEveryEvaluations ?? 100,
   };
 }

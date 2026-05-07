@@ -45,8 +45,8 @@ public class RunRequestValidator {
         if (request.runTimes() <= 0) {
             throw new BadRequestException("runTimes must be positive");
         }
-        if (request.logEveryIterations() < 0) {
-            throw new BadRequestException("logEveryIterations must be zero or positive");
+        if (request.logEveryEvaluations() < 0) {
+            throw new BadRequestException("logEveryEvaluations must be zero or positive");
         }
 
         validateProblemInstances(request.problemIds(), request.problemParams());
@@ -136,13 +136,13 @@ public class RunRequestValidator {
 
     /**
      * Determines how often to log intermediate results during a run, based on the request.
-     * If the request specifies a positive value for logEveryIterations,
+     * If the request specifies a positive value for logEveryEvaluations,
      * that value is used. Otherwise, a default of 10 iterations is used for logging frequency.
-     * @param request the run request containing the logEveryIterations setting
+     * @param request the run request containing the logEveryEvaluations setting
      * @return the number of iterations between logging intermediate results, either from the request or the default
      */
-    public int resolveLogEveryIterations(RunRequest request) {
-        return request.logEveryIterations() > 0 ? request.logEveryIterations() : 10;
+    public int resolveLogEveryEvaluations(RunRequest request) {
+        return request.logEveryEvaluations() > 0 ? request.logEveryEvaluations() : 10;
     }
 
     @SuppressWarnings("unchecked")

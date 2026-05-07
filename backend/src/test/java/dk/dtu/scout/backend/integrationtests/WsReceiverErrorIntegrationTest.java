@@ -189,8 +189,8 @@ class WsReceiverErrorIntegrationTest {
         request.put("runTimes", 1);
         request.put("sessionId", null);
         request.put("runId", null);
-        request.put("logEveryIterations", 1);
-        request.put("wsUpdateEveryIterations", 1);
+        request.put("logEveryEvaluations", 1);
+        request.put("wsUpdateEveryEvaluations", 1);
         return request;
     }
 

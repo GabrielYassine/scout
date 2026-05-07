@@ -61,12 +61,12 @@ public class RunExecutor {
      * Executes a batch of runs based on the provided RunRequest. This batch can include multiple runtimes and multiple problems.
      * Each will generate a separate RunResponse, and all responses will be collected into a RunGroupResponse list.
      * @param request The RunRequest containing all necessary information to execute the runs.
-     * @param logEveryIterations Determines how often to log progress for each run.
-     * @param wsUpdateEveryIterations Determines how often to send WebSocket updates for each run.
+     * @param logEveryEvaluations Determines how often to log progress for each run.
+     * @param wsUpdateEveryEvaluations Determines how often to send WebSocket updates for each run.
      * @return A list of RunGroupResponse objects.
      * @param <S> The solution type used in the search space and problems.
      */
-    public <S> List<RunGroupResponse> runBatch(RunRequest request, int logEveryIterations, int wsUpdateEveryIterations) {
+    public <S> List<RunGroupResponse> runBatch(RunRequest request, int logEveryEvaluations, int wsUpdateEveryEvaluations) {
         checkCancelled();
 
         long baseSeed = request.seed();
@@ -89,8 +89,8 @@ public class RunExecutor {
                         runIndex,
                         runSeed,
                         searchSpaceFactory,
-                        logEveryIterations,
-                        wsUpdateEveryIterations
+                        logEveryEvaluations,
+                        wsUpdateEveryEvaluations
                     )
                 ));
             }
@@ -110,8 +110,8 @@ public class RunExecutor {
      * @param runIndex index of the current runtime
      * @param runSeed seed used for the current runtime
      * @param searchSpaceFactory factory for creating the search space
-     * @param logEveryIterations logging interval
-     * @param wsUpdateEveryIterations websocket update interval
+     * @param logEveryEvaluations logging interval
+     * @param wsUpdateEveryEvaluations websocket update interval
      * @return grouped run result for this runtime
      * @param <S> solution representation type
      */
@@ -120,8 +120,8 @@ public class RunExecutor {
         int runIndex,
         long runSeed,
         Supplier<SearchSpace<S>> searchSpaceFactory,
-        int logEveryIterations,
-        int wsUpdateEveryIterations
+        int logEveryEvaluations,
+        int wsUpdateEveryEvaluations
     ) {
         checkCancelled();
 
@@ -148,7 +148,7 @@ public class RunExecutor {
             Crossover<S> crossover = factory.createOptionalCrossover(request.crossoverId(), request.crossoverParams());
             ParentSelectionRule<S> parentSelection = factory.createParentSelectionRule(request.parentSelectionRuleId(), request.parentSelectionRuleParams());
 
-            if (wsUpdateEveryIterations > 0) {
+            if (wsUpdateEveryEvaluations > 0) {
                 observers.add(new RunProgressObserver<>(
                     wsSender,
                     request.runId(),
@@ -156,7 +156,7 @@ public class RunExecutor {
                     runSeed,
                     searchSpace.id(),
                     problemId,
-                    wsUpdateEveryIterations
+                    wsUpdateEveryEvaluations
                 ));
             }
 
@@ -173,7 +173,7 @@ public class RunExecutor {
                 rng,
                 stopConditions,
                 observers,
-                logEveryIterations
+                logEveryEvaluations
             );
 
             checkCancelled();

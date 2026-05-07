@@ -30,10 +30,10 @@ public class RunProgressObserver<S> implements Observer<S> {
     private final long seed;
     private final String searchSpaceId;
     private final String problemId;
-    private final int wsUpdateEveryIterations;
+    private final int wsUpdateEveryEvaluations;
     private final long startTimeNanos;
-
     private int lastSentLogIndex = -1;
+    private int lastSentEvaluation = -1;
 
     public RunProgressObserver(
         WsSender wsSender,
@@ -42,7 +42,7 @@ public class RunProgressObserver<S> implements Observer<S> {
         long seed,
         String searchSpaceId,
         String problemId,
-        int wsUpdateEveryIterations
+        int wsUpdateEveryEvaluations
     ) {
         this.wsSender = wsSender;
         this.runId = runId;
@@ -50,7 +50,7 @@ public class RunProgressObserver<S> implements Observer<S> {
         this.seed = seed;
         this.searchSpaceId = searchSpaceId;
         this.problemId = problemId;
-        this.wsUpdateEveryIterations = wsUpdateEveryIterations;
+        this.wsUpdateEveryEvaluations = wsUpdateEveryEvaluations;
         this.startTimeNanos = System.nanoTime();
 
         SEQUENCE_BY_STREAM.computeIfAbsent(streamKey(), key -> new AtomicLong(0));
@@ -78,6 +78,8 @@ public class RunProgressObserver<S> implements Observer<S> {
 
         int logIndex = log.getEvaluations().size() - 1;
         lastSentLogIndex = logIndex;
+        lastSentEvaluation = log.getEvaluations().get(logIndex);
+
         sendProgress(log, logIndex, MergeOp.APPEND, "ONGOING", null, true);
     }
 
@@ -104,10 +106,11 @@ public class RunProgressObserver<S> implements Observer<S> {
 
     private boolean shouldSendStep(IterationSnapshot<S> state, RunLog log) {
         int logIndex = log.getEvaluations().size() - 1;
+        int evaluation = log.getEvaluations().get(logIndex);
+
 
         boolean isInitialPoint = logIndex == 0;
-        boolean matchesInterval = ((state.iteration() + 1) % wsUpdateEveryIterations) == 0;
-
+        boolean matchesInterval = lastSentEvaluation < 0 || evaluation - lastSentEvaluation >= wsUpdateEveryEvaluations;
         return isInitialPoint || matchesInterval;
     }
 

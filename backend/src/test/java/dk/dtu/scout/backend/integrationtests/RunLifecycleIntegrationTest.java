@@ -185,8 +185,8 @@ class RunLifecycleIntegrationTest {
             @SuppressWarnings("unchecked")
             Map<String, Object> runRequest = (Map<String, Object>) payload.get("runRequest");
 
-            runRequest.put("logEveryIterations", 1);
-            runRequest.put("wsUpdateEveryIterations", 1);
+            runRequest.put("logEveryEvaluations", 1);
+            runRequest.put("wsUpdateEveryEvaluations", 1);
 
             PreparedExecution prepared = prepare(payload);
 
@@ -211,8 +211,8 @@ class RunLifecycleIntegrationTest {
             @SuppressWarnings("unchecked")
             Map<String, Object> runRequest = (Map<String, Object>) payload.get("runRequest");
 
-            runRequest.put("logEveryIterations", 1);
-            runRequest.put("wsUpdateEveryIterations", 1000);
+            runRequest.put("logEveryEvaluations", 1);
+            runRequest.put("wsUpdateEveryEvaluations", 1000);
 
             PreparedExecution prepared = prepare(payload);
 
@@ -438,8 +438,8 @@ class RunLifecycleIntegrationTest {
         request.put("runTimes", 1);
         request.put("sessionId", null);
         request.put("runId", null);
-        request.put("logEveryIterations", 1);
-        request.put("wsUpdateEveryIterations", 1);
+        request.put("logEveryEvaluations", 1);
+        request.put("wsUpdateEveryEvaluations", 1);
         return request;
     }
 

@@ -346,7 +346,7 @@ class RunPrepareIntegrationTest {
             Arguments.of("missing parent selection rule", invalidRunPayload("parentSelectionRuleId", ""), "Parent selection rule must be specified"),
             Arguments.of("missing stop condition", invalidRunPayload("stopConditionIds", List.of()), "Stop condition must be specified"),
             Arguments.of("invalid runTimes", invalidRunPayload("runTimes", 0), "runTimes must be positive"),
-            Arguments.of("invalid logEveryIterations", invalidRunPayload("logEveryIterations", -1), "logEveryIterations must be zero or positive"),
+            Arguments.of("invalid logEveryEvaluations", invalidRunPayload("logEveryEvaluations", -1), "logEveryEvaluations must be zero or positive"),
             Arguments.of("TSP missing instance", tspRunPayload(Map.of()), "TSP problem requires a TSP instance"),
             Arguments.of("TSP instance not map", tspRunPayload(Map.of("tspInstance", "not-a-map")), "Invalid TSP instance: tspInstance must be a map"),
             Arguments.of("TSP invalid instance", tspRunPayload(Map.of("tspInstance", Map.of("name", "tiny"))), "Invalid TSP instance: tspInstance must contain a non-empty cities list"),
@@ -487,8 +487,8 @@ class RunPrepareIntegrationTest {
         request.put("runTimes", 1);
         request.put("sessionId", null);
         request.put("runId", null);
-        request.put("logEveryIterations", 1);
-        request.put("wsUpdateEveryIterations", 1);
+        request.put("logEveryEvaluations", 1);
+        request.put("wsUpdateEveryEvaluations", 1);
         return request;
     }
 

@@ -31,6 +31,6 @@ public record RunRequest(
     int runTimes,
     String sessionId,
     String runId,
-    int logEveryIterations,
-    int wsUpdateEveryIterations
+    int logEveryEvaluations,
+    int wsUpdateEveryEvaluations
  ) {}

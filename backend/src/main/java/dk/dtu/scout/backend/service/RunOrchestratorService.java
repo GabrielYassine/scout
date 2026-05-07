@@ -118,8 +118,8 @@ public class RunOrchestratorService {
             request.runTimes(),
             sessionId,
             runId,
-            request.logEveryIterations(),
-            request.wsUpdateEveryIterations()
+            request.logEveryEvaluations(),
+            request.wsUpdateEveryEvaluations()
         );
     }
 
@@ -186,8 +186,8 @@ public class RunOrchestratorService {
      * @param request the prepared run request containing all necessary information to execute the run
      */
     public void run(RunRequest request) {
-        int logEvery = runRequestValidator.resolveLogEveryIterations(request);
-        int wsUpdateEvery = request.wsUpdateEveryIterations() > 0 ? request.wsUpdateEveryIterations() : logEvery;
+        int logEvery = runRequestValidator.resolveLogEveryEvaluations(request);
+        int wsUpdateEvery = request.wsUpdateEveryEvaluations() > 0 ? request.wsUpdateEveryEvaluations() : logEvery;
 
         try {
             List<RunGroupResponse> batches = runExecutor.runBatch(request, logEvery, wsUpdateEvery);
@@ -243,7 +243,7 @@ public class RunOrchestratorService {
             for (int i = 0; i < sizes.size(); i++) {
                 int n = sizes.get(i);
                 RunRequest runRequest = buildRunRequestForSize(request, n, i);
-                int logEvery = runRequestValidator.resolveLogEveryIterations(runRequest);
+                int logEvery = runRequestValidator.resolveLogEveryEvaluations(runRequest);
 
                 List<RunGroupResponse> batches = runExecutor.runBatch(runRequest, logEvery, 0);
                 RuntimeStudyPointResponse point = runStatisticsService.toRuntimeStudyPoint(n, batches);
