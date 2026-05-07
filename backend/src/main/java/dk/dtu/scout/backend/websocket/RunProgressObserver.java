@@ -90,9 +90,6 @@ public class RunProgressObserver<S> implements Observer<S> {
     @Override
     public void onEnd(IterationSnapshot<S> state, RunLog log) {
         int logIndex = log.getEvaluations().size() - 1;
-        if (logIndex < 0) {
-            return;
-        }
 
         double runtimeMs = (System.nanoTime() - startTimeNanos) / 1_000_000.0;
 
@@ -106,14 +103,7 @@ public class RunProgressObserver<S> implements Observer<S> {
     }
 
     private boolean shouldSendStep(IterationSnapshot<S> state, RunLog log) {
-        if (wsUpdateEveryIterations <= 0) {
-            return false;
-        }
-
         int logIndex = log.getEvaluations().size() - 1;
-        if (logIndex < 0 || logIndex <= lastSentLogIndex) {
-            return false;
-        }
 
         boolean isInitialPoint = logIndex == 0;
         boolean matchesInterval = ((state.iteration() + 1) % wsUpdateEveryIterations) == 0;
@@ -166,10 +156,6 @@ public class RunProgressObserver<S> implements Observer<S> {
 
         for (Map.Entry<String, LoggedSeries<?>> entry : log.getSeries().entrySet()) {
             LoggedSeries<?> series = entry.getValue();
-            if (series == null || series.getValues() == null || series.getValues().isEmpty()) {
-                continue;
-            }
-
             delta.put(entry.getKey(), series.getValues().getLast());
         }
 
@@ -187,10 +173,6 @@ public class RunProgressObserver<S> implements Observer<S> {
 
         for (Map.Entry<String, LoggedSeries<?>> entry : log.getSeries().entrySet()) {
             LoggedSeries<?> series = entry.getValue();
-            if (series == null || series.getValues() == null || series.getValues().isEmpty()) {
-                continue;
-            }
-
             mergeOps.put(entry.getKey(), seriesMergeOp(series));
         }
 
@@ -204,7 +186,7 @@ public class RunProgressObserver<S> implements Observer<S> {
      * @return merge operation for the series
      */
     private static MergeOp seriesMergeOp(LoggedSeries<?> series) {
-        if (series != null && series.getMode() == SeriesMode.LATEST_ONLY) {
+        if (series.getMode() == SeriesMode.LATEST_ONLY) {
             return MergeOp.REPLACE_LAST;
         }
         return MergeOp.APPEND;

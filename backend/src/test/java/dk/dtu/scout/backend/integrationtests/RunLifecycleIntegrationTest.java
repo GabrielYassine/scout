@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dk.dtu.scout.backend.dto.request.StartPreparedExecutionRequest;
 import dk.dtu.scout.backend.dto.ws.RunWsPayload;
 import dk.dtu.scout.backend.dto.ws.RuntimeStudyWsPayload;
+import dk.dtu.scout.backend.websocket.MergeOp;
 import dk.dtu.scout.backend.websocket.WsReceiver;
 import dk.dtu.scout.backend.websocket.WsSender;
 import org.junit.jupiter.api.Nested;
@@ -175,6 +176,58 @@ class RunLifecycleIntegrationTest {
 
             assertTrue(tspProgress.seriesMerge().containsKey("tspTour")
                     || tspProgress.seriesMerge().containsKey("tspCities"));
+        }
+
+        @Test
+        void preparedRunWithEveryIterationWebSocketUpdates_replacesFinalProgressPoint() throws Exception {
+            Map<String, Object> payload = validRunPreparePayload("ws-final-replace-session");
+
+            @SuppressWarnings("unchecked")
+            Map<String, Object> runRequest = (Map<String, Object>) payload.get("runRequest");
+
+            runRequest.put("logEveryIterations", 1);
+            runRequest.put("wsUpdateEveryIterations", 1);
+
+            PreparedExecution prepared = prepare(payload);
+
+            wsReceiver.runStart(
+                    prepared.executionId(),
+                    new StartPreparedExecutionRequest(prepared.sessionId()),
+                    headers("ws-final-replace-session")
+            );
+
+            List<RunWsPayload> payloads = captureRunPayloadsAfterFinished(prepared.executionId());
+
+            assertTrue(payloads.stream()
+                    .filter(wsPayload -> "RUN_PROGRESS".equals(wsPayload.type()))
+                    .filter(wsPayload -> "FINISHED".equals(wsPayload.status()))
+                    .anyMatch(wsPayload -> wsPayload.evaluationsMerge() == MergeOp.REPLACE_LAST));
+        }
+
+        @Test
+        void preparedRunWithSparseWebSocketUpdates_appendsFinalProgressPoint() throws Exception {
+            Map<String, Object> payload = validRunPreparePayload("ws-final-append-session");
+
+            @SuppressWarnings("unchecked")
+            Map<String, Object> runRequest = (Map<String, Object>) payload.get("runRequest");
+
+            runRequest.put("logEveryIterations", 1);
+            runRequest.put("wsUpdateEveryIterations", 1000);
+
+            PreparedExecution prepared = prepare(payload);
+
+            wsReceiver.runStart(
+                    prepared.executionId(),
+                    new StartPreparedExecutionRequest(prepared.sessionId()),
+                    headers("ws-final-append-session")
+            );
+
+            List<RunWsPayload> payloads = captureRunPayloadsAfterFinished(prepared.executionId());
+
+            assertTrue(payloads.stream()
+                    .filter(wsPayload -> "RUN_PROGRESS".equals(wsPayload.type()))
+                    .filter(wsPayload -> "FINISHED".equals(wsPayload.status()))
+                    .anyMatch(wsPayload -> wsPayload.evaluationsMerge() == MergeOp.APPEND));
         }
 
         @Test

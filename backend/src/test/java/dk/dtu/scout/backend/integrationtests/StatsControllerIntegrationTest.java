@@ -32,6 +32,24 @@ class StatsControllerIntegrationTest {
     class SeriesWindowEndpoint {
 
         @Test
+        void seriesWindow_withSameXValuesReportsFlatTrend() throws Exception {
+            Map<String, Object> payload = basePayload(List.of(
+                point(2.0, 1.0),
+                point(2.0, 5.0),
+                point(2.0, 9.0)
+            ));
+
+            mockMvc.perform(post("/api/stats/series-window")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(payload)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.count").value(3))
+            .andExpect(jsonPath("$.mean").value(5.0))
+            .andExpect(jsonPath("$.slope").value(0.0))
+            .andExpect(jsonPath("$.trend").value("flat"));
+        }
+
+        @Test
         void seriesWindow_computesStatsForPointsInsideRange() throws Exception {
             Map<String, Object> payload = new LinkedHashMap<>();
             payload.put("seriesName", "fitness");

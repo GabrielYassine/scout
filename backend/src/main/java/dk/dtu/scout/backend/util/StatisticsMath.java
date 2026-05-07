@@ -19,7 +19,7 @@ public final class StatisticsMath {
      * @return the mean of the values, or 0.0 if the input list is null or empty
      */
     public static double mean(List<Double> values) {
-        if (values == null || values.isEmpty()) {
+        if (values.isEmpty()) {
             return 0.0;
         }
         return values.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
@@ -32,9 +32,6 @@ public final class StatisticsMath {
      * @return the variance of the values, or 0.0 if the input list is null or empty
      */
     public static double variance(List<Double> values, double mean) {
-        if (values == null || values.isEmpty()) {
-            return 0.0;
-        }
         return values.stream().mapToDouble(value -> (value - mean) * (value - mean)).average().orElse(0.0);
     }
 
@@ -55,9 +52,6 @@ public final class StatisticsMath {
      * @return the p-th percentile value, or 0.0 if the input list is null or empty. If the list has only one element, that element is returned regardless of p.
      */
     public static double percentile(List<Double> sorted, double p) {
-        if (sorted == null || sorted.isEmpty()) {
-            return 0.0;
-        }
 
         if (sorted.size() == 1) {
             return sorted.getFirst();
@@ -81,7 +75,7 @@ public final class StatisticsMath {
      * @return a list containing the five-number summary: [min, Q1, median, Q3, max]. Returns an empty list if input is null or empty.
      */
     public static List<Double> fiveNumberSummary(List<Double> sorted) {
-        if (sorted == null || sorted.isEmpty()) {
+        if (sorted.isEmpty()) {
             return List.of();
         }
 
@@ -102,10 +96,6 @@ public final class StatisticsMath {
      * @return the slope of the best fit line, or 0.0 if the variance of x is zero or if points are null/empty
      */
     public static double slope(List<SeriesPoint> points, double xMean, double yMean) {
-        if (points == null || points.isEmpty()) {
-            return 0.0;
-        }
-
         double covariance = 0.0;
         double xVariance = 0.0;
 

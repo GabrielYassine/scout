@@ -30,10 +30,6 @@ public final class ViewMapper {
     }
 
     public static ParamDef toParamDef(Parameter param) {
-        if (param == null) {
-            return null;
-        }
-
         return new ParamDef(
             param.key(),
             param.label(),
@@ -46,10 +42,6 @@ public final class ViewMapper {
     }
 
     public static ComponentDef toComponentDef(String kind, ScoutComponent component) {
-        if (component == null) {
-            throw new IllegalArgumentException("component must not be null");
-        }
-
         return new ComponentDef(
             kind,
             component.id(),
@@ -115,15 +107,11 @@ public final class ViewMapper {
     }
 
     public static SeriesResponse<?> toSeriesResponse(LoggedSeries<?> series) {
-        if (series == null) {
-            return null;
-        }
-
         return new SeriesResponse<>(series.getMode(), series.getValues());
     }
 
     public static Map<String, SeriesResponse<?>> toSeriesResponses(Map<String, LoggedSeries<?>> series) {
-        if (series == null || series.isEmpty()) {
+        if (series.isEmpty()) {
             return Map.of();
         }
 
@@ -131,9 +119,7 @@ public final class ViewMapper {
 
         for (Map.Entry<String, LoggedSeries<?>> entry : series.entrySet()) {
             SeriesResponse<?> response = toSeriesResponse(entry.getValue());
-            if (response != null) {
-                out.put(entry.getKey(), response);
-            }
+            out.put(entry.getKey(), response);
         }
 
         return out;
