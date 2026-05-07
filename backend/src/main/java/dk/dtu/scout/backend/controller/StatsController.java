@@ -11,9 +11,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-
 /**
  * REST endpoint for computing statistics on runs.
+ * User sends an interval of a run, and gets back computed statistics for that interval.
  * @author s235257
  */
 @RestController

@@ -83,7 +83,7 @@ public record RunWsPayload(
      * @return failed payload
      */
     public static RunWsPayload failed(String runId, String message) {
-        return status("RUN_FAILED", runId, message);
+        return status(runId, message);
     }
 
     /**
@@ -138,9 +138,9 @@ public record RunWsPayload(
         );
     }
 
-    private static RunWsPayload status(String type, String runId, String message) {
+    private static RunWsPayload status(String runId, String message) {
         return new RunWsPayload(
-            type,
+        "RUN_FAILED",
             runId,
             message,
             null,

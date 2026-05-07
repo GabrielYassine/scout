@@ -3,7 +3,7 @@ package dk.dtu.scout.backend.dto.stats;
 import java.util.List;
 
 /**
- * DTO for a request to generate statistics for a data series, containing the series name, axis labels, axis limits, and data points.
+ * DTO for a request to generate statistics for a data series.
  * @param seriesName the name of the data series
  * @param xAxisLabel the label for the x-axis
  * @param yAxisLabel the label for the y-axis

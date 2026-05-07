@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 /**
  * REST endpoint for preparing runs and runtime studies.
+ * User sends a request and gets back a sessionId and executionId.
  * @author s235257 & s230632
  */
 @RestController

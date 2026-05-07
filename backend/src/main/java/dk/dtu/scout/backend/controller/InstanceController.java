@@ -14,7 +14,7 @@ import java.util.Map;
 
 /**
  * Controller for handling instance import and export.
- * Delegates to InstanceService for parsing, validation, normalization, and formatting of TSP and VRP instances.
+ * Delegates to InstanceService for parsing, normalization, and formatting of TSP and VRP instances.
  * @author s235257
  */
 @RestController
