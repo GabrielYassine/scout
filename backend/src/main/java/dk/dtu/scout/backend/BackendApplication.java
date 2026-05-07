@@ -4,6 +4,9 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
 
+/**
+ * Main entry point for the Scout backend application.
+ */
 @SpringBootApplication
 @ComponentScan(basePackages = {"dk.dtu.scout", "dk.dtu.scout.backend"})
 public class BackendApplication {

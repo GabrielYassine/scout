@@ -35,9 +35,8 @@ import java.util.function.Supplier;
 
 /**
  * Executes runs asynchronously.
- * RunOrchestratorService handles validation and run lifecycle management,
- * while this class focuses on executing the requested runs, collecting logs,
- * and sending WebSocket progress updates.
+ * The main method runBatch executes a batch of runs based on the provided RunRequest.
+ * This batch can include multiple runtimes and multiple problems.
  * @author s235257 & s230632
  */
 @Service

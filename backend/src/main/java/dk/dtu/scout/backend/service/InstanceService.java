@@ -13,7 +13,7 @@ import java.util.Map;
 
 /**
  * Service for handling instance import and export.
- * Responsible for coordinating parsing, validation, normalization, and formatting of TSP and VRP instances.
+ * Responsible for coordinating parsing, normalization, and formatting of TSP and VRP instances.
  * @author s235257
  */
 @Service

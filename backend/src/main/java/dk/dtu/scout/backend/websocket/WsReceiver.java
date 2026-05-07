@@ -15,9 +15,6 @@ import org.springframework.stereotype.Controller;
 /**
  * Receives WebSocket messages from the frontend.
  * The frontend subscribes to run/study topics, then sends a start message
- * containing only the session id of a prepared backend execution.
- * The execution id itself comes from the websocket destination path, so the backend
- * does not trust a runId or studyId from the message body.
  * @author s235257 & s230632
  */
 @Controller

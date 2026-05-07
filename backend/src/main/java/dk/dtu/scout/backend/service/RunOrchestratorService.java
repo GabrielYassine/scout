@@ -24,9 +24,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 
 /**
- * Facade for run orchestration.
- * Validates requests, prepares executions, starts asynchronous execution,
- * sends final websocket status messages, and exposes synchronous entry points for tests.
+ * Facade for run orchestration and statistics calculation..
+ * Handles preparation, execution, and statistics calculation for both standard runs and runtime studies.
  * @author s235257 & s230632
  */
 @Service

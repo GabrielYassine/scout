@@ -18,8 +18,9 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Observer that streams run progress to the frontend through WebSockets.
- * It sends accumulated logged points as delta packages during the run,
- * and a final FINISHED package when the run ends.
+ * It sends accumulated logged points as delta packages during the run, and a final FINISHED package when the run ends.
+ * Updates Frontend each x evaluations or after a certain time interval,
+ * to avoid overwhelming the WebSocket connection and frontend with too many updates.
  * @param <S> the solution representation type used by the current run
  * @author s235257 & Ahmed
  */

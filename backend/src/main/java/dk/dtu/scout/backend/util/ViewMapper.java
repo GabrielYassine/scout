@@ -18,10 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Utility class for converting internal backend objects into DTOs used by the frontend.
- * This keeps DTO construction in one place, so controllers and services do not need
- * to know the exact response object structure.
- * The class only contains static mapping methods and should not be instantiated.
+ * Utility class for mapping internal Scout components and data structures to DTOs used in the API responses.
  * @author s235257 & s230632
  */
 public final class ViewMapper {
