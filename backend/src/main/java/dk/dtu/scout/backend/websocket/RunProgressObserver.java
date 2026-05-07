@@ -43,13 +43,13 @@ public class RunProgressObserver<S> implements Observer<S> {
     private long lastSentTimeNanos = 0L;
 
     public RunProgressObserver(
-            WsSender wsSender,
-            String runId,
-            int runIndex,
-            long seed,
-            String searchSpaceId,
-            String problemId,
-            int wsUpdateEveryIterations
+        WsSender wsSender,
+        String runId,
+        int runIndex,
+        long seed,
+        String searchSpaceId,
+        String problemId,
+        int wsUpdateEveryIterations
     ) {
         this.wsSender = wsSender;
         this.runId = runId;
@@ -71,13 +71,6 @@ public class RunProgressObserver<S> implements Observer<S> {
         return SEQUENCE_BY_STREAM.computeIfAbsent(streamKey(), key -> new AtomicLong(0)).incrementAndGet();
     }
 
-    /**
-     * Sends an ONGOING progress update when the current log point should be streamed.
-     * The first log point is always sent, and later points are sent according to the configured cadence.
-     * A time throttle prevents very small update intervals from overwhelming the WebSocket connection.
-     * @param state current iteration snapshot
-     * @param log current run log
-     */
     @Override
     public void onStep(IterationSnapshot<S> state, RunLog log) {
         if (!shouldSendStep(state, log)) {
@@ -90,27 +83,16 @@ public class RunProgressObserver<S> implements Observer<S> {
         lastSentLogIndex = toIndex;
         lastSentTimeNanos = System.nanoTime();
 
-        sendProgress(log, fromIndex, toIndex, MergeOp.APPEND, "ONGOING", null, true);
+        sendProgress(log, fromIndex, toIndex, MergeOp.APPEND, "ONGOING", null);
     }
 
-    /**
-     * Sends the final FINISHED progress update.
-     * If the final log point was already sent during onStep, it replaces the last point instead of appending a duplicate.
-     * Series deltas are still included because some sparse observers may emit final values in onEnd.
-     * @param state final iteration snapshot
-     * @param log completed run log
-     */
     @Override
     public void onEnd(IterationSnapshot<S> state, RunLog log) {
         int toIndex = log.getEvaluations().size() - 1;
-        if (toIndex < 0) {
-            return;
-        }
-
         double runtimeMs = (System.nanoTime() - startTimeNanos) / 1_000_000.0;
 
         if (toIndex <= lastSentLogIndex) {
-            sendProgress(log, toIndex, toIndex, MergeOp.REPLACE_LAST, "FINISHED", runtimeMs, true);
+            sendProgress(log, toIndex, toIndex, MergeOp.REPLACE_LAST, "FINISHED", runtimeMs);
             return;
         }
 
@@ -119,18 +101,11 @@ public class RunProgressObserver<S> implements Observer<S> {
         lastSentLogIndex = toIndex;
         lastSentTimeNanos = System.nanoTime();
 
-        sendProgress(log, fromIndex, toIndex, MergeOp.APPEND, "FINISHED", runtimeMs, true);
+        sendProgress(log, fromIndex, toIndex, MergeOp.APPEND, "FINISHED", runtimeMs);
     }
 
     private boolean shouldSendStep(IterationSnapshot<S> state, RunLog log) {
-        if (wsUpdateEveryIterations <= 0) {
-            return false;
-        }
-
         int logIndex = log.getEvaluations().size() - 1;
-        if (logIndex < 0 || logIndex <= lastSentLogIndex) {
-            return false;
-        }
 
         boolean isInitialPoint = logIndex == 0;
         boolean matchesIterationInterval = ((state.iteration() + 1) % wsUpdateEveryIterations) == 0;
@@ -146,64 +121,45 @@ public class RunProgressObserver<S> implements Observer<S> {
     }
 
     private void sendProgress(
-            RunLog log,
-            int fromIndex,
-            int toIndex,
-            MergeOp evaluationsMerge,
-            String status,
-            Double runtimeMs,
-            boolean includeSeriesDelta
+        RunLog log,
+        int fromIndex,
+        int toIndex,
+        MergeOp evaluationsMerge,
+        String status,
+        Double runtimeMs
     ) {
-        List<Integer> evaluations = new ArrayList<>(
-                log.getEvaluations().subList(fromIndex, toIndex + 1)
-        );
-
+        List<Integer> evaluations = new ArrayList<>(log.getEvaluations().subList(fromIndex, toIndex + 1));
         Integer evaluation = evaluations.getLast();
 
-        Map<String, Object> seriesDelta =
-                includeSeriesDelta ? buildSeriesDelta(log) : Map.of();
-
-        Map<String, MergeOp> seriesMerge =
-                includeSeriesDelta ? buildSeriesMerge(log, seriesDelta) : Map.of();
+        Map<String, Object> seriesDelta = buildSeriesDelta(log);
+        Map<String, MergeOp> seriesMerge = buildSeriesMerge(log, seriesDelta);
 
         wsSender.sendToRun(
+            runId,
+            RunWsPayload.progress(
                 runId,
-                RunWsPayload.progress(
-                        runId,
-                        runIndex,
-                        seed,
-                        searchSpaceId,
-                        problemId,
-                        nextSequenceId(),
-                        evaluationsMerge,
-                        seriesMerge,
-                        evaluation,
-                        evaluations,
-                        seriesDelta,
-                        status,
-                        runtimeMs
-                )
+                runIndex,
+                seed,
+                searchSpaceId,
+                problemId,
+                nextSequenceId(),
+                evaluationsMerge,
+                seriesMerge,
+                evaluation,
+                evaluations,
+                seriesDelta,
+                status,
+                runtimeMs
+            )
         );
     }
 
-    /**
-     * Builds deltas by tracking how many values have already been sent for each series.
-     * This is necessary because not all observer series have one value per evaluation.
-     * For example, fitnessPhaseIntervals is sparse and only emits completed phase blocks.
-     * @param log current run log
-     * @return map from series name to unsent values
-     */
     private Map<String, Object> buildSeriesDelta(RunLog log) {
         Map<String, Object> delta = new LinkedHashMap<>();
 
         for (Map.Entry<String, LoggedSeries<?>> entry : log.getSeries().entrySet()) {
             String seriesName = entry.getKey();
             LoggedSeries<?> series = entry.getValue();
-
-            if (series == null || series.getValues() == null || series.getValues().isEmpty()) {
-                continue;
-            }
-
             List<?> values = series.getValues();
 
             if (series.getMode() == SeriesMode.LATEST_ONLY) {
@@ -225,12 +181,6 @@ public class RunProgressObserver<S> implements Observer<S> {
         return delta;
     }
 
-    /**
-     * Builds merge instructions only for the series included in the current delta.
-     * @param log current run log
-     * @param seriesDelta series values included in this packet
-     * @return map from series name to merge operation
-     */
     private Map<String, MergeOp> buildSeriesMerge(RunLog log, Map<String, Object> seriesDelta) {
         Map<String, MergeOp> mergeOps = new LinkedHashMap<>();
 
@@ -242,14 +192,8 @@ public class RunProgressObserver<S> implements Observer<S> {
         return mergeOps;
     }
 
-    /**
-     * Determines how the frontend should merge a series value.
-     * Normal series are appended, while latest-only series replace their previous value.
-     * @param series the logged series to inspect
-     * @return merge operation for the series
-     */
     private static MergeOp seriesMergeOp(LoggedSeries<?> series) {
-        if (series != null && series.getMode() == SeriesMode.LATEST_ONLY) {
+        if (series.getMode() == SeriesMode.LATEST_ONLY) {
             return MergeOp.REPLACE_LAST;
         }
         return MergeOp.APPEND;
