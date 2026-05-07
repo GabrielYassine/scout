@@ -1,8 +1,8 @@
-/*
- * LabLeftbar displays the experiment configuration sidebar.
- * It renders templates, global settings, selected piece parameters,
- * run/reset actions, and handles confirmation when switching modes.
+/**
+  *
+  * @author s235257 & s230632
  */
+
 import { useMemo, useState } from "react";
 
 import "@/shared/components/styles/LabLeftbar.css";

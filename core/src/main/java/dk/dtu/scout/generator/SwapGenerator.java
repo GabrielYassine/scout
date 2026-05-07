@@ -9,6 +9,10 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Random;
 
+/**
+ *
+ * @author s235257
+ */
 @Component
 @Scope("prototype")
 public class SwapGenerator implements Generator<int[]> {

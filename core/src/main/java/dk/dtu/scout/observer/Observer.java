@@ -6,6 +6,7 @@ import dk.dtu.scout.logging.RunLog;
 
 /**
  * Observer hook for monitoring runs and emitting metrics into {@link RunLog}.
+ * @author s235257 & s230632
  */
 public interface Observer<S> extends ScoutComponent {
     default void onStart(IterationSnapshot<S> state, RunLog log) {}

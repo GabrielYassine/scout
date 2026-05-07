@@ -1,8 +1,8 @@
-/*
- * instanceHelpers contains helper functions for building instance view models,
- * synchronizing edited nodes back to TSP/VRP data structures,
- * and preparing export payloads.
+/**
+  *
+  * @author s235257
  */
+
 import { buildVrpNodes, CUSTOM_INSTANCE_NAME, EDGE_WEIGHT_TYPE, } from "./instanceModel.js";
 
 export function getInstanceViewModel({ instanceType, tspInstance, vrpInstance }) {

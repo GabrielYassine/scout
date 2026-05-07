@@ -12,11 +12,8 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 /**
- * Tracks the current temperature published by temperature-based selection rules.
- *
- * <p>This is mainly useful for Simulated Annealing and Metropolis-style runs.
- * Simulated Annealing decreases temperature over time, while Metropolis keeps
- * the temperature constant.
+ * Tracks the current temperature.
+ * @author s235257
  */
 @Component
 @Scope("prototype")

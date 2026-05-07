@@ -16,6 +16,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+/**
+ *
+ * @param <S>
+ * @author s230632
+ */
 @Component
 @Scope("prototype")
 public class IslandModel<S> implements PopulationModel<S> {

@@ -7,7 +7,9 @@ import java.util.List;
 import java.util.Random;
 
 /**
- * Selects parents from the current population for variation operators.
+ *
+ * @param <S>
+ * @author s230632
  */
 public interface ParentSelectionRule<S> extends ScoutComponent {
     List<EvaluatedSolution<S>> selectParents(List<EvaluatedSolution<S>> parents, Random rng);

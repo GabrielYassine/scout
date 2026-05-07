@@ -6,7 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * Binds executor pool settings from application.properties.
  * Spring fills this class automatically through @ConfigurationProperties,
  * so the setters are used by Spring even though they are not called directly in the code.
- * @author s235257 & Ahmed
+ * @author Ahmed
  */
 @ConfigurationProperties(prefix = "scout.executors")
 public class AsyncExecutorProperties {

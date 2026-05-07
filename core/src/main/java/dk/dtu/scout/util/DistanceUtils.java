@@ -1,5 +1,9 @@
 package dk.dtu.scout.util;
 
+/**
+ *
+ * @author s235257
+ */
 public final class DistanceUtils {
     private DistanceUtils() {}
 

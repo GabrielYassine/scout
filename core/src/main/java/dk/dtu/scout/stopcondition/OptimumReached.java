@@ -9,6 +9,10 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
+/**
+ *
+ * @author s235257 & s230632
+ */
 @Component
 @Scope("prototype")
 public class OptimumReached<S> implements StopCondition<S> {

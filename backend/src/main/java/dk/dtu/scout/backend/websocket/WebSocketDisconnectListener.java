@@ -8,7 +8,7 @@ import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 /**
  * Cleans up prepared or active executions when the browser websocket disconnects.
  * This is mainly used when the user closes the browser tab while a run or runtime study is still prepared or active.
- * @author s235257 & Ahmed
+ * @author s235257
  */
 @Component
 public class WebSocketDisconnectListener {

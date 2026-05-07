@@ -19,6 +19,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ *
+ * @author s235257
+ */
 @Component
 @Scope("prototype")
 public class TourObserver implements Observer<Object> {

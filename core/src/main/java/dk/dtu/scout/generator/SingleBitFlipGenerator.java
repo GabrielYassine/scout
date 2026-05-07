@@ -9,6 +9,11 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Random;
 
+
+/**
+ *
+ * @author Ahmed
+ */
 @Component
 @Scope("prototype")
 public class SingleBitFlipGenerator implements Generator<boolean[]> {

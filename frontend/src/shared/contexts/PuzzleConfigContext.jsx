@@ -1,8 +1,8 @@
-/*
- * PuzzleConfigProvider manages the shared puzzle configuration state for the lab.
- * It stores configs, params, TSP/VRP instances, and drag-and-drop state,
- * and exposes actions for updating, resetting, renaming, and applying templates.
+/**
+  *
+  * @author s235257 & s230632
  */
+
 import { createContext, useMemo, useState } from "react";
 import { DndContext, DragOverlay, rectIntersection } from "@dnd-kit/core";
 

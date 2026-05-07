@@ -1,6 +1,8 @@
-/*
- * TemplateSection renders the template selector and apply button.
+/**
+  *
+  * @author s230632
  */
+
 import SidebarSection from "../SidebarSection.jsx";
 
 export default function TemplateSection({

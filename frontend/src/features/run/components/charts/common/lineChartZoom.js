@@ -1,5 +1,6 @@
 /**
- * Pure helpers for converting ECharts dataZoom state into numeric x-axis ranges.
+  *
+  * @author s230632
  */
 
 export function getDataXRange(points) {

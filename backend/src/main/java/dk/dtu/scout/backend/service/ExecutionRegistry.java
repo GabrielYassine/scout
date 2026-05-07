@@ -14,7 +14,7 @@ import java.util.concurrent.Future;
  * A run or runtime study is first prepared through REST, where the finalized
  * request is validated and stored. It is then consumed when the frontend starts the execution through websocket.
  * A session can only have one active task at a time, so registering a new active task cancels the previous active task for the same session.
- * @author s235257 & Ahmed
+ * @author s235257
  */
 @Component
 public class ExecutionRegistry {

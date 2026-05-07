@@ -1,7 +1,8 @@
-/*
- * Shared helpers for making JSON HTTP requests
- * and handling API errors consistently.
+/**
+  *
+  * @author s230632
  */
+
 export class HttpError extends Error {
   constructor(message, { status = null, url = null, payload = null } = {}) {
     super(message);
@@ -43,7 +44,6 @@ export async function fetchJson(url, init = {}) {
     });
   }
 
-  // For 204 etc.
   if (res.status === 204) return null;
 
   return await res.json();

@@ -9,6 +9,11 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
+
+/**
+ *
+ * @author s230632
+ */
 @Component
 @Scope("prototype")
 public class HypercubeObserver implements Observer<boolean[]> {

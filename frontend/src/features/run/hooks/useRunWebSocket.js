@@ -1,7 +1,6 @@
 /**
- * Manages the websocket lifecycle for normal runs.
- * Incoming progress packets are buffered, merged into batch state,
- * and persisted when the run finishes.
+  *
+  * @author s235257 & s230632
  */
 import { useEffect, useRef } from "react";
 import { Client } from "@stomp/stompjs";

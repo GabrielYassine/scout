@@ -1,8 +1,8 @@
 /**
- * SVG-based visualization for TSP and VRP routes.
- * Supports route drawing, optional editable city positions, zoom/pan interaction,
- * and pheromone heatmap overlays when available from observer data.
+  *
+  * @author s235257
  */
+
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import {
   buildCitiesKey,

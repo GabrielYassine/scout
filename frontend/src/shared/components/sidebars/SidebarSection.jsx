@@ -1,7 +1,8 @@
-/*
- * SidebarSection displays a sidebar block with a title and content.
- * It supports both collapsible and non-collapsible sections.
+/**
+  *
+  * @author s235257
  */
+
 import "@/shared/components/styles/SidebarSections.css";
 
 export default function SidebarSection({

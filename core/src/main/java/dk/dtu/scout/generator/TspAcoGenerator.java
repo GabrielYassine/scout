@@ -14,6 +14,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+/**
+ *
+ * @author s235257
+ */
 @Component
 @Scope("prototype")
 public class TspAcoGenerator implements Generator<int[]> {

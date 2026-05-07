@@ -1,6 +1,8 @@
 /**
- * Resolves the effective RunPage input state from router state and saved localStorage state.
+  *
+  * @author s235257 & s230632
  */
+
 export function resolveRunPageState(locationState, savedRun) {
   const incomingRunId =
     locationState.runId ?? locationState.runRequest?.runId ?? null;

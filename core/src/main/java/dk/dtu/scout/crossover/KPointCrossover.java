@@ -8,6 +8,11 @@ import org.springframework.stereotype.Component;
 
 import java.util.*;
 
+/**
+ *
+ * @author Ahmed
+ */
+
 @Component
 @Scope("prototype")
 public class KPointCrossover implements Crossover<boolean[]> {

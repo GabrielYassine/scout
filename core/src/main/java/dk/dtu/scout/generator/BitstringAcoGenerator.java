@@ -16,6 +16,10 @@ import static dk.dtu.scout.generator.ReinforcementMode.ALL;
 import static dk.dtu.scout.generator.ReinforcementMode.BEST_SO_FAR;
 import static dk.dtu.scout.generator.ReinforcementMode.ITERATION_BEST;
 
+/**
+ *
+ * @author Ahmed
+ */
 @Component
 @Scope("prototype")
 public class BitstringAcoGenerator implements Generator<boolean[]> {

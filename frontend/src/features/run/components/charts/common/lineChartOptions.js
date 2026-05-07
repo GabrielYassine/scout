@@ -1,6 +1,6 @@
 /**
- * Pure builders for ECharts line-chart options and series patches.
- * Kept separate from the React component so chart configuration is easier to read.
+  *
+  * @author s235257
  */
 
 const LEFT_AXIS_COLOR = "#1d4ed8";

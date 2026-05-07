@@ -10,6 +10,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ *
+ * @author s235257 & s230632
+ */
 @Component
 @Scope("prototype")
 public class VRP implements Problem<List<List<Integer>>> {

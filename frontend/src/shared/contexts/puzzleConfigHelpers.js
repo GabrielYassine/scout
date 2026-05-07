@@ -1,9 +1,8 @@
-/*
- * puzzleConfigHelpers provides helper functions for puzzle configuration state.
- * It creates default configs, normalizes stored configs, clones instances,
- * rebuilds puzzle piece grid data, converts between grouped and flat structures,
- * and applies template run requests.
+/**
+  *
+  * @author s235257 & s230632
  */
+
 import { generatePuzzleKey } from "@/shared/util/puzzleGenerator.js";
 
 export const GRID_COLUMNS = 6;

@@ -11,7 +11,7 @@ import java.util.Map;
 
 /**
  * Implementation of the LeadingOnes problem, where the goal is to maximize the consecutive number of 1s from first bit.
- * @author s235257
+ * @author s235257 & s230632
  */
 @Component
 @Scope("prototype")

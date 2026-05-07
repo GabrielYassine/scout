@@ -1,6 +1,8 @@
-/*
- * TopNavbar displays the app logo and top-level navigation links.
+/**
+  *
+  * @author s235257
  */
+
 import { NavLink } from "react-router-dom";
 import "@/shared/components/styles/TopNavbar.css";
 import logo from "@/assets/icons/ScoutLogo.png";

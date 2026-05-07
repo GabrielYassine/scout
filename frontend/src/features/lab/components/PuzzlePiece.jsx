@@ -1,8 +1,7 @@
-/*
-*  PuzzlePiece is responsible for rendering a puzzle piece,
-*  handling its draggable behavior,
-*  and adapting its appearance and interaction based on whether it is selectable or already placed.
-*/
+/**
+  *
+  * @author s235257
+ */
 
 import { useDraggable } from "@dnd-kit/core";
 import { maskStyle } from "@/shared/util/puzzleMasks.js";

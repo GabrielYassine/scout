@@ -1,4 +1,7 @@
-// Helpers for validating lab configurations and building execution requests.
+/**
+  *
+  * @author s235257 & s230632
+ */
 
 import { getExistingSessionId } from "@/features/lab/utils/sessionStorage.js";
 

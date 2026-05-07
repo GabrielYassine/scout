@@ -1,7 +1,8 @@
-/*
- * GlobalSettingsSection renders the global experiment settings,
- * including mode, seed, and mode-specific parameters.
+/**
+  *
+  * @author s235257 & s230632
  */
+ 
 import SidebarSection from "../SidebarSection.jsx";
 import ParamField from "../ParamField.jsx";
 

@@ -11,7 +11,7 @@ import java.util.Map;
 
 /**
  * Implementation of the OneMax problem, where the goal is to maximize the number of 1s in a binary string.
- * @author s235257
+ * @author s235257 & s230632
  */
 @Component
 @Scope("prototype")

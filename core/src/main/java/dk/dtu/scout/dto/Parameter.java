@@ -4,6 +4,7 @@ import java.util.List;
 
 /**
  * Metadata describing a configurable component parameter exposed to the UI.
+ * @author s235257 & Ahmed
  */
 public record Parameter(
         String key,

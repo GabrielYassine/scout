@@ -9,6 +9,9 @@ import RunPage from "@/features/run/RunPage.jsx";
 
 import { useCatalog } from "@/shared/hooks/useCatalog.js";
 
+/**
+ *
+ */
 export default function App() {
   const { catalog, catalogLoading, catalogError } = useCatalog();
 

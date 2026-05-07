@@ -1,7 +1,9 @@
-/*
-* LabPage is the main page for configuring experiments.
-* It handles UI state, drag/drop feedback, and navigation to the run page.
-*/
+/**
+  * LabPage is the main page for configuring experiments.
+  * It handles UI state, drag/drop feedback, and navigation to the run page.
+  * @author s235257 & s230632
+ */
+
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDndMonitor } from "@dnd-kit/core";

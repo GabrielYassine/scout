@@ -7,7 +7,8 @@ import java.util.List;
 import java.util.Random;
 
 /**
- * Selects survivors from parent/child pools for the next generation.
+ *
+ * @author s235257 & s230632
  */
 public interface SelectionRule<S> extends ScoutComponent {
     List<EvaluatedSolution<S>> select(

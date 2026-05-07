@@ -1,8 +1,8 @@
 /**
- * Chart container for a single problem result.
- * Selects between line chart, hypercube, route visualization, and boxplot views
- * depending on the observer data available in the run.
+  *
+  * @author s235257 & s230632
  */
+
 import { useState, useMemo, memo, useCallback, useEffect, useRef } from "react";
 import "@/features/run/styles/ChartPanel.css";
 import "@/features/run/styles/RunChart.css";

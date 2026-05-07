@@ -5,6 +5,10 @@ import RunConfigImage from "./assets/config.png";
 import RouteGraphEditorImage from "./assets/routeGraphEditor.png";
 import RunProgressImage from "./assets/runProgress.png";
 
+/**
+ *
+ * @author s235257
+ */
 export default function HomePage() {
   return (
     <div className="home-page">

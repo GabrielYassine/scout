@@ -12,7 +12,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 /**
  * Central exception handler for REST controllers.
  * Converts backend exceptions into consistent JSON error responses.
- * @author s235257 & Ahmed
+ * @author Ahmed
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -37,10 +37,10 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErrorResponse> handleUnreadableMessage(HttpMessageNotReadableException e, HttpServletRequest request) {
         ErrorResponse error = ViewMapper.toErrorResponse(
-                HttpStatus.BAD_REQUEST.value(),
-                "Bad Request",
-                "Request body is missing or malformed.",
-                request.getRequestURI()
+            HttpStatus.BAD_REQUEST.value(),
+            "Bad Request",
+            "Request body is missing or malformed.",
+            request.getRequestURI()
         );
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }

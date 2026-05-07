@@ -1,8 +1,8 @@
-/*
- * Selector displays selectable puzzle pieces in tabs,
- * keeps track of the active tab,
- * and renders each item with the correct enabled/disabled state.
+/**
+  *
+  * @author s235257 & s230632
  */
+
 import "@/features/lab/styles/Selector.css";
 import PuzzlePiece from "../PuzzlePiece";
 import { useSessionStorageState } from "@/shared/hooks/useSessionStorageState.js";

@@ -11,6 +11,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+/**
+ *
+ * @author Ahmed
+ */
 @Component
 @Scope("prototype")
 public class BitFlipGenerator implements Generator<boolean[]> {

@@ -1,7 +1,6 @@
 /**
- * Collapsible observer controls for RunChart.
- * Lets the user choose the primary left-axis line series, optional right-axis
- * line series, and special non-line visualizations.
+  *
+  * @author s235257
  */
 import { useState, memo } from "react";
 

@@ -13,8 +13,8 @@ import java.util.Map;
 import java.util.Random;
 
 /**
- * Search space for route-list encoded solutions.
- * A solution is a list of routes, where each route is an ordered list of customer indices.
+ *
+ * @author s235257 & s230632
  */
 @Component
 @Scope("prototype")
@@ -51,8 +51,8 @@ public class RouteList implements SearchSpace<List<List<Integer>>> {
     @Override
     public List<Parameter> params() {
         return List.of(
-                new Parameter("n", "Customer count (n)", "int", n, 1.0, null, null),
-                new Parameter("routeCount", "Initial route count", "int", routeCount, 1.0, null, null)
+            new Parameter("n", "Customer count (n)", "int", n, 1.0, null, null),
+            new Parameter("routeCount", "Initial route count", "int", routeCount, 1.0, null, null)
         );
     }
 

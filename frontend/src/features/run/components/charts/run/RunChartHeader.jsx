@@ -1,8 +1,8 @@
 /**
- * Shared header for run-related chart panels.
- * Displays the problem or study title, optional instance name, run status,
- * and optional runtime information.
+  *
+  * @author s235257 & s230632
  */
+
 import "@/features/run/styles/RunChartHeader.css";
 
 export default function RunChartHeader({

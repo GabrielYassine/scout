@@ -1,15 +1,12 @@
 package dk.dtu.scout;
 
-import dk.dtu.scout.datatypes.StateKeys;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Shared per-run blackboard for cross-component communication.
  *
- * <p>Values are keyed by strings; prefer {@link StateKeys} for canonical keys.
+ * @author s235257 & s230632
  */
 public class State {
 

@@ -4,6 +4,7 @@ import dk.dtu.scout.dto.EvaluatedSolution;
 
 /**
  * Immutable snapshot of the algorithm state at a given iteration.
+ * @author s235257 & Ahmed
  */
 public record IterationSnapshot<S>(
     int iteration,

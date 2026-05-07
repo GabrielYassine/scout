@@ -1,7 +1,8 @@
-/*
- * SelectedPieceSection renders the parameter controls
- * for all currently selected pieces of one type.
+/**
+  *
+  * @author s235257 & s230632
  */
+
 import SidebarSection from "../SidebarSection.jsx";
 import ParamField from "../ParamField.jsx";
 

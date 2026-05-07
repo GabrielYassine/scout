@@ -11,10 +11,9 @@ import java.util.Map;
 import java.util.Random;
 
 /**
- * Represents a binary string (bitstring) search space.
- * Solutions are represented as boolean arrays.
+ *
+ * @author s235257 & s230632
  */
-
 @Component
 @Scope("prototype")
 public class BitString implements SearchSpace<boolean[]> {

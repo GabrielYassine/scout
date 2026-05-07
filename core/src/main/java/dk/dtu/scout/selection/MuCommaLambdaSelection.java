@@ -10,6 +10,10 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 
+/**
+ *
+ * @author s235257
+ */
 @Component
 @Scope("prototype")
 public class MuCommaLambdaSelection<S> implements SelectionRule<S> {

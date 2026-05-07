@@ -1,7 +1,8 @@
 /**
- * Modal wrapper for viewing a TSP/VRP route visualization in a larger graph view.
- * Used when route data should be inspected separately from the normal chart panel.
+  *
+  * @author s235257
  */
+
 import RouteVisualization from "./RouteVisualization.jsx";
 import { normalizeCities, sanitizeCity } from "./routeVisualizationData.js";
 import "@/features/run/styles/RouteGraphModal.css";

@@ -1,5 +1,6 @@
 /**
- * Accessor hook for RunExecutionContext.
+  *
+  * @author s235257
  */
 import { useContext } from "react";
 

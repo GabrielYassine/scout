@@ -1,6 +1,6 @@
 /**
- * Manages the websocket lifecycle for runtime studies.
- * Study points are merged by problem size so repeated updates replace older points.
+  *
+  * @author s230632
  */
 import { useEffect, useRef } from "react";
 import { Client } from "@stomp/stompjs";

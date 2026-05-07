@@ -1,7 +1,8 @@
 /**
- * ECharts boxplot wrapper for aggregated runtime/fitness distributions.
- * Used for average-run summaries and runtime-study distributions.
+  *
+  * @author s230632s
  */
+
 import { useMemo, memo } from "react";
 import ReactECharts from "echarts-for-react";
 

@@ -1,7 +1,8 @@
-/*
- * usePuzzleConfig provides access to the PuzzleConfigContext
- * and ensures it is only used inside PuzzleConfigProvider.
+/**
+  *
+  * @author s235257 & s230632
  */
+
 import { useContext } from "react";
 import { PuzzleConfigContext } from "./PuzzleConfigContext.jsx";
 

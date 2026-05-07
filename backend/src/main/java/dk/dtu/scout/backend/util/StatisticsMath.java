@@ -6,7 +6,7 @@ import java.util.List;
 
 /**
  * Utility class for statistical calculations.
- * @author s235257
+ * @author s235257 & Ahmed
  */
 public final class StatisticsMath {
 

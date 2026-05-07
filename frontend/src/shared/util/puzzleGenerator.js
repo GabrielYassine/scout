@@ -1,7 +1,6 @@
-/*
- * puzzleGenerator creates the shape data for puzzle pieces.
- * It determines each piece's edges from its position and neighbors,
- * and converts that edge layout into the correct visual rendering settings.
+/**
+  *
+  * @author s235257
  */
 
 /**

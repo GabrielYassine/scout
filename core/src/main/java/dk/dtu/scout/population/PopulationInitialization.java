@@ -6,12 +6,17 @@ import dk.dtu.scout.logging.IterationSnapshot;
 import java.util.List;
 import java.util.Map;
 
+/**
+ *
+ * @param <S>
+ * @author s230632 & s235257
+ */
 public record PopulationInitialization<S>(
-        PopulationState<S> state,
-        IterationSnapshot<S> initialState,
-        int evaluations,
-        Map<String, Object> sharedStateVariables,
-        List<ScoutComponent> stateComponents
+    PopulationState<S> state,
+    IterationSnapshot<S> initialState,
+    int evaluations,
+    Map<String, Object> sharedStateVariables,
+    List<ScoutComponent> stateComponents
 ) {
     public PopulationInitialization {
         sharedStateVariables = sharedStateVariables != null ? sharedStateVariables : Map.of();

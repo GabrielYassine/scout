@@ -1,6 +1,6 @@
 /**
- * Displays runtime-study progress as either mean evaluations per problem size
- * or boxplots over repeated runs.
+  *
+  * @author s230632
  */
 import { useMemo, useState, memo } from "react";
 import "@/features/run/styles/ChartPanel.css";

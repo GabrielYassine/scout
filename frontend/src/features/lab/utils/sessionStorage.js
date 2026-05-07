@@ -1,3 +1,8 @@
+/**
+  *
+  * @author s235257
+ */
+
 const SESSION_STORAGE_KEY = "scout:sessionId";
 
 // Read the current session id from sessionStorage.

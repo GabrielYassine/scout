@@ -10,6 +10,11 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 
+/**
+ *
+ * @param <S>
+ * @author s230632
+ */
 @Component
 @Scope("prototype")
 public class ElitistParentSelection<S> implements ParentSelectionRule<S> {

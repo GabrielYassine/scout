@@ -5,9 +5,9 @@ import dk.dtu.scout.ScoutComponent;
 import java.util.Random;
 
 /**
- * Defines solution representation and random sampling for a search space.
+ *
+ * @author s235257 & s230632
  */
-
 public interface SearchSpace<S> extends ScoutComponent {
     S randomSolution(Random rng);
     int dimension();

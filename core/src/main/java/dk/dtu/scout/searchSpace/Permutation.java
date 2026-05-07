@@ -13,10 +13,9 @@ import java.util.Map;
 import java.util.Random;
 
 /**
- * Represents a permutation search space.
- * Solutions are represented as integer arrays containing permutations of {0, 1, ..., n-1}.
+ *
+ * @author s235257 & s230632
  */
-
 @Component
 @Scope("prototype")
 public class Permutation implements SearchSpace<int[]> {

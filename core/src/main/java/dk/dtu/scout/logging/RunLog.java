@@ -7,6 +7,7 @@ import java.util.Map;
 
 /**
  * Aggregated time-series output for a run, populated by observers.
+ * @author s235257 & Ahmed
  */
 public class RunLog {
     private final List<Integer> evaluations = new ArrayList<>();

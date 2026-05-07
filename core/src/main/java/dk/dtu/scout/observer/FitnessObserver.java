@@ -11,6 +11,7 @@ import java.util.List;
 
 /**
  * Tracks fitness values over time.
+ * @author s235257 & Ahmed
  */
 
 @Component

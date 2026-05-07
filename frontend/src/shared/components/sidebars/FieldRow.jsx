@@ -1,3 +1,8 @@
+/**
+  *
+  * @author s235257
+ */
+
 import "@/shared/components/styles/FormFields.css";
 
 export default function FieldRow({ label, children }) {

@@ -5,6 +5,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
+/**
+ *
+ * @author s235257
+ */
 public final class OptimaLookup {
 
     private OptimaLookup() {}

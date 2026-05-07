@@ -1,7 +1,8 @@
-/*
- * puzzleMasks stores the mask image for each puzzle piece shape
- * and returns the CSS mask styles needed to render that shape in the UI.
+/**
+  *
+  * @author s235257
  */
+
 import _0000 from "@/assets/puzzlePNG/0000.png";
 
 import _1000 from "@/assets/puzzlePNG/3flat/1000.png";

@@ -13,16 +13,8 @@ import java.util.Map;
 import java.util.Random;
 
 /**
- * Temperature-based selection rule.
- * For the classical single-solution case, where mu=1, there is one parent
- * and one child, this behaves exactly like Simulated Annealing / Metropolis:
- * improvements are always accepted, while worse moves are accepted with
- * probability exp((f(candidate)-f(current))/T).
- * For population-based configurations, this rule behaves as an annealed
- * (mu+lambda)-style survivor selection rule. It selects mu survivors from the
- * combined parent-child pool using temperature-dependent fitness weights.
- * This is not classical simulated annealing, but an annealing-inspired
- * population selection mechanism.
+ *
+ * @author s230632
  */
 @Component
 @Scope("prototype")

@@ -1,6 +1,6 @@
 /**
- * Layout and orchestration component for run and runtime-study results.
- * Wires execution state, playback controls, sidebars, and content.
+  *
+  * @author s235257 & s230632
  */
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";

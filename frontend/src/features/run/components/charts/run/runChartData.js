@@ -1,6 +1,6 @@
 /**
- * Pure helpers for RunChart observer selection, phase ranges, status labels,
- * and incremental chart-point construction.
+  *
+  * @author s235257 & s230632
  */
 
 export const HYPERCUBE_KEY = "__hypercube__";

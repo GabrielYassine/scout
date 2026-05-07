@@ -6,9 +6,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Base contract for all pluggable Scout components.
  *
- * <p>Components are self-describing and optionally publish shared-state variables.
+ * @author s235257 & s230632
  */
 public interface ScoutComponent {
     String id();

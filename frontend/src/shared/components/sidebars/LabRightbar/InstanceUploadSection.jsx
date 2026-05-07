@@ -1,7 +1,8 @@
-/*
- * InstanceUploadSection renders the controls for importing and exporting
- * TSP/VRP instance files and displays related status/errors.
+/**
+  *
+  * @author s235257
  */
+
 export default function InstanceUploadSection({
   fileInputRef,
   uploading,

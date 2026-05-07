@@ -1,7 +1,8 @@
-/*
- * ParamField displays one configurable parameter field
- * and chooses the correct input type from the field definition.
+/**
+  *
+  * @author s235257 & s230632
  */
+
 import FieldRow from "./FieldRow.jsx";
 
 export default function ParamField({ def, value, onValueChange, disabled }) {

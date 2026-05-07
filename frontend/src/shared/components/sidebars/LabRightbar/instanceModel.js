@@ -1,7 +1,6 @@
-/*
- * instanceModel contains constants and helper functions for TSP/VRP instances.
- * It creates default instances, updates metadata for edited imports,
- * converts VRP data into UI nodes, and computes the next node id.
+/**
+  *
+  * @author s235257
  */
 
 const CUSTOM_INSTANCE_NAME = "Custom Instance";

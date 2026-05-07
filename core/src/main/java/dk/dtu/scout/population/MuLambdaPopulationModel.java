@@ -12,6 +12,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+
+/**
+ *
+ * @param <S>
+ * @author s230632 & s235257
+ */
 @Component
 @Scope("prototype")
 public class MuLambdaPopulationModel<S> implements PopulationModel<S> {

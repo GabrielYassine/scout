@@ -1,7 +1,8 @@
-/*
- * useSessionStorageState stores a React state value in sessionStorage
- * so it persists across page reloads within the same browser session.
+/**
+  *
+  * @author s235257
  */
+
 import { useEffect, useState } from "react";
 
 export function useSessionStorageState(key, initialValue) {

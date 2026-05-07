@@ -13,6 +13,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ *
+ * @author s235257
+ */
+
 @Component
 @Scope("prototype")
 public class FitnessPhaseObserver<S> implements Observer<S> {

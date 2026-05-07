@@ -1,4 +1,8 @@
-// Shared selector configuration and rule helpers.
+/**
+  *
+  * @author s235257 & s230632
+ */
+
 export const COMPONENT_TYPES = [
   { key: "searchSpace", label: "Search Space", catalogKey: "searchSpaces" },
   { key: "problem", label: "Problem", catalogKey: "problems" },

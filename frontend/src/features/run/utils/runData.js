@@ -1,5 +1,6 @@
 /**
- * Pure helpers for normalizing backend run data and deriving chart playback lengths.
+  *
+  * @author s235257 & s230632
  */
 
 function normalizeSeriesValues(value) {

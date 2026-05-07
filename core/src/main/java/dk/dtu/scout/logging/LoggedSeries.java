@@ -2,6 +2,11 @@ package dk.dtu.scout.logging;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * A series of logged values, with a specified mode determining how values are stored.
+ * @param <T>
+ * @author s235257 & Ahmed
+ */
 public class LoggedSeries<T> {
     private final SeriesMode mode;
     private final List<T> values = new ArrayList<>();

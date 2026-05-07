@@ -26,8 +26,8 @@ import java.util.concurrent.CancellationException;
 import java.util.function.Supplier;
 
 /**
- * Orchestrates a full optimization run by coordinating population model, stop conditions,
- * observers, and shared state updates.
+ *
+ * @author s235257 & s230632
  */
 public class SimulationRunner {
 

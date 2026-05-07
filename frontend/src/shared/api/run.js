@@ -1,6 +1,6 @@
 /**
- * Small API wrapper for preparing runs/runtime studies.
- * Keeps fetch/error parsing consistent across pages.
+  *
+  * @author s235257
  */
 
 const parseErrorMessage = async (res, fallback) => {

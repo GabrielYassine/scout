@@ -1,6 +1,8 @@
-/*
- * useCatalog fetches the catalog and exposes data, loading, and error state.
+/**
+  *
+  * @author s235257
  */
+
 import { useAsyncResource } from "./useAsyncResource.js";
 import { getCatalog } from "@/shared/api/catalog.js";
 

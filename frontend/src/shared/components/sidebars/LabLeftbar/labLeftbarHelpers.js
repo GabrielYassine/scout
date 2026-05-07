@@ -1,7 +1,6 @@
-/*
- * Helper functions for LabLeftbar.
- * They handle parameter parsing, catalog lookups, and validation
- * for whether the current configuration is ready to run.
+/**
+  *
+  * @author s235257 & s230632
  */
 
 export function parseValue(type, raw) {

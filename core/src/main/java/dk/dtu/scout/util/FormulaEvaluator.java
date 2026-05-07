@@ -5,6 +5,10 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 
+/**
+ *
+ * @author s230632
+ */
 public final class FormulaEvaluator {
 
     private FormulaEvaluator() {}

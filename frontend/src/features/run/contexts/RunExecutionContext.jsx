@@ -1,7 +1,6 @@
 /**
- * Owns run/runtime-study execution state above the routed pages.
- * This provider is intended to stay mounted while the user navigates around the app.
- * That allows an active websocket execution to continue even if RunPage unmounts.
+  *
+  * @author s235257
  */
 import { createContext, useEffect, useMemo, useState } from "react";
 

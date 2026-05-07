@@ -1,6 +1,8 @@
-/*
- * API helper for fetching the lab catalog.
+/**
+  *
+  * @author s235257
  */
+
 import { fetchJson } from "./http.js";
 
 export function getCatalog() {

@@ -1,6 +1,6 @@
 /**
- * Pure helpers for preparing route visualization data.
- * Keeps RouteVisualization focused on rendering and interaction state.
+  *
+  * @author s235257
  */
 
 const toInt = (value) => Math.round(Number(value) || 0);

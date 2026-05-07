@@ -1,7 +1,8 @@
 /**
- * Optional statistics panel for the currently visible line-chart window.
- * Computes statistics through the backend stats endpoint when the user requests it.
+  *
+  * @author s235257
  */
+
 import { useCallback, useState } from "react";
 import "@/features/run/styles/LineCharts.css";
 

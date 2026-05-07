@@ -1,5 +1,6 @@
 /**
- * Shared websocket helpers used by run and runtime-study hooks.
+  *
+  * @author s235257 & s230632
  */
 export function createWebSocketUrl() {
   const protocol = window.location.protocol === "https:" ? "wss" : "ws";
