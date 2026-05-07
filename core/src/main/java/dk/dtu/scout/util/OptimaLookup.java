@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.Properties;
 
 /**
- *
+ * Utility class for loading known optimal values for problem instances from resource files.
  * @author s235257
  */
 public final class OptimaLookup {

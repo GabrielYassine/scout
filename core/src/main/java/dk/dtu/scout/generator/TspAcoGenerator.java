@@ -15,7 +15,10 @@ import java.util.Map;
 import java.util.Random;
 
 /**
- *
+ * Ant colony optimization generator for TSP that constructs tours using bounded edge pheromones.
+ * Provides parameters for evaporation rate, reinforcement rate, pheromone influence (alpha), heuristic influence (beta),
+ * minimum and maximum pheromone levels, reinforcement mode (best-so-far, iteration-best, or all),
+ * and whether to accept equal fitness as best-so-far.
  * @author s235257
  */
 @Component

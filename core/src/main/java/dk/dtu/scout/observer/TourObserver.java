@@ -20,7 +20,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- *
+ * Observer that tracks the current TSP/VRP tour for visualization purposes.
+ * It supports both TSP and VRP problems by mapping their respective solution representations to a common format suitable for visualization.
+ * For TSP, it expects a single route represented as an array of city indices, while for VRP,
+ * it handles multiple routes represented as a list of lists of customer indices.
+ * The observer also has an optional feature to log the pheromone matrix as a heatmap if the underlying algorithm uses pheromones.
  * @author s235257
  */
 @Component

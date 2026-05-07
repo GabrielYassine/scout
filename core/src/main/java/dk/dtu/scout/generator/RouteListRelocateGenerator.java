@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Random;
 
 /**
- *
+ * Generator that relocates a single customer from one position to another within the same route or across routes.
  * @author s235257
  */
 @Component

@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Random;
 
 /**
- *
+ * Selection rule for (mu,lambda) evolution strategy. Selects the best mu solutions from the children only.
  * @author s235257
  */
 @Component

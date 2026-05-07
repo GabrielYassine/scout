@@ -1,7 +1,7 @@
 package dk.dtu.scout.util;
 
 /**
- *
+ * Utility class for distance calculations.
  * @author s235257
  */
 public final class DistanceUtils {

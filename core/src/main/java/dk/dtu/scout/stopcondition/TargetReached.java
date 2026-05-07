@@ -12,7 +12,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- *
+ * Stop condition that checks if the best fitness has reached or exceeded a specified target value.
+ * For TSP/VRP, the target can be interpreted as a distance.
  * @author s235257
  */
 @Component

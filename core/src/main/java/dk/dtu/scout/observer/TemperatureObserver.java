@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 /**
- * Tracks the current temperature.
+ * Observer that tracks the current temperature.
  * @author s235257
  */
 @Component

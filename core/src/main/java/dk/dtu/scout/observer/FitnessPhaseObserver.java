@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- *
+ * Observer that classifies fitness phases in completed non-overlapping blocks of fitness values.
  * @author s235257
  */
 

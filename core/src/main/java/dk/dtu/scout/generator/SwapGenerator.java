@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Random;
 
 /**
- *
+ * Generator that randomly swaps two elements in a permutation.
  * @author s235257
  */
 @Component
