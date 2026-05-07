@@ -1,6 +1,6 @@
 /**
-  *
-  * @author s235257
+ * Hook to access run execution context state.
+ * @author s235257
  */
 import { useContext } from "react";
 

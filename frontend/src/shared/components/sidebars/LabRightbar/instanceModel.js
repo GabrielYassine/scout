@@ -1,6 +1,6 @@
 /**
-  *
-  * @author s235257
+ * Model helpers for TSP/VRP instance metadata.
+ * @author s235257
  */
 
 const CUSTOM_INSTANCE_NAME = "Custom Instance";

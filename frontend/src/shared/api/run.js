@@ -1,6 +1,6 @@
 /**
-  *
-  * @author s235257
+ * Run preparation API helper.
+ * @author s235257
  */
 
 const parseErrorMessage = async (res, fallback) => {

@@ -1,6 +1,6 @@
 /**
-  *
-  * @author s235257
+ * Catalog API client helpers.
+ * @author s235257
  */
 
 import { fetchJson } from "./http.js";

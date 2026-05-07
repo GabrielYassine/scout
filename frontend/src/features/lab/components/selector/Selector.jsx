@@ -1,5 +1,6 @@
 /**
-  *
+  * Selector component for displaying and selecting puzzle pieces.
+  * It provides a tabbed interface to switch between different categories of pieces.
   * @author s235257 & s230632
  */
 

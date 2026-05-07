@@ -1,6 +1,6 @@
 /**
-  *
-  * @author s235257
+ * Controls for selecting chart observers and axes.
+ * @author s235257
  */
 import { useState, memo } from "react";
 

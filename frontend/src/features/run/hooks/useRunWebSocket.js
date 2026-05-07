@@ -1,6 +1,6 @@
 /**
-  *
-  * @author s235257 & s230632
+ * WebSocket hook for streaming run progress updates.
+ * @author s235257 & s230632
  */
 import { useEffect, useRef } from "react";
 import { Client } from "@stomp/stompjs";

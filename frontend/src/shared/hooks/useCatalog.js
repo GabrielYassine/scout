@@ -1,6 +1,6 @@
 /**
-  *
-  * @author s235257
+ * React hook to fetch catalog data.
+ * @author s235257
  */
 
 import { useAsyncResource } from "./useAsyncResource.js";

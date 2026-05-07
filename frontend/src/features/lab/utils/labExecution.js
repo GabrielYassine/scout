@@ -1,5 +1,7 @@
 /**
-  *
+  * Utility functions for preparing and validating data before starting a runtime study or a standard run in the lab.
+  * These functions handle tasks such as parsing user input
+  * checking for required problem instances, and building the request payloads for the backend API.
   * @author s235257 & s230632
  */
 

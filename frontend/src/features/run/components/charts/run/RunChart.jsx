@@ -1,6 +1,6 @@
 /**
-  *
-  * @author s235257 & s230632
+ * Render a run chart panel with observer selection.
+ * @author s235257 & s230632
  */
 
 import { useState, useMemo, memo, useCallback, useEffect, useRef } from "react";

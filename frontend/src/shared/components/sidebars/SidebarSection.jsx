@@ -1,6 +1,6 @@
 /**
-  *
-  * @author s235257
+ * Collapsible sidebar section wrapper component.
+ * @author s235257
  */
 
 import "@/shared/components/styles/SidebarSections.css";

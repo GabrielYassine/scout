@@ -1,6 +1,6 @@
 /**
-  *
-  * @author s235257
+ * Instance import/export API helpers.
+ * @author s235257
  */
 
 export async function importInstanceFile({ fileName, content }) {

@@ -1,5 +1,6 @@
 /**
-  *
+  * Utility functions for managing the session id in sessionStorage.
+  * This allows the lab feature to persist the session id across page reloads within the same browser tab.
   * @author s235257
  */
 

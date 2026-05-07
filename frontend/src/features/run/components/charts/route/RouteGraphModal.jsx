@@ -1,6 +1,6 @@
 /**
-  *
-  * @author s235257
+ * Modal editor for route graph cities and depots.
+ * @author s235257
  */
 
 import { useEffect, useRef, useState } from "react";

@@ -1,6 +1,6 @@
 /**
-  *
-  * @author s235257 & s230632
+ * Left sidebar for configuring runs and puzzle pieces.
+ * @author s235257 & s230632
  */
 
 import { useMemo, useState } from "react";

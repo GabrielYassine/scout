@@ -1,6 +1,6 @@
 /**
-  *
-  * @author s235257
+ * Interactive TSP/VRP route visualization component.
+ * @author s235257
  */
 
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";

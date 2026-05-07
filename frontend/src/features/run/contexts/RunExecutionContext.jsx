@@ -1,6 +1,6 @@
 /**
-  *
-  * @author s235257
+ * Run execution context provider and state management.
+ * @author s235257
  */
 import { createContext, useEffect, useMemo, useState } from "react";
 

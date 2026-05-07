@@ -1,6 +1,6 @@
 /**
-  *
-  * @author s235257
+ * Generate puzzle edge keys and render transforms.
+ * @author s235257
  */
 
 /**

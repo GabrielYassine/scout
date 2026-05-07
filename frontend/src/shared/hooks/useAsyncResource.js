@@ -1,6 +1,7 @@
 /**
-  *
-  * @author s235257 & s230632
+ * React hook for async resource loading with state.
+ * Used to manage loading, error, and data states for asynchronous operations in React components.
+ * @author s235257 & s230632
  */
 
 import { useEffect, useRef, useState } from "react";

@@ -1,6 +1,6 @@
 /**
-  *
-  * @author s235257
+ * Form row wrapper for label and field content.
+ * @author s235257
  */
 
 import "@/shared/components/styles/FormFields.css";

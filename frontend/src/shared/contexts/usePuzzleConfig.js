@@ -1,6 +1,6 @@
 /**
-  *
-  * @author s235257 & s230632
+ * React hook to access puzzle configuration context.
+ * @author s235257 & s230632
  */
 
 import { useContext } from "react";

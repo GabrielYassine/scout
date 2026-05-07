@@ -1,6 +1,6 @@
 /**
-  *
-  * @author s235257 & s230632
+ * Helpers for lab leftbar data parsing and lookups.
+ * @author s235257 & s230632
  */
 
 export function parseValue(type, raw) {
@@ -39,4 +39,3 @@ export function countPlacedPieces(puzzleConfig) {
     return sum + (Array.isArray(group) ? group.length : 0);
   }, 0);
 }
-

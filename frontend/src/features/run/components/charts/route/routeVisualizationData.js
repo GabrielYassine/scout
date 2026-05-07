@@ -1,6 +1,6 @@
 /**
-  *
-  * @author s235257
+ * Helpers for route visualization data shaping.
+ * @author s235257
  */
 
 const toInt = (value) => Math.round(Number(value) || 0);

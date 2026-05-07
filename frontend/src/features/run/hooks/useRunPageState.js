@@ -1,6 +1,6 @@
 /**
-  *
-  * @author s235257 & s230632
+ * Hook for restoring and managing run page state.
+ * @author s235257 & s230632
  */
 
 import { useMemo, useState } from "react";

@@ -1,6 +1,6 @@
 /**
-  *
-  * @author s235257 & s230632
+ * Run page controls for playback and run selection.
+ * @author s235257 & s230632
  */
 import "@/features/run/styles/RunControls.css";
 

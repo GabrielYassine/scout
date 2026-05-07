@@ -1,6 +1,6 @@
 /**
-  *
-  * @author s235257
+ * Top navigation bar for main app routes.
+ * @author s235257
  */
 
 import { NavLink } from "react-router-dom";

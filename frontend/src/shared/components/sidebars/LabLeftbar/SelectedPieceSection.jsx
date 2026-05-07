@@ -1,6 +1,6 @@
 /**
-  *
-  * @author s235257 & s230632
+ * Section for configuring placed puzzle pieces.
+ * @author s235257 & s230632
  */
 
 import SidebarSection from "../SidebarSection.jsx";

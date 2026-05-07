@@ -1,6 +1,6 @@
 /**
-  *
-  * @author s235257 & s230632
+ * Merge streamed run progress updates into batch state.
+ * @author s235257 & s230632
  */
 export function createEmptyBatch(runId = null) {
   return {

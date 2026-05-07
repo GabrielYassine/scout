@@ -1,6 +1,6 @@
 /**
-  *
-  * @author s235257
+ * Stats panel for line chart zoom windows.
+ * @author s235257
  */
 
 import { useCallback, useState } from "react";

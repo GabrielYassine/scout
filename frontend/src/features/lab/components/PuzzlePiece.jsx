@@ -1,5 +1,10 @@
 /**
-  *
+  * PuzzlePiece component represents an individual piece in the puzzle interface.
+  It can be rendered in two modes: "selector" for pieces that are available to be dragged and placed,
+  and "placed" for pieces that have already been placed on the board.
+  The component uses the useDraggable hook from dnd-kit to enable drag-and-drop functionality,
+  and it applies different styles and behaviors based on its state (e.g., whether it's disabled or currently being dragged).
+  It also handles mouse events to trigger hover effects and display disabled reasons when applicable.
   * @author s235257
  */
 

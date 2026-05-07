@@ -1,5 +1,6 @@
 /**
-  *
+  * This component renders the main interface for managing run configurations in the lab feature.
+  * It includes a tabbed interface for different configurations and a shared drop area for placing puzzle pieces.
   * @author s235257
  */
 

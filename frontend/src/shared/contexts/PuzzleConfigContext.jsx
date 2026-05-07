@@ -1,6 +1,6 @@
 /**
-  *
-  * @author s235257 & s230632
+ * Puzzle configuration context and provider state.
+ * @author s235257 & s230632
  */
 
 import { createContext, useMemo, useState } from "react";

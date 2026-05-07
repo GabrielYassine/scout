@@ -1,6 +1,6 @@
 /**
-  *
-  * @author s235257 & s230632
+ * Render a parameter input based on a definition.
+ * @author s235257 & s230632
  */
 
 import FieldRow from "./FieldRow.jsx";

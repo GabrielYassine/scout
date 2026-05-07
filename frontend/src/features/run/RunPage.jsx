@@ -1,6 +1,6 @@
 /**
-  *
-  * @author s235257 & s230632
+ * Run page layout with controls and live charts.
+ * @author s235257 & s230632
  */
 import { useMemo, useState } from "react";
 

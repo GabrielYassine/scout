@@ -1,6 +1,6 @@
 /**
-  *
-  * @author s235257 & s230632
+ * Global run settings section for lab sidebar.
+ * @author s235257 & s230632
  */
  
 import SidebarSection from "../SidebarSection.jsx";

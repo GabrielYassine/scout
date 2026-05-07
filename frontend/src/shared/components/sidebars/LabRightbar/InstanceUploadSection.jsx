@@ -1,6 +1,6 @@
 /**
-  *
-  * @author s235257
+ * Upload/export controls for instance files.
+ * @author s235257
  */
 
 export default function InstanceUploadSection({

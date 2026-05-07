@@ -1,6 +1,6 @@
 /**
-  *
-  * @author s235257 & s230632
+ * Header for run charts with problem and instance info, status, and runtime.
+ * @author s235257 & s230632
  */
 
 import "@/features/run/styles/RunChartHeader.css";

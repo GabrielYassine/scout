@@ -1,6 +1,6 @@
 /**
-  *
-  * @author s235257 & s230632
+ * Resolve persisted run page state from navigation and saved data.
+ * @author s235257 & s230632
  */
 
 export function resolveRunPageState(locationState, savedRun) {

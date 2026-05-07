@@ -1,6 +1,6 @@
 /**
-  *
-  * @author s235257 & s230632
+ * Helpers for puzzle config defaults, normalization, and transformation between different representations.
+ * @author s235257 & s230632
  */
 
 import { generatePuzzleKey } from "@/shared/util/puzzleGenerator.js";

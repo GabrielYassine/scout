@@ -1,6 +1,6 @@
 /**
-  *
-  * @author s235257 & s230632
+ * Right sidebar for instance import/export and editing.
+ * @author s235257 & s230632
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";

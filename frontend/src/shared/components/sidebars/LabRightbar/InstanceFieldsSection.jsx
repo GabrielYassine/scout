@@ -1,6 +1,6 @@
 /**
-  *
-  * @author s235257
+ * Display and edit instance metadata fields for TSP and VRP instances.
+ * @author s235257
  */
 
 import FieldRow from "../FieldRow.jsx";

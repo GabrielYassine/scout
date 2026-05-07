@@ -1,6 +1,6 @@
 /**
-  *
-  * @author s235257 & s230632
+ * Normalize run data and derive chart-friendly structures.
+ * @author s235257 & s230632
  */
 
 function normalizeSeriesValues(value) {

@@ -1,6 +1,6 @@
 /**
-  *
-  * @author s235257
+ * Helpers for instance view models and export payloads.
+ * @author s235257
  */
 
 import { buildVrpNodes, CUSTOM_INSTANCE_NAME, EDGE_WEIGHT_TYPE, } from "./instanceModel.js";

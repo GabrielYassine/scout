@@ -1,6 +1,7 @@
 /**
-  *
-  * @author s235257
+ * Puzzle mask image map and CSS mask style helper.
+ * The keys are 4-digit strings where each digit represents what the face type is.
+ * @author s235257
  */
 
 import _0000 from "@/assets/puzzlePNG/0000.png";

@@ -1,6 +1,7 @@
 /**
-  *
-  * @author s235257
+ * React hook for sessionStorage-backed state.
+ * This is like useState, but the value is persisted in sessionStorage and shared across tabs.
+ * @author s235257
  */
 
 import { useEffect, useState } from "react";

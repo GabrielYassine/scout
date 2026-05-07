@@ -1,6 +1,6 @@
 /**
-  *
-  * @author s235257 & s230632
+ * Selector rules for lab puzzle piece availability.
+ * @author s235257 & s230632
  */
 
 export const COMPONENT_TYPES = [

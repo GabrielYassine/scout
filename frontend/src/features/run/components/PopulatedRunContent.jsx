@@ -1,6 +1,6 @@
 /**
-  *
-  * @author s235257 & s230632
+ * Render run charts for runs or runtime studies.
+ * @author s235257 & s230632
  */
 import RunChart from "@/features/run/components/charts/run/RunChart.jsx";
 import RuntimeStudyChart from "@/features/run/components/charts/study/RuntimeStudyChart.jsx";

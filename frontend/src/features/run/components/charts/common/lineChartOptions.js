@@ -1,6 +1,6 @@
 /**
-  *
-  * @author s235257
+ * ECharts option builders for line charts with optional dual y-axes.
+ * @author s235257
  */
 
 const LEFT_AXIS_COLOR = "#1d4ed8";

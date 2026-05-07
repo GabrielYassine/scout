@@ -1,6 +1,6 @@
 /**
-  *
-  * @author s235257 & s230632
+ * Helpers for run chart series and observer data.
+ * @author s235257 & s230632
  */
 
 export const HYPERCUBE_KEY = "__hypercube__";
