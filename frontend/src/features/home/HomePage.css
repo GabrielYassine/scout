@@ -1,7 +1,7 @@
 .home-page {
   min-height: calc(100vh - var(--navbar-height));
   width: 100%;
-  padding: 5rem;
+  padding: 3rem 5rem;
   display: flex;
   flex-direction: column;
   overflow: visible;
@@ -135,8 +135,9 @@
 }
 
 .guide-title {
-  font-size: 2.5rem;
+  font-size: 3.5rem;
   font-weight: bold;
+  margin-bottom: 2rem;
 }
 
 .guide-layout {

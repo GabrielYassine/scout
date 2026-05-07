@@ -14,6 +14,20 @@ import { createWebSocketUrl, parseSocketMessage } from "@/features/run/utils/soc
 // But is a must since it will be too expensive otherwise.
 const FLUSH_INTERVAL_MS = 75;
 
+function progressStreamKey(packet) {
+  return [
+    packet.runId ?? "",
+    packet.runIndex ?? "",
+    packet.problemId ?? "",
+    packet.seed ?? "",
+  ].join(":");
+}
+
+function sequenceIdOf(packet) {
+  const sequenceId = Number(packet.sequenceId);
+  return Number.isFinite(sequenceId) ? sequenceId : 0;
+}
+
 export function useRunWebSocket({
   enabled,
   runId,
@@ -35,6 +49,7 @@ export function useRunWebSocket({
   const flushTimerRef = useRef(null);
   const latestBatchRef = useRef(null);
   const readyProgressQueueRef = useRef([]);
+  const latestSequenceByStreamRef = useRef(new Map());
 
   useEffect(() => {
     if (!enabled || !runId) return;
@@ -44,6 +59,7 @@ export function useRunWebSocket({
     startSentRef.current = false;
     latestBatchRef.current = null;
     readyProgressQueueRef.current = [];
+    latestSequenceByStreamRef.current = new Map();
 
     const client = new Client({
       brokerURL: createWebSocketUrl(),
@@ -64,6 +80,12 @@ export function useRunWebSocket({
       const queuedPackets = readyProgressQueueRef.current;
       readyProgressQueueRef.current = [];
 
+      queuedPackets.sort((a, b) => {
+        const streamCompare = progressStreamKey(a).localeCompare(progressStreamKey(b));
+        if (streamCompare !== 0) return streamCompare;
+        return sequenceIdOf(a) - sequenceIdOf(b);
+      });
+
       let nextBatch = latestBatchRef.current ?? null;
 
       // Merge all queued progress packets into one batch update. This avoids
@@ -74,6 +96,15 @@ export function useRunWebSocket({
           continue;
         }
 
+        const streamKey = progressStreamKey(packet);
+        const sequenceId = sequenceIdOf(packet);
+        const latestSequence = latestSequenceByStreamRef.current.get(streamKey) ?? 0;
+
+        if (sequenceId <= latestSequence) {
+          continue;
+        }
+
+        latestSequenceByStreamRef.current.set(streamKey, sequenceId);
         nextBatch = mergeProgress(nextBatch, packet);
       }
 
@@ -127,6 +158,7 @@ export function useRunWebSocket({
 
     const handleSocketMessage = (rawMessage) => {
       const message = parseSocketMessage(rawMessage);
+      if (!message) return;
 
       if (!message.runId) return;
       if (activeRunIdRef.current && message.runId !== activeRunIdRef.current) {
@@ -180,6 +212,7 @@ export function useRunWebSocket({
         // Clear run-local buffers so stale packets cannot affect a later run.
         readyProgressQueueRef.current = [];
         latestBatchRef.current = null;
+        latestSequenceByStreamRef.current = new Map();
         client.deactivate();
       } catch {
         // ignore cleanup errors

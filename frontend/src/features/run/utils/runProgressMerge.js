@@ -45,14 +45,22 @@ export function mergeList(previousList, operation = "APPEND", incomingValue) {
   }
 }
 
+function normalizeSeriesIncomingValue(value, operation) {
+  if (operation === "REPLACE_LAST" && Array.isArray(value)) {
+    return [value];
+  }
+
+  return value;
+}
+
 export function mergeSeries(existingSeries, seriesDelta, seriesMerge) {
   const nextSeries = { ...(existingSeries ?? {}) };
 
-  // Each observer series can define its own merge strategy.
-  // Normal series usually append, while latest-only visual series can replace.
+  // Normal series append all received values.
+  // Latest-only visual series replace their previous value, even when the value itself is an array.
   for (const [key, value] of Object.entries(seriesDelta ?? {})) {
     const operation = seriesMerge?.[key] ?? "APPEND";
-    const incomingValue = Array.isArray(value) ? [value] : value;
+    const incomingValue = normalizeSeriesIncomingValue(value, operation);
     nextSeries[key] = mergeList(nextSeries[key], operation, incomingValue);
   }
 

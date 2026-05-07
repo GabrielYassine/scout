@@ -47,7 +47,7 @@ export default function HomePage() {
       <hr className="rounded home-divider" />
 
       <div className="guide-section">
-        <h2 className="guide-title">How to use SCOUT</h2>
+        <div className="guide-title">How to use SCOUT</div>
         <div className="guide-layout">
           <aside className="guide-side guide-left"></aside>
 
