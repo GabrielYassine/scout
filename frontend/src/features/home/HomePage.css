@@ -4,30 +4,46 @@
   padding: 5rem;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: visible;
 }
 
+.home-divider {
+  width: 100%;
+  height: 1px;
+  border: none;
+  border-radius: var(--radius-sm);
+  margin: 4rem 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--color-border-highlight),
+    transparent
+  );
+}
+
+.highlight-text {
+  color: var(--color-border-highlight);
+}
+
+/* This is for title, subtitle and logo */
 .top-section {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(18rem, 0.8fr);
   align-items: center;
+}
+
+/* Left side is for title and subtitle and features list */
+.top-section-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
 }
 
 .title-container {
   display: flex;
   flex-direction: column;
-  width: 50%;
-}
-
-.logo-container {
-  width: 50%;
-  display: flex;
-  justify-content: center;
-}
-
-.home-logo {
-  width: 30rem;
-  height: auto;
-  flex-shrink: 0;
+  width: 100%;
+  gap: 1rem;
 }
 
 .home-title {
@@ -37,44 +53,85 @@
 
 .home-subtitle {
   font-size: 1.5rem;
-  color: var(--text-secondary);
 }
 
+/* This is for features section */
+
 .features-section {
-  max-width: 70rem;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-panel);
+  box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.4);
+  width: 80%;
+  padding: 1rem 2rem;
+  overflow: hidden;
+}
+
+.features-section::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 0.8rem;
+  background: var(--color-border-highlight);
 }
 
 .features-title {
   font-size: 2rem;
-  font-weight: bold;
+  font-weight: 800;
+  margin-bottom: 1rem;
 }
 
 .features-list {
-  display: flex;
-  flex-direction: column;
-  font-size: 1.25rem;
-  color: var(--text-secondary);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem 2rem;
+  padding-left: 1.25rem;
+}
+
+.features-list li {
+  line-height: 1.4;
 }
 
 .features-list li::marker {
-  color: var(--text-primary);
+  color: var(--color-border-highlight);
 }
 
-.home-divider {
-  width: 100%;
-  border: none;
-  border-radius: var(--radius-sm);
-}
+/* Right side is for logo */
 
-.features-section {
+.top-section-right {
   display: flex;
-  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-width: 0;
 }
+
+.logo-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.home-logo {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+/* This is for guide section */
 
 .guide-section {
   display: flex;
   flex-direction: column;
-  gap: 4rem;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
 }
 
 .guide-title {
@@ -82,53 +139,147 @@
   font-weight: bold;
 }
 
+.guide-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 4fr) minmax(12rem, 1fr);
+  width: 100%;
+  max-width: 100%;
+  align-items: start;
+  gap: 2rem;
+  min-width: 0;
+}
+
+.guide-side {
+  min-width: 0;
+}
+
+.guide-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4rem;
+  min-width: 0;
+  max-width: 100%;
+}
+
 .guide-block {
+  position: relative;
   display: flex;
   flex-direction: column;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-panel);
   padding: 3rem 5rem;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.4);
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
+
+.guide-block::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0.35rem;
+  height: 100%;
+  background: var(--color-border-highlight);
 }
 
 .guide-block-title {
   font-size: 3rem;
   font-weight: bold;
   margin-bottom: 2rem;
+  scroll-margin-top: calc(var(--navbar-height) + 2rem);
 }
 
 .guide-block-subtitle {
   font-size: 2rem;
-  color: var(--text-secondary);
+  color: var(--color-border-highlight);
   margin-top: 2rem;
   margin-bottom: 1rem;
-  font-weight: 500;
-}
-
-.guide-block-horizontal {
-  display: flex;
-  flex-direction: row;
-  gap: 20rem;
-  align-items: flex-start;
-  justify-content: flex-start;
-}
-
-.guide-block-horizontal .guide-block-content {
-  max-width: 50%;
+  font-weight: 700;
+  scroll-margin-top: calc(var(--navbar-height) + 2rem);
 }
 
 .guide-block-content {
   font-size: 1.2rem;
-  color: var(--text-secondary);
+  margin-bottom: 1rem;
 }
 
 .image-container {
   display: flex;
   justify-content: center;
+  width: 100%;
+  min-width: 0;
+  margin: 2rem 0;
 }
 
 .guide-image {
-  max-width: 60vw;
+  max-width: 100%;
   max-height: 50vh;
+  height: auto;
   display: block;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.35);
+}
+
+/* right side navigation */
+
+html {
+  scroll-behavior: smooth;
+}
+
+.guide-right {
+  position: sticky;
+  top: calc(var(--navbar-height) + 2rem);
+  align-self: start;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.guide-nav {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-panel);
+  padding: 1.25rem;
+  box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.4);
+}
+
+.guide-nav-title {
+  font-size: 1.1rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--color-border-highlight);
+}
+
+.guide-nav a {
+  text-decoration: none;
+  font-size: 0.95rem;
+  line-height: 1.3;
+  padding: 0.35rem 0.5rem;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+}
+
+.guide-nav-sub {
+  margin-left: 0.75rem;
+  padding-left: 0.9rem !important;
+  font-size: 0.85rem !important;
+  font-weight: 400 !important;
+  border-left: 2px solid var(--color-border);
+  opacity: 0.9;
+}
+
+.guide-nav a:hover {
+    color: var(--color-border-highlight);
+    background: var(--color-panel-hover);
 }
