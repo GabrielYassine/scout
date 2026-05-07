@@ -8,7 +8,7 @@ package dk.dtu.scout.backend.dto.request;
  * @param executionType either "run" or "runtimeStudy"
  * @param runRequest draft run request, required when executionType is "run"
  * @param runtimeStudyRequest draft runtime study request, required when executionType is "runtimeStudy"
- * @author s235257 & Ahmed
+ * @author s235257 & s230632
  */
 public record PrepareRunRequest(
     String sessionId,

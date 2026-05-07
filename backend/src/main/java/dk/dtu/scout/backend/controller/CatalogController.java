@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * REST endpoint that exposes available components and their parameters.
- * @author s235257 & Ahmed
+ * @author s235257 & s230632
  */
 @RestController
 @RequestMapping("/api")

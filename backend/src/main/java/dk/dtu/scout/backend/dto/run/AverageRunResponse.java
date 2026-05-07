@@ -7,6 +7,7 @@ import java.util.Map;
  * DTO for the response of the "average run" endpoint, which provides aggregated data across multiple runs.
  * @param evaluations the list of evaluation counts used as the x-axis.
  * @param series a map where each key is a series name and the value is the values for that series. Usually a list.
+ * @author s230632
  */
 public record AverageRunResponse(
     List<Integer> evaluations,

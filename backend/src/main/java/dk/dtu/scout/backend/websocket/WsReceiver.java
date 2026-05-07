@@ -18,7 +18,7 @@ import org.springframework.stereotype.Controller;
  * containing only the session id of a prepared backend execution.
  * The execution id itself comes from the websocket destination path, so the backend
  * does not trust a runId or studyId from the message body.
- * @author s235257 & Ahmed
+ * @author s235257 & s230632
  */
 @Controller
 public class WsReceiver {

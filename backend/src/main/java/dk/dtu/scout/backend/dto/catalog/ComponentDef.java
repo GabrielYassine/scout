@@ -10,7 +10,7 @@ import java.util.List;
  * @param description a longer description of the component's purpose and behavior
  * @param params the list of parameters that can be configured for this component, including their types and default values
  * @param supportedSearchSpaces the list of search space types that this component is compatible with, used for frontend compatibility checks
- * @author s235257 & Ahmed
+ * @author s235257 & s230632
  */
 public record ComponentDef(
     String kind,

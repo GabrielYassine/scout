@@ -11,7 +11,7 @@ import java.util.Map;
 
 /**
  * Validates run requests, that includes global settings, components, their parameters, and problem instances.
- * @author s235257 @ Ahmed
+ * @author s235257 @ s230632
  */
 @Service
 public class RunRequestValidator {

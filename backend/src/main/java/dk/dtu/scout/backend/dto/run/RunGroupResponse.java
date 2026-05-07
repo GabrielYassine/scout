@@ -4,7 +4,7 @@ import java.util.List;
 
 /**
  * DTO for a single runtime but multiple problems.
- * @author s235257 & Ahmed
+ * @author s235257 & s230632
  */
 public record RunGroupResponse(
     int runIndex,

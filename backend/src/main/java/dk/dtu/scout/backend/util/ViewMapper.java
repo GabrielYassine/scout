@@ -22,7 +22,7 @@ import java.util.Map;
  * This keeps DTO construction in one place, so controllers and services do not need
  * to know the exact response object structure.
  * The class only contains static mapping methods and should not be instantiated.
- * @author s235257 & Ahmed
+ * @author s235257 & s230632
  */
 public final class ViewMapper {
 

@@ -20,7 +20,7 @@ import java.util.List;
  * Provides the frontend catalog of available Scout components.
  * Spring injects all registered component beans by interface type, and this service
  * converts them into ComponentDef DTOs used by the frontend configuration UI.
- * @author s235257 & Ahmed
+ * @author s235257 & s230632
  */
 @Service
 public class CatalogService {

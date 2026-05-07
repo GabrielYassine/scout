@@ -15,7 +15,7 @@ import java.util.concurrent.ThreadPoolExecutor;
  * through AsyncExecutorProperties.
  * requestExecutor is used for higher-level request orchestration.
  * runTaskExecutor is used for executing individual algorithm runs in parallel.
- * @author Ahmed
+ * @author s230632
  */
 @Configuration
 @EnableAsync

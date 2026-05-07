@@ -12,7 +12,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 /**
  * Central exception handler for REST controllers.
  * Converts backend exceptions into consistent JSON error responses.
- * @author Ahmed
+ * @author s230632
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {

@@ -21,7 +21,7 @@ import java.util.Set;
 /**
  * Provides statistical analysis of completed run results.
  * Used for normal run summaries and runtime-study points.
- * @author Ahmed
+ * @author s230632
  */
 @Service
 public class RunStatisticsService {

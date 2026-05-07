@@ -9,7 +9,7 @@ import java.util.List;
  * @param mode how the frontend should treat the series, for example append-only or latest-only
  * @param values logged values for the series
  * @param <T> value type stored in the series
- * @author s235257 & Ahmed
+ * @author s235257 & s230632
  */
 public record SeriesResponse<T>(
     SeriesMode mode,

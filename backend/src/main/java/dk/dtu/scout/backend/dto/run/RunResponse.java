@@ -11,7 +11,7 @@ import java.util.Map;
  * @param series logged observer series
  * @param runtimeMs runtime in milliseconds
  * @param totalEvaluations total number of evaluations performed when the run ended
- * @author s235257 & Ahmed
+ * @author s235257 & s230632
  */
 public record RunResponse(
     String searchSpaceId,

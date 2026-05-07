@@ -10,7 +10,7 @@ import java.util.List;
  * @param xMin the minimum value for the x-axis
  * @param xMax the maximum value for the x-axis
  * @param points the data points in the series
- * @author s235257 & Ahmed
+ * @author s235257 & s230632
  */
 public record SeriesWindowStatsRequest(
     String seriesName,

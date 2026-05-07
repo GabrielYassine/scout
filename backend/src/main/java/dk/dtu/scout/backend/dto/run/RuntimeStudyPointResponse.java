@@ -8,7 +8,7 @@ import java.util.List;
  * @param meanEvaluationsToOptimum the mean number of evaluations to reach the optimum across all repetitions for this problem size
  * @param boxPlot a list of 5 values representing the box plot for the number of evaluations to optimum
  * across all repetitions for this problem size, in the order: [min, Q1, median, Q3, max]
- * @author Ahmed
+ * @author s230632
  */
 public record RuntimeStudyPointResponse(
     int problemSize,

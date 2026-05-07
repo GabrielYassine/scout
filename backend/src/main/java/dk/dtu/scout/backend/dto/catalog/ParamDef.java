@@ -10,7 +10,7 @@ import java.util.List;
  * @param defaultValue the default value for this parameter, used if the user does not specify one
  * @param min optional minimum value for numeric parameters, used for validation in the frontend
  * @param max optional maximum value for numeric parameters, used for validation in the frontend
- * @author s235257 & Ahmed
+ * @author s235257 & s230632
  */
 public record ParamDef(
     String key,

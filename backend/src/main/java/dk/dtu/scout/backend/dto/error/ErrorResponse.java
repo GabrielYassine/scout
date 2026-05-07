@@ -2,7 +2,7 @@ package dk.dtu.scout.backend.dto.error;
 
 /**
  * DTO for error responses sent to the frontend when an exception occurs.
- * @author Ahmed
+ * @author s230632
  */
 public record ErrorResponse(
     int status,

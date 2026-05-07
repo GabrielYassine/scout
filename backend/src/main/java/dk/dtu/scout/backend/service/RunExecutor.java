@@ -38,7 +38,7 @@ import java.util.function.Supplier;
  * RunOrchestratorService handles validation and run lifecycle management,
  * while this class focuses on executing the requested runs, collecting logs,
  * and sending WebSocket progress updates.
- * @author s235257 & Ahmed
+ * @author s235257 & s230632
  */
 @Service
 public class RunExecutor {

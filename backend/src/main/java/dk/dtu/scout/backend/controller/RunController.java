@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 /**
  * REST endpoint for preparing runs and runtime studies.
- * @author s235257 & Ahmed
+ * @author s235257 & s230632
  */
 @RestController
 @RequestMapping("/api")

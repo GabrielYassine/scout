@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 /**
  * Small wrapper around SimpMessagingTemplate for sending WebSocket messages.
  * Keeps topic construction in one place instead of repeating topic strings across services.
- * @author s235257 & Ahmed
+ * @author s235257 & s230632
  */
 @Service
 public class WsSender {

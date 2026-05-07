@@ -27,7 +27,7 @@ import java.util.Map;
  * @param status per-run status, such as ONGOING or FINISHED
  * @param runtimeMs runtime in milliseconds for a finished run/problem stream
  * @param summary final batch summary, only present for RUN_FINISHED
- * @author s235257 & Ahmed
+ * @author s235257 & s230632
  */
 public record RunWsPayload(
     String type,

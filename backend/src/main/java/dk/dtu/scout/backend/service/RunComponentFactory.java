@@ -23,7 +23,7 @@ import java.util.Map;
  * Run requests contain component ids and parameter maps. This factory resolves those ids
  * through ComponentRegistry instances, applies the provided parameters, and performs
  * compatibility checks that depend on the selected search space or problem.
- * @author s235257 & Ahmed
+ * @author s235257 & s230632
  */
 @Service
 public class RunComponentFactory {

@@ -9,7 +9,7 @@ import dk.dtu.scout.backend.dto.run.RuntimeStudyPointResponse;
  * @param studyId the ID of the runtime study
  * @param message human-readable status or error message
  * @param point runtime study data point, only present for progress updates
- * @author s235257 & Ahmed
+ * @author s235257 & s230632
  */
 public record RuntimeStudyWsPayload(
     String type,

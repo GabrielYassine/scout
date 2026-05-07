@@ -9,7 +9,7 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 /**
  * Configures STOMP over WebSocket for live run updates.
  * The frontend connects to /ws and subscribes to /topic destinations.
- * @author s235257 & Ahmed
+ * @author s235257 & s230632
  */
 @Configuration
 @EnableWebSocketMessageBroker

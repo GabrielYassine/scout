@@ -4,7 +4,7 @@ import java.util.List;
 
 /**
  * Response containing the available configurable SCOUT components.
- * @author s235257 & Ahmed
+ * @author s235257 & s230632
  */
 public record CatalogResponse(
     List<ComponentDef> searchSpaces,

@@ -6,7 +6,7 @@ import java.util.Map;
 /**
  * Request DTO for starting a runtime study.
  * Contains the selected components, their parameters, and execution settings.
- * @author Ahmed
+ * @author s230632
  */
 public record RuntimeStudyRequest(
     String studyId,

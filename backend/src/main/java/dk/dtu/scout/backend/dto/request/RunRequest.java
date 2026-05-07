@@ -6,7 +6,7 @@ import java.util.Map;
 /**
  * Request DTO for starting a normal run.
  * Contains the selected components, their parameters, and execution settings.
- * @author s235257 & Ahmed
+ * @author s235257 & s230632
  */
 public record RunRequest(
     String searchSpaceId,
