@@ -55,8 +55,10 @@
   --color-observer: #bf4f81;
 
   /* Buttons */
-    --green-500: #22c55e;
-    --green-700: #15803d;
-    --red-500: #ef4444;
-    --red-700: #b91c1c;
+  --green-500: #22c55e;
+  --green-700: #15803d;
+  --red-500: #ef4444;
+  --red-700: #b91c1c;
+  --yellow-500: #FFD700;
+  --yellow-700: #b89400;
 }

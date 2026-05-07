@@ -84,7 +84,7 @@
 .puzzle-piece-title--selector {
     font-size: var(--font-sm);
     height: 60%;
-    width: 50%;
+    width: 60%;
 }
 
 .puzzle-piece-title--placed {

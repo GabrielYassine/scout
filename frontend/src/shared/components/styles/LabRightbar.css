@@ -62,33 +62,11 @@
 .tsp-upload-section {
   display: flex;
   flex-direction: column;
+  gap: var(--spacing-sm);
 }
 
 .tsp-file-input {
   display: none;
-}
-
-.tsp-upload-btn {
-  padding: var(--spacing-sm);
-  border-radius: var(--radius-md);
-  background: var(--color-border-highlight);
-  cursor: pointer;
-  text-align: center;
-  font-weight: 600;
-  transition: all 0.2s;
-}
-
-.tsp-upload-btn:hover:not(.disabled) {
-  opacity: 0.9;
-}
-
-.tsp-upload-btn.disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.tsp-export-btn {
-  margin-top: var(--spacing-sm);
 }
 
 .tsp-file-hint {
@@ -112,22 +90,6 @@
 
 .tsp-instance-name strong {
   color: var(--color-border-highlight);
-}
-
-.view-graph-btn {
-  padding: var(--spacing-sm);
-  border-radius: var(--radius-md);
-  background: var(--color-border-highlight);
-  cursor: pointer;
-  text-align: center;
-  font-weight: 600;
-  transition: all 0.2s;
-  border: none;
-  color: inherit;
-}
-
-.view-graph-btn:hover {
-  opacity: 0.9;
 }
 
 .instance-fields {

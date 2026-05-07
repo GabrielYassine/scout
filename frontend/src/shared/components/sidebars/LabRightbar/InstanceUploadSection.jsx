@@ -26,13 +26,13 @@ export default function InstanceUploadSection({
 
       <label
         htmlFor="instance-file-upload"
-        className={`tsp-upload-btn ${uploading ? "disabled" : ""}`}
+        className="btn btn--yellow"
       >
         {uploading ? "Uploading..." : "Upload Instance File"}
       </label>
 
       <button
-        className={`tsp-upload-btn tsp-export-btn ${exporting ? "disabled" : ""}`}
+        className="btn btn--yellow"
         type="button"
         onClick={onExport}
         disabled={exporting}

@@ -43,9 +43,14 @@ button {
 .btn {
   width: 100%;
   padding: 0.6rem 1rem;
+
+  display: flex;
   align-items: center;
   justify-content: center;
+
+  font-size: var(--font-sm);
   font-weight: 600;
+  line-height: 1.2;
 
   border: none;
   border-bottom: 5px solid transparent;
@@ -53,7 +58,9 @@ button {
 
   cursor: pointer;
   user-select: none;
-  transition:transform 0.1s ease, filter 0.15s ease;
+  transition: transform 0.1s ease, filter 0.15s ease;
+
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
 }
 
 .btn:active {
@@ -77,6 +84,15 @@ button {
 
 .btn--red:hover {
   filter: brightness(1.2);
+}
+
+.btn--yellow {
+  background: var(--yellow-500);
+  border-bottom-color: var(--yellow-700);
+}
+
+.btn--yellow:hover {
+  filter: brightness(1.08);
 }
 
 hr.rounded {

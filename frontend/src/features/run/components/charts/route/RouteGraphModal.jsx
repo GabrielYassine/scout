@@ -3,6 +3,7 @@
   * @author s235257
  */
 
+import { useEffect, useRef, useState } from "react";
 import RouteVisualization from "./RouteVisualization.jsx";
 import { normalizeCities, sanitizeCity } from "./routeVisualizationData.js";
 import "@/features/run/styles/RouteGraphModal.css";
@@ -24,10 +25,29 @@ export default function RouteGraphModal({
   onRemoveCity,
   onDepotToggle,
 }) {
-  if (!isOpen) return null;
+  const scrollRef = useRef(null);
+  const [canScrollDown, setCanScrollDown] = useState(false);
 
   const cities = normalizeCities(nodes);
   const depotSignature = cities.map((city) => (city.isDepot ? "1" : "0")).join("");
+
+  const updateScrollIndicator = () => {
+    const element = scrollRef.current;
+    if (!element) return;
+
+    const hasMoreBelow =
+      element.scrollTop + element.clientHeight < element.scrollHeight - 2;
+
+    setCanScrollDown(hasMoreBelow);
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    requestAnimationFrame(updateScrollIndicator);
+  }, [isOpen, cities.length]);
+
+  if (!isOpen) return null;
 
   const handleCitiesChange = (updatedCities) => {
     onCitiesUpdate?.(updatedCities.map(sanitizeCity));
@@ -81,7 +101,11 @@ export default function RouteGraphModal({
                   <span className="city-col-action"></span>
                 </div>
 
-                <div className="cities-scroll">
+                <div
+                  ref={scrollRef}
+                  className="cities-scroll"
+                  onScroll={updateScrollIndicator}
+                >
                   {cities.map((city, index) => (
                     <div key={city.id} className="city-row">
                       <span className="city-col-id">{city.nodeId}</span>
@@ -136,11 +160,19 @@ export default function RouteGraphModal({
                   ))}
                 </div>
 
-                <button className="add-city-btn" onClick={() => onAddCity?.()}>
-                  + Add City
-                </button>
+                {canScrollDown && (
+                  <div className="cities-scroll-indicator" aria-hidden="true">
+                    ▼
+                  </div>
+                )}
               </div>
             </div>
+          </div>
+
+          <div className="tsp-modal-actions">
+            <button className="btn btn--yellow" onClick={() => onAddCity?.()}>
+              + Add City
+            </button>
           </div>
         </div>
       </div>

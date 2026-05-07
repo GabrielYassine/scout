@@ -364,7 +364,7 @@ const LabRightbar = ({
             onExport={handleExport}
           />
 
-          <button className="view-graph-btn" onClick={() => setIsModalOpen(true)}>
+          <button className="btn btn--yellow" onClick={() => setIsModalOpen(true)}>
             Edit Graph
           </button>
 
