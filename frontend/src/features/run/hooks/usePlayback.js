@@ -1,5 +1,5 @@
 /**
-  *
+  * Custom hook to manage playback of a run's chart. It controls the speed of the animation and how many points are currently visible in the chart.
   * @author s230632
  */
 
@@ -7,7 +7,6 @@ import { useEffect,  useRef,  useState } from "react";
 
 const PLAYBACK_TICK_MS = 30;
 const PLAYBACK_DIVISOR = 15;
-
 export function usePlayback({ length, initialSpeed = 1,  showAllImmediately = false, }) {
   const [playbackSpeed, setPlaybackSpeed] = useState(initialSpeed);
   // visibleCount controls how many points are currently shown in the chart.

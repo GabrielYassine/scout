@@ -1,5 +1,5 @@
 /**
-  *
+  * Custom hook to manage a websocket connection for live runtime study updates.
   * @author s230632
  */
 import { useEffect, useRef } from "react";
@@ -14,7 +14,7 @@ function sortStudyPoints(points) {
     (a, b) => Number(a.problemSize) - Number(b.problemSize)
   );
 }
-
+// Runtime studies report one aggregated point per problem size, so the points
 export function useRuntimeStudyWebSocket({
   enabled,
   studyId,

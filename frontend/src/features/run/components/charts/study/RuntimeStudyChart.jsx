@@ -1,5 +1,5 @@
 /**
-  *
+  * Component for visualizing runtime study data, including average evaluations to optimum and boxplot distributions.
   * @author s230632
  */
 import { useMemo, useState, memo } from "react";
@@ -12,7 +12,7 @@ import RunChartHeader from "../run/RunChartHeader.jsx";
 
 const VIEW_LINE = "line";
 const VIEW_BOXPLOT = "boxplot";
-
+// Maps study status to display label and CSS class for styling
 function getStudyStatusMeta(studyStatus) {
   const rawStatus = String(studyStatus ?? "").toUpperCase();
 
@@ -26,7 +26,7 @@ function getStudyStatusMeta(studyStatus) {
 
   return { label: "Running", className: "ongoing" };
 }
-
+// Main component for rendering the runtime study chart with options for line and boxplot views
 function RuntimeStudyChart({
   studyTitle = "Runtime Study",
   problemId = null,
@@ -35,7 +35,7 @@ function RuntimeStudyChart({
   visibleCount = null,
 }) {
   const [viewMode, setViewMode] = useState(VIEW_LINE);
-
+// Sorts the study points by problem size to ensure consistent chart rendering even if data arrives out of order
   const sortedPoints = useMemo(
     () =>
       [...points].sort(
@@ -43,7 +43,7 @@ function RuntimeStudyChart({
       ),
     [points]
   );
-
+// Determines which points to show based on visibleCount, defaulting to all if not a finite number
   const visiblePoints = useMemo(() => {
     if (!Number.isFinite(visibleCount) || visibleCount == null) {
       return sortedPoints;
@@ -51,7 +51,7 @@ function RuntimeStudyChart({
 
     return sortedPoints.slice(0, visibleCount);
   }, [sortedPoints, visibleCount]);
-
+// Prepares data for the line chart, ensuring only valid numeric points are included
   const linePoints = useMemo(
     () =>
       visiblePoints
@@ -62,7 +62,7 @@ function RuntimeStudyChart({
         .filter(([x, y]) => Number.isFinite(x) && Number.isFinite(y)),
     [visiblePoints]
   );
-
+// Prepares data for the boxplot chart, ensuring only valid points with proper boxplot arrays are included
   const boxPlotResponse = useMemo(() => {
     const validPoints = visiblePoints.filter(
       (point) =>

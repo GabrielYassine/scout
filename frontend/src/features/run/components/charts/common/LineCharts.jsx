@@ -1,5 +1,5 @@
 /**
-  *
+   * Reusable line chart component for run charts.
   * @author s230632
  */
 

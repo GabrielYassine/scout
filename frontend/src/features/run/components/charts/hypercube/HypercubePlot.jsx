@@ -1,5 +1,5 @@
 /**
-  *
+  * This component renders a 2D projection of the optimization trajectory in the
   * @author s230632
  */
 
@@ -34,7 +34,6 @@ function buildEyePaths(width, height, padding, gaussianScale, steps = 250) {
 
   return { leftD: toPath(left), rightD: toPath(right) };
 }
-
 function HypercubePlot({
   run,
   width = 520,

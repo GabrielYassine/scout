@@ -1,5 +1,6 @@
 /**
-  *
+  * Custom hook to manage run selection state and logic for a batch of runs.
+   * It derives available runs, the currently selected run, and handlers to change selection.
   * @author s230632
  */
 

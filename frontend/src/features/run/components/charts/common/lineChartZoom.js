@@ -1,5 +1,6 @@
 /**
-  *
+  * Functions for handling zoom ranges in line charts, including converting between
+  * data points and zoom events, and clamping zoom ranges to the available data.
   * @author s230632
  */
 
