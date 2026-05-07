@@ -1,23 +1,19 @@
-export const OneMaxSa = [
+export const LeadingOnesEa = [
   {
-    id: "sa-bitstring-onemax-runtime",
-    displayName: "Simulated Annealing on OneMax",
+    id: "ea-bitstring-leadingones-runtime",
+    displayName: "(mu+lambda) EA on LeadingOnes",
     runtimeStudyRequest: {
       searchSpaceId: "bitstring",
       searchSpaceParams: {},
 
-      problemId: "onemax",
+      problemId: "leadingones",
       problemParams: {},
 
-      generatorId: "single-bit-flip",
-      generatorParams: {},
+       generatorId: ["bit-flip"],
+       generatorParams: { flipProbability: "1/n" },
 
-      selectionRuleId: "annealed-selection",
-      selectionRuleParams: {
-        initialTemperature: 500.0,
-        coolingRate: 0.99,
-        minTemperature: 0.000001,
-      },
+        selectionRuleId: ["mu-plus-lambda"],
+        selectionRuleParams: {},
 
       parentSelectionRuleId: "random-parents",
       parentSelectionRuleParams: {},
@@ -32,7 +28,7 @@ export const OneMaxSa = [
       stopConditionParams: {},
 
       seed: 1,
-      problemSizes: [500, 1000, 1500, 2000, 2500],
+      problemSizes: [200, 400, 600, 800],
       repetitionsPerSize: 10,
     },
   },

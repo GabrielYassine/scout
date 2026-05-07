@@ -1,12 +1,12 @@
-export const OneMaxSa = [
+export const LeadingOnesSa = [
   {
-    id: "sa-bitstring-onemax-runtime",
-    displayName: "Simulated Annealing on OneMax",
+    id: "sa-bitstring-leadingones-runtime",
+    displayName: "Simulated Annealing on LeadingOnes",
     runtimeStudyRequest: {
       searchSpaceId: "bitstring",
       searchSpaceParams: {},
 
-      problemId: "onemax",
+      problemId: "leadingones",
       problemParams: {},
 
       generatorId: "single-bit-flip",
@@ -32,7 +32,7 @@ export const OneMaxSa = [
       stopConditionParams: {},
 
       seed: 1,
-      problemSizes: [500, 1000, 1500, 2000, 2500],
+      problemSizes: [200, 400, 600, 800],
       repetitionsPerSize: 10,
     },
   },

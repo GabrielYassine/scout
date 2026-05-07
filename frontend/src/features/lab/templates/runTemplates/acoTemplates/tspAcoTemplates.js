@@ -25,7 +25,7 @@ export const tspAcoTemplates = [
       parentSelectionRuleParams: {},
 
       populationModelId: ["mu-lambda"],
-      populationModelParams: { lambda: 3 },
+      populationModelParams: { lambda: 10 },
 
       stopConditionIds: ["max-iterations"],
       stopConditionParams: { maxIterations: 10000 },
