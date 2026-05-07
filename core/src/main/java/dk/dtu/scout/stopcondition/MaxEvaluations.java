@@ -9,40 +9,40 @@ import java.util.Map;
 
 @Component
 @Scope("prototype")
-public class MaxIterations<S> implements StopCondition<S> {
-    private int maxIterations = 10_000;
+public class MaxEvaluations<S> implements StopCondition<S> {
+    private int maxEvaluations = 10_000;
 
-    public MaxIterations() {}
+    public MaxEvaluations() {}
 
     @Override
     public String id() {
-        return "max-iterations";
+        return "max-evaluations";
     }
 
     @Override
     public String displayName() {
-        return "Max Iterations";
+        return "Max Evaluations";
     }
 
     @Override
     public String description() {
-        return "Stops the algorithm after a maximum number of iterations";
+        return "Stops the algorithm after a maximum number of fitness evaluations";
     }
 
     @Override
     public List<Parameter> params() {
-        return List.of(new Parameter("maxIterations", "Max iterations", "int", maxIterations, 1.0, null, null));
+        return List.of(new Parameter("maxEvaluations", "Max evaluations", "int", maxEvaluations, 1.0, null, null));
     }
 
     @Override
     public void configure(Map<String, Object> params) {
-        if (params.containsKey("maxIterations")) {
-            this.maxIterations = ((Number) params.get("maxIterations")).intValue();
+        if (params.containsKey("maxEvaluations")) {
+            this.maxEvaluations = ((Number) params.get("maxEvaluations")).intValue();
         }
     }
 
     @Override
     public boolean shouldStop(int iteration, int evaluations, double bestFitness, S bestSolution) {
-        return iteration >= maxIterations;
+        return evaluations >= maxEvaluations;
     }
 }

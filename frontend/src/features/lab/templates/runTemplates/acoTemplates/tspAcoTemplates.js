@@ -27,8 +27,8 @@ export const tspAcoTemplates = [
       populationModelId: ["mu-lambda"],
       populationModelParams: { lambda: 10 },
 
-      stopConditionIds: ["max-iterations"],
-      stopConditionParams: { maxIterations: 10000 },
+      stopConditionIds: ["max-evaluations"],
+      stopConditionParams: { maxEvaluations: 10000 },
 
       observerIds: ["tour"],
 

@@ -42,7 +42,7 @@ class CatalogIntegrationTest {
             .andExpect(jsonPath("$.selectionRules[*].id", hasItem("mu-plus-lambda")))
             .andExpect(jsonPath("$.populationModels[*].id", hasItem("mu-lambda")))
             .andExpect(jsonPath("$.parentSelectionRules[*].id", hasItem("elitist-parents")))
-            .andExpect(jsonPath("$.stopConditions[*].id", hasItem("max-iterations")))
+            .andExpect(jsonPath("$.stopConditions[*].id", hasItem("max-evaluations")))
             .andExpect(jsonPath("$.observers[*].id", hasItem("fitness")));
     }
 

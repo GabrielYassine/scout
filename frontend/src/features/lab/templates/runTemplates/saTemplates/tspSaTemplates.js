@@ -27,8 +27,8 @@ export const tspSaTemplates = [
       populationModelId: ["mu-lambda"],
       populationModelParams: { lambda: 1 },
 
-      stopConditionIds: ["max-iterations"],
-      stopConditionParams: { maxIterations: 10000 },
+      stopConditionIds: ["max-evaluations"],
+      stopConditionParams: { maxEvaluations: 10000 },
 
       observerIds: ["fitness", "fitness-phase", "acceptance-rate", "tour"],
 

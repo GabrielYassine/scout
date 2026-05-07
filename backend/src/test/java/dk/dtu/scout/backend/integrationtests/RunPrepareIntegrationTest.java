@@ -75,7 +75,7 @@ class RunPrepareIntegrationTest {
             assertEquals("bitstring", stored.searchSpaceId());
             assertEquals(List.of("onemax"), stored.problemIds());
             assertEquals("bit-flip", stored.generatorId());
-            assertEquals("max-iterations", stored.stopConditionIds().getFirst());
+            assertEquals("max-evaluations", stored.stopConditionIds().getFirst());
         }
 
         @Test
@@ -376,7 +376,7 @@ class RunPrepareIntegrationTest {
             Arguments.of("missing selection rule", invalidRuntimeStudyPayload("selectionRuleId", ""), "Selection rule must be specified"),
             Arguments.of("missing parent selection rule", invalidRuntimeStudyPayload("parentSelectionRuleId", ""), "Parent selection rule must be specified"),
             Arguments.of("empty stop condition", invalidRuntimeStudyPayload("stopConditionIds", List.of()), "Stop condition must contain 'optimum-reached' and cannot be empty"),
-            Arguments.of("missing optimum-reached stop condition", invalidRuntimeStudyPayload("stopConditionIds", List.of("max-iterations")), "Stop condition must contain 'optimum-reached' and cannot be empty"),
+            Arguments.of("missing optimum-reached stop condition", invalidRuntimeStudyPayload("stopConditionIds", List.of("max-evaluations")), "Stop condition must contain 'optimum-reached' and cannot be empty"),
             Arguments.of("empty problem sizes", invalidRuntimeStudyPayload("problemSizes", List.of()), "At least one problem size must be specified"),
             Arguments.of("null problem size", invalidRuntimeStudyPayload("problemSizes", problemSizesWithNull()), "All problem sizes must be positive"),
             Arguments.of("non-positive problem size", invalidRuntimeStudyPayload("problemSizes", List.of(5, 0)), "All problem sizes must be positive"),
@@ -481,8 +481,8 @@ class RunPrepareIntegrationTest {
         request.put("crossoverParams", null);
         request.put("observerIds", List.of("fitness"));
         request.put("observerParams", Map.of());
-        request.put("stopConditionIds", List.of("max-iterations"));
-        request.put("stopConditionParams", Map.of("maxIterations", 10));
+        request.put("stopConditionIds", List.of("max-evaluations"));
+        request.put("stopConditionParams", Map.of("maxEvaluations", 10));
         request.put("seed", 1234L);
         request.put("runTimes", 1);
         request.put("sessionId", null);

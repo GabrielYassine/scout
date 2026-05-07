@@ -21,8 +21,8 @@ export const bitstringEaTemplates = [
       populationModelId: ["mu-lambda"],
       populationModelParams: { mu: 1, lambda: 1 },
 
-      stopConditionIds: ["max-iterations", "optimum-reached"],
-      stopConditionParams: { maxIterations: 10000 },
+      stopConditionIds: ["max-evaluations", "optimum-reached"],
+      stopConditionParams: { maxEvaluations: 10000 },
 
       observerIds: ["fitness", "fitness-phase", "hypercube"],
 

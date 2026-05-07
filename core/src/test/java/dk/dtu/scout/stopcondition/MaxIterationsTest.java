@@ -6,44 +6,44 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class MaxIterationsTest {
+class MaxEvaluationsTest {
 
     @Test
     void shouldStop_isFalseBeforeConfiguredLimit() {
-        MaxIterations<Object> stopCondition = new MaxIterations<>();
+        MaxEvaluations<Object> stopCondition = new MaxEvaluations<>();
 
-        stopCondition.configure(Map.of("maxIterations", 5));
+        stopCondition.configure(Map.of("maxEvaluations", 5));
 
         assertFalse(stopCondition.shouldStop(0, 0, 0.0, null));
-        assertFalse(stopCondition.shouldStop(4, 0, 0.0, null));
+        assertFalse(stopCondition.shouldStop(0, 4, 0.0, null));
     }
 
     @Test
     void shouldStop_isTrueAtAndAfterConfiguredLimit() {
-        MaxIterations<Object> stopCondition = new MaxIterations<>();
+        MaxEvaluations<Object> stopCondition = new MaxEvaluations<>();
 
-        stopCondition.configure(Map.of("maxIterations", 5));
+        stopCondition.configure(Map.of("maxEvaluations", 5));
 
-        assertTrue(stopCondition.shouldStop(5, 0, 0.0, null));
-        assertTrue(stopCondition.shouldStop(6, 0, 0.0, null));
+        assertTrue(stopCondition.shouldStop(0, 5, 0.0, null));
+        assertTrue(stopCondition.shouldStop(0, 6, 0.0, null));
     }
 
     @Test
-    void configure_ignoresMissingMaxIterationsKey() {
-        MaxIterations<Object> stopCondition = new MaxIterations<>();
+    void configure_ignoresMissingMaxEvaluationsKey() {
+        MaxEvaluations<Object> stopCondition = new MaxEvaluations<>();
 
         stopCondition.configure(Map.of());
 
-        assertFalse(stopCondition.shouldStop(9_999, 0, 0.0, null));
-        assertTrue(stopCondition.shouldStop(10_000, 0, 0.0, null));
+        assertFalse(stopCondition.shouldStop(0, 9_999, 0.0, null));
+        assertTrue(stopCondition.shouldStop(0, 10_000, 0.0, null));
     }
 
     @Test
     void metadata_isStable() {
-        MaxIterations<Object> stopCondition = new MaxIterations<>();
+        MaxEvaluations<Object> stopCondition = new MaxEvaluations<>();
 
-        assertEquals("max-iterations", stopCondition.id());
-        assertEquals("Max Iterations", stopCondition.displayName());
+        assertEquals("max-evaluations", stopCondition.id());
+        assertEquals("Max Evaluations", stopCondition.displayName());
         assertFalse(stopCondition.description().isBlank());
         assertEquals(1, stopCondition.params().size());
     }

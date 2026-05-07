@@ -150,7 +150,7 @@ class RunLifecycleIntegrationTest {
             runRequest.put("parentSelectionRuleId", "random-parents");
             runRequest.put("parentSelectionRuleParams", Map.of());
             runRequest.put("observerIds", List.of("fitness", "tour"));
-            runRequest.put("stopConditionParams", Map.of("maxIterations", 3));
+            runRequest.put("stopConditionParams", Map.of("maxEvaluations", 3));
 
             PreparedExecution prepared = prepare(payload);
 
@@ -223,7 +223,7 @@ class RunLifecycleIntegrationTest {
             runRequest.put("parentSelectionRuleId", "random-parents");
             runRequest.put("parentSelectionRuleParams", Map.of());
             runRequest.put("observerIds", List.of("fitness"));
-            runRequest.put("stopConditionParams", Map.of("maxIterations", 3));
+            runRequest.put("stopConditionParams", Map.of("maxEvaluations", 3));
 
             PreparedExecution prepared = prepare(payload);
 
@@ -379,8 +379,8 @@ class RunLifecycleIntegrationTest {
         request.put("crossoverParams", null);
         request.put("observerIds", List.of("fitness"));
         request.put("observerParams", Map.of());
-        request.put("stopConditionIds", List.of("max-iterations"));
-        request.put("stopConditionParams", Map.of("maxIterations", 5));
+        request.put("stopConditionIds", List.of("max-evaluations"));
+        request.put("stopConditionParams", Map.of("maxEvaluations", 5));
         request.put("seed", 1234L);
         request.put("runTimes", 1);
         request.put("sessionId", null);

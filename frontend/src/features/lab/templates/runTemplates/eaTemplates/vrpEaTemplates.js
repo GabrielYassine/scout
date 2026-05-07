@@ -26,8 +26,8 @@ export const vrpEaTemplates = [
       populationModelId: ["mu-lambda"],
       populationModelParams: { mu: 1, lambda: 1 },
 
-      stopConditionIds: ["max-iterations"],
-      stopConditionParams: { maxIterations: 10000 },
+      stopConditionIds: ["max-evaluations"],
+      stopConditionParams: { maxEvaluations: 10000 },
 
       observerIds: ["tour"],
 

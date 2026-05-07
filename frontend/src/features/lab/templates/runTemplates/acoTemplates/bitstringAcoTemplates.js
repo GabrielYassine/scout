@@ -25,8 +25,8 @@ export const bitstringAcoTemplates = [
       populationModelId: ["mu-lambda"],
       populationModelParams: { lambda: 10 },
 
-      stopConditionIds: ["max-iterations", "optimum-reached"],
-      stopConditionParams: { maxIterations: 10000 },
+      stopConditionIds: ["max-evaluations", "optimum-reached"],
+      stopConditionParams: { maxEvaluations: 10000 },
 
       observerIds: ["fitness"],
 
