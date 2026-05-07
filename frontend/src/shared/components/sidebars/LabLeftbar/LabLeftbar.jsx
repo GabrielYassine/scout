@@ -151,18 +151,27 @@ export default function LabLeftbar({
       </div>
 
       <div className="ll-actions">
-        <button
-          className="btn btn--green"
-          type="button"
-          onClick={onRun}
-          disabled={ disabled}
-        >
-          Run
-        </button>
+        <div className={disabled ? "ll-button-wrapper disabled" : "ll-button-wrapper"}>
+          <button
+            className="btn btn--green"
+            type="button"
+            onClick={disabled ? undefined : onRun}
+            disabled={disabled}
+          >
+            Run
+          </button>
+        </div>
 
-        <button className="btn btn--red" type="button" onClick={onReset}>
-          Reset
-        </button>
+        <div className={disabled ? "ll-button-wrapper disabled" : "ll-button-wrapper"}>
+          <button
+            className="btn btn--red"
+            type="button"
+            onClick={disabled ? undefined : onReset}
+            disabled={disabled}
+          >
+            Reset
+          </button>
+        </div>
       </div>
 
       {showModeConfirm && (

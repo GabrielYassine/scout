@@ -56,6 +56,10 @@
   filter: invert(1);
 }
 
+.nav-icon--no-invert {
+  filter: none;
+}
+
 .nav-logo {
   width: 3rem;
   height: 3rem;

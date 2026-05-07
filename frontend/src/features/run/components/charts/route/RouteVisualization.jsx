@@ -80,8 +80,6 @@ export default function RouteVisualization({
 
     lastInitialKeyRef.current = initialCitiesKey;
 
-    // Refresh local editable city state when the backing run/instance data changes.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCities([...initialCities]);
   }, [initialCitiesKey, draggedCity, initialCities]);
 
@@ -149,11 +147,11 @@ export default function RouteVisualization({
       const baseY = dimensions.height - ((y - minY) * scale + offsetY);
 
       return {
-        x: baseX * view.zoom + view.panX,
-        y: baseY * view.zoom + view.panY,
+        x: baseX,
+        y: baseY,
       };
     },
-    [minX, minY, scale, offsetX, offsetY, dimensions.height, view]
+    [minX, minY, scale, offsetX, offsetY, dimensions.height]
   );
 
   const fromSVGCoords = useCallback(
@@ -392,7 +390,10 @@ export default function RouteVisualization({
 
     if (maxValue <= 0) return [];
 
+    const threshold = maxValue * 0.02;
+
     return rawEdges
+      .filter(({ value }) => value >= threshold)
       .map(({ a, b, value }) => {
         const cityA = cities[a];
         const cityB = cities[b];
@@ -404,9 +405,7 @@ export default function RouteVisualization({
         const pointA = toSVGCoords(cityA.x, cityA.y);
         const pointB = toSVGCoords(cityB.x, cityB.y);
 
-        const visualFloor = maxValue * 0.02;
-        const visualValue = Math.max(value, visualFloor);
-        const normalized = visualValue / maxValue;
+        const normalized = value / maxValue;
         const boosted = Math.pow(normalized, 0.55);
 
         return {
@@ -451,20 +450,20 @@ export default function RouteVisualization({
         onWheel={handleWheel}
       >
         <g transform={`translate(${view.panX} ${view.panY}) scale(${view.zoom})`}>
-          {pheromoneEdges.map((edge, index) => (
-            <line
-              key={`ph-${index}`}
-              x1={edge.x1}
-              y1={edge.y1}
-              x2={edge.x2}
-              y2={edge.y2}
-              stroke="#ff6a2a"
-              strokeOpacity={0.08 + 0.5 * edge.intensity}
-              strokeWidth={0.5 + 3 * edge.intensity}
-              strokeLinecap="round"
-              pointerEvents="none"
-            />
-          ))}
+          <g className="pheromone-layer" pointerEvents="none">
+            {pheromoneEdges.map((edge, index) => (
+              <line
+                key={`ph-${index}`}
+                className="pheromone-edge"
+                x1={edge.x1}
+                y1={edge.y1}
+                x2={edge.x2}
+                y2={edge.y2}
+                strokeWidth={0.5 + 3 * edge.intensity}
+                strokeLinecap="round"
+              />
+            ))}
+          </g>
 
           {routePaths.map((route) => (
             <polyline

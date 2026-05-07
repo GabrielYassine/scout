@@ -3,7 +3,6 @@
   * @author s235257 & s230632
  */
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 
 import LabLeftbar from "@/shared/components/sidebars/LabLeftbar/LabLeftbar.jsx";
 import LabRightbar from "@/shared/components/sidebars/LabRightbar/LabRightbar.jsx";
@@ -31,8 +30,6 @@ function renderStatusPanel(title, message) {
 }
 
 export default function RunPage({ catalog, catalogLoading, catalogError }) {
-  const navigate = useNavigate();
-
   // The chart layout starts stacked and can be changed from RunControls.
   const [layoutMode, setLayoutMode] = useState("stack");
 
@@ -102,8 +99,8 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
           puzzleConfig={puzzleConfig}
           params={params}
           onParamChange={() => {}}
-          onReset={() => navigate("/lab")}
-          onRun={() => navigate("/lab")}
+          onReset={undefined}
+          onRun={undefined}
           catalog={catalog}
           catalogLoading={catalogLoading}
           catalogError={catalogError}

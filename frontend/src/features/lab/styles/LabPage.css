@@ -29,7 +29,7 @@
 }
 
 .selector-timeline {
-  flex: 2;
+  flex: 3;
   display: flex;
   min-height: 0;
   overflow: hidden;
@@ -38,7 +38,7 @@
 }
 
 .chosen-selector-container {
-  flex: 1;
+  flex: 2;
   display: flex;
   min-height: 0;
   overflow: hidden;

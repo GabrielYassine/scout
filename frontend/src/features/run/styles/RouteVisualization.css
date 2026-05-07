@@ -40,6 +40,16 @@
   cursor: default;
 }
 
+.pheromone-layer {
+  opacity: 0.35;
+  isolation: isolate;
+}
+
+.pheromone-edge {
+  stroke: #ff6a2a;
+  mix-blend-mode: normal;
+}
+
 .tour-path {
   fill: none;
   stroke: #3b82f6;
