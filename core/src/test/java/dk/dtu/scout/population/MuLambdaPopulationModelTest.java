@@ -517,13 +517,7 @@ class MuLambdaPopulationModelTest {
 
     private static class KeepBestSelection<S> implements SelectionRule<S> {
         @Override
-        public List<EvaluatedSolution<S>> select(
-            List<EvaluatedSolution<S>> parents,
-            List<EvaluatedSolution<S>> children,
-            int mu,
-            int iteration,
-            Random rng
-        ) {
+        public List<EvaluatedSolution<S>> select(List<EvaluatedSolution<S>> parents, List<EvaluatedSolution<S>> children, int mu, int iteration, Random rng) {
             List<EvaluatedSolution<S>> combined = new ArrayList<>();
             combined.addAll(parents);
             combined.addAll(children);
@@ -556,26 +550,14 @@ class MuLambdaPopulationModelTest {
 
     private static final class KeepExistingParentsSelection<S> extends KeepBestSelection<S> {
         @Override
-        public List<EvaluatedSolution<S>> select(
-            List<EvaluatedSolution<S>> parents,
-            List<EvaluatedSolution<S>> children,
-            int mu,
-            int iteration,
-            Random rng
-        ) {
+        public List<EvaluatedSolution<S>> select(List<EvaluatedSolution<S>> parents, List<EvaluatedSolution<S>> children, int mu, int iteration, Random rng) {
             return parents;
         }
     }
 
     private static final class SelectWeakParentsSelection<S> extends KeepBestSelection<S> {
         @Override
-        public List<EvaluatedSolution<S>> select(
-            List<EvaluatedSolution<S>> parents,
-            List<EvaluatedSolution<S>> children,
-            int mu,
-            int iteration,
-            Random rng
-        ) {
+        public List<EvaluatedSolution<S>> select(List<EvaluatedSolution<S>> parents, List<EvaluatedSolution<S>> children, int mu, int iteration, Random rng) {
             return List.of(parents.get(1), children.getFirst());
         }
     }

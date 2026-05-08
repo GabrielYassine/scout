@@ -26,10 +26,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CancellationException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class SimulationRunnerTest {
 
@@ -101,7 +98,7 @@ class SimulationRunnerTest {
 
         run(populationModel, List.of(new StopAtIteration(1)), List.of(observer), 1);
 
-        assertTrue(observer.seenProblem instanceof TestProblem);
+        assertInstanceOf(TestProblem.class, observer.seenProblem);
         assertEquals(5, observer.seenDimension);
         assertEquals("test-space", observer.seenSearchSpaceId);
     }

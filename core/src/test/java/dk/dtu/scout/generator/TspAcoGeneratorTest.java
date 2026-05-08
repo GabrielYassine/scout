@@ -68,10 +68,10 @@ class TspAcoGeneratorTest {
         State state = stateWithDimension(3);
 
         generator.configure(Map.of(
-                "alpha", 5.0,
-                "beta", 1.0,
-                "minPheromone", 0.0,
-                "maxPheromone", Double.MIN_VALUE
+            "alpha", 5.0,
+            "beta", 1.0,
+            "minPheromone", 0.0,
+            "maxPheromone", Double.MIN_VALUE
         ));
 
         generator.init(state);
@@ -87,10 +87,10 @@ class TspAcoGeneratorTest {
         State state = stateWithDimension(3);
 
         generator.configure(Map.of(
-                "minPheromone", 1.0,
-                "maxPheromone", 1.0,
-                "alpha", 1.0,
-                "beta", 1.0
+            "minPheromone", 1.0,
+            "maxPheromone", 1.0,
+            "alpha", 1.0,
+            "beta", 1.0
         ));
 
         generator.init(state);
@@ -107,9 +107,9 @@ class TspAcoGeneratorTest {
         State state = stateWithDimension(3);
 
         generator.configure(Map.of(
-                "evaporationRate", 0.0,
-                "minPheromone", 0.0,
-                "maxPheromone", 10.0
+            "evaporationRate", 0.0,
+            "minPheromone", 0.0,
+            "maxPheromone", 10.0
         ));
         generator.init(state);
         generator.generate(new Random(1234L));
@@ -164,19 +164,13 @@ class TspAcoGeneratorTest {
         assertThrows(IllegalArgumentException.class, () -> generator.configure(Map.of("beta", 11.0)));
         assertThrows(IllegalArgumentException.class, () -> generator.configure(Map.of("minPheromone", -0.1)));
         assertThrows(IllegalArgumentException.class, () -> generator.configure(Map.of("maxPheromone", 0.0)));
-        assertThrows(IllegalArgumentException.class, () -> generator.configure(Map.of(
-                "minPheromone", 2.0,
-                "maxPheromone", 1.0
-        )));
+        assertThrows(IllegalArgumentException.class, () -> generator.configure(Map.of("minPheromone", 2.0, "maxPheromone", 1.0)));
     }
 
     @Test
     void configure_rejectsNegativeReinforcementRate() {
         TspAcoGenerator generator = new TspAcoGenerator();
-
-        assertThrows(IllegalArgumentException.class, () ->
-                generator.configure(Map.of("reinforcementRate", -0.1))
-        );
+        assertThrows(IllegalArgumentException.class, () -> generator.configure(Map.of("reinforcementRate", -0.1)));
     }
 
     @Test
@@ -184,13 +178,13 @@ class TspAcoGeneratorTest {
         TspAcoGenerator generator = new TspAcoGenerator();
 
         generator.configure(Map.of(
-                "evaporationRate", 0.5,
-                "reinforcementRate", 2.0,
-                "alpha", 2.0,
-                "beta", 3.0,
-                "minPheromone", 0.1,
-                "maxPheromone", 5.0,
-                "acceptEqualFitness", false
+            "evaporationRate", 0.5,
+            "reinforcementRate", 2.0,
+            "alpha", 2.0,
+            "beta", 3.0,
+            "minPheromone", 0.1,
+            "maxPheromone", 5.0,
+            "acceptEqualFitness", false
         ));
 
         assertEquals(8, generator.params().size());
@@ -200,9 +194,7 @@ class TspAcoGeneratorTest {
     void configure_rejectsInvalidReinforcementMode() {
         TspAcoGenerator generator = new TspAcoGenerator();
 
-        assertThrows(IllegalArgumentException.class, () ->
-                generator.configure(Map.of("reinforcementMode", "invalid-mode"))
-        );
+        assertThrows(IllegalArgumentException.class, () -> generator.configure(Map.of("reinforcementMode", "invalid-mode")));
     }
 
     @Test
@@ -211,22 +203,18 @@ class TspAcoGeneratorTest {
         State state = stateWithDimension(3);
 
         generator.configure(Map.of(
-                "reinforcementMode", " iteration_best ",
-                "evaporationRate", 0.0,
-                "reinforcementRate", 1.0,
-                "minPheromone", 0.0,
-                "maxPheromone", 10.0
+            "reinforcementMode", " iteration_best ",
+            "evaporationRate", 0.0,
+            "reinforcementRate", 1.0,
+            "minPheromone", 0.0,
+            "maxPheromone", 10.0
         ));
 
         generator.init(state);
         generator.generate(new Random(1234L));
 
-        state.update(Map.of(StateKeys.GENERATION_EVALUATED, List.of(
-                new EvaluatedSolution<>(new int[] {0, 1, 2}, -3.0)
-        )));
-
-        double[][] matrix = (double[][]) generator.getStateVariables(state)
-                .get(StateKeys.PHEROMONE_MATRIX);
+        state.update(Map.of(StateKeys.GENERATION_EVALUATED, List.of(new EvaluatedSolution<>(new int[] {0, 1, 2}, -3.0))));
+        double[][] matrix = (double[][]) generator.getStateVariables(state).get(StateKeys.PHEROMONE_MATRIX);
 
         assertTrue(matrix[0][1] > 1.0);
         assertTrue(matrix[1][2] > 1.0);
@@ -239,16 +227,15 @@ class TspAcoGeneratorTest {
         State state = stateWithDimension(3);
 
         generator.configure(Map.of(
-                "minPheromone", 0.0,
-                "maxPheromone", 10.0
+            "minPheromone", 0.0,
+            "maxPheromone", 10.0
         ));
         generator.init(state);
         generator.generate(new Random(1234L));
 
         state.update(Map.of(StateKeys.GENERATION_EVALUATED, List.of()));
 
-        double[][] matrix = (double[][]) generator.getStateVariables(state)
-                .get(StateKeys.PHEROMONE_MATRIX);
+        double[][] matrix = (double[][]) generator.getStateVariables(state).get(StateKeys.PHEROMONE_MATRIX);
 
         assertEquals(1.0, matrix[0][1], 1e-9);
         assertEquals(1.0, matrix[1][2], 1e-9);
@@ -260,24 +247,19 @@ class TspAcoGeneratorTest {
         State state = stateWithDimension(4);
 
         generator.configure(Map.of(
-                "evaporationRate", 0.0,
-                "reinforcementRate", 1.0,
-                "minPheromone", 0.0,
-                "maxPheromone", 10.0
+            "evaporationRate", 0.0,
+            "reinforcementRate", 1.0,
+            "minPheromone", 0.0,
+            "maxPheromone", 10.0
         ));
         generator.init(state);
         generator.generate(new Random(1234L));
 
-        state.update(Map.of(StateKeys.GENERATION_EVALUATED, List.of(
-                new EvaluatedSolution<>(new int[] {0, 1, 2, 3}, -4.0)
-        )));
+        state.update(Map.of(StateKeys.GENERATION_EVALUATED, List.of(new EvaluatedSolution<>(new int[] {0, 1, 2, 3}, -4.0))));
         generator.getStateVariables(state);
 
-        state.update(Map.of(StateKeys.GENERATION_EVALUATED, List.of(
-                new EvaluatedSolution<>(new int[] {0, 2, 1, 3}, -4.0)
-        )));
-        double[][] matrix = (double[][]) generator.getStateVariables(state)
-                .get(StateKeys.PHEROMONE_MATRIX);
+        state.update(Map.of(StateKeys.GENERATION_EVALUATED, List.of(new EvaluatedSolution<>(new int[] {0, 2, 1, 3}, -4.0))));
+        double[][] matrix = (double[][]) generator.getStateVariables(state).get(StateKeys.PHEROMONE_MATRIX);
 
         assertTrue(matrix[0][2] > 1.0);
         assertTrue(matrix[1][3] > 1.0);
@@ -289,24 +271,19 @@ class TspAcoGeneratorTest {
         State state = stateWithDimension(4);
 
         generator.configure(Map.of(
-                "evaporationRate", 0.0,
-                "reinforcementRate", 1.0,
-                "minPheromone", 0.0,
-                "maxPheromone", 10.0
+            "evaporationRate", 0.0,
+            "reinforcementRate", 1.0,
+            "minPheromone", 0.0,
+            "maxPheromone", 10.0
         ));
         generator.init(state);
         generator.generate(new Random(1234L));
 
-        state.update(Map.of(StateKeys.GENERATION_EVALUATED, List.of(
-                new EvaluatedSolution<>(new int[] {0, 1, 2, 3}, -4.0)
-        )));
+        state.update(Map.of(StateKeys.GENERATION_EVALUATED, List.of(new EvaluatedSolution<>(new int[] {0, 1, 2, 3}, -4.0))));
         generator.getStateVariables(state);
 
-        state.update(Map.of(StateKeys.GENERATION_EVALUATED, List.of(
-                new EvaluatedSolution<>(new int[] {0, 2, 1, 3}, -5.0)
-        )));
-        double[][] matrix = (double[][]) generator.getStateVariables(state)
-                .get(StateKeys.PHEROMONE_MATRIX);
+        state.update(Map.of(StateKeys.GENERATION_EVALUATED, List.of(new EvaluatedSolution<>(new int[] {0, 2, 1, 3}, -5.0))));
+        double[][] matrix = (double[][]) generator.getStateVariables(state).get(StateKeys.PHEROMONE_MATRIX);
 
         assertTrue(matrix[0][1] > matrix[0][2]);
         assertTrue(matrix[2][3] > matrix[1][3]);
@@ -318,25 +295,20 @@ class TspAcoGeneratorTest {
         State state = stateWithDimension(4);
 
         generator.configure(Map.of(
-                "acceptEqualFitness", false,
-                "evaporationRate", 0.0,
-                "reinforcementRate", 1.0,
-                "minPheromone", 0.0,
-                "maxPheromone", 10.0
+            "acceptEqualFitness", false,
+            "evaporationRate", 0.0,
+            "reinforcementRate", 1.0,
+            "minPheromone", 0.0,
+            "maxPheromone", 10.0
         ));
         generator.init(state);
         generator.generate(new Random(1234L));
 
-        state.update(Map.of(StateKeys.GENERATION_EVALUATED, List.of(
-                new EvaluatedSolution<>(new int[] {0, 1, 2, 3}, -4.0)
-        )));
+        state.update(Map.of(StateKeys.GENERATION_EVALUATED, List.of(new EvaluatedSolution<>(new int[] {0, 1, 2, 3}, -4.0))));
         generator.getStateVariables(state);
 
-        state.update(Map.of(StateKeys.GENERATION_EVALUATED, List.of(
-                new EvaluatedSolution<>(new int[] {0, 2, 1, 3}, -4.0)
-        )));
-        double[][] matrix = (double[][]) generator.getStateVariables(state)
-                .get(StateKeys.PHEROMONE_MATRIX);
+        state.update(Map.of(StateKeys.GENERATION_EVALUATED, List.of(new EvaluatedSolution<>(new int[] {0, 2, 1, 3}, -4.0))));
+        double[][] matrix = (double[][]) generator.getStateVariables(state).get(StateKeys.PHEROMONE_MATRIX);
 
         assertTrue(matrix[0][1] > matrix[0][2]);
         assertTrue(matrix[2][3] > matrix[1][3]);
@@ -348,25 +320,20 @@ class TspAcoGeneratorTest {
         State state = stateWithDimension(4);
 
         generator.configure(Map.of(
-                "acceptEqualFitness", false,
-                "evaporationRate", 0.0,
-                "reinforcementRate", 1.0,
-                "minPheromone", 0.0,
-                "maxPheromone", 10.0
+            "acceptEqualFitness", false,
+            "evaporationRate", 0.0,
+            "reinforcementRate", 1.0,
+            "minPheromone", 0.0,
+            "maxPheromone", 10.0
         ));
         generator.init(state);
         generator.generate(new Random(1234L));
 
-        state.update(Map.of(StateKeys.GENERATION_EVALUATED, List.of(
-                new EvaluatedSolution<>(new int[] {0, 1, 2, 3}, -5.0)
-        )));
+        state.update(Map.of(StateKeys.GENERATION_EVALUATED, List.of(new EvaluatedSolution<>(new int[] {0, 1, 2, 3}, -5.0))));
         generator.getStateVariables(state);
 
-        state.update(Map.of(StateKeys.GENERATION_EVALUATED, List.of(
-                new EvaluatedSolution<>(new int[] {0, 2, 1, 3}, -4.0)
-        )));
-        double[][] matrix = (double[][]) generator.getStateVariables(state)
-                .get(StateKeys.PHEROMONE_MATRIX);
+        state.update(Map.of(StateKeys.GENERATION_EVALUATED, List.of(new EvaluatedSolution<>(new int[] {0, 2, 1, 3}, -4.0))));
+        double[][] matrix = (double[][]) generator.getStateVariables(state).get(StateKeys.PHEROMONE_MATRIX);
 
         assertTrue(matrix[0][2] > 1.0);
         assertTrue(matrix[1][3] > 1.0);
@@ -392,7 +359,7 @@ class TspAcoGeneratorTest {
 
         Map<String, Object> variables = generator.getStateVariables(state);
 
-        assertTrue(variables.get(StateKeys.PHEROMONE_MATRIX) instanceof double[][]);
+        assertInstanceOf(double[][].class, variables.get(StateKeys.PHEROMONE_MATRIX));
         assertSame(variables.get(StateKeys.PHEROMONE_MATRIX), state.get(StateKeys.PHEROMONE_MATRIX));
 
         double[][] matrix = (double[][]) variables.get(StateKeys.PHEROMONE_MATRIX);
