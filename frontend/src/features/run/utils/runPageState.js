@@ -62,9 +62,7 @@ export function resolveRunPageState(locationState, savedRun) {
     vrpInstance: locationState.vrpInstance ?? restoredRun?.vrpInstance ?? null,
     batchResponse: locationState.batch ?? restoredRun?.batch ?? null,
     studyPoints: restoredRun?.studyPoints ?? [],
-    loading: shouldIgnoreIncomingState
-      ? restoredRun?.loading ?? false
-      : locationState.loading ?? restoredRun?.loading ?? false,
+    loading: shouldIgnoreIncomingState ? restoredRun?.loading ?? false : locationState.loading ?? restoredRun?.loading ?? false,
     error: locationState.error ?? restoredRun?.error ?? null,
     restoredRun,
     liveExecution: hasIncomingExecution,

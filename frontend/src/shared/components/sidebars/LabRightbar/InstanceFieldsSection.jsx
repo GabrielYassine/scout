@@ -15,6 +15,8 @@ export default function InstanceFieldsSection({
   onCapacityChange,
   onVehicleChange,
 }) {
+  const isTsp = instanceType === "TSP";
+
   return (
     <div className="instance-fields">
       <span className="instance-summary-label">Name:</span>
@@ -34,13 +36,14 @@ export default function InstanceFieldsSection({
         <select
           className="field-input"
           value={instanceType}
-          onChange={(e) => onTypeChange(e.target.value)}
+          onChange={(event) => onTypeChange(event.target.value)}
         >
           <option value="TSP">TSP</option>
           <option value="VRP">VRP</option>
         </select>
       </FieldRow>
 
+      {/* Capacity and vehicle count only apply to VRP instances. */}
       <ParamField
         def={{
           key: "capacity",
@@ -50,8 +53,8 @@ export default function InstanceFieldsSection({
           defaultValue: 0,
         }}
         value={view.capacity}
-        disabled={instanceType === "TSP"}
-        onValueChange={(value) => onCapacityChange(value)}
+        disabled={isTsp}
+        onValueChange={onCapacityChange}
       />
 
       <ParamField
@@ -63,10 +66,11 @@ export default function InstanceFieldsSection({
           defaultValue: 1,
         }}
         value={view.numberOfVehicles}
-        disabled={instanceType === "TSP"}
-        onValueChange={(value) => onVehicleChange(value)}
+        disabled={isTsp}
+        onValueChange={onVehicleChange}
       />
 
+      {/* SCOUT currently supports EUC_2D instances only. */}
       <FieldRow label="Edge Weight Type">
         <input
           className="field-input"

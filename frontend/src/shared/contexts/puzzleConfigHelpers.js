@@ -18,6 +18,7 @@ export const componentTypes = [
   "stopCondition",
   "observer",
 ];
+
 export const DEFAULT_CONFIG_ID = "config-1";
 export const DEFAULT_CONFIG_NAME = "Config 1";
 
@@ -38,7 +39,10 @@ export function getNextConfigName(configs) {
 
   const maxNumber = safeConfigs.reduce((max, config) => {
     const match = String(config?.name ?? "").match(/^Config\s+(\d+)$/i);
-    if (!match) return max;
+
+    if (!match) {
+      return max;
+    }
 
     const value = Number(match[1]);
     return Number.isFinite(value) ? Math.max(max, value) : max;
@@ -48,10 +52,21 @@ export function getNextConfigName(configs) {
 }
 
 export const cloneTspInstance = (tsp) =>
-  tsp ? { ...tsp,  cities: (tsp.cities ?? []).map((city) => ({ ...city })),  }  : null;
+  tsp
+    ? {
+        ...tsp,
+        cities: (tsp.cities ?? []).map((city) => ({ ...city })),
+      }
+    : null;
 
 export const cloneVrpInstance = (vrp) =>
-  vrp ? {  ...vrp,  depot: vrp.depot ? { ...vrp.depot } : null,  customers: (vrp.customers ?? []).map((customer) => ({ ...customer })),  }   : null;
+  vrp
+    ? {
+        ...vrp,
+        depot: vrp.depot ? { ...vrp.depot } : null,
+        customers: (vrp.customers ?? []).map((customer) => ({ ...customer })),
+      }
+    : null;
 
 export const createEmptyPuzzleConfig = () => ({
   searchSpace: [],
@@ -106,7 +121,10 @@ function clonePlacedPiece(piece) {
 }
 
 function normalizeIds(value, single = false) {
-  if (value == null) return [];
+  if (value == null) {
+    return [];
+  }
+
   const ids = Array.isArray(value) ? value : [value];
   return single ? ids.slice(0, 1) : ids;
 }
@@ -115,7 +133,14 @@ function mapIdsToPieces(ids, catalogItems, pieceType, single = false) {
   return normalizeIds(ids, single)
     .map((id) => {
       const item = catalogItems.find((x) => x.id === id);
-      return item ? { id: item.id, label: item.displayName, type: pieceType } : null;
+
+      return item
+        ? {
+            id: item.id,
+            label: item.displayName,
+            type: pieceType,
+          }
+        : null;
     })
     .filter(Boolean);
 }
@@ -132,6 +157,7 @@ function buildGlobalParamsFromRunRequest(runRequest) {
     wsUpdateEverySizes: 1,
   };
 }
+
 function buildGlobalParamsFromRuntimeStudyRequest(runtimeStudyRequest) {
   return {
     experimentType: "runtimeStudy",
@@ -149,7 +175,10 @@ function buildGlobalParamsFromRuntimeStudyRequest(runtimeStudyRequest) {
 
 function getEdge(piece, direction) {
   const key = piece?.puzzleData?.logicalKey;
-  if (!key) return null;
+
+  if (!key) {
+    return null;
+  }
 
   switch (direction) {
     case "N":
@@ -175,13 +204,21 @@ function buildGridNeighbors(pieces, index, totalCols = GRID_COLUMNS) {
 
   return {
     left:
-      leftIndex === null ? { kind: "wall" }  : pieces[leftIndex]  ? { kind: "piece", edge: getEdge(pieces[leftIndex], "E") }  : { kind: "empty" },
+      leftIndex === null
+        ? { kind: "wall" }
+        : pieces[leftIndex]
+          ? { kind: "piece", edge: getEdge(pieces[leftIndex], "E") }
+          : { kind: "empty" },
 
-    right:
-      rightIndex === null  ? { kind: "wall" } : { kind: "empty" },
+    // Right and bottom are treated as empty because pieces are keyed left-to-right.
+    right: rightIndex === null ? { kind: "wall" } : { kind: "empty" },
 
     top:
-      topIndex === null ? { kind: "wall" }  : pieces[topIndex] ? { kind: "piece", edge: getEdge(pieces[topIndex], "S") } : { kind: "empty" },
+      topIndex === null
+        ? { kind: "wall" }
+        : pieces[topIndex]
+          ? { kind: "piece", edge: getEdge(pieces[topIndex], "S") }
+          : { kind: "empty" },
 
     bottom: { kind: "empty" },
   };
@@ -205,11 +242,18 @@ export function normalizeStoredConfig(config, fallbackIndex = 0) {
     id: config?.id ?? `config-${fallbackIndex + 1}`,
     name: config?.name ?? `Config ${fallbackIndex + 1}`,
     params: config?.params ?? createEmptyParams(),
-    tspInstance: config?.tspInstance ? cloneTspInstance(config.tspInstance) : null,
-    vrpInstance: config?.vrpInstance ? cloneVrpInstance(config.vrpInstance) : null,
+    tspInstance: config?.tspInstance
+      ? cloneTspInstance(config.tspInstance)
+      : null,
+    vrpInstance: config?.vrpInstance
+      ? cloneVrpInstance(config.vrpInstance)
+      : null,
   };
 
-  const placedPieces = Array.isArray(config?.placedPieces) ? config.placedPieces.map(clonePlacedPiece) : flattenGroupedPuzzleConfig(config?.puzzleConfig);
+  // Supports both the current flat representation and older grouped configs.
+  const placedPieces = Array.isArray(config?.placedPieces)
+    ? config.placedPieces.map(clonePlacedPiece)
+    : flattenGroupedPuzzleConfig(config?.puzzleConfig);
 
   return {
     ...base,
@@ -220,12 +264,20 @@ export function normalizeStoredConfig(config, fallbackIndex = 0) {
 export function rekeyGrid(pieces, _startIndex = 0, totalCols = GRID_COLUMNS) {
   const next = Array.isArray(pieces) ? [...pieces] : [];
 
-  for (let i = 0; i < next.length; i++) {
+  for (let i = 0; i < next.length; i += 1) {
     const col = i % totalCols;
     const row = Math.floor(i / totalCols);
     const neighbors = buildGridNeighbors(next, i, totalCols);
 
-    next[i] = { ...next[i], puzzleData: generatePuzzleKey({  col, row, totalCols, neighbors, }), };
+    next[i] = {
+      ...next[i],
+      puzzleData: generatePuzzleKey({
+        col,
+        row,
+        totalCols,
+        neighbors,
+      }),
+    };
   }
 
   return next;
@@ -236,36 +288,78 @@ export function deriveGroupedPuzzleConfig(placedPieces) {
   const pieces = Array.isArray(placedPieces) ? placedPieces : [];
 
   for (const piece of pieces) {
-    if (!piece?.type || !grouped[piece.type]) continue;
+    if (!piece?.type || !grouped[piece.type]) {
+      continue;
+    }
+
     grouped[piece.type].push(piece);
   }
 
   return grouped;
 }
-// Apply a run template's request data to the puzzle configuration state, mapping component IDs to pieces and setting parameters accordingly.
+
 export function applyTemplateRunRequestToState({
   runRequest,
   catalog,
   setPlacedPieces,
   setParams,
 }) {
-  if (!runRequest || !catalog) return;
+  if (!runRequest || !catalog) {
+    return;
+  }
 
+  // Maps backend request fields back into visible puzzle pieces.
   const componentMapping = [
-    { type: "searchSpace", catalogKey: "searchSpaces", requestKey: "searchSpaceId", single: true },
+    {
+      type: "searchSpace",
+      catalogKey: "searchSpaces",
+      requestKey: "searchSpaceId",
+      single: true,
+    },
     { type: "problem", catalogKey: "problems", requestKey: "problemIds" },
-    { type: "generator", catalogKey: "generators", requestKey: "generatorId", single: true },
-    { type: "selection", catalogKey: "selectionRules", requestKey: "selectionRuleId", single: true },
-    { type: "populationModel", catalogKey: "populationModels", requestKey: "populationModelId", single: true },
-    { type: "parentSelectionRule", catalogKey: "parentSelectionRules", requestKey: "parentSelectionRuleId", single: true },
-    { type: "crossover", catalogKey: "crossovers", requestKey: "crossoverId", single: true },
-    { type: "stopCondition", catalogKey: "stopConditions", requestKey: "stopConditionIds" },
+    {
+      type: "generator",
+      catalogKey: "generators",
+      requestKey: "generatorId",
+      single: true,
+    },
+    {
+      type: "selection",
+      catalogKey: "selectionRules",
+      requestKey: "selectionRuleId",
+      single: true,
+    },
+    {
+      type: "populationModel",
+      catalogKey: "populationModels",
+      requestKey: "populationModelId",
+      single: true,
+    },
+    {
+      type: "parentSelectionRule",
+      catalogKey: "parentSelectionRules",
+      requestKey: "parentSelectionRuleId",
+      single: true,
+    },
+    {
+      type: "crossover",
+      catalogKey: "crossovers",
+      requestKey: "crossoverId",
+      single: true,
+    },
+    {
+      type: "stopCondition",
+      catalogKey: "stopConditions",
+      requestKey: "stopConditionIds",
+    },
     { type: "observer", catalogKey: "observers", requestKey: "observerIds" },
   ];
 
   const flattenedPieces = componentMapping.flatMap(
     ({ type, catalogKey, requestKey, single }) =>
-      catalog[catalogKey]  ? mapIdsToPieces(runRequest[requestKey], catalog[catalogKey], type, single) : []
+      catalog[catalogKey]
+        ? mapIdsToPieces(runRequest[requestKey], catalog[catalogKey], type, single)
+        : []
   );
 
   setPlacedPieces(rekeyGrid(flattenedPieces, 0));
@@ -283,30 +377,77 @@ export function applyTemplateRunRequestToState({
     observer: {},
   });
 }
-// Similar to applyTemplateRunRequestToState but tailored for runtime study templates, which may have different parameter structures and typically do not include observers.
+
 export function applyTemplateRuntimeStudyRequestToState({
   runtimeStudyRequest,
   catalog,
   setPlacedPieces,
   setParams,
 }) {
-  if (!runtimeStudyRequest || !catalog) return;
+  if (!runtimeStudyRequest || !catalog) {
+    return;
+  }
 
+  // Runtime studies use one problem and usually omit observers, but still reuse most component categories.
   const componentMapping = [
-    { type: "searchSpace", catalogKey: "searchSpaces", requestKey: "searchSpaceId", single: true },
-    { type: "problem", catalogKey: "problems", requestKey: "problemId", single: true },
-    { type: "generator", catalogKey: "generators", requestKey: "generatorId", single: true },
-    { type: "selection", catalogKey: "selectionRules", requestKey: "selectionRuleId", single: true },
-    { type: "populationModel", catalogKey: "populationModels", requestKey: "populationModelId", single: true },
-    { type: "parentSelectionRule", catalogKey: "parentSelectionRules", requestKey: "parentSelectionRuleId", single: true },
-    { type: "crossover", catalogKey: "crossovers", requestKey: "crossoverId", single: true },
-    { type: "stopCondition", catalogKey: "stopConditions", requestKey: "stopConditionIds" },
+    {
+      type: "searchSpace",
+      catalogKey: "searchSpaces",
+      requestKey: "searchSpaceId",
+      single: true,
+    },
+    {
+      type: "problem",
+      catalogKey: "problems",
+      requestKey: "problemId",
+      single: true,
+    },
+    {
+      type: "generator",
+      catalogKey: "generators",
+      requestKey: "generatorId",
+      single: true,
+    },
+    {
+      type: "selection",
+      catalogKey: "selectionRules",
+      requestKey: "selectionRuleId",
+      single: true,
+    },
+    {
+      type: "populationModel",
+      catalogKey: "populationModels",
+      requestKey: "populationModelId",
+      single: true,
+    },
+    {
+      type: "parentSelectionRule",
+      catalogKey: "parentSelectionRules",
+      requestKey: "parentSelectionRuleId",
+      single: true,
+    },
+    {
+      type: "crossover",
+      catalogKey: "crossovers",
+      requestKey: "crossoverId",
+      single: true,
+    },
+    {
+      type: "stopCondition",
+      catalogKey: "stopConditions",
+      requestKey: "stopConditionIds",
+    },
   ];
 
   const flattenedPieces = componentMapping.flatMap(
     ({ type, catalogKey, requestKey, single }) =>
       catalog[catalogKey]
-        ? mapIdsToPieces(runtimeStudyRequest[requestKey], catalog[catalogKey], type, single)
+        ? mapIdsToPieces(
+            runtimeStudyRequest[requestKey],
+            catalog[catalogKey],
+            type,
+            single
+          )
         : []
   );
 

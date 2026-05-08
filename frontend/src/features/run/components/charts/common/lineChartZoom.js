@@ -4,6 +4,7 @@
   * @author s230632
  */
 
+// Given an array of data points, extract the x-values of the first and last points to determine the overall x-axis range of the data.
 export function getDataXRange(points) {
   if (!points.length) return null;
 

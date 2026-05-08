@@ -17,6 +17,7 @@ export default function LineChartStatsPanel({
   const [statsError, setStatsError] = useState("");
   const [windowStats, setWindowStats] = useState(null);
 
+  // Fetch stats for the current zoom window from the backend API.
   const computeStats = useCallback(async () => {
     if (visiblePoints.length === 0) {
       setStatsError("No points in the current window.");

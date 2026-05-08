@@ -1,12 +1,28 @@
 /**
- * Helpers for lab leftbar data parsing and lookups.
+ * Helpers for lab leftbar data parsing and catalog lookups.
  * @author s235257 & s230632
  */
 
+const CATALOG_KEYS_BY_TYPE = {
+  searchSpace: "searchSpaces",
+  problem: "problems",
+  generator: "generators",
+  selection: "selectionRules",
+  populationModel: "populationModels",
+  parentSelectionRule: "parentSelectionRules",
+  crossover: "crossovers",
+  stopCondition: "stopConditions",
+  observer: "observers",
+};
+
 export function parseValue(type, raw) {
   if (raw == null) return raw;
-  if (type === "boolean") return Boolean(raw);
 
+  if (type === "boolean") {
+    return Boolean(raw);
+  }
+
+  // Numeric fields are kept empty while the user is editing an empty input.
   if (type === "int" || type === "long" || type === "double") {
     if (raw === "") return "";
     return Number(raw);
@@ -18,19 +34,9 @@ export function parseValue(type, raw) {
 export function findPieceDef(catalog, type, id) {
   if (!catalog || !id) return null;
 
-  const catalogMap = {
-    searchSpace: catalog.searchSpaces,
-    problem: catalog.problems,
-    generator: catalog.generators,
-    selection: catalog.selectionRules,
-    populationModel: catalog.populationModels,
-    parentSelectionRule: catalog.parentSelectionRules,
-    crossover: catalog.crossovers,
-    stopCondition: catalog.stopConditions,
-    observer: catalog.observers,
-  };
+  const catalogKey = CATALOG_KEYS_BY_TYPE[type];
+  const list = catalogKey ? catalog[catalogKey] ?? [] : [];
 
-  const list = catalogMap[type] ?? [];
   return list.find((item) => item.id === id) ?? null;
 }
 

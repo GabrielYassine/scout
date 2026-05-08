@@ -2,7 +2,7 @@
  * Global run settings section for lab sidebar.
  * @author s235257 & s230632
  */
- 
+
 import SidebarSection from "../SidebarSection.jsx";
 import ParamField from "../ParamField.jsx";
 
@@ -19,7 +19,12 @@ export default function GlobalSettingsSection({
     <SidebarSection
       title="Global Settings"
       isOpen={open.global}
-      onToggle={() => setOpen((current) => ({ ...current, global: !current.global }))}
+      onToggle={() =>
+        setOpen((current) => ({
+          ...current,
+          global: !current.global,
+        }))
+      }
     >
       <div className="ll-subsection">
         <div className="field-row">
@@ -28,7 +33,7 @@ export default function GlobalSettingsSection({
             className="field-input"
             disabled={disabled}
             value={runMode}
-            onChange={(e) => onModeChange(e.target.value)}
+            onChange={(event) => onModeChange(event.target.value)}
           >
             <option value="run">Standard Run</option>
             <option value="runtimeStudy">Runtime Study</option>
@@ -49,6 +54,7 @@ export default function GlobalSettingsSection({
           }
         />
 
+        {/* Standard runs can repeat the same configuration multiple times. */}
         {runMode === "run" && (
           <ParamField
             def={{
@@ -65,6 +71,7 @@ export default function GlobalSettingsSection({
           />
         )}
 
+        {/* Runtime studies repeat each configured problem size to estimate average runtime. */}
         {runMode === "runtimeStudy" && (
           <ParamField
             def={{
@@ -76,11 +83,16 @@ export default function GlobalSettingsSection({
             disabled={disabled}
             value={params.global?.repetitionsPerSize}
             onValueChange={(value) =>
-              setParam("global", { key: "repetitionsPerSize", type: "int" }, value)
+              setParam(
+                "global",
+                { key: "repetitionsPerSize", type: "int" },
+                value
+              )
             }
           />
         )}
 
+        {/* Controls how often the backend stores observer data in the run log. */}
         {runMode === "run" && (
           <ParamField
             def={{
@@ -92,11 +104,16 @@ export default function GlobalSettingsSection({
             disabled={disabled}
             value={params.global?.logEveryEvaluations}
             onValueChange={(value) =>
-              setParam("global", { key: "logEveryEvaluations", type: "int" }, value)
+              setParam(
+                "global",
+                { key: "logEveryEvaluations", type: "int" },
+                value
+              )
             }
           />
         )}
 
+        {/* Controls how often accumulated progress is pushed to the frontend. */}
         {runMode === "run" && (
           <ParamField
             def={{
@@ -117,6 +134,7 @@ export default function GlobalSettingsSection({
           />
         )}
 
+        {/* Runtime studies run the same setup over several problem dimensions. */}
         {runMode === "runtimeStudy" && (
           <ParamField
             def={{
@@ -127,7 +145,11 @@ export default function GlobalSettingsSection({
             disabled={disabled}
             value={params.global?.problemSizes}
             onValueChange={(value) =>
-              setParam("global", { key: "problemSizes", type: "string" }, value)
+              setParam(
+                "global",
+                { key: "problemSizes", type: "string" },
+                value
+              )
             }
           />
         )}

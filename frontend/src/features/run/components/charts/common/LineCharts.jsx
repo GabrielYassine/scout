@@ -19,6 +19,8 @@ import {
 
 import "@/features/run/styles/LineCharts.css";
 
+// For TSP/VRP fitness series, the framework maximizes negative tour lengths.
+// This function identifies those cases so the chart can invert values and labels for display.
 function isMinimizationFitnessSeries(seriesName, searchSpaceId) {
   return (
     (seriesName === "fitness" || seriesName === "bestFitness") &&

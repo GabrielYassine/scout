@@ -20,15 +20,19 @@ export default function SelectedPieceSection({
 }) {
   if (!Array.isArray(pieces) || pieces.length === 0) return null;
 
+  const pieceParams = params[type] ?? {};
+
   return (
     <SidebarSection
       title={title}
       isOpen={open[type]}
-      onToggle={() => setOpen((current) => ({ ...current, [type]: !current[type] }))}
+      onToggle={() =>
+        setOpen((current) => ({ ...current, [type]: !current[type] }))
+      }
     >
       {pieces.map((piece, index) => {
         const pieceDef = findPieceDef(type, piece.id);
-        const pieceParams = params[type] ?? {};
+        const hasParams = !catalogLoading && pieceDef?.params?.length > 0;
 
         return (
           <div key={`${piece.id}-${index}`} className="ll-piece-container">
@@ -39,7 +43,7 @@ export default function SelectedPieceSection({
               {piece.label}
             </div>
 
-            {!catalogLoading && pieceDef?.params?.length > 0 && (
+            {hasParams && (
               <div className="ll-subsection">
                 {pieceDef.params.map((def) => (
                   <ParamField
@@ -47,9 +51,7 @@ export default function SelectedPieceSection({
                     def={def}
                     disabled={disabled}
                     value={
-                      pieceParams[def.key] !== undefined
-                        ? pieceParams[def.key]
-                        : def.defaultValue
+                      pieceParams[def.key] !== undefined ? pieceParams[def.key] : def.defaultValue
                     }
                     onValueChange={(value) => setParam(type, def, value)}
                   />

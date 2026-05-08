@@ -13,6 +13,7 @@ export default function ParamField({ def, value, onValueChange, disabled }) {
 
   if (type === "enum" || type === "select") {
     const fallbackValue = resolvedValue ?? options?.[0] ?? "";
+
     return (
       <FieldRow label={fieldLabel}>
         <select
@@ -57,6 +58,7 @@ export default function ParamField({ def, value, onValueChange, disabled }) {
           disabled={disabled}
           onChange={(e) => onValueChange(e.target.value)}
           onBlur={() => {
+            // Empty numeric fields are reset so the backend does not receive blank values.
             if (resolvedValue === "" || resolvedValue == null) {
               onValueChange("0");
             }
@@ -75,6 +77,7 @@ export default function ParamField({ def, value, onValueChange, disabled }) {
         disabled={disabled}
         onChange={(e) => onValueChange(e.target.value)}
         onBlur={() => {
+          // Formula/string parameters can also be empty during typing, but should not stay empty.
           if (resolvedValue === "" || resolvedValue == null) {
             onValueChange("0");
           }

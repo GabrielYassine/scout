@@ -32,6 +32,7 @@ export default function Selector({
   const fillerCount = (TAB_COLUMNS - (COMPONENT_TYPES.length % TAB_COLUMNS)) % TAB_COLUMNS;
 
   // Count how many pieces of a given type are currently selected.
+  // Used to display counts on the tabs.
   const getCount = (key) => {
     const group = puzzleConfig?.[key];
     return Array.isArray(group) ? group.length : 0;

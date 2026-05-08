@@ -7,6 +7,7 @@ export const HYPERCUBE_KEY = "__hypercube__";
 export const TSP_TOUR_KEY = "__tsp-tour__";
 export const BEST_FITNESS_BOXPLOT_KEY = "__boxplot__:bestFitness";
 
+// These series are not normal y-axis data. They are used by custom visual components.
 const SPECIAL_SERIES_KEYS = new Set([
   "hypercubeX",
   "hypercubeY",
@@ -43,10 +44,7 @@ export function getObserverDisplayName(observerKey) {
   }
 }
 
-/**
- * Returns ordinary numeric observer series that can be rendered as line charts.
- * Special series are consumed by custom visualizations instead.
- */
+// Returns ordinary numeric observer series that can be rendered as line charts.
 export function getLineSeriesKeys(series) {
   return Object.keys(series).filter((key) => !SPECIAL_SERIES_KEYS.has(key));
 }
@@ -109,17 +107,14 @@ function normalizePhaseRanges(phaseIntervals) {
     .sort((a, b) => a.start - b.start);
 }
 
-/**
- * Makes phase ranges continuous and non-overlapping.
- * Gaps inherit the previous phase so the chart background does not break
- * between adjacent observer intervals.
- */
+// Makes phase ranges continuous and non-overlapping for chart background shading.
 function resolveRangeGapsAndOverlaps(sortedRanges) {
   const resolvedRanges = [];
 
   for (const range of sortedRanges) {
     const previous = resolvedRanges[resolvedRanges.length - 1];
 
+    // Fill gaps with the previous phase so the background does not disappear between intervals.
     if (previous && range.start > previous.end) {
       resolvedRanges.push({
         start: previous.end,
@@ -128,6 +123,7 @@ function resolveRangeGapsAndOverlaps(sortedRanges) {
       });
     }
 
+    // Trim overlapping ranges so each evaluation belongs to at most one phase.
     if (previous && range.start < previous.end) {
       if (range.end <= previous.end) {
         continue;
@@ -166,11 +162,7 @@ export function createEmptyPointCache(observerKey) {
   };
 }
 
-/**
- * Builds [evaluation, value] points for a line chart.
- * During live runs, new points are appended to a cache instead of rebuilding
- * the entire point array every render.
- */
+// Builds [evaluation, value] points for a line chart and reuses cached points during live updates.
 export function buildChartPoints({
   observerKey,
   evaluations,
@@ -187,6 +179,7 @@ export function buildChartPoints({
   const sharedLength = Math.min(evaluations.length, observerValues.length);
   const cache = pointsCacheRef.current;
 
+  // Rebuild when the selected observer changed or when the data arrays were reset/truncated.
   const shouldRebuild =
     cache.observerKey !== observerKey ||
     cache.lastEvalLen > evaluations.length ||
@@ -221,6 +214,7 @@ export function buildChartPoints({
     return cache.points;
   }
 
+  // Append only the new points instead of converting the whole series again.
   const nextPoints = cache.points.slice();
 
   for (let i = cache.points.length; i < sharedLength; i += 1) {

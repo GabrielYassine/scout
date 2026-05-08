@@ -1,6 +1,7 @@
 /**
-  * A simple wrapper around fetch that throws an HttpError on non-2xx responses, including the status code, URL, and any JSON payload in the error object.
-  * @author s230632
+ * A small fetch wrapper that standardizes JSON requests and turns failed
+ * HTTP responses into HttpError objects with status, URL, and payload details.
+ * @author s230632
  */
 
 export class HttpError extends Error {
@@ -16,7 +17,11 @@ export class HttpError extends Error {
 async function parseMaybeJson(res) {
   const contentType = res.headers.get("content-type") ?? "";
   const isJson = contentType.includes("application/json");
-  if (!isJson) return null;
+
+  if (!isJson) {
+    return null;
+  }
+
   try {
     return await res.json();
   } catch {
@@ -25,18 +30,23 @@ async function parseMaybeJson(res) {
 }
 
 export async function fetchJson(url, init = {}) {
+  // Automatically serialize object bodies and add the JSON content type when needed.
   const res = await fetch(url, {
     ...init,
     headers: {
       ...(init.headers ?? {}),
       ...(init.body ? { "Content-Type": "application/json" } : {}),
     },
-    body: init.body && typeof init.body !== "string" ? JSON.stringify(init.body) : init.body,
+    body:
+      init.body && typeof init.body !== "string"
+        ? JSON.stringify(init.body)
+        : init.body,
   });
 
   if (!res.ok) {
     const payload = await parseMaybeJson(res);
     const message = payload?.message ?? `${res.status} ${res.statusText}`.trim();
+
     throw new HttpError(`Request failed: ${message}`, {
       status: res.status,
       url,
@@ -44,7 +54,10 @@ export async function fetchJson(url, init = {}) {
     });
   }
 
-  if (res.status === 204) return null;
+  // 204 responses have no body, so trying to parse JSON would fail.
+  if (res.status === 204) {
+    return null;
+  }
 
   return await res.json();
 }

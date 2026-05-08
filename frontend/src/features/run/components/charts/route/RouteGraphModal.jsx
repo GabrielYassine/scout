@@ -28,6 +28,7 @@ export default function RouteGraphModal({
   const scrollRef = useRef(null);
   const [canScrollDown, setCanScrollDown] = useState(false);
 
+  // Normalize city data and create a signature for depot configuration to optimize RouteVisualization re-rendering.
   const cities = normalizeCities(nodes);
   const depotSignature = cities.map((city) => (city.isDepot ? "1" : "0")).join("");
 
