@@ -3,7 +3,7 @@
  * @author s235257 & s230632
  */
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import "@/shared/components/styles/LabLeftbar.css";
 import "@/shared/components/styles/FormFields.css";
@@ -12,7 +12,11 @@ import GlobalSettingsSection from "./GlobalSettingsSection.jsx";
 import SelectedPieceSection from "./SelectedPieceSection.jsx";
 import TemplateSection from "./TemplateSection.jsx";
 
-import { countPlacedPieces, findPieceDef, parseValue, } from "./labLeftbarHelpers.js";
+import {
+  countPlacedPieces,
+  findPieceDef,
+  parseValue,
+} from "./labLeftbarHelpers.js";
 
 const PIECE_SECTIONS = [
   ["searchSpace", "Search Space"],
@@ -61,29 +65,33 @@ export default function LabLeftbar({
 
   const disabled = readOnly || catalogLoading || !!catalogError;
   const runMode = params.global?.experimentType ?? "run";
-
- const placedPieceCount = countPlacedPieces(puzzleConfig);
+  const placedPieceCount = countPlacedPieces(puzzleConfig);
 
   function setParam(type, def, rawValue) {
     const currentParams = params[type] ?? {};
     const parsedValue = parseValue(def.type, rawValue);
 
-    onParamChange(type, {...currentParams, [def.key]: parsedValue,});
+    onParamChange(type, {
+      ...currentParams,
+      [def.key]: parsedValue,
+    });
   }
 
   function handleModeChange(nextMode) {
     const currentMode = params.global?.experimentType ?? "run";
     if (nextMode === currentMode) return;
 
-    const switchingToRuntimeStudy = nextMode === "runtimeStudy";
-
-    if (switchingToRuntimeStudy && placedPieceCount > 0) {
+    // Runtime studies use a different setup, so existing puzzle pieces are cleared.
+    if (nextMode === "runtimeStudy" && placedPieceCount > 0) {
       setPendingMode(nextMode);
       setShowModeConfirm(true);
       return;
     }
 
-    onParamChange("global", { ...(params.global ?? {}), experimentType: nextMode,  });
+    onParamChange("global", {
+      ...(params.global ?? {}),
+      experimentType: nextMode,
+    });
   }
 
   function confirmModeChange() {
@@ -102,7 +110,6 @@ export default function LabLeftbar({
     setPendingMode(null);
     setShowModeConfirm(false);
   }
-
 
   return (
     <section className="lab-leftbar">
@@ -133,6 +140,7 @@ export default function LabLeftbar({
           setParam={setParam}
         />
 
+        {/* Each selected puzzle component gets its own parameter section. */}
         {PIECE_SECTIONS.map(([type, title]) => (
           <SelectedPieceSection
             key={type}
@@ -151,7 +159,11 @@ export default function LabLeftbar({
       </div>
 
       <div className="ll-actions">
-        <div className={disabled ? "ll-button-wrapper disabled" : "ll-button-wrapper"}>
+        <div
+          className={
+            disabled ? "ll-button-wrapper disabled" : "ll-button-wrapper"
+          }
+        >
           <button
             className="btn btn--green"
             type="button"
@@ -162,7 +174,11 @@ export default function LabLeftbar({
           </button>
         </div>
 
-        <div className={disabled ? "ll-button-wrapper disabled" : "ll-button-wrapper"}>
+        <div
+          className={
+            disabled ? "ll-button-wrapper disabled" : "ll-button-wrapper"
+          }
+        >
           <button
             className="btn btn--red"
             type="button"
@@ -178,7 +194,10 @@ export default function LabLeftbar({
         <div className="mode-confirm-overlay">
           <div className="mode-confirm-modal" role="dialog" aria-modal="true">
             <h3>Switch to Runtime Study?</h3>
-            <p>Switching to Runtime Study will reset your current puzzle configuration.</p>
+            <p>
+              Switching to Runtime Study will reset your current puzzle
+              configuration.
+            </p>
             <p>All selected puzzle pieces and their parameter setup will be removed.</p>
             <p>Are you sure you want to continue?</p>
 

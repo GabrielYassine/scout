@@ -48,8 +48,10 @@ function RunChart({
   const hasTspTour =
     series.tspTour?.length > 0 && series.tspCities?.length > 0;
 
+  // Only normal numeric observer series should be rendered as line charts.
   const lineSeriesKeys = useMemo(() => getLineSeriesKeys(series), [series]);
 
+  // Combines line observers and special visual observers into one selectable list.
   const displayKeys = useMemo(() => {
     return buildDisplayKeys({
       lineSeriesKeys,
@@ -68,7 +70,13 @@ function RunChart({
     [displayKeys]
   );
 
-  const [selectedObserver, setSelectedObserver] = useRememberedObserver({problemId: run.problemId, displayKeys, initialObserver,});
+  // Remember the selected observer per problem so the chart does not reset unnecessarily.
+  const [selectedObserver, setSelectedObserver] = useRememberedObserver({
+    problemId: run.problemId,
+    displayKeys,
+    initialObserver,
+  });
+
   const [rightObserver, setRightObserver] = useState("");
   const [lineChartWindowRange, setLineChartWindowRange] = useState(null);
 
@@ -85,6 +93,7 @@ function RunChart({
     !isSpecialObserver(activeObserver) &&
     Array.isArray(series[activeObserver]);
 
+  // The right axis is only valid when both selected observers are line series.
   const rightLineSeries =
     isLineSeries &&
     rightObserver &&
@@ -96,19 +105,26 @@ function RunChart({
 
   const statusMeta = getRunStatusMeta(run);
 
-  const handleLeftAxisChange = useCallback((observerKey) => {
-    setSelectedObserver(observerKey);
-  }, []);
+  const handleLeftAxisChange = useCallback(
+    (observerKey) => {
+      setSelectedObserver(observerKey);
+    },
+    [setSelectedObserver]
+  );
 
   const handleRightAxisChange = useCallback((observerKey) => {
     setRightObserver(observerKey);
   }, []);
 
-  const handleSpecialObserverChange = useCallback((observerKey) => {
-    setSelectedObserver(observerKey);
-    setRightObserver("");
-  }, []);
+  const handleSpecialObserverChange = useCallback(
+    (observerKey) => {
+      setSelectedObserver(observerKey);
+      setRightObserver("");
+    },
+    [setSelectedObserver]
+  );
 
+  // Cache converted chart points so repeated WebSocket updates do less work.
   const pointsCacheRef = useRef(createEmptyPointCache(null));
   const rightPointsCacheRef = useRef(createEmptyPointCache(null));
 
@@ -132,6 +148,7 @@ function RunChart({
     });
   }, [rightLineSeries, evaluations, series]);
 
+  // Playback only reveals data up to the currently visible point count.
   const visibleChartPoints = useMemo(() => {
     return chartPoints.slice(0, visibleCount);
   }, [chartPoints, visibleCount]);
@@ -140,6 +157,7 @@ function RunChart({
     return rightChartPoints.slice(0, visibleCount);
   }, [rightChartPoints, visibleCount]);
 
+  // TSP/VRP fitness values are negative distances, so invert them for readable stats.
   const statsChartPoints = useMemo(() => {
     if (!isMinimizationFitnessObserver(activeObserver, run.searchSpaceId)) {
       return visibleChartPoints;

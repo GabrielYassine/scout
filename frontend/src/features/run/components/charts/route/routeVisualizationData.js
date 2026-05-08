@@ -13,6 +13,7 @@ export function sanitizeCity(city) {
   };
 }
 
+// Normalizes raw city data into a consistent format for route visualization.
 export function normalizeCities(citiesData) {
   if (!Array.isArray(citiesData)) {
     return [];
@@ -84,6 +85,8 @@ export function extractTspSourceData(tspData) {
   };
 }
 
+// Builds a unique key for a set of cities based on their id, coordinates, and depot status.
+// Useful for memoization and avoiding unnecessary re-renders when city data hasn't changed.
 export function buildCitiesKey(cities) {
   if (!cities.length) {
     return "";

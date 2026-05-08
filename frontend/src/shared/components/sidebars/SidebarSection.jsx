@@ -35,9 +35,7 @@ export default function SidebarSection({
         <span className="sidebar-section-title">{title}</span>
         <span
           className={
-            isOpen
-              ? "sidebar-section-triangle open"
-              : "sidebar-section-triangle"
+            isOpen ? "sidebar-section-triangle open" : "sidebar-section-triangle"
           }
         >
           ▸

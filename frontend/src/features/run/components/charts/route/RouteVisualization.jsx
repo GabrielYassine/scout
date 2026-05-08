@@ -1,5 +1,11 @@
 /**
  * Interactive TSP/VRP route visualization component.
+ *
+ * The component can render both normal TSP tours and VRP route lists.
+ * In editable mode, cities can be dragged and the view can be panned/zoomed.
+ * During algorithm runs it can also render pheromone intensities as a heatmap
+ * behind the actual tour edges.
+ *
  * @author s235257
  */
 
@@ -69,6 +75,7 @@ export default function RouteVisualization({
     viewRef.current = view;
   }, [view]);
 
+  // Prefer run data when available, since it contains the algorithm output.
   const sourceData = useMemo(() => {
     return extractRunSourceData(run) ?? extractTspSourceData(tspData);
   }, [tspData, run]);
@@ -76,6 +83,7 @@ export default function RouteVisualization({
   const initialCities = useMemo(() => sourceData?.cities ?? [], [sourceData]);
   const [cities, setCities] = useState(() => [...initialCities]);
 
+  // Used to detect real instance changes without resetting city positions on every render.
   const initialCitiesKey = useMemo(
     () => buildCitiesKey(initialCities),
     [initialCities]
@@ -91,6 +99,7 @@ export default function RouteVisualization({
     setCities([...initialCities]);
   }, [initialCitiesKey, draggedCity, initialCities]);
 
+  // Keep the SVG responsive unless fixed dimensions are provided.
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -114,6 +123,7 @@ export default function RouteVisualization({
     return () => resizeObserver.disconnect();
   }, [width, height]);
 
+  // Maps problem coordinates into SVG coordinates while preserving relative distances.
   const { minX, minY, scale, offsetX, offsetY } = useMemo(() => {
     if (!cities.length) {
       return {
@@ -162,6 +172,7 @@ export default function RouteVisualization({
     [minX, minY, scale, offsetX, offsetY, dimensions.height]
   );
 
+  // Converts mouse/SVG coordinates back into problem coordinates for city dragging.
   const fromSVGCoords = useCallback(
     (svgX, svgY) => {
       const baseX = (svgX - view.panX) / view.zoom;
@@ -201,6 +212,7 @@ export default function RouteVisualization({
       const svgPoint = getSVGPoint(event.clientX, event.clientY);
       const dataCoords = fromSVGCoords(svgPoint.x, svgPoint.y);
 
+      // Preserve the cursor offset so the city does not jump when dragging starts.
       dragOffsetRef.current = {
         x: dataCoords.x - city.x,
         y: dataCoords.y - city.y,
@@ -297,6 +309,7 @@ export default function RouteVisualization({
         MAX_ZOOM
       );
 
+      // Zoom around the cursor so the point under the mouse stays visually stable.
       const worldX = (point.x - currentView.panX) / currentView.zoom;
       const worldY = (point.y - currentView.panY) / currentView.zoom;
 
@@ -347,6 +360,7 @@ export default function RouteVisualization({
       .filter((route) => route.points);
   }, [buildRoutePath, cities.length, sourceData]);
 
+  // Recalculate the length when city positions are changed in the editor.
   const currentTourLength = useMemo(() => {
     const routes = normalizeRoutes(sourceData?.tour);
     if (!routes.length || !cities.length) return 0;
@@ -367,6 +381,7 @@ export default function RouteVisualization({
 
     if (!heatmaps.length) return [];
 
+    // Match the heatmap as closely as possible to the latest displayed tour.
     const heatmapIndex = Math.min(
       heatmaps.length - 1,
       Math.max(0, tours.length - 1)
@@ -383,6 +398,7 @@ export default function RouteVisualization({
 
     const rawEdges = [];
 
+    // Use the strongest direction for each undirected edge.
     for (let i = 0; i < size; i += 1) {
       for (let j = i + 1; j < size; j += 1) {
         const value = Math.max(
@@ -415,7 +431,9 @@ export default function RouteVisualization({
         const pointA = toSVGCoords(cityA.x, cityA.y);
         const pointB = toSVGCoords(cityB.x, cityB.y);
 
-        const intensity = range === 0 ? 0.45 : clamp((value - minValue) / range, 0, 1);
+        // Normalize each edge relative to the weakest and strongest visible pheromone.
+        const intensity =
+          range === 0 ? 0.45 : clamp((value - minValue) / range, 0, 1);
 
         return {
           x1: pointA.x,

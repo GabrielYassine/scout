@@ -39,6 +39,7 @@ function getAxisColor(yAxisIndex) {
   return yAxisIndex === 1 ? RIGHT_AXIS_COLOR : LEFT_AXIS_COLOR;
 }
 
+// Builds the yAxis configuration for either the left or right axis, with appropriate styling.
 function buildYAxis({ name, position, color }) {
   return {
     type: "value",

@@ -3,7 +3,11 @@
  * @author s235257
  */
 
-import { buildVrpNodes, CUSTOM_INSTANCE_NAME, EDGE_WEIGHT_TYPE, } from "./instanceModel.js";
+import {
+  buildVrpNodes,
+  CUSTOM_INSTANCE_NAME,
+  EDGE_WEIGHT_TYPE,
+} from "./instanceModel.js";
 
 export function getInstanceViewModel({ instanceType, tspInstance, vrpInstance }) {
   if (instanceType === "VRP") {
@@ -36,14 +40,17 @@ export function getInstanceViewModel({ instanceType, tspInstance, vrpInstance })
     })),
   };
 }
-// Split a combined node list into VRP depots, customers, and the primary depot.
+
+// Separates the editable node list into the VRP structures expected by the backend.
 function splitVrpNodes(nodes) {
   const safeNodes = Array.isArray(nodes) ? nodes : [];
 
   const depotNodes = safeNodes.filter((node) => node.isDepot);
   const depotIdSet = new Set(depotNodes.map((depot) => depot.nodeId));
 
-  const customerNodes = safeNodes.filter( (node) => !node.isDepot && !depotIdSet.has(node.nodeId)  );
+  const customerNodes = safeNodes.filter(
+    (node) => !node.isDepot && !depotIdSet.has(node.nodeId)
+  );
 
   const depots = depotNodes.map((depot) => ({
     id: depot.nodeId,
@@ -61,7 +68,15 @@ function splitVrpNodes(nodes) {
     originalId: customer.nodeId,
   }));
 
-  const primaryDepot = depots[0]  ? { id: depots[0].nodeId, nodeId: depots[0].nodeId,  x: depots[0].x, y: depots[0].y, } : null;
+  // The current backend model supports one primary depot, while keeping all depot nodes for export/import.
+  const primaryDepot = depots[0]
+    ? {
+        id: depots[0].nodeId,
+        nodeId: depots[0].nodeId,
+        x: depots[0].x,
+        y: depots[0].y,
+      }
+    : null;
 
   return {
     depots,
@@ -71,8 +86,9 @@ function splitVrpNodes(nodes) {
 }
 
 export function syncCitiesToTsp(nodes, updateTspInstance) {
-    const safeNodes = Array.isArray(nodes) ? nodes : [];
-    const normalized = safeNodes.map((node) => ({
+  const safeNodes = Array.isArray(nodes) ? nodes : [];
+
+  const normalized = safeNodes.map((node) => ({
     id: node.nodeId,
     nodeId: node.nodeId,
     x: node.x,

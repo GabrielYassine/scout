@@ -28,13 +28,12 @@ import "@/features/lab/styles/PuzzlePiece.css";
 
 export const PuzzleConfigContext = createContext(null);
 
-
-
 export function PuzzleConfigProvider({ children }) {
   const [configs, setConfigs] = useSessionStorageState("scout:runConfigs", [
     createFallbackConfig(),
   ]);
 
+  // Normalize stored configs before using them, so older session data does not break the UI.
   const normalizedConfigs = useMemo(
     () => normalizeConfigList(configs, true),
     [configs]
@@ -48,15 +47,28 @@ export function PuzzleConfigProvider({ children }) {
   const [activeDrag, setActiveDrag] = useState(null);
 
   const activeConfig = useMemo(
-    () => normalizedConfigs.find((config) => config.id === activeConfigId) ?? normalizedConfigs[0],
+    () =>
+      normalizedConfigs.find((config) => config.id === activeConfigId) ??
+      normalizedConfigs[0],
     [normalizedConfigs, activeConfigId]
   );
 
   const placedPieces = activeConfig?.placedPieces ?? [];
-  const puzzleConfig = useMemo(() => deriveGroupedPuzzleConfig(placedPieces), [placedPieces]);
+  const puzzleConfig = useMemo(
+    () => deriveGroupedPuzzleConfig(placedPieces),
+    [placedPieces]
+  );
+
   const params = activeConfig?.params ?? createEmptyParams();
-  const tspInstance = activeConfig?.tspInstance ? cloneTspInstance(activeConfig.tspInstance) : null;
-  const vrpInstance = activeConfig?.vrpInstance ? cloneVrpInstance(activeConfig.vrpInstance) : null;
+
+  // Clone editable instances before exposing them through context to avoid shared mutations.
+  const tspInstance = activeConfig?.tspInstance
+    ? cloneTspInstance(activeConfig.tspInstance)
+    : null;
+
+  const vrpInstance = activeConfig?.vrpInstance
+    ? cloneVrpInstance(activeConfig.vrpInstance)
+    : null;
 
   function updateActiveConfig(key, updater) {
     setConfigs((prev) => {
@@ -66,14 +78,17 @@ export function PuzzleConfigProvider({ children }) {
         config.id === activeConfigId
           ? {
               ...config,
-              [key]: typeof updater === "function" ? updater(config[key]) : updater,
+              [key]:
+                typeof updater === "function" ? updater(config[key]) : updater,
             }
           : config
       );
     });
   }
 
-  const setPlacedPieces = (updater) => updateActiveConfig("placedPieces", updater);
+  const setPlacedPieces = (updater) =>
+    updateActiveConfig("placedPieces", updater);
+
   const setParams = (updater) => updateActiveConfig("params", updater);
   const setTspInstance = (updater) => updateActiveConfig("tspInstance", updater);
   const setVrpInstance = (updater) => updateActiveConfig("vrpInstance", updater);
@@ -84,6 +99,7 @@ export function PuzzleConfigProvider({ children }) {
     setConfigs((prev) => {
       const safePrev = normalizeConfigList(prev, false);
       const newConfig = createDefaultConfig(newId, getNextConfigName(safePrev));
+
       return [...safePrev, newConfig];
     });
 
@@ -93,7 +109,11 @@ export function PuzzleConfigProvider({ children }) {
   function deleteConfig(configId) {
     setConfigs((prev) => {
       const safePrev = normalizeConfigList(prev, false);
-      if (safePrev.length <= 1) return safePrev;
+
+      // Always keep at least one configuration available.
+      if (safePrev.length <= 1) {
+        return safePrev;
+      }
 
       const next = safePrev.filter((config) => config.id !== configId);
 
@@ -125,10 +145,16 @@ export function PuzzleConfigProvider({ children }) {
 
   function handleRemovePiece(typeOrIndex, maybeIndex) {
     const index = typeof maybeIndex === "number" ? maybeIndex : typeOrIndex;
-    if (typeof index !== "number") return;
+
+    if (typeof index !== "number") {
+      return;
+    }
 
     setPlacedPieces((prev) => {
-      const next = (Array.isArray(prev) ? prev : []).filter((_, i) => i !== index);
+      const next = (Array.isArray(prev) ? prev : []).filter(
+        (_, i) => i !== index
+      );
+
       return rekeyGrid(next);
     });
   }
@@ -136,24 +162,37 @@ export function PuzzleConfigProvider({ children }) {
   function handleDragEnd({ active, over }) {
     setActiveDrag(null);
 
+    // Dropping an already placed piece outside the drop area removes it.
     if (!over) {
       if (active.id.toString().startsWith("dropped-")) {
         const { fromIndex } = active.data?.current ?? {};
+
         if (fromIndex != null) {
           handleRemovePiece(fromIndex);
         }
       }
+
       return;
     }
 
-    if (over.id !== "shared-drop-area") return;
+    if (over.id !== "shared-drop-area") {
+      return;
+    }
 
     const pieceType = active.data?.current?.type;
-    if (!pieceType) return;
-    if (active.id.toString().startsWith("dropped-")) return;
+
+    if (!pieceType) {
+      return;
+    }
+
+    // Existing dropped pieces are only removable/reorderable elsewhere, not duplicated here.
+    if (active.id.toString().startsWith("dropped-")) {
+      return;
+    }
 
     setPlacedPieces((prev) => {
       const currentPieces = Array.isArray(prev) ? prev : [];
+
       const nextPieces = [
         ...currentPieces,
         {
@@ -175,6 +214,7 @@ export function PuzzleConfigProvider({ children }) {
       const switchedToRuntimeStudy =
         previousMode !== "runtimeStudy" && nextMode === "runtimeStudy";
 
+      // Runtime studies use a fixed backend setup, so incompatible selected pieces are cleared.
       if (switchedToRuntimeStudy) {
         setPlacedPieces([]);
         setParams((prev) => ({
@@ -203,12 +243,22 @@ export function PuzzleConfigProvider({ children }) {
   }
 
   function applyTemplateRunRequest(runRequest, catalog) {
-    applyTemplateRunRequestToState({ runRequest, catalog, setPlacedPieces, setParams });
+    applyTemplateRunRequestToState({
+      runRequest,
+      catalog,
+      setPlacedPieces,
+      setParams,
+    });
   }
 
-function applyTemplateRuntimeStudyRequest(runtimeStudyRequest, catalog) {
-  applyTemplateRuntimeStudyRequestToState({ runtimeStudyRequest, catalog, setPlacedPieces, setParams, });
-}
+  function applyTemplateRuntimeStudyRequest(runtimeStudyRequest, catalog) {
+    applyTemplateRuntimeStudyRequestToState({
+      runtimeStudyRequest,
+      catalog,
+      setPlacedPieces,
+      setParams,
+    });
+  }
 
   const value = {
     configs: normalizedConfigs,
@@ -250,12 +300,14 @@ function applyTemplateRuntimeStudyRequest(runtimeStudyRequest, catalog) {
         collisionDetection={rectIntersection}
       >
         {children}
+
         <DragOverlay>
           {activeDrag ? (
             <div
               className="puzzle-piece-wrapper puzzle-piece-wrapper--selector"
               style={{
-                "--puzzle-piece-size": "clamp(6rem, 12vw, var(--puzzle-piece-max-size))",
+                "--puzzle-piece-size":
+                  "clamp(6rem, 12vw, var(--puzzle-piece-max-size))",
               }}
             >
               <div
@@ -267,6 +319,7 @@ function applyTemplateRuntimeStudyRequest(runtimeStudyRequest, catalog) {
                   boxShadow: "0 8px 24px rgba(0, 0, 0, 0.3)",
                 }}
               />
+
               <div className="puzzle-piece-content puzzle-piece-content--selector">
                 <div className="puzzle-piece-title puzzle-piece-title--selector">
                   {activeDrag.label}

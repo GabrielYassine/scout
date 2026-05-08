@@ -13,9 +13,25 @@ import InstanceFieldsSection from "./InstanceFieldsSection.jsx";
 import "@/shared/components/styles/FormFields.css";
 import "@/shared/components/styles/LabRightbar.css";
 
-import { importInstanceFile, exportInstanceFile } from "@/shared/api/instance.js";
-import { applyEditedMetadata, createEmptyTspInstance, createEmptyVrpInstance, CUSTOM_INSTANCE_NAME, getNextNodeId, } from "./instanceModel.js";
-import { getInstanceViewModel, syncCitiesToTsp, syncCitiesToVrp, buildTspExportPayload, buildVrpExportPayload, } from "./instanceHelpers.js";
+import {
+  importInstanceFile,
+  exportInstanceFile,
+} from "@/shared/api/instance.js";
+
+import {
+  applyEditedMetadata,
+  createEmptyTspInstance,
+  createEmptyVrpInstance,
+  getNextNodeId,
+} from "./instanceModel.js";
+
+import {
+  getInstanceViewModel,
+  syncCitiesToTsp,
+  syncCitiesToVrp,
+  buildTspExportPayload,
+  buildVrpExportPayload,
+} from "./instanceHelpers.js";
 
 const LabRightbar = ({
   hoverInfo,
@@ -29,7 +45,11 @@ const LabRightbar = ({
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [open, setOpen] = useState({ description: true, instance: true, });
+  const [open, setOpen] = useState({
+    description: true,
+    instance: true,
+  });
+
   const fileInputRef = useRef(null);
 
   const initialType = vrpInstance ? "VRP" : "TSP";
@@ -43,13 +63,13 @@ const LabRightbar = ({
     }
   }, [tspInstance, vrpInstance]);
 
-
   const updateTspInstance = (updater) => {
     if (!onTspInstanceChange) return;
 
     onTspInstanceChange((prev) => {
       const base = prev ?? createEmptyTspInstance();
       const next = typeof updater === "function" ? updater(base) : updater;
+
       return applyEditedMetadata(next, prev);
     });
   };
@@ -60,10 +80,12 @@ const LabRightbar = ({
     onVrpInstanceChange((prev) => {
       const base = prev ?? createEmptyVrpInstance();
       const next = typeof updater === "function" ? updater(base) : updater;
+
       return applyEditedMetadata(next, prev);
     });
   };
 
+  // The view model gives the UI one shared node structure for both TSP and VRP.
   const view = useMemo(
     () => getInstanceViewModel({ instanceType, tspInstance, vrpInstance }),
     [instanceType, tspInstance, vrpInstance]
@@ -71,8 +93,8 @@ const LabRightbar = ({
 
   const dimension = view.nodes.length;
 
-  const handleFileUpload = async (e) => {
-    const file = e.target.files?.[0];
+  const handleFileUpload = async (event) => {
+    const file = event.target.files?.[0];
     if (!file) return;
 
     setUploading(true);
@@ -143,13 +165,22 @@ const LabRightbar = ({
 
     try {
       const payload =
-        instanceType === "VRP"  ? buildVrpExportPayload(view) : buildTspExportPayload(view);
+        instanceType === "VRP"
+          ? buildVrpExportPayload(view)
+          : buildTspExportPayload(view);
 
-      const requestBody = { exportType: instanceType, ...payload, };
+      const requestBody = {
+        exportType: instanceType,
+        ...payload,
+      };
 
       const content = await exportInstanceFile(requestBody);
       const extension = instanceType === "VRP" ? "vrp" : "tsp";
-      const safeName = String(payload.name || "instance").trim() .replace(/[^a-zA-Z0-9-_]+/g, "_").replace(/_+/g, "_");
+
+      const safeName = String(payload.name || "instance")
+        .trim()
+        .replace(/[^a-zA-Z0-9-_]+/g, "_")
+        .replace(/_+/g, "_");
 
       const fileName = `${safeName || "instance"}.${extension}`;
 
@@ -186,7 +217,10 @@ const LabRightbar = ({
     } else {
       onVrpInstanceChange?.(null);
 
-      const tspNodes = nodes.map((node) => ({...node, isDepot: false, }));
+      const tspNodes = nodes.map((node) => ({
+        ...node,
+        isDepot: false,
+      }));
 
       syncCitiesToTsp(tspNodes, updateTspInstance);
     }
@@ -196,7 +230,10 @@ const LabRightbar = ({
     if (instanceType !== "VRP") return;
 
     if (value === "") {
-      updateVrpInstance((current) => ({ ...current, numberOfVehicles: "", }));
+      updateVrpInstance((current) => ({
+        ...current,
+        numberOfVehicles: "",
+      }));
       return;
     }
 
@@ -205,14 +242,20 @@ const LabRightbar = ({
 
     const nextValue = Math.max(1, Math.floor(parsed));
 
-    updateVrpInstance((current) => ({ ...current, numberOfVehicles: nextValue, }));
+    updateVrpInstance((current) => ({
+      ...current,
+      numberOfVehicles: nextValue,
+    }));
   };
 
   const handleCapacityChange = (value) => {
     if (instanceType !== "VRP") return;
 
     if (value === "") {
-      updateVrpInstance((current) => ({ ...current, capacity: "", }));
+      updateVrpInstance((current) => ({
+        ...current,
+        capacity: "",
+      }));
       return;
     }
 
@@ -221,7 +264,10 @@ const LabRightbar = ({
 
     const nextValue = Math.max(0, parsed);
 
-    updateVrpInstance((current) => ({ ...current, capacity: nextValue, }));
+    updateVrpInstance((current) => ({
+      ...current,
+      capacity: nextValue,
+    }));
   };
 
   const handleCityChange = (index, field, value) => {
@@ -229,7 +275,10 @@ const LabRightbar = ({
     if (Number.isNaN(numValue)) return;
 
     const updatedNodes = [...view.nodes];
-    updatedNodes[index] = { ...updatedNodes[index], [field]: numValue, };
+    updatedNodes[index] = {
+      ...updatedNodes[index],
+      [field]: numValue,
+    };
 
     if (instanceType === "VRP") {
       syncCitiesToVrp(updatedNodes, updateVrpInstance);
@@ -263,6 +312,7 @@ const LabRightbar = ({
   const handleRemoveCity = (index) => {
     const target = view.nodes[index];
 
+    // Avoid creating an invalid VRP instance with no depot.
     if (instanceType === "VRP" && target?.isDepot) {
       const depotCount = view.nodes.filter((node) => node.isDepot).length;
       if (depotCount <= 1) return;
@@ -295,7 +345,10 @@ const LabRightbar = ({
     if (instanceType === "VRP") {
       syncCitiesToVrp(nodes, updateVrpInstance);
     } else {
-      const tspNodes = nodes.map((node) => ({ ...node, isDepot: false, }));
+      const tspNodes = nodes.map((node) => ({
+        ...node,
+        isDepot: false,
+      }));
 
       syncCitiesToTsp(tspNodes, updateTspInstance);
     }
@@ -312,16 +365,19 @@ const LabRightbar = ({
     const depotCount = updatedNodes.filter((node) => node.isDepot).length;
     if (target.isDepot && depotCount <= 1) return;
 
-    updatedNodes[index] = { ...target, isDepot: !target.isDepot, demand: target.isDepot ? target.demand ?? 0 : 0, };
+    updatedNodes[index] = {
+      ...target,
+      isDepot: !target.isDepot,
+      demand: target.isDepot ? target.demand ?? 0 : 0,
+    };
 
     syncCitiesToVrp(updatedNodes, updateVrpInstance);
   };
 
-  const depotCount = useMemo(
-    () =>
-      instanceType === "VRP"  ? view.nodes.filter((node) => node.isDepot).length : 0,
-    [instanceType, view.nodes]
-  );
+  const depotCount = useMemo(() => {
+    if (instanceType !== "VRP") return 0;
+    return view.nodes.filter((node) => node.isDepot).length;
+  }, [instanceType, view.nodes]);
 
   return (
     <section className="lab-rightbar">
@@ -330,7 +386,10 @@ const LabRightbar = ({
           title="Description"
           isOpen={open.description}
           onToggle={() =>
-            setOpen((current) => ({...current, description: !current.description, }))
+            setOpen((current) => ({
+              ...current,
+              description: !current.description,
+            }))
           }
         >
           <div className="lr-description-body">
@@ -351,7 +410,10 @@ const LabRightbar = ({
           title="Problem Instance"
           isOpen={open.instance}
           onToggle={() =>
-            setOpen((current) => ({ ...current, instance: !current.instance, }))
+            setOpen((current) => ({
+              ...current,
+              instance: !current.instance,
+            }))
           }
         >
           <InstanceUploadSection
@@ -364,7 +426,11 @@ const LabRightbar = ({
             onExport={handleExport}
           />
 
-          <button className="btn btn--yellow" onClick={() => setIsModalOpen(true)}>
+          <button
+            className="btn btn--yellow"
+            type="button"
+            onClick={() => setIsModalOpen(true)}
+          >
             Edit Graph
           </button>
 

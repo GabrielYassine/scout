@@ -1,5 +1,7 @@
 /**
  * Run execution context provider and state management.
+ * This context manages the state of a run execution, including metadata, progress, and results.
+ It also handles starting new runs, restoring runs from session storage, and streaming updates via websockets.
  * @author s235257
  */
 import { createContext, useEffect, useMemo, useState } from "react";

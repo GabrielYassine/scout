@@ -34,7 +34,6 @@ function isMinimizationFitnessBoxplot(seriesName, searchSpaceId, invertPermutati
 /**
  * Normalizes one backend boxplot row.
  * Expected row format is [min, q1, median, q3, max].
- *
  * For TSP/VRP fitness, values may be stored as negative distances because the
  * framework maximizes fitness. In that case, the row is inverted and reordered
  * so the chart displays positive tour lengths correctly.

@@ -124,6 +124,8 @@ export default function LabPage({
 
     return (map[type] ?? []).find((x) => x.id === id) ?? null;
   }
+
+  // Merge the default search space parameters from the catalog with the user-provided parameters, giving precedence to user input.
   function withSearchSpaceDefaults(searchSpaceParams) {
     const searchSpaceId = puzzleConfig.searchSpace?.[0]?.id;
     const searchSpace = getCatalogItem("searchSpace", searchSpaceId);

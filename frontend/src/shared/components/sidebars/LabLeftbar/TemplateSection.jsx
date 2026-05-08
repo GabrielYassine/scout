@@ -1,6 +1,6 @@
 /**
-  * Component for the template section in the lab left sidebar. It allows users to select and apply templates to their lab environment.
-  * @author s230632
+ * Template selector for applying predefined run configurations in the lab sidebar.
+ * @author s230632
  */
 
 import SidebarSection from "../SidebarSection.jsx";
@@ -16,6 +16,14 @@ export default function TemplateSection({
   templatesError,
   onApplyTemplate,
 }) {
+  const hasTemplates = templates.length > 0;
+  const cannotApplyTemplate = disabled || !selectedTemplateId;
+
+  function handleApplyTemplate() {
+    onApplyTemplate?.(selectedTemplateId);
+    setSelectedTemplateId("");
+  }
+
   return (
     <SidebarSection
       title="Templates"
@@ -31,8 +39,8 @@ export default function TemplateSection({
         <select
           className="field-input"
           value={selectedTemplateId}
-          onChange={(e) => setSelectedTemplateId(e.target.value)}
-          disabled={disabled || templatesLoading || templates.length === 0}
+          onChange={(event) => setSelectedTemplateId(event.target.value)}
+          disabled={disabled || templatesLoading || !hasTemplates}
         >
           <option value="">Select template</option>
           {templates.map((template) => (
@@ -45,11 +53,8 @@ export default function TemplateSection({
         <button
           className="btn btn--green"
           type="button"
-          disabled={disabled || !selectedTemplateId}
-          onClick={() => {
-            onApplyTemplate?.(selectedTemplateId);
-            setSelectedTemplateId("");
-          }}
+          disabled={cannotApplyTemplate}
+          onClick={handleApplyTemplate}
         >
           Apply Template
         </button>
