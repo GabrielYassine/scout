@@ -1,5 +1,5 @@
 /**
-  *
+  * A simple wrapper around fetch that throws an HttpError on non-2xx responses, including the status code, URL, and any JSON payload in the error object.
   * @author s230632
  */
 

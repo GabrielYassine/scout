@@ -1,5 +1,5 @@
 /**
-  *
+  *  A React component that renders a boxplot chart using ECharts, based on backend response data.
   * @author s230632s
  */
 

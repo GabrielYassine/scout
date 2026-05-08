@@ -1,5 +1,5 @@
 /**
-  *
+  * Component for the template section in the lab left sidebar. It allows users to select and apply templates to their lab environment.
   * @author s230632
  */
 

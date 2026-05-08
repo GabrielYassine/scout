@@ -124,6 +124,28 @@ export default function LabPage({
 
     return (map[type] ?? []).find((x) => x.id === id) ?? null;
   }
+  function withSearchSpaceDefaults(searchSpaceParams) {
+    const searchSpaceId = puzzleConfig.searchSpace?.[0]?.id;
+    const searchSpace = getCatalogItem("searchSpace", searchSpaceId);
+
+    const defaults = {};
+
+    for (const param of searchSpace?.params ?? []) {
+      if (!param?.key) continue;
+
+      const defaultValue =
+        param.defaultValue ??
+        param.value ??
+        param.currentValue ??
+        param.initialValue;
+
+      if (defaultValue !== undefined) {
+        defaults[param.key] = defaultValue;
+      }
+    }
+
+    return {...defaults, ...(searchSpaceParams ?? {}),};
+  }
 
   // When the user hovers over a piece in the puzzle or selector, look up its title and description in the catalog.
   function handlePieceHover(type, id) {
@@ -237,12 +259,15 @@ export default function LabPage({
       vrpInstance,
     });
 
+   const finalSearchSpaceParams = withSearchSpaceDefaults(searchSpaceParams);
+
+
     const draftRunRequest = buildRunRequest({
       runId: null,
       sessionId: null,
       puzzleConfig,
       params,
-      searchSpaceParams,
+      searchSpaceParams: finalSearchSpaceParams,
       problemParams,
       seed,
     });
@@ -267,7 +292,7 @@ export default function LabPage({
       sessionId,
       puzzleConfig,
       params,
-      searchSpaceParams,
+      searchSpaceParams: finalSearchSpaceParams,
       problemParams,
       seed,
     });
