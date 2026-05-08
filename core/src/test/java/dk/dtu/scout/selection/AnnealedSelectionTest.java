@@ -135,32 +135,72 @@ class AnnealedSelectionTest {
     }
 
     @Test
+    void select_populationAnnealedSelectsLaterCandidateWhenThresholdSkipsFirstWeight() {
+        AnnealedSelection<String> selection = new AnnealedSelection<>();
+
+        selection.configure(Map.of(
+            "initialTemperature", 10.0,
+            "coolingRate", 1.0,
+            "minTemperature", 1.0
+        ));
+
+        List<EvaluatedSolution<String>> selected = selection.select(
+            List.of(
+                evaluated("first", 1.0),
+                evaluated("second", 1.0)
+            ),
+            List.of(evaluated("third", 1.0)),
+            1,
+            0,
+            new FixedDoubleRandom(0.5)
+        );
+
+        assertEquals("second", selected.getFirst().value());
+    }
+
+    @Test
+    void select_usesPopulationSelectionWhenThereIsNotExactlyOneParentAndOneChild() {
+        AnnealedSelection<String> selection = new AnnealedSelection<>();
+
+        List<EvaluatedSolution<String>> multipleParentsSelected = selection.select(
+            List.of(
+                evaluated("parent-a", 1.0),
+                evaluated("parent-b", 2.0)
+            ),
+            List.of(evaluated("child", 3.0)),
+            1,
+            0,
+            new FixedDoubleRandom(0.999)
+        );
+
+        List<EvaluatedSolution<String>> multipleChildrenSelected = selection.select(
+            List.of(evaluated("parent", 1.0)),
+            List.of(
+                evaluated("child-a", 2.0),
+                evaluated("child-b", 3.0)
+            ),
+            1,
+            0,
+            new FixedDoubleRandom(0.999)
+        );
+
+        assertEquals(1, multipleParentsSelected.size());
+        assertEquals(1, multipleChildrenSelected.size());
+
+        assertTrue(List.of("parent-a", "parent-b", "child").contains(multipleParentsSelected.getFirst().value()));
+        assertTrue(List.of("parent", "child-a", "child-b").contains(multipleChildrenSelected.getFirst().value()));
+    }
+
+    @Test
     void select_rejectsInvalidInputs() {
         AnnealedSelection<String> selection = new AnnealedSelection<>();
 
-        assertThrows(IllegalArgumentException.class, () ->
-            selection.select(List.of(evaluated("p", 1.0)), List.of(evaluated("c", 2.0)), 0, 0, new Random(1234L))
-        );
-
-        assertThrows(IllegalArgumentException.class, () ->
-            selection.select(null, List.of(evaluated("c", 2.0)), 1, 0, new Random(1234L))
-        );
-
-        assertThrows(IllegalArgumentException.class, () ->
-            selection.select(List.of(), List.of(evaluated("c", 2.0)), 1, 0, new Random(1234L))
-        );
-
-        assertThrows(IllegalArgumentException.class, () ->
-            selection.select(List.of(evaluated("p", 1.0)), null, 1, 0, new Random(1234L))
-        );
-
-        assertThrows(IllegalArgumentException.class, () ->
-            selection.select(List.of(evaluated("p", 1.0)), List.of(), 1, 0, new Random(1234L))
-        );
-
-        assertThrows(IllegalArgumentException.class, () ->
-            selection.select(List.of(evaluated("p", 1.0)), List.of(evaluated("c", 2.0)), 3, 0, new Random(1234L))
-        );
+        assertThrows(IllegalArgumentException.class, () -> selection.select(List.of(evaluated("p", 1.0)), List.of(evaluated("c", 2.0)), 0, 0, new Random(1234L)));
+        assertThrows(IllegalArgumentException.class, () -> selection.select(null, List.of(evaluated("c", 2.0)), 1, 0, new Random(1234L)));
+        assertThrows(IllegalArgumentException.class, () -> selection.select(List.of(), List.of(evaluated("c", 2.0)), 1, 0, new Random(1234L)));
+        assertThrows(IllegalArgumentException.class, () -> selection.select(List.of(evaluated("p", 1.0)), null, 1, 0, new Random(1234L)));
+        assertThrows(IllegalArgumentException.class, () -> selection.select(List.of(evaluated("p", 1.0)), List.of(), 1, 0, new Random(1234L)));
+        assertThrows(IllegalArgumentException.class, () -> selection.select(List.of(evaluated("p", 1.0)), List.of(evaluated("c", 2.0)), 3, 0, new Random(1234L)));
     }
 
     @Test
@@ -174,6 +214,26 @@ class AnnealedSelectionTest {
         assertThrows(IllegalArgumentException.class, () -> selection.configure(Map.of("minTemperature", 0.0)));
         assertThrows(IllegalArgumentException.class, () -> selection.configure(Map.of("minTemperature", -1.0)));
         assertThrows(IllegalArgumentException.class, () -> selection.configure(Map.of("initialTemperature", 1.0, "minTemperature", 2.0)));
+    }
+
+    @Test
+    void configure_allowsPartialUpdates() {
+        AnnealedSelection<String> initialTemperatureOnly = new AnnealedSelection<>();
+        initialTemperatureOnly.configure(Map.of("initialTemperature", 10.0));
+
+        assertEquals(10.0, initialTemperatureOnly.temperatureAt(0), 1e-9);
+
+        AnnealedSelection<String> coolingRateOnly = new AnnealedSelection<>();
+        coolingRateOnly.configure(Map.of("coolingRate", 0.5));
+
+        assertEquals(5.0, coolingRateOnly.temperatureAt(0), 1e-9);
+        assertEquals(2.5, coolingRateOnly.temperatureAt(1), 1e-9);
+
+        AnnealedSelection<String> minTemperatureOnly = new AnnealedSelection<>();
+        minTemperatureOnly.configure(Map.of("minTemperature", 1.0));
+
+        assertEquals(5.0, minTemperatureOnly.temperatureAt(0), 1e-9);
+        assertEquals(1.0, minTemperatureOnly.temperatureAt(10000), 1e-9);
     }
 
     @Test
@@ -207,89 +267,6 @@ class AnnealedSelectionTest {
         assertEquals("Annealed Selection", selection.displayName());
         assertFalse(selection.description().isBlank());
         assertEquals(3, selection.params().size());
-    }
-
-    @Test
-    void configure_allowsUpdatingInitialTemperatureWithoutMinTemperature() {
-        AnnealedSelection<String> selection = new AnnealedSelection<>();
-        selection.configure(Map.of("initialTemperature", 10.0));
-        assertEquals(10.0, selection.temperatureAt(0), 1e-9);
-    }
-
-    @Test
-    void configure_allowsUpdatingCoolingRateWithoutMinTemperature() {
-        AnnealedSelection<String> selection = new AnnealedSelection<>();
-        selection.configure(Map.of("coolingRate", 0.5));
-        assertEquals(5.0, selection.temperatureAt(0), 1e-9);
-        assertEquals(2.5, selection.temperatureAt(1), 1e-9);
-    }
-
-    @Test
-    void configure_allowsUpdatingMinTemperatureWithoutOtherValues() {
-        AnnealedSelection<String> selection = new AnnealedSelection<>();
-        selection.configure(Map.of("minTemperature", 1.0));
-        assertEquals(5.0, selection.temperatureAt(0), 1e-9);
-        assertEquals(1.0, selection.temperatureAt(10000), 1e-9);
-    }
-
-    @Test
-    void select_usesPopulationSelectionWhenMuIsOneButThereAreMultipleParents() {
-        AnnealedSelection<String> selection = new AnnealedSelection<>();
-
-        List<EvaluatedSolution<String>> selected = selection.select(
-            List.of(
-                evaluated("parent-a", 1.0),
-                evaluated("parent-b", 2.0)
-            ),
-            List.of(evaluated("child", 3.0)),
-            1,
-            0,
-            new FixedDoubleRandom(0.999)
-        );
-
-        assertEquals(1, selected.size());
-    }
-
-    @Test
-    void select_usesPopulationSelectionWhenMuAndParentAreSingleButThereAreMultipleChildren() {
-        AnnealedSelection<String> selection = new AnnealedSelection<>();
-
-        List<EvaluatedSolution<String>> selected = selection.select(
-            List.of(evaluated("parent", 1.0)),
-            List.of(
-                evaluated("child-a", 2.0),
-                evaluated("child-b", 3.0)
-            ),
-            1,
-            0,
-            new FixedDoubleRandom(0.999)
-        );
-
-        assertEquals(1, selected.size());
-    }
-
-    @Test
-    void select_populationAnnealedSelectsLaterCandidateWhenThresholdSkipsFirstWeight() {
-        AnnealedSelection<String> selection = new AnnealedSelection<>();
-
-        selection.configure(Map.of(
-            "initialTemperature", 10.0,
-            "coolingRate", 1.0,
-            "minTemperature", 1.0
-        ));
-
-        List<EvaluatedSolution<String>> selected = selection.select(
-            List.of(
-                evaluated("first", 1.0),
-                evaluated("second", 1.0)
-            ),
-            List.of(evaluated("third", 1.0)),
-            1,
-            0,
-            new FixedDoubleRandom(0.5)
-        );
-
-        assertEquals("second", selected.getFirst().value());
     }
 
     private static EvaluatedSolution<String> evaluated(String value, double fitness) {

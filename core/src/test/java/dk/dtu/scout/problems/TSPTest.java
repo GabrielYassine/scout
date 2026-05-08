@@ -14,9 +14,7 @@ class TSPTest {
     void configure_setsTspInstance() {
         TSP problem = new TSP();
         TSPInstance instance = tspInstance();
-
         problem.configure(Map.of("tspInstance", instance));
-
         assertSame(instance, problem.getInstance());
     }
 
@@ -24,43 +22,56 @@ class TSPTest {
     void fitness_returnsNegativeTourLength() {
         TSP problem = new TSP();
         problem.configure(Map.of("tspInstance", tspInstance()));
-
         double fitness = problem.fitness(new int[] {0, 1, 2});
-
         assertEquals(-16.0, fitness, 1e-9);
     }
 
     @Test
     void fitness_rejectsUnconfiguredProblem() {
         TSP problem = new TSP();
-
-        assertThrows(IllegalStateException.class, () ->
-            problem.fitness(new int[] {0, 1, 2})
-        );
+        assertThrows(IllegalStateException.class, () -> problem.fitness(new int[]{0, 1, 2}));
     }
 
     @Test
     void fitness_rejectsNullTour() {
         TSP problem = new TSP();
         problem.configure(Map.of("tspInstance", tspInstance()));
-
-        assertThrows(IllegalArgumentException.class, () ->
-            problem.fitness(null)
-        );
+        assertThrows(IllegalArgumentException.class, () -> problem.fitness(null));
     }
 
     @Test
-    void fitness_rejectsTourWithWrongLength() {
+    void fitness_rejectsTourThatIsTooShort() {
         TSP problem = new TSP();
         problem.configure(Map.of("tspInstance", tspInstance()));
+        assertThrows(IllegalArgumentException.class, () -> problem.fitness(new int[]{0, 1}));
+    }
 
-        assertThrows(IllegalArgumentException.class, () ->
-            problem.fitness(new int[] {0, 1})
-        );
+    @Test
+    void fitness_rejectsTourThatIsTooLong() {
+        TSP problem = new TSP();
+        problem.configure(Map.of("tspInstance", tspInstance()));
+        assertThrows(IllegalArgumentException.class, () -> problem.fitness(new int[]{0, 1, 2, 3}));
+    }
 
-        assertThrows(IllegalArgumentException.class, () ->
-            problem.fitness(new int[] {0, 1, 2, 3})
-        );
+    @Test
+    void isOptimal_returnsFalseWhenInstanceHasNoKnownOptimum() {
+        TSP problem = new TSP();
+        problem.configure(Map.of("tspInstance", tspInstance()));
+        assertFalse(problem.isOptimal(-16.0));
+    }
+
+    @Test
+    void isOptimal_returnsTrueWhenKnownOptimumIsReached() {
+        TSP problem = new TSP();
+        problem.configure(Map.of("tspInstance", knownOptimumInstance()));
+        assertTrue(problem.isOptimal(-7542.0));
+    }
+
+    @Test
+    void isOptimal_returnsFalseWhenKnownOptimumIsNotReached() {
+        TSP problem = new TSP();
+        problem.configure(Map.of("tspInstance", knownOptimumInstance()));
+        assertFalse(problem.isOptimal(-7542.00001));
     }
 
     @Test
@@ -74,34 +85,10 @@ class TSPTest {
         assertEquals(List.of("permutation"), problem.supportedSearchSpaces());
     }
 
-    @Test
-    void isOptimal_returnsFalseWhenInstanceHasNoKnownOptimum() {
-        TSP problem = new TSP();
-        problem.configure(Map.of("tspInstance", tspInstance()));
-
-        assertFalse(problem.isOptimal(-16.0));
-    }
-
-    @Test
-    void isOptimal_returnsTrueWhenKnownOptimumIsReached() {
-        TSP problem = new TSP();
-        problem.configure(Map.of("tspInstance", knownOptimumInstance()));
-
-        assertTrue(problem.isOptimal(-7542.0));
-    }
-
-    @Test
-    void isOptimal_returnsFalseWhenKnownOptimumIsNotReached() {
-        TSP problem = new TSP();
-        problem.configure(Map.of("tspInstance", knownOptimumInstance()));
-
-        assertFalse(problem.isOptimal(-7542.00001));
-    }
-
-    private static TSPInstance knownOptimumInstance() {
+    private static TSPInstance tspInstance() {
         return new TSPInstance(
-            "berlin52",
-            "known optimum test",
+            "unknown-test-instance",
+            "test instance",
             3,
             new double[][] {
                 {0.0, 0.0},
@@ -111,10 +98,10 @@ class TSPTest {
         );
     }
 
-    private static TSPInstance tspInstance() {
+    private static TSPInstance knownOptimumInstance() {
         return new TSPInstance(
-            "unknown-test-instance",
-            "test instance",
+            "berlin52",
+            "known optimum test",
             3,
             new double[][] {
                 {0.0, 0.0},

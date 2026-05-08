@@ -4,6 +4,7 @@ import dk.dtu.scout.datatypes.TSPInstance;
 import dk.dtu.scout.datatypes.VRPInstance;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -72,34 +73,44 @@ class TourVisualizationMapperTest {
 
     @Test
     void shiftRoutesForDepot_addsOneToCustomerIndices() {
-        List<List<Integer>> shifted = TourVisualizationMapper.shiftRoutesForDepot(List.of(List.of(0, 1), List.of(2)));
+        List<List<Integer>> shifted = TourVisualizationMapper.shiftRoutesForDepot(List.of(
+            List.of(0, 1),
+            List.of(2)
+        ));
+
         assertEquals(List.of(List.of(1, 2), List.of(3)), shifted);
     }
 
     @Test
     void shiftRoutesForDepot_keepsEmptyRoutesAsEmptyRoutes() {
-        List<List<Integer>> shifted = TourVisualizationMapper.shiftRoutesForDepot(List.of(List.of(), List.of(0)));
+        List<List<Integer>> shifted = TourVisualizationMapper.shiftRoutesForDepot(List.of(
+            List.of(),
+            List.of(0)
+        ));
+
         assertEquals(List.of(List.of(), List.of(1)), shifted);
     }
 
     @Test
     void shiftRoutesForDepot_skipsNullCustomerValuesInsideRoute() {
-        List<Integer> routeWithNull = new java.util.ArrayList<>();
+        List<Integer> routeWithNull = new ArrayList<>();
         routeWithNull.add(0);
         routeWithNull.add(null);
         routeWithNull.add(2);
 
         List<List<Integer>> shifted = TourVisualizationMapper.shiftRoutesForDepot(List.of(routeWithNull));
+
         assertEquals(List.of(List.of(1, 3)), shifted);
     }
 
     @Test
     void shiftRoutesForDepot_keepsNullRouteAsEmptyRoute() {
-        List<List<Integer>> routes = new java.util.ArrayList<>();
+        List<List<Integer>> routes = new ArrayList<>();
         routes.add(null);
         routes.add(List.of(1));
 
         List<List<Integer>> shifted = TourVisualizationMapper.shiftRoutesForDepot(routes);
+
         assertEquals(List.of(List.of(), List.of(2)), shifted);
     }
 

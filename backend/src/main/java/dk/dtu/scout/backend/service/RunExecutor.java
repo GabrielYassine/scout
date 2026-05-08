@@ -71,7 +71,7 @@ public class RunExecutor {
         long baseSeed = request.seed();
         int runtimes = request.runTimes();
 
-        Map<String, Object> searchSpaceParams = copyParams(request.searchSpaceParams());
+        Map<String, Object> searchSpaceParams = new LinkedHashMap<>(request.searchSpaceParams());
         Supplier<SearchSpace<S>> searchSpaceFactory = () -> factory.createSearchSpace(request.searchSpaceId(), searchSpaceParams);
 
         List<Future<RunGroupResponse>> futures = new ArrayList<>();
@@ -134,7 +134,7 @@ public class RunExecutor {
         for (String problemId : request.problemIds()) {
             checkCancelled();
 
-            Map<String, Object> problemParams = copyParams(request.problemParams());
+            Map<String, Object> problemParams = new LinkedHashMap<>(request.problemParams());
 
             Problem<S> problem = factory.createProblem(problemId, searchSpace.dimension(), problemParams);
 
@@ -214,10 +214,6 @@ public class RunExecutor {
             } catch (ExecutionException ex) {
                 Throwable cause = ex.getCause();
 
-                if (cause instanceof CancellationException cancellation) {
-                    throw cancellation;
-                }
-
                 if (cause instanceof RuntimeException runtimeException) {
                     throw runtimeException;
                 }
@@ -234,11 +230,6 @@ public class RunExecutor {
             throw new CancellationException("Run cancelled");
         }
     }
-
-    private Map<String, Object> copyParams(Map<String, Object> params) {
-        return params != null ? new LinkedHashMap<>(params) : new LinkedHashMap<>();
-    }
-
 
     private void cancelAll(List<Future<RunGroupResponse>> futures) {
         for (Future<RunGroupResponse> future : futures) {

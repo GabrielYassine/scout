@@ -59,7 +59,11 @@ public class SingleBitFlipGenerator implements Generator<boolean[]> {
      */
     @Override
     public boolean[] generate(Random rng) {
-        boolean[] bits = (boolean[]) state.get(StateKeys.OFFSPRING_BASE);
+        Object baseObj = state.get(StateKeys.OFFSPRING_BASE);
+
+        if (!(baseObj instanceof boolean[] bits)) {
+            throw new IllegalStateException("SingleBitFlipGenerator requires 'offspringBase' in state");
+        }
 
         if (bits.length == 0) {
             return bits;

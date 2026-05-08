@@ -32,11 +32,10 @@ class SimulationRunnerTest {
 
     @Test
     void run_initializesOptionalCrossoverWhenProvided() {
-        TestPopulationModel populationModel = new TestPopulationModel(0);
         InitCountingCrossover crossover = new InitCountingCrossover();
 
         new SimulationRunner().run(
-            populationModel,
+            new TestPopulationModel(),
             TestGenerator::new,
             crossover,
             null,
@@ -54,49 +53,63 @@ class SimulationRunnerTest {
 
     @Test
     void run_logsInitialAndTerminalStateAndNotifiesObservers() {
-        TestPopulationModel populationModel = new TestPopulationModel(2);
         RecordingObserver observer = new RecordingObserver();
-        StopAtIteration stopCondition = new StopAtIteration(2);
 
-        RunLog log = run(populationModel, List.of(stopCondition), List.of(observer), 2);
+        RunLog log = run(
+            new TestPopulationModel(),
+            List.of(new StopAtIteration(2)),
+            List.of(observer),
+            2
+        );
 
-        assertEquals(List.of(0, 2), log.getEvaluations());
+        assertEquals(List.of(-1, 1), log.getEvaluations());
         assertEquals(List.of("start-0", "step-0", "step-2", "end-2"), observer.events);
         assertEquals(List.of(0.0, 2.0), log.getSeries().get("fitness").getValues());
     }
 
     @Test
     void run_logsOnlyAtConfiguredIntervalAndAlwaysLogsTerminalState() {
-        TestPopulationModel populationModel = new TestPopulationModel(3);
         RecordingObserver observer = new RecordingObserver();
-        StopAtIteration stopCondition = new StopAtIteration(3);
 
-        RunLog log = run(populationModel, List.of(stopCondition), List.of(observer), 2);
+        RunLog log = run(
+            new TestPopulationModel(),
+            List.of(new StopAtIteration(3)),
+            List.of(observer),
+            2
+        );
 
-        assertEquals(List.of(0, 2, 3), log.getEvaluations());
+        assertEquals(List.of(-1, 1, 2), log.getEvaluations());
         assertEquals(List.of("start-0", "step-0", "step-2", "step-3", "end-3"), observer.events);
         assertEquals(List.of(0.0, 2.0, 3.0), log.getSeries().get("fitness").getValues());
     }
 
     @Test
     void run_stopsImmediatelyWhenStopConditionAlreadyHolds() {
-        TestPopulationModel populationModel = new TestPopulationModel(10);
+        TestPopulationModel populationModel = new TestPopulationModel();
         RecordingObserver observer = new RecordingObserver();
-        StopAtIteration stopCondition = new StopAtIteration(0);
 
-        RunLog log = run(populationModel, List.of(stopCondition), List.of(observer), 1);
+        RunLog log = run(
+            populationModel,
+            List.of(new StopAtIteration(0)),
+            List.of(observer),
+            1
+        );
 
-        assertEquals(List.of(0), log.getEvaluations());
+        assertEquals(List.of(-1), log.getEvaluations());
         assertEquals(0, populationModel.stepCalls);
         assertEquals(List.of("start-0", "step-0", "end-0"), observer.events);
     }
 
     @Test
     void run_initializesSharedStateWithCoreValues() {
-        TestPopulationModel populationModel = new TestPopulationModel(1);
         StateReadingObserver observer = new StateReadingObserver();
 
-        run(populationModel, List.of(new StopAtIteration(1)), List.of(observer), 1);
+        run(
+            new TestPopulationModel(),
+            List.of(new StopAtIteration(1)),
+            List.of(observer),
+            1
+        );
 
         assertInstanceOf(TestProblem.class, observer.seenProblem);
         assertEquals(5, observer.seenDimension);
@@ -105,24 +118,31 @@ class SimulationRunnerTest {
 
     @Test
     void run_mergesSharedStateFromPopulationInitializationAndSteps() {
-        TestPopulationModel populationModel = new TestPopulationModel(2);
         StatePublishingObserver observer = new StatePublishingObserver();
 
-        run(populationModel, List.of(new StopAtIteration(2)), List.of(observer), 1);
+        run(
+            new TestPopulationModel(),
+            List.of(new StopAtIteration(2)),
+            List.of(observer),
+            1
+        );
 
-        assertTrue(observer.seenValues.contains("init"));
-        assertTrue(observer.seenValues.contains("step-1"));
-        assertTrue(observer.seenValues.contains("step-2"));
+        assertEquals(List.of("init", "step-1", "step-2"), observer.seenValues);
     }
 
     @Test
     void run_throwsCancellationExceptionWhenThreadIsInterrupted() {
-        TestPopulationModel populationModel = new TestPopulationModel(10);
-
         Thread.currentThread().interrupt();
 
         try {
-            assertThrows(CancellationException.class, () -> run(populationModel, List.of(new StopAtIteration(10)), List.of(), 1));
+            assertThrows(CancellationException.class, () ->
+                run(
+                    new TestPopulationModel(),
+                    List.of(new StopAtIteration(10)),
+                    List.of(),
+                    1
+                )
+            );
         } finally {
             Thread.interrupted();
         }
@@ -151,41 +171,41 @@ class SimulationRunnerTest {
 
     private static IterationSnapshot<Integer> snapshot(int iteration) {
         EvaluatedSolution<Integer> solution = new EvaluatedSolution<>(iteration, iteration);
-        return new IterationSnapshot<>(iteration, iteration + 1, solution, solution, true);
+
+        return new IterationSnapshot<>(
+            iteration,
+            iteration,
+            solution,
+            solution,
+            true
+        );
     }
 
     private static class TestPopulationModel implements PopulationModel<Integer> {
-        private final int maxIteration;
         private int stepCalls;
-
-        private TestPopulationModel(int maxIteration) {
-            this.maxIteration = maxIteration;
-        }
 
         @Override
         public PopulationInitialization<Integer> initialize(PopulationModelContext<Integer> context) {
             return new PopulationInitialization<>(
                 new TestPopulationState(),
                 snapshot(0),
-                1,
+                0,
                 Map.of("phase", "init"),
                 List.of()
             );
         }
 
         @Override
-        public PopulationStepResult<Integer> step(
-            PopulationModelContext<Integer> context,
-            PopulationState<Integer> state,
-            int iteration,
-            int evaluations
-        ) {
+        public PopulationStepResult<Integer> step(PopulationModelContext<Integer> context, PopulationState<Integer> state, int iteration, int evaluations) {
             stepCalls++;
 
             int nextIteration = iteration + 1;
-            int boundedIteration = Math.min(nextIteration, maxIteration);
 
-            return new PopulationStepResult<>(snapshot(boundedIteration), 1, Map.of("phase", "step-" + boundedIteration));
+            return new PopulationStepResult<>(
+                snapshot(nextIteration),
+                1,
+                Map.of("phase", "step-" + nextIteration)
+            );
         }
 
         @Override
@@ -254,6 +274,7 @@ class SimulationRunnerTest {
         public boolean isOptimal(double fitness) {
             return false;
         }
+
         @Override
         public String id() {
             return "test-problem";

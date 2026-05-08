@@ -23,8 +23,7 @@ class TourObserverTest {
         TourObserver observer = new TourObserver();
         RunLog log = new RunLog();
 
-        State state = new State();
-        state.update(Map.of(StateKeys.PROBLEM, tspProblem()));
+        State state = stateWithProblem(tspProblem());
 
         observer.init(state);
         observer.onStart(snapshot(new int[] {0, 1, 2}), log);
@@ -32,7 +31,7 @@ class TourObserverTest {
         assertTrue(log.getSeries().containsKey("tspCities"));
         assertTrue(log.getSeries().containsKey("tspTour"));
 
-        List<?> cities = (List<?>) log.getSeries().get("tspCities").getValues().getFirst();
+        List<?> cities = firstSeriesValue(log, "tspCities");
         assertEquals(3, cities.size());
 
         Map<?, ?> tourData = tourData(log);
@@ -45,10 +44,8 @@ class TourObserverTest {
         TourObserver observer = new TourObserver();
         RunLog log = new RunLog();
 
-        State state = new State();
-        state.update(Map.of(StateKeys.PROBLEM, tspProblem()));
+        observer.init(stateWithProblem(tspProblem()));
 
-        observer.init(state);
         observer.onStart(snapshot(new int[] {0, 1, 2}), log);
         observer.onStart(snapshot(new int[] {0, 2, 1}), log);
 
@@ -60,10 +57,8 @@ class TourObserverTest {
         TourObserver observer = new TourObserver();
         RunLog log = new RunLog();
 
-        State state = new State();
-        state.update(Map.of(StateKeys.PROBLEM, tspProblem()));
+        observer.init(stateWithProblem(tspProblem()));
 
-        observer.init(state);
         observer.onStep(snapshot(List.of(0, 1, 2)), log);
 
         Map<?, ?> tourData = tourData(log);
@@ -77,10 +72,8 @@ class TourObserverTest {
         TourObserver observer = new TourObserver();
         RunLog log = new RunLog();
 
-        State state = new State();
-        state.update(Map.of(StateKeys.PROBLEM, vrpProblem()));
+        observer.init(stateWithProblem(vrpProblem()));
 
-        observer.init(state);
         observer.onStep(snapshot(List.of(List.of(0, 1))), log);
 
         Map<?, ?> tourData = tourData(log);
@@ -94,13 +87,11 @@ class TourObserverTest {
         TourObserver observer = new TourObserver();
         RunLog log = new RunLog();
 
-        State state = new State();
-        state.update(Map.of(StateKeys.PROBLEM, vrpProblem()));
+        observer.init(stateWithProblem(vrpProblem()));
 
-        observer.init(state);
         observer.onStart(snapshot(List.of(List.of(0, 1))), log);
 
-        List<?> cities = (List<?>) log.getSeries().get("tspCities").getValues().getFirst();
+        List<?> cities = firstSeriesValue(log, "tspCities");
 
         assertEquals(3, cities.size());
 
@@ -115,9 +106,8 @@ class TourObserverTest {
         TourObserver observer = new TourObserver();
         RunLog log = new RunLog();
 
-        State state = new State();
+        State state = stateWithProblem(tspProblem());
         state.update(Map.of(
-            StateKeys.PROBLEM, tspProblem(),
             StateKeys.DIMENSION, 3,
             StateKeys.PHEROMONE_MATRIX, new double[][] {
                 {1.0, 2.0},
@@ -129,7 +119,10 @@ class TourObserverTest {
         observer.init(state);
 
         observer.onStep(snapshot(new int[] {0, 1, 2}), log);
-        assertEquals(List.of(List.of(1.0, 2.0), List.of(3.0, 4.0)), log.getSeries().get("pheromoneHeatmap").getValues().getFirst());
+
+        Object heatmap = firstSeriesValue(log, "pheromoneHeatmap");
+
+        assertEquals(List.of(List.of(1.0, 2.0), List.of(3.0, 4.0)), heatmap);
     }
 
     @Test
@@ -137,13 +130,15 @@ class TourObserverTest {
         TourObserver observer = new TourObserver();
         RunLog log = new RunLog();
 
-        State state = new State();
-        state.update(Map.of(StateKeys.PROBLEM, tspProblem(), StateKeys.DIMENSION, 3));
+        State state = stateWithProblem(tspProblem());
+        state.update(Map.of(StateKeys.DIMENSION, 3));
 
         observer.configure(Map.of("includePheromone", true));
         observer.init(state);
 
         observer.onStep(snapshot(new int[] {0, 1, 2}), log);
+
+        Object heatmap = firstSeriesValue(log, "pheromoneHeatmap");
 
         assertEquals(
             List.of(
@@ -151,7 +146,7 @@ class TourObserverTest {
                 List.of(0.0, 0.0, 0.0),
                 List.of(0.0, 0.0, 0.0)
             ),
-            log.getSeries().get("pheromoneHeatmap").getValues().getFirst()
+            heatmap
         );
     }
 
@@ -160,9 +155,8 @@ class TourObserverTest {
         TourObserver observer = new TourObserver();
         RunLog log = new RunLog();
 
-        State state = new State();
+        State state = stateWithProblem(tspProblem());
         state.update(Map.of(
-            StateKeys.PROBLEM, tspProblem(),
             StateKeys.DIMENSION, 3,
             StateKeys.PHEROMONE_MATRIX, new double[][] {
                 {1.0, 2.0},
@@ -190,13 +184,24 @@ class TourObserverTest {
         assertEquals(List.of("permutation", "route-list"), observer.supportedSearchSpaces());
     }
 
+    private static State stateWithProblem(Object problem) {
+        State state = new State();
+        state.update(Map.of(StateKeys.PROBLEM, problem));
+        return state;
+    }
+
     private static IterationSnapshot<Object> snapshot(Object solution) {
         EvaluatedSolution<Object> evaluated = new EvaluatedSolution<>(solution, 0.0);
         return new IterationSnapshot<>(0, 0, evaluated, evaluated, true);
     }
 
+    @SuppressWarnings("unchecked")
+    private static <T> T firstSeriesValue(RunLog log, String seriesName) {
+        return (T) log.getSeries().get(seriesName).getValues().getFirst();
+    }
+
     private static Map<?, ?> tourData(RunLog log) {
-        return (Map<?, ?>) log.getSeries().get("tspTour").getValues().getFirst();
+        return firstSeriesValue(log, "tspTour");
     }
 
     private static TSP tspProblem() {
@@ -230,8 +235,8 @@ class TourObserverTest {
             "test instance",
             new double[] {0.0, 0.0},
             new double[][] {
-                {3.0, 4.0},
-                {6.0, 0.0}
+            {3.0, 4.0},
+            {6.0, 0.0}
             },
             new double[] {1.0, 1.0},
             10.0,

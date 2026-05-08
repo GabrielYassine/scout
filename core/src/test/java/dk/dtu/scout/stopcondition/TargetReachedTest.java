@@ -2,12 +2,9 @@ package dk.dtu.scout.stopcondition;
 
 import dk.dtu.scout.State;
 import dk.dtu.scout.datatypes.StateKeys;
-import dk.dtu.scout.dto.Parameter;
-import dk.dtu.scout.problems.Problem;
 import dk.dtu.scout.problems.TSP;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -63,16 +60,6 @@ class TargetReachedTest {
     }
 
     @Test
-    void metadata_isStable() {
-        TargetReached<Object> stopCondition = new TargetReached<>();
-
-        assertEquals("target-reached", stopCondition.id());
-        assertEquals("Target Fitness Reached", stopCondition.displayName());
-        assertFalse(stopCondition.description().isBlank());
-        assertEquals(2, stopCondition.params().size());
-    }
-
-    @Test
     void shouldStop_usesRawFitnessTargetForTspWhenTargetIsNegativeAndDistanceFlagIsFalse() {
         TargetReached<int[]> stopCondition = new TargetReached<>();
         State state = new State();
@@ -86,34 +73,13 @@ class TargetReachedTest {
         assertTrue(stopCondition.shouldStop(0, 0, -99.0, null));
     }
 
-    private record DummyProblem() implements Problem<Object> {
-        @Override
-        public double fitness(Object solution) {
-            return 0.0;
-        }
+    @Test
+    void metadata_isStable() {
+        TargetReached<Object> stopCondition = new TargetReached<>();
 
-        @Override
-        public boolean isOptimal(double fitness) {
-            return false;
-        }
-        @Override
-        public String id() {
-            return "dummy";
-        }
-
-        @Override
-        public String displayName() {
-            return "Dummy";
-        }
-
-        @Override
-        public String description() {
-            return "Dummy problem";
-        }
-
-        @Override
-        public List<Parameter> params() {
-            return List.of();
-        }
+        assertEquals("target-reached", stopCondition.id());
+        assertEquals("Target Fitness Reached", stopCondition.displayName());
+        assertFalse(stopCondition.description().isBlank());
+        assertEquals(2, stopCondition.params().size());
     }
 }

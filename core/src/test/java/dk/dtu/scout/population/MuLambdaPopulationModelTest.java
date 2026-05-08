@@ -1,25 +1,14 @@
 package dk.dtu.scout.population;
 
 import dk.dtu.scout.State;
-import dk.dtu.scout.crossover.Crossover;
 import dk.dtu.scout.datatypes.StateKeys;
 import dk.dtu.scout.dto.EvaluatedSolution;
-import dk.dtu.scout.dto.Parameter;
-import dk.dtu.scout.generator.Generator;
-import dk.dtu.scout.parentSelectionRule.ParentSelectionRule;
-import dk.dtu.scout.problems.Problem;
-import dk.dtu.scout.searchSpace.SearchSpace;
-import dk.dtu.scout.selection.SelectionRule;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
-import java.util.Random;
-import java.util.function.Supplier;
 
+import static dk.dtu.scout.population.PopulationModelTestSupport.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class MuLambdaPopulationModelTest {
@@ -30,13 +19,12 @@ class MuLambdaPopulationModelTest {
 
         model.configure(Map.of("mu", 2, "lambda", 1));
 
-        Queue<String> initialSolutions = queue("a", "best");
-        TestSearchSpace space = new TestSearchSpace(initialSolutions);
+        TestSearchSpace space = new TestSearchSpace(queue("a", "best"));
         TestProblem problem = new TestProblem(Map.of("a", 1.0, "best", 5.0));
         TestGenerator generator = new TestGenerator(queue("unused"));
         State sharedState = new State();
 
-        PopulationInitialization<String> initialization = model.initialize(context(
+        PopulationInitialization<String> initialization = model.initialize(stringContext(
             space,
             problem,
             () -> generator,
@@ -87,7 +75,7 @@ class MuLambdaPopulationModelTest {
         TestGenerator generator = new TestGenerator(queue("c1", "c2"));
         State sharedState = new State();
 
-        PopulationModelContext<String> context = context(
+        PopulationModelContext<String> context = stringContext(
             space,
             problem,
             () -> generator,
@@ -139,7 +127,7 @@ class MuLambdaPopulationModelTest {
         TestCrossover crossover = new TestCrossover("crossed");
         State sharedState = new State();
 
-        PopulationModelContext<String> context = context(
+        PopulationModelContext<String> context = stringContext(
             space,
             problem,
             () -> generator,
@@ -174,7 +162,7 @@ class MuLambdaPopulationModelTest {
         TestGenerator generator = new TestGenerator(queue("child"));
         State sharedState = new State();
 
-        PopulationModelContext<String> context = context(
+        PopulationModelContext<String> context = stringContext(
             space,
             problem,
             () -> generator,
@@ -208,7 +196,7 @@ class MuLambdaPopulationModelTest {
         TestGenerator generator = new TestGenerator(queue("child"));
         State sharedState = new State();
 
-        PopulationModelContext<String> context = context(
+        PopulationModelContext<String> context = stringContext(
             space,
             problem,
             () -> generator,
@@ -246,7 +234,7 @@ class MuLambdaPopulationModelTest {
         TestGenerator generator = new TestGenerator(queue("child"));
         State sharedState = new State();
 
-        PopulationModelContext<String> context = context(
+        PopulationModelContext<String> context = stringContext(
             space,
             problem,
             () -> generator,
@@ -267,7 +255,6 @@ class MuLambdaPopulationModelTest {
 
         assertEquals("weak", result.runState().currentSolution());
         assertEquals(1.0, result.runState().currentFitness(), 1e-9);
-
         assertEquals("best", result.runState().bestSolution());
         assertEquals(10.0, result.runState().bestFitness(), 1e-9);
     }
@@ -297,7 +284,7 @@ class MuLambdaPopulationModelTest {
         TestGenerator generator = new TestGenerator(queue("child"));
         State sharedState = new State();
 
-        PopulationModelContext<String> context = context(
+        PopulationModelContext<String> context = stringContext(
             space,
             problem,
             () -> generator,
@@ -328,237 +315,5 @@ class MuLambdaPopulationModelTest {
         assertEquals("Mu-Lambda Population Model", model.displayName());
         assertFalse(model.description().isBlank());
         assertEquals(2, model.params().size());
-    }
-
-    private static PopulationModelContext<String> context(
-        SearchSpace<String> space,
-        Problem<String> problem,
-        Supplier<Generator<String>> generatorFactory,
-        ParentSelectionRule<String> parentSelection,
-        SelectionRule<String> selection,
-        Crossover<String> crossover,
-        State sharedState
-    ) {
-        return new PopulationModelContext<>(
-            generatorFactory,
-            parentSelection,
-            crossover,
-            selection,
-            space,
-            problem,
-            new Random(1234L),
-            sharedState
-        );
-    }
-
-    private static Queue<String> queue(String... values) {
-        return new ArrayDeque<>(List.of(values));
-    }
-
-    private record TestSearchSpace(Queue<String> solutions) implements SearchSpace<String> {
-
-        @Override
-        public String randomSolution(Random rng) {
-            return solutions.remove();
-        }
-
-        @Override
-        public int dimension() {
-            return 1;
-        }
-
-        @Override
-        public String id() {
-            return "test-space";
-        }
-
-        @Override
-        public String displayName() {
-            return "Test Space";
-        }
-
-        @Override
-        public String description() {
-            return "Test search space";
-        }
-
-        @Override
-        public List<Parameter> params() {
-            return List.of();
-        }
-    }
-
-    private record TestProblem(Map<String, Double> fitnessValues) implements Problem<String> {
-
-        @Override
-        public double fitness(String solution) {
-            return fitnessValues.getOrDefault(solution, 0.0);
-        }
-
-        @Override
-        public boolean isOptimal(double fitness) {
-            return false;
-        }
-
-        @Override
-        public String id() {
-            return "test-problem";
-        }
-
-        @Override
-        public String displayName() {
-            return "Test Problem";
-        }
-
-        @Override
-        public String description() {
-            return "Test problem";
-        }
-
-        @Override
-        public List<Parameter> params() {
-            return List.of();
-        }
-    }
-
-    private record TestGenerator(Queue<String> children) implements Generator<String> {
-
-        @Override
-        public String generate(Random rng) {
-            return children.remove();
-        }
-
-        @Override
-        public String id() {
-            return "test-generator";
-        }
-
-        @Override
-        public String displayName() {
-            return "Test Generator";
-        }
-
-        @Override
-        public String description() {
-            return "Test generator";
-        }
-
-        @Override
-        public List<Parameter> params() {
-            return List.of();
-        }
-    }
-
-    private static final class TestCrossover implements Crossover<String> {
-        private final String child;
-        private boolean called;
-
-        private TestCrossover(String child) {
-            this.child = child;
-        }
-
-        private boolean wasCalled() {
-            return called;
-        }
-
-        @Override
-        public String crossover(Random rng) {
-            called = true;
-            return child;
-        }
-
-        @Override
-        public String id() {
-            return "test-crossover";
-        }
-
-        @Override
-        public String displayName() {
-            return "Test Crossover";
-        }
-
-        @Override
-        public String description() {
-            return "Test crossover";
-        }
-
-        @Override
-        public List<Parameter> params() {
-            return List.of();
-        }
-    }
-
-    private static class FirstTwoParentSelection<S> implements ParentSelectionRule<S> {
-        @Override
-        public List<EvaluatedSolution<S>> selectParents(List<EvaluatedSolution<S>> population, Random rng) {
-            return List.of(population.get(0), population.get(1));
-        }
-
-        @Override
-        public String id() {
-            return "first-two";
-        }
-
-        @Override
-        public String displayName() {
-            return "First Two";
-        }
-
-        @Override
-        public String description() {
-            return "Selects first two parents";
-        }
-
-        @Override
-        public List<Parameter> params() {
-            return List.of();
-        }
-    }
-
-    private static class KeepBestSelection<S> implements SelectionRule<S> {
-        @Override
-        public List<EvaluatedSolution<S>> select(List<EvaluatedSolution<S>> parents, List<EvaluatedSolution<S>> children, int mu, int iteration, Random rng) {
-            List<EvaluatedSolution<S>> combined = new ArrayList<>();
-            combined.addAll(parents);
-            combined.addAll(children);
-
-            combined.sort((a, b) -> Double.compare(b.fitness(), a.fitness()));
-
-            return new ArrayList<>(combined.subList(0, mu));
-        }
-
-        @Override
-        public String id() {
-            return "keep-best";
-        }
-
-        @Override
-        public String displayName() {
-            return "Keep Best";
-        }
-
-        @Override
-        public String description() {
-            return "Keeps best";
-        }
-
-        @Override
-        public List<Parameter> params() {
-            return List.of();
-        }
-    }
-
-    private static final class KeepExistingParentsSelection<S> extends KeepBestSelection<S> {
-        @Override
-        public List<EvaluatedSolution<S>> select(List<EvaluatedSolution<S>> parents, List<EvaluatedSolution<S>> children, int mu, int iteration, Random rng) {
-            return parents;
-        }
-    }
-
-    private static final class SelectWeakParentsSelection<S> extends KeepBestSelection<S> {
-        @Override
-        public List<EvaluatedSolution<S>> select(List<EvaluatedSolution<S>> parents, List<EvaluatedSolution<S>> children, int mu, int iteration, Random rng) {
-            return List.of(parents.get(1), children.getFirst());
-        }
     }
 }

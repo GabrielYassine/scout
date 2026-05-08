@@ -1,13 +1,12 @@
 package dk.dtu.scout.crossover;
 
-import dk.dtu.scout.State;
-import dk.dtu.scout.datatypes.StateKeys;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import static dk.dtu.scout.crossover.CrossoverTestSupport.stateWithParents;
 import static org.junit.jupiter.api.Assertions.*;
 
 class KPointCrossoverTest {
@@ -121,15 +120,6 @@ class KPointCrossoverTest {
         assertFalse(crossover.description().isBlank());
         assertEquals(1, crossover.params().size());
         assertEquals(List.of("bitstring"), crossover.supportedSearchSpaces());
-    }
-
-    private static State stateWithParents(boolean[] parent1, boolean[] parent2) {
-        State state = new State();
-        state.update(Map.of(
-            StateKeys.SELECTED_PARENT_1, parent1,
-            StateKeys.SELECTED_PARENT_2, parent2
-        ));
-        return state;
     }
 
     private static final class FixedIntRandom extends Random {

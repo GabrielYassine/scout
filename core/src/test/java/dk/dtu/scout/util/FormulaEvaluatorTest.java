@@ -25,10 +25,11 @@ class FormulaEvaluatorTest {
     }
 
     @Test
-    void eval_handlesWhitespaceAndDecimals() {
+    void eval_handlesWhitespaceDecimalsAndUppercaseN() {
         assertEquals(0.5, FormulaEvaluator.eval(" .5 ", 10), 1e-9);
         assertEquals(1.25, FormulaEvaluator.eval("1.25", 10), 1e-9);
         assertEquals(3.5, FormulaEvaluator.eval("1.5 + 2", 10), 1e-9);
+        assertEquals(5.0, FormulaEvaluator.eval("N / 2", 10), 1e-9);
     }
 
     @Test
@@ -39,12 +40,7 @@ class FormulaEvaluatorTest {
     }
 
     @Test
-    void eval_acceptsUppercaseN() {
-        assertEquals(5.0, FormulaEvaluator.eval("N / 2", 10), 1e-9);
-    }
-
-    @Test
-    void eval_rejectsEmptyFormulaAndInvalidN() {
+    void eval_rejectsEmptyFormulaAndInvalidDimension() {
         assertThrows(IllegalArgumentException.class, () -> FormulaEvaluator.eval(null, 10));
         assertThrows(IllegalArgumentException.class, () -> FormulaEvaluator.eval("   ", 10));
         assertThrows(IllegalArgumentException.class, () -> FormulaEvaluator.eval("n", 0));
@@ -52,17 +48,21 @@ class FormulaEvaluatorTest {
     }
 
     @Test
-    void eval_rejectsInvalidCharactersAndUnsupportedVariables() {
+    void eval_rejectsUnsupportedCharactersAndVariables() {
         assertThrows(IllegalArgumentException.class, () -> FormulaEvaluator.eval("1 $ 2", 10));
         assertThrows(IllegalArgumentException.class, () -> FormulaEvaluator.eval("x", 10));
         assertThrows(IllegalArgumentException.class, () -> FormulaEvaluator.eval("abc", 10));
+    }
+
+    @Test
+    void eval_rejectsUnsupportedFunctionSyntaxAndScientificNotation() {
         assertThrows(IllegalArgumentException.class, () -> FormulaEvaluator.eval("min(n, 3)", 10));
         assertThrows(IllegalArgumentException.class, () -> FormulaEvaluator.eval("max(n, 3)", 10));
         assertThrows(IllegalArgumentException.class, () -> FormulaEvaluator.eval("1e-2", 10));
     }
 
     @Test
-    void eval_rejectsInvalidExpressions() {
+    void eval_rejectsIncompleteExpressions() {
         assertThrows(IllegalArgumentException.class, () -> FormulaEvaluator.eval("1 +", 10));
         assertThrows(IllegalArgumentException.class, () -> FormulaEvaluator.eval("+", 10));
         assertThrows(IllegalArgumentException.class, () -> FormulaEvaluator.eval("1 2", 10));

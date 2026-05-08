@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import static dk.dtu.scout.generator.GeneratorTestSupport.stateWithBase;
 import static org.junit.jupiter.api.Assertions.*;
 
 class BitFlipGeneratorTest {
@@ -17,9 +18,8 @@ class BitFlipGeneratorTest {
         BitFlipGenerator generator = new BitFlipGenerator();
         boolean[] base = new boolean[] {true, false, true};
 
-        State state = stateWithBase(base);
         generator.configure(Map.of("flipProbability", 0.0));
-        generator.init(state);
+        generator.init(stateWithBase(base));
 
         boolean[] result = generator.generate(new Random(1234L));
 
@@ -32,9 +32,8 @@ class BitFlipGeneratorTest {
         BitFlipGenerator generator = new BitFlipGenerator();
         boolean[] base = new boolean[] {true, false, true};
 
-        State state = stateWithBase(base);
         generator.configure(Map.of("flipProbability", 1.0));
-        generator.init(state);
+        generator.init(stateWithBase(base));
 
         boolean[] result = generator.generate(new Random(1234L));
 
@@ -46,11 +45,8 @@ class BitFlipGeneratorTest {
         BitFlipGenerator generator = new BitFlipGenerator();
         boolean[] base = new boolean[] {true, true, true, true};
 
-        State state = stateWithBase(base);
-        state.update(Map.of(StateKeys.DIMENSION, 4));
-
         generator.configure(Map.of("flipProbability", "1/n"));
-        generator.init(state);
+        generator.init(stateWithBase(base));
 
         boolean[] result = generator.generate(new Random(1234L));
 
@@ -62,9 +58,8 @@ class BitFlipGeneratorTest {
         BitFlipGenerator generator = new BitFlipGenerator();
         boolean[] base = new boolean[] {true, false, true};
 
-        State state = stateWithBase(base);
         generator.configure(Map.of("flipProbability", -1.0));
-        generator.init(state);
+        generator.init(stateWithBase(base));
 
         boolean[] result = generator.generate(new Random(1234L));
 
@@ -76,9 +71,8 @@ class BitFlipGeneratorTest {
         BitFlipGenerator generator = new BitFlipGenerator();
         boolean[] base = new boolean[] {true, false, true};
 
-        State state = stateWithBase(base);
         generator.configure(Map.of("flipProbability", 2.0));
-        generator.init(state);
+        generator.init(stateWithBase(base));
 
         boolean[] result = generator.generate(new Random(1234L));
 
@@ -90,9 +84,8 @@ class BitFlipGeneratorTest {
         BitFlipGenerator generator = new BitFlipGenerator();
         boolean[] base = new boolean[0];
 
-        State state = stateWithBase(base);
         generator.configure(Map.of("flipProbability", 1.0));
-        generator.init(state);
+        generator.init(stateWithBase(base));
 
         boolean[] result = generator.generate(new Random(1234L));
 
@@ -120,14 +113,5 @@ class BitFlipGeneratorTest {
         assertFalse(generator.description().isBlank());
         assertEquals(List.of("bitstring"), generator.supportedSearchSpaces());
         assertEquals(1, generator.params().size());
-    }
-
-    private static State stateWithBase(boolean[] base) {
-        State state = new State();
-        state.update(Map.of(
-            StateKeys.OFFSPRING_BASE, base,
-            StateKeys.DIMENSION, base.length
-        ));
-        return state;
     }
 }

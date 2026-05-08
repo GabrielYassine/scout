@@ -1,14 +1,11 @@
 package dk.dtu.scout.generator;
 
-import dk.dtu.scout.State;
-import dk.dtu.scout.datatypes.StateKeys;
 import org.junit.jupiter.api.Test;
 
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 
+import static dk.dtu.scout.generator.GeneratorTestSupport.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ThreeOptGeneratorTest {
@@ -18,8 +15,7 @@ class ThreeOptGeneratorTest {
         ThreeOptGenerator generator = new ThreeOptGenerator();
         int[] base = {0, 1, 2, 3, 4, 5};
 
-        State state = stateWithBase(base);
-        generator.init(state);
+        generator.init(stateWithBase(base));
 
         int[] result = generator.generate(new Random(1234L));
 
@@ -33,9 +29,7 @@ class ThreeOptGeneratorTest {
         ThreeOptGenerator generator = new ThreeOptGenerator();
         int[] parent = {0, 1, 2, 3, 4, 5};
 
-        State state = new State();
-        state.update(Map.of(StateKeys.SELECTED_PARENT_1, parent));
-        generator.init(state);
+        generator.init(stateWithSelectedParent(parent));
 
         int[] result = generator.generate(new Random(1234L));
 
@@ -47,8 +41,7 @@ class ThreeOptGeneratorTest {
         ThreeOptGenerator generator = new ThreeOptGenerator();
         int[] base = {0, 1, 2};
 
-        State state = stateWithBase(base);
-        generator.init(state);
+        generator.init(stateWithBase(base));
 
         int[] result = generator.generate(new Random(1234L));
 
@@ -60,7 +53,7 @@ class ThreeOptGeneratorTest {
     void generate_rejectsMissingBaseAndParent() {
         ThreeOptGenerator generator = new ThreeOptGenerator();
 
-        generator.init(new State());
+        generator.init(new dk.dtu.scout.State());
 
         assertThrows(IllegalStateException.class, () -> generator.generate(new Random(1234L)));
     }
@@ -81,6 +74,7 @@ class ThreeOptGeneratorTest {
 
         for (int move = 1; move <= 7; move++) {
             ThreeOptGenerator generator = new ThreeOptGenerator();
+
             generator.init(stateWithBase(base));
 
             int[] result = generator.generate(new FixedIntRandom(1, 1, 1, move - 1));
@@ -98,31 +92,5 @@ class ThreeOptGeneratorTest {
         assertFalse(generator.description().isBlank());
         assertTrue(generator.params().isEmpty());
         assertEquals(List.of("permutation"), generator.supportedSearchSpaces());
-    }
-
-    private static State stateWithBase(int[] base) {
-        State state = new State();
-        state.update(Map.of(StateKeys.OFFSPRING_BASE, base));
-        return state;
-    }
-
-    private static int[] sorted(int[] values) {
-        int[] copy = values.clone();
-        Arrays.sort(copy);
-        return copy;
-    }
-
-    private static final class FixedIntRandom extends Random {
-        private final int[] values;
-        private int index;
-
-        private FixedIntRandom(int... values) {
-            this.values = values;
-        }
-
-        @Override
-        public int nextInt(int bound) {
-            return Math.floorMod(values[index++], bound);
-        }
     }
 }

@@ -1,15 +1,15 @@
 package dk.dtu.scout.generator;
 
 import dk.dtu.scout.State;
-import dk.dtu.scout.datatypes.StateKeys;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 
+import static dk.dtu.scout.generator.GeneratorTestSupport.FixedIntRandom;
+import static dk.dtu.scout.generator.GeneratorTestSupport.sortedFlattened;
+import static dk.dtu.scout.generator.GeneratorTestSupport.stateWithRouteBase;
+import static dk.dtu.scout.generator.GeneratorTestSupport.stateWithSelectedRouteParent;
 import static org.junit.jupiter.api.Assertions.*;
 
 class RouteListRelocateGeneratorTest {
@@ -19,7 +19,7 @@ class RouteListRelocateGeneratorTest {
         RouteListRelocateGenerator generator = new RouteListRelocateGenerator();
         List<List<Integer>> base = List.of(List.of(0, 1, 2));
 
-        generator.init(stateWithBase(base));
+        generator.init(stateWithRouteBase(base));
 
         List<List<Integer>> result = generator.generate(new FixedIntRandom(0, 1, 0, 2));
 
@@ -32,7 +32,7 @@ class RouteListRelocateGeneratorTest {
         RouteListRelocateGenerator generator = new RouteListRelocateGenerator();
         List<List<Integer>> base = List.of(List.of(0, 1), List.of(2));
 
-        generator.init(stateWithBase(base));
+        generator.init(stateWithRouteBase(base));
 
         List<List<Integer>> result = generator.generate(new FixedIntRandom(0, 0, 1, 1));
 
@@ -45,9 +45,7 @@ class RouteListRelocateGeneratorTest {
         RouteListRelocateGenerator generator = new RouteListRelocateGenerator();
         List<List<Integer>> parent = List.of(List.of(0, 1), List.of(2));
 
-        State state = new State();
-        state.update(Map.of(StateKeys.SELECTED_PARENT_1, parent));
-        generator.init(state);
+        generator.init(stateWithSelectedRouteParent(parent));
 
         List<List<Integer>> result = generator.generate(new FixedIntRandom(0, 0, 1, 0));
 
@@ -59,12 +57,13 @@ class RouteListRelocateGeneratorTest {
         RouteListRelocateGenerator generator = new RouteListRelocateGenerator();
         List<List<Integer>> base = List.of(List.of(), List.of());
 
-        generator.init(stateWithBase(base));
+        generator.init(stateWithRouteBase(base));
 
         List<List<Integer>> result = generator.generate(new Random(1234L));
 
         assertEquals(base, result);
         assertNotSame(base, result);
+        assertNotSame(base.getFirst(), result.getFirst());
     }
 
     @Test
@@ -80,7 +79,7 @@ class RouteListRelocateGeneratorTest {
     void generate_rejectsNonListRoute() {
         RouteListRelocateGenerator generator = new RouteListRelocateGenerator();
 
-        generator.init(stateWithBase(List.of("not-a-route")));
+        generator.init(stateWithRouteBase(List.of("not-a-route")));
 
         assertThrows(IllegalArgumentException.class, () -> generator.generate(new Random(1234L)));
     }
@@ -89,7 +88,7 @@ class RouteListRelocateGeneratorTest {
     void generate_rejectsNonNumericCustomerIndex() {
         RouteListRelocateGenerator generator = new RouteListRelocateGenerator();
 
-        generator.init(stateWithBase(List.of(List.of("bad-customer"))));
+        generator.init(stateWithRouteBase(List.of(List.of("bad-customer"))));
 
         assertThrows(IllegalArgumentException.class, () -> generator.generate(new Random(1234L)));
     }
@@ -103,34 +102,5 @@ class RouteListRelocateGeneratorTest {
         assertFalse(generator.description().isBlank());
         assertTrue(generator.params().isEmpty());
         assertEquals(List.of("route-list"), generator.supportedSearchSpaces());
-    }
-
-    private static State stateWithBase(Object base) {
-        State state = new State();
-        state.update(Map.of(StateKeys.OFFSPRING_BASE, base));
-        return state;
-    }
-
-    private static List<Integer> sortedFlattened(List<List<Integer>> routes) {
-        List<Integer> values = new ArrayList<>();
-        for (List<Integer> route : routes) {
-            values.addAll(route);
-        }
-        Collections.sort(values);
-        return values;
-    }
-
-    private static final class FixedIntRandom extends Random {
-        private final int[] values;
-        private int index;
-
-        private FixedIntRandom(int... values) {
-            this.values = values;
-        }
-
-        @Override
-        public int nextInt(int bound) {
-            return Math.floorMod(values[index++], bound);
-        }
     }
 }

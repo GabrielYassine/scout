@@ -20,9 +20,14 @@ class VRPTest {
     }
 
     @Test
-    void routeDistance_returnsDepotToCustomersAndBackDistance() {
+    void routeDistance_returnsZeroForEmptyRoute() {
         VRP problem = configuredProblem(10.0, 2);
         assertEquals(0.0, problem.routeDistance(List.of()), 1e-9);
+    }
+
+    @Test
+    void routeDistance_returnsDepotToCustomersAndBackDistance() {
+        VRP problem = configuredProblem(10.0, 2);
         assertEquals(16.0, problem.routeDistance(List.of(0, 1)), 1e-9);
     }
 
@@ -94,6 +99,7 @@ class VRPTest {
         routes.add(List.of(0, 1));
 
         double fitness = problem.fitness(routes);
+
         assertEquals(-16.0, fitness, 1e-9);
     }
 
@@ -110,9 +116,14 @@ class VRPTest {
     }
 
     @Test
-    void fitness_rejectsEmptyRoutesAfterNormalization() {
+    void fitness_rejectsEmptyRoutes() {
         VRP problem = configuredProblem(10.0, 2);
         assertThrows(IllegalArgumentException.class, () -> problem.fitness(List.of()));
+    }
+
+    @Test
+    void fitness_rejectsRoutesThatBecomeEmptyAfterNormalization() {
+        VRP problem = configuredProblem(10.0, 2);
         assertThrows(IllegalArgumentException.class, () -> problem.fitness(List.of(List.of(), List.of())));
     }
 
@@ -147,6 +158,20 @@ class VRPTest {
     }
 
     @Test
+    void isOptimal_returnsTrueWhenKnownOptimumIsReached() {
+        VRP problem = new VRP();
+        problem.configure(Map.of("vrpInstance", knownOptimumInstance()));
+        assertTrue(problem.isOptimal(-784.0));
+    }
+
+    @Test
+    void isOptimal_returnsFalseWhenKnownOptimumIsNotReached() {
+        VRP problem = new VRP();
+        problem.configure(Map.of("vrpInstance", knownOptimumInstance()));
+        assertFalse(problem.isOptimal(-784.00001));
+    }
+
+    @Test
     void metadata_isStable() {
         VRP problem = new VRP();
 
@@ -176,20 +201,6 @@ class VRPTest {
             capacity,
             vehicles
         );
-    }
-
-    @Test
-    void isOptimal_returnsTrueWhenKnownOptimumIsReached() {
-        VRP problem = new VRP();
-        problem.configure(Map.of("vrpInstance", knownOptimumInstance()));
-        assertTrue(problem.isOptimal(-784.0));
-    }
-
-    @Test
-    void isOptimal_returnsFalseWhenKnownOptimumIsNotReached() {
-        VRP problem = new VRP();
-        problem.configure(Map.of("vrpInstance", knownOptimumInstance()));
-        assertFalse(problem.isOptimal(-784.00001));
     }
 
     private static VRPInstance knownOptimumInstance() {

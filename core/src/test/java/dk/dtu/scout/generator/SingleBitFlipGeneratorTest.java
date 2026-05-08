@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import static dk.dtu.scout.generator.GeneratorTestSupport.stateWithBase;
 import static org.junit.jupiter.api.Assertions.*;
 
 class SingleBitFlipGeneratorTest {
@@ -17,9 +18,7 @@ class SingleBitFlipGeneratorTest {
         SingleBitFlipGenerator generator = new SingleBitFlipGenerator();
         boolean[] base = new boolean[] {false, false, false, false};
 
-        State state = new State();
-        state.update(Map.of(StateKeys.OFFSPRING_BASE, base));
-        generator.init(state);
+        generator.init(stateWithBase(base));
 
         boolean[] result = generator.generate(new Random(1234L));
 
@@ -32,13 +31,23 @@ class SingleBitFlipGeneratorTest {
         SingleBitFlipGenerator generator = new SingleBitFlipGenerator();
         boolean[] base = new boolean[0];
 
-        State state = new State();
-        state.update(Map.of(StateKeys.OFFSPRING_BASE, base));
-        generator.init(state);
+        generator.init(stateWithBase(base));
 
         boolean[] result = generator.generate(new Random(1234L));
 
         assertSame(base, result);
+    }
+
+    @Test
+    void generate_rejectsMissingOffspringBase() {
+        SingleBitFlipGenerator generator = new SingleBitFlipGenerator();
+
+        State state = new State();
+        state.update(Map.of(StateKeys.DIMENSION, 3));
+
+        generator.init(state);
+
+        assertThrows(IllegalStateException.class, () -> generator.generate(new Random(1234L)));
     }
 
     @Test

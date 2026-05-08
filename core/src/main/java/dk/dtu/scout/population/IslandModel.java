@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+
 /**
  * Population model based on multiple semi-independent islands.
  * Each island maintains its own parent population, generator, state, and random
@@ -54,10 +55,10 @@ public class IslandModel<S> implements PopulationModel<S> {
     @Override
     public List<Parameter> params() {
         return List.of(
-            new Parameter("numIslands", "Number of islands", "int", numIslands, 1.0, null, null),
-            new Parameter("mu", "μ (parents per island)", "int", mu, 1.0, null, null),
-            new Parameter("lambda", "λ (offspring per island)", "int", lambda, 1.0, null, null),
-            new Parameter("epochLength", "Epoch length (iterations)", "int", epochLength, 1.0, null, null)
+                new Parameter("numIslands", "Number of islands", "int", numIslands, 1.0, null, null),
+                new Parameter("mu", "μ (parents per island)", "int", mu, 1.0, null, null),
+                new Parameter("lambda", "λ (offspring per island)", "int", lambda, 1.0, null, null),
+                new Parameter("epochLength", "Epoch length (iterations)", "int", epochLength, 1.0, null, null)
         );
     }
 
@@ -87,17 +88,18 @@ public class IslandModel<S> implements PopulationModel<S> {
         private final State state;
         private final Random rng;
         private final List<ScoutComponent> components;
+        private Map<String, Object> componentStateVariables = Map.of();
 
         private IslandState(
-            List<EvaluatedSolution<S>> parentsEvaluated,
-            S current,
-            double currentFitness,
-            S best,
-            double bestFitness,
-            Generator<S> generator,
-            State state,
-            Random rng,
-            List<ScoutComponent> components
+                List<EvaluatedSolution<S>> parentsEvaluated,
+                S current,
+                double currentFitness,
+                S best,
+                double bestFitness,
+                Generator<S> generator,
+                State state,
+                Random rng,
+                List<ScoutComponent> components
         ) {
             this.parentsEvaluated = parentsEvaluated;
             this.current = current;
@@ -110,6 +112,7 @@ public class IslandModel<S> implements PopulationModel<S> {
             this.components = components;
         }
     }
+
     /**
      * Initializes all islands and creates the initial public run snapshot.
      * Each island receives its own random number generator, local state, generator,
@@ -131,23 +134,24 @@ public class IslandModel<S> implements PopulationModel<S> {
         int evaluations = numIslands * mu;
 
         IterationSnapshot<S> initialSnapshot = snapshot(
-            0,
-            evaluations,
-            globalCurrent.current,
-            globalCurrent.currentFitness,
-            globalBest.best,
-            globalBest.bestFitness,
-            true
+                0,
+                evaluations,
+                globalCurrent.current,
+                globalCurrent.currentFitness,
+                globalBest.best,
+                globalBest.bestFitness,
+                true
         );
 
         return new PopulationInitialization<>(
-            new IslandModelState<>(islands),
-            initialSnapshot,
-            evaluations,
-            stateVariables(globalCurrent, globalBest),
-            List.of()
+                new IslandModelState<>(islands),
+                initialSnapshot,
+                evaluations,
+                stateVariables(globalCurrent, globalBest),
+                List.of()
         );
     }
+
     /**
      * Performs one island-model iteration. Each island independently generates offspring and updates
      * its local parent population. If the current iteration reaches the epoch length, ring migration
@@ -179,17 +183,18 @@ public class IslandModel<S> implements PopulationModel<S> {
         int newEvaluations = evaluations + evaluationsDelta;
 
         IterationSnapshot<S> snapshot = snapshot(
-            iteration,
-            newEvaluations,
-            globalCurrent.current,
-            globalCurrent.currentFitness,
-            globalBest.best,
-            globalBest.bestFitness,
-            accepted
+                iteration,
+                newEvaluations,
+                globalCurrent.current,
+                globalCurrent.currentFitness,
+                globalBest.best,
+                globalBest.bestFitness,
+                accepted
         );
 
         return new PopulationStepResult<>(snapshot, evaluationsDelta, stateVariables(globalCurrent, globalBest));
     }
+
     /**
      * Creates one island with its own local state, generator, random number generator,
      * and initial parent population.
@@ -201,9 +206,9 @@ public class IslandModel<S> implements PopulationModel<S> {
         State islandState = new State();
 
         islandState.update(Map.of(
-            StateKeys.PROBLEM, context.problem(),
-            StateKeys.DIMENSION, context.space().dimension(),
-            StateKeys.SEARCH_SPACE_ID, context.space().id()
+                StateKeys.PROBLEM, context.problem(),
+                StateKeys.DIMENSION, context.space().dimension(),
+                StateKeys.SEARCH_SPACE_ID, context.space().id()
         ));
 
         Generator<S> generator = context.generatorFactory().get();
@@ -213,17 +218,18 @@ public class IslandModel<S> implements PopulationModel<S> {
         EvaluatedSolution<S> representative = bestOf(parentsEvaluated);
 
         return new IslandState<>(
-            parentsEvaluated,
-            representative.value(),
-            representative.fitness(),
-            representative.value(),
-            representative.fitness(),
-            generator,
-            islandState,
-            islandRng,
-            List.of(generator)
+                parentsEvaluated,
+                representative.value(),
+                representative.fitness(),
+                representative.value(),
+                representative.fitness(),
+                generator,
+                islandState,
+                islandRng,
+                List.of(generator)
         );
     }
+
     /**
      * Samples and evaluates the initial parent population for one island.
      * @param context shared population model context
@@ -241,6 +247,7 @@ public class IslandModel<S> implements PopulationModel<S> {
 
         return parentsEvaluated;
     }
+
     /**
      * Performs one iteration for a single island.
      * The island first publishes its current state, then generates lambda offspring.
@@ -266,11 +273,11 @@ public class IslandModel<S> implements PopulationModel<S> {
         S previousCurrent = island.current;
 
         List<EvaluatedSolution<S>> nextParents = context.selection().select(
-            island.parentsEvaluated,
-            generationEvaluated,
-            mu,
-            iteration,
-            island.rng
+                island.parentsEvaluated,
+                generationEvaluated,
+                mu,
+                iteration,
+                island.rng
         );
 
         island.parentsEvaluated = new ArrayList<>(nextParents);
@@ -278,6 +285,7 @@ public class IslandModel<S> implements PopulationModel<S> {
 
         return previousCurrent != island.current;
     }
+
     /**
      * Creates and evaluates one offspring for an island.
      * Two parents are selected from the island's local parent population. If crossover
@@ -295,6 +303,7 @@ public class IslandModel<S> implements PopulationModel<S> {
 
         island.state.update(Map.of(StateKeys.SELECTED_PARENT_1, parent1, StateKeys.SELECTED_PARENT_2, parent2));
         context.sharedState().update(Map.of(StateKeys.SELECTED_PARENT_1, parent1, StateKeys.SELECTED_PARENT_2, parent2));
+
         S offspringBase = context.crossover() == null ? parent1 : context.crossover().crossover(island.rng);
 
         island.state.update(Map.of(StateKeys.OFFSPRING_BASE, offspringBase));
@@ -314,17 +323,18 @@ public class IslandModel<S> implements PopulationModel<S> {
      */
     private void updateIslandState(IslandState<S> island) {
         island.state.update(Map.of(
-            StateKeys.CURRENT, island.current,
-            StateKeys.CURRENT_FITNESS, island.currentFitness,
-            StateKeys.BEST, island.best,
-            StateKeys.BEST_FITNESS, island.bestFitness,
-            StateKeys.PARENTS_EVALUATED, List.copyOf(island.parentsEvaluated)
+                StateKeys.CURRENT, island.current,
+                StateKeys.CURRENT_FITNESS, island.currentFitness,
+                StateKeys.BEST, island.best,
+                StateKeys.BEST_FITNESS, island.bestFitness,
+                StateKeys.PARENTS_EVALUATED, List.copyOf(island.parentsEvaluated)
         ));
     }
+
     /**
      * Collects state variables published by the island's local components.
-     * This is mainly used by stateful generators such as ACO generators, which publish
-     * pheromone vectors or matrices after reading the evaluated generation.
+     * The returned variables are cached on the island so that the global state can
+     * expose them without calling component logic again.
      * @param island island whose components should publish state variables
      */
     private void updateComponentStateVariables(IslandState<S> island) {
@@ -335,11 +345,13 @@ public class IslandModel<S> implements PopulationModel<S> {
         }
 
         island.state.update(variables);
+        island.componentStateVariables = variables;
     }
 
     private boolean shouldMigrate(int iteration) {
         return numIslands > 1 && (iteration + 1) % epochLength == 0;
     }
+
     /**
      * Migrates the best solution from each island to the next island in a ring.
      * Island i receives the best solution from island i - 1. The immigrant replaces
@@ -439,20 +451,20 @@ public class IslandModel<S> implements PopulationModel<S> {
     }
 
     private IterationSnapshot<S> snapshot(
-        int iteration,
-        int evaluations,
-        S current,
-        double currentFitness,
-        S best,
-        double bestFitness,
-        boolean accepted
+            int iteration,
+            int evaluations,
+            S current,
+            double currentFitness,
+            S best,
+            double bestFitness,
+            boolean accepted
     ) {
         return new IterationSnapshot<>(
-            iteration,
-            evaluations,
-            new EvaluatedSolution<>(current, currentFitness),
-            new EvaluatedSolution<>(best, bestFitness),
-            accepted
+                iteration,
+                evaluations,
+                new EvaluatedSolution<>(current, currentFitness),
+                new EvaluatedSolution<>(best, bestFitness),
+                accepted
         );
     }
 
@@ -463,27 +475,16 @@ public class IslandModel<S> implements PopulationModel<S> {
         variables.put(StateKeys.CURRENT_FITNESS, globalCurrent.currentFitness);
         variables.put(StateKeys.BEST, globalBest.best);
         variables.put(StateKeys.BEST_FITNESS, globalBest.bestFitness);
-
-        variables.putAll(componentStateVariables(globalBest));
-
-        return variables;
-    }
-
-    private Map<String, Object> componentStateVariables(IslandState<S> island) {
-        Map<String, Object> variables = new HashMap<>();
-
-        for (ScoutComponent component : island.components) {
-            variables.putAll(component.getStateVariables(island.state));
-        }
+        variables.putAll(globalBest.componentStateVariables);
 
         return variables;
     }
 
     private int positiveIntParam(
-        Map<String, Object> params,
-        String key,
-        int currentValue,
-        String errorMessage
+            Map<String, Object> params,
+            String key,
+            int currentValue,
+            String errorMessage
     ) {
         if (!params.containsKey(key)) {
             return currentValue;

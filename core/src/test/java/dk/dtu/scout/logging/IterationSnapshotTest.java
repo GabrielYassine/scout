@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class IterationSnapshotTest {
 
     @Test
-    void accessorsReturnValuesFromCurrentAndBestSolutions() {
+    void accessorsReturnValuesFromSnapshotAndEvaluatedSolutions() {
         EvaluatedSolution<String> current = new EvaluatedSolution<>("current", 1.5);
         EvaluatedSolution<String> best = new EvaluatedSolution<>("best", 2.5);
 
@@ -20,6 +20,8 @@ class IterationSnapshotTest {
             true
         );
 
+        assertEquals(3, snapshot.iteration());
+        assertEquals(10, snapshot.evaluations());
         assertEquals("current", snapshot.currentSolution());
         assertEquals(1.5, snapshot.currentFitness());
         assertEquals("best", snapshot.bestSolution());
