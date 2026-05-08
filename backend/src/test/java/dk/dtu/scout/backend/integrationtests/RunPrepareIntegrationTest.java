@@ -76,8 +76,10 @@ class RunPrepareIntegrationTest {
             String sessionId = stringValue(response, "sessionId");
             String executionId = stringValue(response, "executionId");
 
+            assertNotNull(sessionId);
             assertFalse(sessionId.isBlank());
             assertNotEquals("   ", sessionId);
+            assertNotNull(executionId);
             assertFalse(executionId.isBlank());
 
             RunRequest stored = executionRegistry.consumePreparedRun(executionId, sessionId);
@@ -93,7 +95,9 @@ class RunPrepareIntegrationTest {
             String sessionId = stringValue(response, "sessionId");
             String executionId = stringValue(response, "executionId");
 
+            assertNotNull(sessionId);
             assertFalse(sessionId.isBlank());
+            assertNotNull(executionId);
             assertFalse(executionId.isBlank());
 
             RunRequest stored = executionRegistry.consumePreparedRun(executionId, sessionId);
@@ -122,9 +126,7 @@ class RunPrepareIntegrationTest {
         void prepareRun_acceptsTspProblemWhenInstanceIsProvided() throws Exception {
             String sessionId = "prepare-session-tsp";
 
-            String executionId = prepareRunAndGetExecutionId(
-                tspRunPayload(sessionId, Map.of("tspInstance", smallTspInstancePayload()))
-            );
+            String executionId = prepareRunAndGetExecutionId(tspRunPayload(sessionId, Map.of("tspInstance", smallTspInstancePayload())));
 
             RunRequest stored = executionRegistry.consumePreparedRun(executionId, sessionId);
 
@@ -136,9 +138,7 @@ class RunPrepareIntegrationTest {
         void prepareRun_acceptsVrpProblemWhenInstanceIsProvided() throws Exception {
             String sessionId = "prepare-session-vrp";
 
-            String executionId = prepareRunAndGetExecutionId(
-                vrpRunPayload(sessionId, Map.of("vrpInstance", smallVrpInstancePayload()))
-            );
+            String executionId = prepareRunAndGetExecutionId(vrpRunPayload(sessionId, Map.of("vrpInstance", smallVrpInstancePayload())));
 
             RunRequest stored = executionRegistry.consumePreparedRun(executionId, sessionId);
 
@@ -148,13 +148,7 @@ class RunPrepareIntegrationTest {
 
         @Test
         void prepareRun_rejectsMissingRunRequest() throws Exception {
-            Map<String, Object> payload = preparePayload(
-                "prepare-session-missing-run-request",
-                "run",
-                null,
-                null
-            );
-
+            Map<String, Object> payload = preparePayload("prepare-session-missing-run-request", "run", null, null);
             assertRunPrepareBadRequest(payload, "Run request must be provided");
         }
 
@@ -240,10 +234,7 @@ class RunPrepareIntegrationTest {
 
         @Test
         void createProblem_mapsTspInstanceParams() {
-            TSP tspProblem = assertInstanceOf(
-                TSP.class,
-                runComponentFactory.createProblem("tsp", 2, Map.of("tspInstance", smallTspInstancePayload()))
-            );
+            TSP tspProblem = assertInstanceOf(TSP.class, runComponentFactory.createProblem("tsp", 2, Map.of("tspInstance", smallTspInstancePayload())));
 
             assertNotNull(tspProblem.getInstance());
             assertEquals("tiny", tspProblem.getInstance().getName());
@@ -252,10 +243,7 @@ class RunPrepareIntegrationTest {
 
         @Test
         void createProblem_mapsVrpInstanceParams() {
-            VRP vrpProblem = assertInstanceOf(
-                VRP.class,
-                runComponentFactory.createProblem("vrp", 0, Map.of("vrpInstance", smallVrpInstancePayload()))
-            );
+            VRP vrpProblem = assertInstanceOf(VRP.class, runComponentFactory.createProblem("vrp", 0, Map.of("vrpInstance", smallVrpInstancePayload())));
 
             assertNotNull(vrpProblem.getInstance());
             assertEquals("tiny", vrpProblem.getInstance().getName());
@@ -296,15 +284,11 @@ class RunPrepareIntegrationTest {
     }
 
     private void assertRunPrepareBadRequest(Map<String, Object> payload, String expectedMessage) throws Exception {
-        postRunPrepare(mockMvc, objectMapper, payload)
-            .andExpect(status().isBadRequest())
-            .andExpect(jsonPath("$.message").value(expectedMessage));
+        postRunPrepare(mockMvc, objectMapper, payload).andExpect(status().isBadRequest()).andExpect(jsonPath("$.message").value(expectedMessage));
     }
 
     private void assertRuntimeStudyPrepareBadRequest(Map<String, Object> payload, String expectedMessage) throws Exception {
-        postRuntimeStudyPrepare(mockMvc, objectMapper, payload)
-            .andExpect(status().isBadRequest())
-            .andExpect(jsonPath("$.message").value(expectedMessage));
+        postRuntimeStudyPrepare(mockMvc, objectMapper, payload).andExpect(status().isBadRequest()).andExpect(jsonPath("$.message").value(expectedMessage));
     }
 
     private void assertPreparedRunMissing(String runId, String sessionId) {

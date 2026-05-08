@@ -52,10 +52,7 @@ public final class RunRequestFixtures {
         request.put("crossoverParams", Map.of());
 
         request.put("stopConditionIds", List.of("max-evaluations"));
-        request.put("stopConditionParams", mapOf(
-                "max-evaluations",
-                mapOf("maxEvaluations", 5)
-        ));
+        request.put("stopConditionParams", mapOf("max-evaluations", mapOf("maxEvaluations", 5)));
 
         request.put("observerIds", List.of("fitness"));
         request.put("observerParams", Map.of());
@@ -99,34 +96,6 @@ public final class RunRequestFixtures {
         request.put("repetitionsPerSize", 1);
 
         return request;
-    }
-
-    @SuppressWarnings("unchecked")
-    public static Map<String, Object> runRequest(Map<String, Object> preparePayload) {
-        return (Map<String, Object>) preparePayload.get("runRequest");
-    }
-
-    @SuppressWarnings("unchecked")
-    public static Map<String, Object> runtimeStudyRequest(Map<String, Object> preparePayload) {
-        return (Map<String, Object>) preparePayload.get("runtimeStudyRequest");
-    }
-
-    public static Map<String, Object> withRunRequestField(
-            Map<String, Object> preparePayload,
-            String key,
-            Object value
-    ) {
-        runRequest(preparePayload).put(key, value);
-        return preparePayload;
-    }
-
-    public static Map<String, Object> withRuntimeStudyField(
-            Map<String, Object> preparePayload,
-            String key,
-            Object value
-    ) {
-        runtimeStudyRequest(preparePayload).put(key, value);
-        return preparePayload;
     }
 
     public static Map<String, Object> mapOf(Object... keyValues) {

@@ -158,9 +158,7 @@ class StatsControllerIntegrationTest {
 
         @Test
         void seriesWindow_rejectsMalformedJson() throws Exception {
-            mockMvc.perform(post("/api/stats/series-window")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content("{"))
+            mockMvc.perform(post("/api/stats/series-window").contentType(MediaType.APPLICATION_JSON).content("{"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
                 .andExpect(jsonPath("$.error").value("Bad Request"))

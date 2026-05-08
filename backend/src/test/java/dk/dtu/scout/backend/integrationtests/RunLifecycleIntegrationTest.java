@@ -18,6 +18,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import static dk.dtu.scout.backend.integrationtests.support.BackendJsonTestSupport.mapValue;
 import static dk.dtu.scout.backend.integrationtests.support.InstanceFixtures.tspInstancePayload;
@@ -50,7 +51,7 @@ class RunLifecycleIntegrationTest {
 
         @Test
         void preparedBitstringRun_streamsProgressAndFinishesThroughWebSocket() throws Exception {
-            PreparedExecution prepared = prepareAndStartRun("lifecycle-session-bitstring", "ws-lifecycle-bitstring");
+            PreparedExecution prepared = prepareAndStartRun();
 
             List<RunWsPayload> payloads = captureRunPayloadsAfterFinished(wsSender, prepared.executionId());
 
@@ -68,9 +69,9 @@ class RunLifecycleIntegrationTest {
         @Test
         void preparedBitstringRunWithMultipleProblems_executesRealBackendFlow() throws Exception {
             PreparedExecution prepared = prepareAndStartRun(
-                    "lifecycle-session-multiple-problems",
-                    "ws-lifecycle-multiple-problems",
-                    runRequest -> runRequest.put("problemIds", List.of("onemax", "leadingones"))
+                "lifecycle-session-multiple-problems",
+                "ws-lifecycle-multiple-problems",
+                runRequest -> runRequest.put("problemIds", List.of("onemax", "leadingones"))
             );
 
             List<RunWsPayload> payloads = captureRunPayloadsAfterFinished(wsSender, prepared.executionId());
@@ -83,9 +84,9 @@ class RunLifecycleIntegrationTest {
         @Test
         void preparedBitstringRunWithMultipleRunTimes_executesRealBackendFlow() throws Exception {
             PreparedExecution prepared = prepareAndStartRun(
-                    "lifecycle-session-multiple-runtimes",
-                    "ws-lifecycle-multiple-runtimes",
-                    runRequest -> runRequest.put("runTimes", 2)
+                "lifecycle-session-multiple-runtimes",
+                "ws-lifecycle-multiple-runtimes",
+                runRequest -> runRequest.put("runTimes", 2)
             );
 
             List<RunWsPayload> payloads = captureRunPayloadsAfterFinished(wsSender, prepared.executionId());
@@ -98,9 +99,9 @@ class RunLifecycleIntegrationTest {
         @Test
         void preparedTspRun_startsThroughWebSocketAndExecutesRealBackendFlow() throws Exception {
             PreparedExecution prepared = prepareAndStartRun(
-                    "lifecycle-session-tsp",
-                    "ws-lifecycle-tsp",
-                    RunLifecycleIntegrationTest::configureTspRun
+                "lifecycle-session-tsp",
+                "ws-lifecycle-tsp",
+                RunLifecycleIntegrationTest::configureTspRun
             );
 
             List<RunWsPayload> payloads = captureRunPayloadsAfterFinished(wsSender, prepared.executionId());
@@ -108,37 +109,33 @@ class RunLifecycleIntegrationTest {
             assertHasRunPayloadType(payloads, "RUN_FINISHED");
 
             RunWsPayload tspProgress = payloads.stream()
-                    .filter(payload -> "RUN_PROGRESS".equals(payload.type()))
-                    .filter(payload -> "tsp".equals(payload.problemId()))
-                    .filter(payload -> payload.seriesDelta() != null)
-                    .filter(payload -> payload.seriesDelta().containsKey("tspTour")
-                            || payload.seriesDelta().containsKey("tspCities"))
-                    .findFirst()
-                    .orElseThrow();
+                .filter(payload -> "RUN_PROGRESS".equals(payload.type()))
+                .filter(payload -> "tsp".equals(payload.problemId()))
+                .filter(payload -> payload.seriesDelta() != null)
+                .filter(payload -> payload.seriesDelta().containsKey("tspTour") || payload.seriesDelta().containsKey("tspCities"))
+                .findFirst()
+                .orElseThrow();
 
-            assertTrue(tspProgress.seriesMerge().containsKey("tspTour")
-                    || tspProgress.seriesMerge().containsKey("tspCities"));
+            assertTrue(tspProgress.seriesMerge().containsKey("tspTour") || tspProgress.seriesMerge().containsKey("tspCities"));
         }
 
         @Test
         void preparedRunWithEveryIterationWebSocketUpdates_doesNotDuplicateFinalEvaluation() throws Exception {
             PreparedExecution prepared = prepareAndStartRun(
-                    "ws-final-no-duplicate-session",
-                    "ws-final-no-duplicate",
-                    runRequest -> {
-                        runRequest.put("stopConditionIds", List.of("max-evaluations"));
-                        runRequest.put("stopConditionParams", Map.of("maxEvaluations", 5));
-                        runRequest.put("logEveryEvaluations", 1);
-                        runRequest.put("wsUpdateEveryEvaluations", 1);
-                    }
+                "ws-final-no-duplicate-session",
+                "ws-final-no-duplicate",
+                runRequest -> {
+                    runRequest.put("stopConditionIds", List.of("max-evaluations"));
+                    runRequest.put("stopConditionParams", Map.of("maxEvaluations", 5));
+                    runRequest.put("logEveryEvaluations", 1);
+                    runRequest.put("wsUpdateEveryEvaluations", 1);
+                }
             );
 
             List<RunWsPayload> payloads = captureRunPayloadsAfterFinished(wsSender, prepared.executionId());
             RunWsPayload finishedProgress = finishedRunProgress(payloads);
 
-            long finalEvaluationCount = allProgressEvaluations(payloads).stream()
-                    .filter(evaluation -> evaluation.equals(finishedProgress.evaluation()))
-                    .count();
+            long finalEvaluationCount = allProgressEvaluations(payloads).stream().filter(evaluation -> evaluation.equals(finishedProgress.evaluation())).count();
 
             assertEquals(1, finalEvaluationCount);
         }
@@ -146,89 +143,76 @@ class RunLifecycleIntegrationTest {
         @Test
         void preparedRunWithSparseWebSocketUpdates_appendsFinalProgressPoint() throws Exception {
             PreparedExecution prepared = prepareAndStartRun(
-                    "ws-final-append-session",
-                    "ws-final-append-session",
-                    runRequest -> {
-                        runRequest.put("logEveryEvaluations", 1);
-                        runRequest.put("wsUpdateEveryEvaluations", 1000);
-                    }
+                "ws-final-append-session",
+                "ws-final-append-session",
+                runRequest -> {
+                    runRequest.put("logEveryEvaluations", 1);
+                    runRequest.put("wsUpdateEveryEvaluations", 1000);
+                }
             );
 
             List<RunWsPayload> payloads = captureRunPayloadsAfterFinished(wsSender, prepared.executionId());
 
             assertTrue(payloads.stream()
-                    .filter(payload -> "RUN_PROGRESS".equals(payload.type()))
-                    .filter(payload -> "FINISHED".equals(payload.status()))
-                    .anyMatch(payload -> payload.evaluationsMerge() == MergeOp.APPEND));
+                .filter(payload -> "RUN_PROGRESS".equals(payload.type()))
+                .filter(payload -> "FINISHED".equals(payload.status()))
+                .anyMatch(payload -> payload.evaluationsMerge() == MergeOp.APPEND));
         }
 
         @Test
         void preparedRunWithSeparatedLoggingAndWebSocketIntervals_sendsAccumulatedLoggedPoints() throws Exception {
             PreparedExecution prepared = prepareAndStartRun(
-                    "ws-accumulated-points-session",
-                    "ws-accumulated-points",
-                    runRequest -> {
-                        runRequest.put("stopConditionIds", List.of("max-evaluations"));
-                        runRequest.put("stopConditionParams", Map.of("maxEvaluations", 12));
-                        runRequest.put("logEveryEvaluations", 1);
-                        runRequest.put("wsUpdateEveryEvaluations", 5);
-                    }
+                "ws-accumulated-points-session",
+                "ws-accumulated-points",
+                runRequest -> {
+                    runRequest.put("stopConditionIds", List.of("max-evaluations"));
+                    runRequest.put("stopConditionParams", Map.of("maxEvaluations", 12));
+                    runRequest.put("logEveryEvaluations", 1);
+                    runRequest.put("wsUpdateEveryEvaluations", 5);
+                }
             );
 
             List<RunWsPayload> payloads = captureRunPayloadsAfterFinished(wsSender, prepared.executionId());
 
-            assertTrue(payloads.stream()
-                    .filter(payload -> "RUN_PROGRESS".equals(payload.type()))
-                    .anyMatch(payload -> payload.evaluations() != null && payload.evaluations().size() > 1));
+            assertTrue(payloads.stream().filter(payload -> "RUN_PROGRESS".equals(payload.type())).anyMatch(payload -> payload.evaluations() != null && payload.evaluations().size() > 1));
         }
 
         @Test
         void preparedRunWithFitnessPhaseObserver_streamsPhaseIntervals() throws Exception {
             PreparedExecution prepared = prepareAndStartRun(
-                    "ws-fitness-phase-session",
-                    "ws-fitness-phase",
-                    RunLifecycleIntegrationTest::configureFitnessPhaseRun
+                "ws-fitness-phase-session",
+                "ws-fitness-phase",
+                RunLifecycleIntegrationTest::configureFitnessPhaseRun
             );
 
             List<RunWsPayload> payloads = captureRunPayloadsAfterFinished(wsSender, prepared.executionId());
-
             assertFalse(extractFitnessPhaseIntervals(payloads).isEmpty());
         }
 
         @Test
         void preparedRunWithFitnessPhaseObserver_doesNotDuplicatePhaseIntervals() throws Exception {
             PreparedExecution prepared = prepareAndStartRun(
-                    "ws-fitness-phase-no-duplicates-session",
-                    "ws-fitness-phase-no-duplicates",
-                    RunLifecycleIntegrationTest::configureFitnessPhaseRun
+                "ws-fitness-phase-no-duplicates-session",
+                "ws-fitness-phase-no-duplicates",
+                RunLifecycleIntegrationTest::configureFitnessPhaseRun
             );
 
-            List<Object> phaseIntervals = extractFitnessPhaseIntervals(
-                    captureRunPayloadsAfterFinished(wsSender, prepared.executionId())
-            );
-
-            long distinctCount = phaseIntervals.stream()
-                    .map(Object::toString)
-                    .distinct()
-                    .count();
-
+            List<Object> phaseIntervals = extractFitnessPhaseIntervals(captureRunPayloadsAfterFinished(wsSender, prepared.executionId()));
+            long distinctCount = phaseIntervals.stream().map(Object::toString).distinct().count();
             assertEquals(distinctCount, phaseIntervals.size());
         }
 
         @Test
         void preparedRunWithUnknownGenerator_sendsFailedPayloadWhenStarted() throws Exception {
             PreparedExecution prepared = prepareAndStartRun(
-                    "lifecycle-session-unknown-generator",
-                    "ws-lifecycle-unknown-generator",
-                    runRequest -> runRequest.put("generatorId", "does-not-exist")
+                "lifecycle-session-unknown-generator",
+                "ws-lifecycle-unknown-generator",
+                runRequest -> runRequest.put("generatorId", "does-not-exist")
             );
 
             List<RunWsPayload> payloads = captureRunPayloadsAfterFailed(wsSender, prepared.executionId());
 
-            RunWsPayload failedPayload = payloads.stream()
-                    .filter(payload -> "RUN_FAILED".equals(payload.type()))
-                    .findFirst()
-                    .orElseThrow();
+            RunWsPayload failedPayload = payloads.stream().filter(payload -> "RUN_FAILED".equals(payload.type())).findFirst().orElseThrow();
 
             assertTrue(failedPayload.message().contains("Unknown component: does-not-exist"));
         }
@@ -236,15 +220,15 @@ class RunLifecycleIntegrationTest {
         @Test
         void preparedRunThatStopsAfterInitialLoggedPoint_replacesFinalProgressPoint() throws Exception {
             PreparedExecution prepared = prepareAndStartRun(
-                    "ws-replace-last-initial-stop-session",
-                    "ws-replace-last-initial-stop",
-                    runRequest -> {
-                        runRequest.put("searchSpaceParams", Map.of("n", 1));
-                        runRequest.put("stopConditionIds", List.of("max-evaluations"));
-                        runRequest.put("stopConditionParams", Map.of("maxEvaluations", 1));
-                        runRequest.put("logEveryEvaluations", 1);
-                        runRequest.put("wsUpdateEveryEvaluations", 1);
-                    }
+                "ws-replace-last-initial-stop-session",
+                "ws-replace-last-initial-stop",
+                runRequest -> {
+                    runRequest.put("searchSpaceParams", Map.of("n", 1));
+                    runRequest.put("stopConditionIds", List.of("max-evaluations"));
+                    runRequest.put("stopConditionParams", Map.of("maxEvaluations", 1));
+                    runRequest.put("logEveryEvaluations", 1);
+                    runRequest.put("wsUpdateEveryEvaluations", 1);
+                }
             );
 
             List<RunWsPayload> payloads = captureRunPayloadsAfterFinished(wsSender, prepared.executionId());
@@ -257,24 +241,16 @@ class RunLifecycleIntegrationTest {
         @Test
         void preparedVrpRun_startsThroughWebSocketAndExecutesRealBackendFlow() throws Exception {
             PreparedExecution prepared = prepareAndStartRun(
-                    "lifecycle-session-vrp",
-                    "ws-lifecycle-vrp",
-                    RunLifecycleIntegrationTest::configureVrpRun
+                "lifecycle-session-vrp",
+                "ws-lifecycle-vrp",
+                RunLifecycleIntegrationTest::configureVrpRun
             );
 
             List<RunWsPayload> payloads = captureRunPayloadsAfterFinished(wsSender, prepared.executionId());
             String debugPayloads = debugPayloads(payloads);
 
-            assertTrue(
-                    payloads.stream().anyMatch(payload ->
-                            "RUN_PROGRESS".equals(payload.type()) && "vrp".equals(payload.problemId())),
-                    debugPayloads
-            );
-
-            assertTrue(
-                    payloads.stream().anyMatch(payload -> "RUN_FINISHED".equals(payload.type())),
-                    debugPayloads
-            );
+            assertTrue(payloads.stream().anyMatch(payload -> "RUN_PROGRESS".equals(payload.type()) && "vrp".equals(payload.problemId())), debugPayloads);
+            assertTrue(payloads.stream().anyMatch(payload -> "RUN_FINISHED".equals(payload.type())), debugPayloads);
         }
     }
 
@@ -283,10 +259,7 @@ class RunLifecycleIntegrationTest {
 
         @Test
         void preparedRuntimeStudy_startsThroughWebSocketAndExecutesRealBackendFlow() throws Exception {
-            PreparedExecution prepared = prepareAndStartStudy(
-                    "lifecycle-session-study",
-                    "ws-lifecycle-study"
-            );
+            PreparedExecution prepared = prepareAndStartStudy();
 
             List<RuntimeStudyWsPayload> payloads = captureStudyPayloadsAfterFinished(wsSender, prepared.executionId());
 
@@ -295,15 +268,11 @@ class RunLifecycleIntegrationTest {
         }
     }
 
-    private PreparedExecution prepareAndStartRun(String sessionId, String websocketSessionId) throws Exception {
-        return prepareAndStartRun(sessionId, websocketSessionId, runRequest -> {});
+    private PreparedExecution prepareAndStartRun() throws Exception {
+        return prepareAndStartRun("lifecycle-session-bitstring", "ws-lifecycle-bitstring", runRequest -> {});
     }
 
-    private PreparedExecution prepareAndStartRun(
-            String sessionId,
-            String websocketSessionId,
-            Consumer<Map<String, Object>> configure
-    ) throws Exception {
+    private PreparedExecution prepareAndStartRun(String sessionId, String websocketSessionId, Consumer<Map<String, Object>> configure) throws Exception {
         Map<String, Object> payload = validRunPreparePayload(sessionId);
         configure.accept(mapValue(payload, "runRequest"));
 
@@ -314,24 +283,24 @@ class RunLifecycleIntegrationTest {
         return prepared;
     }
 
-    private PreparedExecution prepareAndStartStudy(String sessionId, String websocketSessionId) throws Exception {
+    private PreparedExecution prepareAndStartStudy() throws Exception {
         PreparedExecution prepared = prepareRuntimeStudy(
-                mockMvc,
-                objectMapper,
-                validRuntimeStudyPreparePayload(sessionId)
+            mockMvc,
+            objectMapper,
+            validRuntimeStudyPreparePayload("lifecycle-session-study")
         );
 
-        startPreparedStudy(wsReceiver, prepared, websocketSessionId);
+        startPreparedStudy(wsReceiver, prepared, "ws-lifecycle-study");
 
         return prepared;
     }
 
     private static RunWsPayload finishedRunProgress(List<RunWsPayload> payloads) {
         return payloads.stream()
-                .filter(payload -> "RUN_PROGRESS".equals(payload.type()))
-                .filter(payload -> "FINISHED".equals(payload.status()))
-                .findFirst()
-                .orElseThrow();
+            .filter(payload -> "RUN_PROGRESS".equals(payload.type()))
+            .filter(payload -> "FINISHED".equals(payload.status()))
+            .findFirst()
+            .orElseThrow();
     }
 
     private static void assertHasRunPayloadType(List<RunWsPayload> payloads, String type) {
@@ -339,61 +308,51 @@ class RunLifecycleIntegrationTest {
     }
 
     private static void assertHasRunProgressForProblem(List<RunWsPayload> payloads, String problemId) {
-        assertTrue(payloads.stream().anyMatch(payload ->
-                "RUN_PROGRESS".equals(payload.type()) && problemId.equals(payload.problemId())));
+        assertTrue(payloads.stream().anyMatch(payload -> "RUN_PROGRESS".equals(payload.type()) && problemId.equals(payload.problemId())));
     }
 
     private static void assertHasRunProgressForRunIndex(List<RunWsPayload> payloads, int runIndex) {
-        assertTrue(payloads.stream().anyMatch(payload ->
-                "RUN_PROGRESS".equals(payload.type()) && Integer.valueOf(runIndex).equals(payload.runIndex())));
+        assertTrue(payloads.stream().anyMatch(payload -> "RUN_PROGRESS".equals(payload.type()) && Integer.valueOf(runIndex).equals(payload.runIndex())));
     }
 
     private static List<Integer> allProgressEvaluations(List<RunWsPayload> payloads) {
         return payloads.stream()
-                .filter(payload -> "RUN_PROGRESS".equals(payload.type()))
-                .flatMap(payload -> {
-                    if (payload.evaluations() != null && !payload.evaluations().isEmpty()) {
-                        return payload.evaluations().stream();
-                    }
-
-                    return List.of(payload.evaluation()).stream();
-                })
-                .toList();
+            .filter(payload -> "RUN_PROGRESS".equals(payload.type()))
+            .flatMap(payload -> {
+                if (payload.evaluations() != null && !payload.evaluations().isEmpty()) {
+                    return payload.evaluations().stream();
+                }
+                return Stream.of(payload.evaluation());
+            })
+            .toList();
     }
 
     private static List<Object> extractFitnessPhaseIntervals(List<RunWsPayload> payloads) {
         return payloads.stream()
-                .filter(payload -> "RUN_PROGRESS".equals(payload.type()))
-                .filter(payload -> payload.seriesDelta() != null)
-                .filter(payload -> payload.seriesDelta().containsKey("fitnessPhaseIntervals"))
-                .flatMap(payload -> {
-                    Object value = payload.seriesDelta().get("fitnessPhaseIntervals");
+            .filter(payload -> "RUN_PROGRESS".equals(payload.type()))
+            .filter(payload -> payload.seriesDelta() != null)
+            .filter(payload -> payload.seriesDelta().containsKey("fitnessPhaseIntervals"))
+            .flatMap(payload -> {
+                Object value = payload.seriesDelta().get("fitnessPhaseIntervals");
 
-                    if (value instanceof List<?> list) {
-                        return list.stream();
-                    }
-
-                    return List.of(value).stream();
-                })
-                .toList();
+                if (value instanceof List<?> list) {
+                    return list.stream();
+                }
+                return Stream.of(value);
+            })
+            .toList();
     }
 
     private static String debugPayloads(List<RunWsPayload> payloads) {
         return payloads.stream()
-                .map(payload -> "type=" + payload.type()
-                        + ", status=" + payload.status()
-                        + ", problemId=" + payload.problemId()
-                        + ", message=" + payload.message())
-                .toList()
-                .toString();
+            .map(payload -> "type=" + payload.type() + ", status=" + payload.status() + ", problemId=" + payload.problemId() + ", message=" + payload.message())
+            .toList()
+            .toString();
     }
 
     private static void configureFitnessPhaseRun(Map<String, Object> runRequest) {
         runRequest.put("observerIds", List.of("fitness", "fitness-phase"));
-        runRequest.put("observerParams", Map.of(
-                "windowSize", 3,
-                "epsilon", 0.0
-        ));
+        runRequest.put("observerParams", Map.of("windowSize", 3, "epsilon", 0.0));
         runRequest.put("stopConditionIds", List.of("max-evaluations"));
         runRequest.put("stopConditionParams", Map.of("maxEvaluations", 8));
         runRequest.put("logEveryEvaluations", 1);

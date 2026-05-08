@@ -17,29 +17,12 @@ public final class BackendJsonTestSupport {
     private BackendJsonTestSupport() {
     }
 
-    public static ResultActions postJson(
-        MockMvc mockMvc,
-        ObjectMapper objectMapper,
-        String url,
-        Object payload
-    ) throws Exception {
-        return mockMvc.perform(post(url)
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(payload)));
+    public static ResultActions postJson(MockMvc mockMvc, ObjectMapper objectMapper, String url, Object payload) throws Exception {
+        return mockMvc.perform(post(url).contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(payload)));
     }
 
-    public static ResultActions getJson(MockMvc mockMvc, String url) throws Exception {
-        return mockMvc.perform(get(url).contentType(MediaType.APPLICATION_JSON));
-    }
-
-    public static Map<String, Object> readJsonObject(
-        ObjectMapper objectMapper,
-        MvcResult result
-    ) throws Exception {
-        return objectMapper.readValue(
-            result.getResponse().getContentAsString(),
-            new TypeReference<>() {}
-        );
+    public static Map<String, Object> readJsonObject(ObjectMapper objectMapper, MvcResult result) throws Exception {
+        return objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
     }
 
     public static String stringValue(Map<String, Object> map, String key) {

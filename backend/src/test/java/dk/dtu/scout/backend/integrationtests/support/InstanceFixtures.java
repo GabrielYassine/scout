@@ -22,11 +22,7 @@ public final class InstanceFixtures {
         ));
     }
 
-    public static Map<String, Object> exportTspPayload(
-        String name,
-        String comment,
-        List<Map<String, Object>> cities
-    ) {
+    public static Map<String, Object> exportTspPayload(String name, String comment, List<Map<String, Object>> cities) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("exportType", "TSP");
         payload.put("name", name);
@@ -100,10 +96,6 @@ public final class InstanceFixtures {
         ));
     }
 
-    public static String validTsp() {
-        return validTsp(true, false);
-    }
-
     public static String validTsp(boolean withEof, boolean withBlankLines) {
         String blank = withBlankLines ? "\n" : "";
 
@@ -119,10 +111,6 @@ public final class InstanceFixtures {
             """;
 
         return blank + content + (withEof ? "EOF\n" : "");
-    }
-
-    public static String validVrp() {
-        return validVrp(true, false);
     }
 
     public static String validVrp(boolean withEof, boolean withBlankLines) {
@@ -147,31 +135,6 @@ public final class InstanceFixtures {
             """;
 
         return blank + content + (withEof ? "EOF\n" : "");
-    }
-
-    public static String invalidTspMissingType() {
-        return """
-            NAME: invalid
-            DIMENSION: 2
-            EDGE_WEIGHT_TYPE: EUC_2D
-            NODE_COORD_SECTION
-            1 0 0
-            2 1 1
-            EOF
-            """;
-    }
-
-    public static String unsupportedEdgeWeightType() {
-        return """
-            NAME: invalid
-            TYPE: TSP
-            DIMENSION: 2
-            EDGE_WEIGHT_TYPE: MAN_2D
-            NODE_COORD_SECTION
-            1 0 0
-            2 1 1
-            EOF
-            """;
     }
 
     private static Map<String, Object> tspInstancePayload(List<Map<String, Object>> cities) {

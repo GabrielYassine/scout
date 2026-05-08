@@ -75,7 +75,7 @@ class WebSocketDisconnectLifecycleIntegrationTest {
         void disconnectAfterRunWebSocketAttach_removesPreparedRun() throws Exception {
             PreparedExecution prepared = prepareRunPayload("disconnect-run-session");
 
-            startRunWithWrongSession(prepared, "ws-disconnect-prepared-run");
+            startRunWithWrongSession(prepared);
             disconnect("ws-disconnect-prepared-run");
 
             wsReceiver.runStart(
@@ -84,8 +84,7 @@ class WebSocketDisconnectLifecycleIntegrationTest {
                 headers("ws-disconnect-prepared-run-retry")
             );
 
-            verify(wsSender, timeout(2000).atLeastOnce())
-                .sendToRun(eq(prepared.executionId()), any(RunWsPayload.class));
+            verify(wsSender, timeout(2000).atLeastOnce()).sendToRun(eq(prepared.executionId()), any(RunWsPayload.class));
         }
     }
 
@@ -96,7 +95,7 @@ class WebSocketDisconnectLifecycleIntegrationTest {
         void disconnectAfterStudyWebSocketAttach_removesPreparedStudy() throws Exception {
             PreparedExecution prepared = prepareStudyPayload("disconnect-study-session");
 
-            startStudyWithWrongSession(prepared, "ws-disconnect-prepared-study");
+            startStudyWithWrongSession(prepared);
             disconnect("ws-disconnect-prepared-study");
 
             wsReceiver.studyStart(
@@ -105,8 +104,7 @@ class WebSocketDisconnectLifecycleIntegrationTest {
                 headers("ws-disconnect-prepared-study-retry")
             );
 
-            verify(wsSender, timeout(2000).atLeastOnce())
-                .sendToStudy(eq(prepared.executionId()), any(RuntimeStudyWsPayload.class));
+            verify(wsSender, timeout(2000).atLeastOnce()).sendToStudy(eq(prepared.executionId()), any(RuntimeStudyWsPayload.class));
         }
     }
 
@@ -182,19 +180,19 @@ class WebSocketDisconnectLifecycleIntegrationTest {
         return prepareRuntimeStudy(mockMvc, objectMapper, validRuntimeStudyPreparePayload(sessionId));
     }
 
-    private void startRunWithWrongSession(PreparedExecution prepared, String websocketSessionId) {
+    private void startRunWithWrongSession(PreparedExecution prepared) {
         wsReceiver.runStart(
             prepared.executionId(),
             new StartPreparedExecutionRequest("wrong-session"),
-            headers(websocketSessionId)
+            headers("ws-disconnect-prepared-run")
         );
     }
 
-    private void startStudyWithWrongSession(PreparedExecution prepared, String websocketSessionId) {
+    private void startStudyWithWrongSession(PreparedExecution prepared) {
         wsReceiver.studyStart(
             prepared.executionId(),
             new StartPreparedExecutionRequest("wrong-session"),
-            headers(websocketSessionId)
+            headers("ws-disconnect-prepared-study")
         );
     }
 

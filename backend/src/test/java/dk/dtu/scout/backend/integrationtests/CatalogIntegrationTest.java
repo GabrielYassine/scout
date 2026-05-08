@@ -35,7 +35,6 @@ class CatalogIntegrationTest {
             .andExpect(jsonPath("$.parentSelectionRules.length()", greaterThan(0)))
             .andExpect(jsonPath("$.stopConditions.length()", greaterThan(0)))
             .andExpect(jsonPath("$.observers.length()", greaterThan(0)))
-
             .andExpect(jsonPath("$.searchSpaces[*].id", hasItem("bitstring")))
             .andExpect(jsonPath("$.problems[*].id", hasItem("onemax")))
             .andExpect(jsonPath("$.generators[*].id", hasItem("bit-flip")))
@@ -50,7 +49,6 @@ class CatalogIntegrationTest {
     void catalog_mapsComponentMetadataAndParameters() throws Exception {
         mockMvc.perform(get("/api/catalog"))
             .andExpect(status().isOk())
-
             .andExpect(jsonPath("$.searchSpaces[0].kind").isString())
             .andExpect(jsonPath("$.searchSpaces[0].id").isString())
             .andExpect(jsonPath("$.searchSpaces[0].displayName").isString())

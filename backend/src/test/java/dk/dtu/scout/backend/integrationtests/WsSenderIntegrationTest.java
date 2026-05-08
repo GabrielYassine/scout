@@ -21,18 +21,14 @@ class WsSenderIntegrationTest {
     @Test
     void sendToRun_sendsPayloadToRunTopic() {
         Object payload = "run-payload";
-
         wsSender.sendToRun("run-123", payload);
-
         verify(template).convertAndSend("/topic/run/run-123", payload);
     }
 
     @Test
     void sendToStudy_sendsPayloadToStudyTopic() {
         Object payload = "study-payload";
-
         wsSender.sendToStudy("study-123", payload);
-
         verify(template).convertAndSend("/topic/study/study-123", payload);
     }
 }

@@ -47,35 +47,21 @@ class WsReceiverErrorIntegrationTest {
         @Test
         void runStart_sendsFailedWhenPreparedRunDoesNotExist() {
             startRunAndVerifyFailure(
-                    "missing-run-id",
-                    "session-missing-run",
-                    "ws-missing-run"
+                "missing-run-id",
+                "session-missing-run",
+                "ws-missing-run"
             );
         }
 
         @Test
         void runStart_sendsFailedWhenSessionDoesNotMatchPreparedRunOwner() throws Exception {
-            PreparedExecution prepared = prepareRun(
-                    mockMvc,
-                    objectMapper,
-                    validRunPreparePayload("owner-session-run")
-            );
-
-            startRunAndVerifyFailure(
-                    prepared.executionId(),
-                    "other-session",
-                    "ws-wrong-run-session"
-            );
+            PreparedExecution prepared = prepareRun(mockMvc, objectMapper, validRunPreparePayload("owner-session-run"));
+            startRunAndVerifyFailure(prepared.executionId(), "other-session", "ws-wrong-run-session");
         }
 
         @Test
         void runStart_sendsFailedWhenStartRequestIsNull() {
-            wsReceiver.runStart(
-                    "run-null-request",
-                    null,
-                    headers("ws-null-run-request")
-            );
-
+            wsReceiver.runStart("run-null-request", null, headers("ws-null-run-request"));
             verifyRunFailureSent("run-null-request");
         }
     }
@@ -86,44 +72,30 @@ class WsReceiverErrorIntegrationTest {
         @Test
         void studyStart_sendsFailedWhenPreparedStudyDoesNotExist() {
             startStudyAndVerifyFailure(
-                    "missing-study-id",
-                    "session-missing-study",
-                    "ws-missing-study"
+                "missing-study-id",
+                "session-missing-study",
+                "ws-missing-study"
             );
         }
 
         @Test
         void studyStart_sendsFailedWhenSessionDoesNotMatchPreparedStudyOwner() throws Exception {
-            PreparedExecution prepared = prepareRuntimeStudy(
-                    mockMvc,
-                    objectMapper,
-                    validRuntimeStudyPreparePayload("owner-session-study")
-            );
-
-            startStudyAndVerifyFailure(
-                    prepared.executionId(),
-                    "other-session",
-                    "ws-wrong-study-session"
-            );
+            PreparedExecution prepared = prepareRuntimeStudy(mockMvc, objectMapper, validRuntimeStudyPreparePayload("owner-session-study"));
+            startStudyAndVerifyFailure(prepared.executionId(), "other-session", "ws-wrong-study-session");
         }
 
         @Test
         void studyStart_sendsFailedWhenStartRequestIsNull() {
-            wsReceiver.studyStart(
-                    "study-null-request",
-                    null,
-                    headers("ws-null-study-request")
-            );
-
+            wsReceiver.studyStart("study-null-request", null, headers("ws-null-study-request"));
             verifyStudyFailureSent("study-null-request");
         }
     }
 
     private void startRunAndVerifyFailure(String runId, String sessionId, String websocketSessionId) {
         wsReceiver.runStart(
-                runId,
-                new StartPreparedExecutionRequest(sessionId),
-                headers(websocketSessionId)
+            runId,
+            new StartPreparedExecutionRequest(sessionId),
+            headers(websocketSessionId)
         );
 
         verifyRunFailureSent(runId);
@@ -131,21 +103,19 @@ class WsReceiverErrorIntegrationTest {
 
     private void startStudyAndVerifyFailure(String studyId, String sessionId, String websocketSessionId) {
         wsReceiver.studyStart(
-                studyId,
-                new StartPreparedExecutionRequest(sessionId),
-                headers(websocketSessionId)
+            studyId,
+            new StartPreparedExecutionRequest(sessionId),
+            headers(websocketSessionId)
         );
 
         verifyStudyFailureSent(studyId);
     }
 
     private void verifyRunFailureSent(String runId) {
-        verify(wsSender, timeout(2000))
-                .sendToRun(eq(runId), any(RunWsPayload.class));
+        verify(wsSender, timeout(2000)).sendToRun(eq(runId), any(RunWsPayload.class));
     }
 
     private void verifyStudyFailureSent(String studyId) {
-        verify(wsSender, timeout(2000))
-                .sendToStudy(eq(studyId), any(RuntimeStudyWsPayload.class));
+        verify(wsSender, timeout(2000)).sendToStudy(eq(studyId), any(RuntimeStudyWsPayload.class));
     }
 }

@@ -61,8 +61,7 @@ class RunReplacementLifecycleIntegrationTest {
             return List.<RunGroupResponse>of();
         });
 
-        when(runExecutor.runBatch(eq(secondRun), eq(1), eq(1)))
-            .thenReturn(List.<RunGroupResponse>of());
+        when(runExecutor.runBatch(eq(secondRun), eq(1), eq(1))).thenReturn(List.<RunGroupResponse>of());
 
         BatchSummaryResponse summary = mock(BatchSummaryResponse.class);
         when(runStatisticsService.calculateSummary(List.of())).thenReturn(summary);
@@ -77,12 +76,8 @@ class RunReplacementLifecycleIntegrationTest {
 
         verify(runExecutor, timeout(2000)).runBatch(eq(firstRun), eq(1), eq(1));
         verify(runExecutor, timeout(2000)).runBatch(eq(secondRun), eq(1), eq(1));
-
-        verify(wsSender, timeout(2000))
-            .sendToRun(eq("replacement-run-2"), any(RunWsPayload.class));
-
-        verify(wsSender, after(500).never())
-            .sendToRun(eq("replacement-run-1"), any(RunWsPayload.class));
+        verify(wsSender, timeout(2000)).sendToRun(eq("replacement-run-2"), any(RunWsPayload.class));
+        verify(wsSender, after(500).never()).sendToRun(eq("replacement-run-1"), any(RunWsPayload.class));
     }
 
     private static RunRequest validRunRequest(String sessionId, String runId) {

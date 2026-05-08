@@ -15,27 +15,15 @@ public final class RunPrepareTestSupport {
     private RunPrepareTestSupport() {
     }
 
-    public static ResultActions postRunPrepare(
-        MockMvc mockMvc,
-        ObjectMapper objectMapper,
-        Object payload
-    ) throws Exception {
+    public static ResultActions postRunPrepare(MockMvc mockMvc, ObjectMapper objectMapper, Object payload) throws Exception {
         return postJson(mockMvc, objectMapper, "/api/run/prepare", payload);
     }
 
-    public static ResultActions postRuntimeStudyPrepare(
-            MockMvc mockMvc,
-            ObjectMapper objectMapper,
-            Object payload
-    ) throws Exception {
+    public static ResultActions postRuntimeStudyPrepare(MockMvc mockMvc, ObjectMapper objectMapper, Object payload) throws Exception {
         return postJson(mockMvc, objectMapper, "/api/run/prepare", payload);
     }
 
-    public static PreparedExecution prepareRun(
-        MockMvc mockMvc,
-        ObjectMapper objectMapper,
-        Map<String, Object> payload
-    ) throws Exception {
+    public static PreparedExecution prepareRun(MockMvc mockMvc, ObjectMapper objectMapper, Map<String, Object> payload) throws Exception {
         MvcResult result = postRunPrepare(mockMvc, objectMapper, payload)
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.sessionId").isString())
@@ -50,11 +38,7 @@ public final class RunPrepareTestSupport {
         );
     }
 
-    public static PreparedExecution prepareRuntimeStudy(
-        MockMvc mockMvc,
-        ObjectMapper objectMapper,
-        Map<String, Object> payload
-    ) throws Exception {
+    public static PreparedExecution prepareRuntimeStudy(MockMvc mockMvc, ObjectMapper objectMapper, Map<String, Object> payload) throws Exception {
         MvcResult result = postRuntimeStudyPrepare(mockMvc, objectMapper, payload)
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.sessionId").isString())
