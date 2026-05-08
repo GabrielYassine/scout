@@ -85,6 +85,13 @@ public final class InstanceFormatter {
         return out.toString();
     }
 
+    /**
+     * Appends the common header section for both TSP and VRP formats, including the name, type, and comment fields.
+     * @param out the StringBuilder to append to
+     * @param name the name of the instance, which will be normalized to a non-blank string
+     * @param type  the type of the instance, such as "TSP" or "CVRP"
+     * @param comment the comment for the instance, which will be cleaned to remove extra whitespace and can be null if blank
+     */
     private static void appendHeader(StringBuilder out, String name, String type, String comment) {
         out.append("NAME: ").append(name).append("\n");
         out.append("TYPE: ").append(type).append("\n");
@@ -95,6 +102,13 @@ public final class InstanceFormatter {
         }
     }
 
+    /**
+     * Appends a line for a node's coordinates in the format "nodeId x y", where x and y are formatted to have up to 2 decimal places.
+     * @param out   the StringBuilder to append to
+     * @param nodeId  the 1-based index of the node (e.g., city or customer), which is used in the output file to identify the node
+     * @param x the x-coordinate of the node, which will be formatted to a string with up to 2 decimal places
+     * @param y the y-coordinate of the node, which will be formatted to a string with up to 2 decimal places
+     */
     private static void appendCoordinate(StringBuilder out, int nodeId, double x, double y) {
         out.append(nodeId)
             .append(" ")
@@ -104,6 +118,12 @@ public final class InstanceFormatter {
             .append("\n");
     }
 
+    /**
+     * Normalizes the name by trimming whitespace and ensuring it is not blank. If the input name is blank, the provided fallback string is used instead.
+     * @param name the name to normalize, which will be trimmed and checked for blankness
+     * @param fallback the fallback string to use if the input name is blank, ensuring that the output always has a valid name field
+     * @return the normalized name, which is guaranteed to be non-blank and trimmed of extra whitespace
+     */
     private static String normalizeName(String name, String fallback) {
         if (name.isBlank()) {
             return fallback;
@@ -111,6 +131,11 @@ public final class InstanceFormatter {
         return name.trim();
     }
 
+    /**
+     * Cleans the comment string by trimming whitespace and replacing multiple consecutive whitespace characters with a single space.
+     * @param comment
+     * @return the cleaned comment string, or null if the input is blank
+     */
     private static String cleanComment(String comment) {
         if (comment.isBlank()) {
             return null;
@@ -118,6 +143,12 @@ public final class InstanceFormatter {
         return comment.trim().replaceAll("\\s+", " ");
     }
 
+    /**
+     * Formats a double value to a string with up to 2 decimal places, using '.' as the decimal separator and no grouping.
+     * This ensures consistent formatting for coordinates and capacities in the output files.
+     * @param value the double value to format
+     * @return a string representation of the value with up to 2 decimal places
+     */
     private static String formatNumber(double value) {
         DecimalFormat formatter = new DecimalFormat("0.##", DECIMAL_SYMBOLS);
         formatter.setGroupingUsed(false);

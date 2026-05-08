@@ -80,14 +80,24 @@ public class FitnessPhaseObserver<S> implements Observer<S> {
             epsilon = value;
         }
     }
-
+    /**
+     * Collects fitness values and evaluation counts in blocks of size k, classifies the phase of each block,
+     * and logs the intervals with their corresponding phases.
+     * @param state current iteration snapshot
+     * @param log run log where the fitness phase intervals are stored
+     */
     @Override
     public void onStart(IterationSnapshot<S> state, RunLog log) {
         fitnessBlock.clear();
         evaluationBlock.clear();
         lastIntervalEndEvaluation = null;
     }
-
+    /**
+     * Adds the current fitness and evaluation count to the current block. Once the block is full, classifies
+     * the phase and logs the interval before starting a new block.
+     * @param state current iteration snapshot
+     * @param log run log where the fitness phase intervals are stored
+     */
     @Override
     public void onStep(IterationSnapshot<S> state, RunLog log) {
         fitnessBlock.addLast(state.currentFitness());
@@ -102,14 +112,22 @@ public class FitnessPhaseObserver<S> implements Observer<S> {
         fitnessBlock.clear();
         evaluationBlock.clear();
     }
-
+    /**
+     * If there are any remaining fitness values in the block at the end of the run, classifies the phase and logs the final interval.
+     * @param state current iteration snapshot
+     * @param log run log where the fitness phase intervals are stored
+     */
     @Override
     public void onEnd(IterationSnapshot<S> state, RunLog log) {
         if (!fitnessBlock.isEmpty()) {
             emitCurrentBlock(log);
         }
     }
-
+    /**
+     * Classifies the current block of fitness values as improving, worsening, or stagnant based on the change from the first to the last value,
+     * and logs the corresponding evaluation interval with its phase.
+     * @param log run log where the fitness phase intervals are stored
+     */
     private void emitCurrentBlock(RunLog log) {
         double delta = fitnessBlock.getLast() - fitnessBlock.getFirst();
         Phase phase = classify(delta);
@@ -129,7 +147,11 @@ public class FitnessPhaseObserver<S> implements Observer<S> {
             SeriesMode.ALL
         );
     }
-
+    /**
+     * Classifies the fitness change as improving, worsening, or stagnant based on the specified epsilon threshold.
+     * @param delta change in fitness from the first to the last value in the block
+     * @return the classified phase of the fitness change
+     */
     private Phase classify(double delta) {
         if (delta > epsilon) {
             return Phase.IMPROVING;

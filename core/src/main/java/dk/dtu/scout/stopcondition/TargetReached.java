@@ -65,7 +65,14 @@ public class TargetReached<S> implements StopCondition<S> {
         Object problemObj = state.get(StateKeys.PROBLEM);
         this.problem = (Problem<?>) problemObj;
     }
-
+    /**
+     * Checks if the stop condition is met based on whether the best fitness value found so far meets or exceeds the target fitness.
+     * @param iteration current iteration number
+     * @param evaluations total number of fitness evaluations performed (not used in this condition)
+     * @param bestFitness best fitness value found so far
+     * @param bestSolution best solution found so far (not used in this condition)
+     * @return true if the best fitness meets or exceeds the target, false otherwise
+     */
     @Override
     public boolean shouldStop(int iteration, int evaluations, double bestFitness, S bestSolution) {
         if (problem instanceof TSP) {

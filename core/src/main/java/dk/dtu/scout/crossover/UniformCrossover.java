@@ -54,7 +54,6 @@ public class UniformCrossover implements Crossover<boolean[]> {
     /**
      * Performs uniform crossover using the two selected parents stored in the shared state.
      * For each bit position, the child receives the bit from either parent with equal probability.
-     *
      * @param rng random number generator used to choose the parent for each bit
      * @return a child bitstring created by combining the two selected parents
      */

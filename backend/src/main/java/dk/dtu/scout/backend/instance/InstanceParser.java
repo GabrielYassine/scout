@@ -26,7 +26,12 @@ public final class InstanceParser {
 
     private InstanceParser() {
     }
-
+    /**
+     * Detects the instance type (TSP or CVRP) from the raw content of the instance file.
+     * @param content the raw content of the instance file to analyze
+     * @return the detected instance type, either "TSP" or "CVRP"
+     * @throws IllegalArgumentException if the TYPE field is missing, empty, or contains an unsupported value
+     */
     public static String detectInstanceType(String content) {
         Map<String, String> headers = parseHeaders(content);
         String type = headers.get("TYPE");

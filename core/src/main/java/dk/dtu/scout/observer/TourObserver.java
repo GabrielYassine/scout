@@ -88,7 +88,11 @@ public class TourObserver implements Observer<Object> {
             includePheromone = (boolean) params.get("includePheromone");
         }
     }
-
+    /**
+     * Initializes the observer by determining the problem type (TSP or VRP) and extracting the relevant instance data for visualization.
+     * It maps the city coordinates to a common format used for visualization and stores the problem instance for later use in calculating tour lengths.
+     * @param state the current state containing problem information and other relevant data
+     */
     @Override
     public void init(State state) {
         this.state = state;
@@ -107,7 +111,11 @@ public class TourObserver implements Observer<Object> {
             default -> throw new IllegalStateException("TourObserver requires a TSP or VRP problem");
         }
     }
-
+    /**
+     * Logs the initial tour and pheromone heatmap (if enabled) at the start of the run.
+     * @param state current iteration snapshot containing the initial solution
+     * @param log run log where the tour snapshot and pheromone heatmap are stored
+     */
     @Override
     public void onStart(IterationSnapshot<Object> state, RunLog log) {
         if (!citiesLogged) {
@@ -118,13 +126,22 @@ public class TourObserver implements Observer<Object> {
         logTourSnapshot(state, log);
         logPheromoneHeatmap(log);
     }
-
+    /**
+     * Logs the current tour and pheromone heatmap (if enabled) at each evaluation point.
+     * @param state current iteration snapshot containing the current solution
+     * @param log run log where the tour snapshot and pheromone heatmap are stored
+     */
     @Override
     public void onStep(IterationSnapshot<Object> state, RunLog log) {
         logTourSnapshot(state, log);
         logPheromoneHeatmap(log);
     }
 
+    /**
+     * Extracts the current tour from the solution, calculates its length, and logs it in a format suitable for visualization.
+     * @param state current iteration snapshot containing the current solution
+     * @param log run log where the tour snapshot is stored
+     */
     private void logTourSnapshot(IterationSnapshot<Object> state, RunLog log) {
         TourSnapshot snapshot = tourSnapshot(state.currentSolution());
 
@@ -134,7 +151,13 @@ public class TourObserver implements Observer<Object> {
 
         log.putSeries("tspTour", tourData, SeriesMode.LATEST_ONLY);
     }
-
+    /**
+     * Converts the current solution into a common tour snapshot format that includes the routes and their total length.
+     * For TSP, it wraps the single route in a list and calculates the tour length using the TSP instance.
+     * For VRP, it shifts the routes to include the depot and calculates the total distance using the VRP instance.
+     * @param solution the current solution which can be either an int array for TSP or a list of lists for VRP
+     * @return a TourSnapshot containing the routes and their total length
+     */
     private TourSnapshot tourSnapshot(Object solution) {
         if (solution instanceof int[] tour) {
             return new TourSnapshot(
@@ -156,7 +179,11 @@ public class TourObserver implements Observer<Object> {
             );
         };
     }
-
+    /**
+     * Coerces the raw solution into a list of routes format. If the first element is a number, it treats the solution as a single route and wraps it in a list.
+     * @param raw the raw solution which can be either a single route or a list of routes
+     * @return a list of routes where each route is a list of customer indices
+     */
     @SuppressWarnings("unchecked")
     private List<List<Integer>> coerceRoutes(List<?> raw) {
         if (raw.getFirst() instanceof Number) {
@@ -165,7 +192,11 @@ public class TourObserver implements Observer<Object> {
 
         return (List<List<Integer>>) raw;
     }
-
+    /**
+     * Creates a copy of the raw route by converting each element to an integer.
+     * @param raw the raw route which is a list of numbers representing customer indices
+     * @return a list of integers representing the copied route
+     */
     private List<Integer> copyRoute(List<?> raw) {
         List<Integer> copy = new ArrayList<>(raw.size());
 
@@ -175,7 +206,11 @@ public class TourObserver implements Observer<Object> {
 
         return copy;
     }
-
+    /**
+     * Converts a list of customer indices representing a route into an array of integers.
+     * @param route the list of customer indices representing a route
+     * @return an array of integers representing the route
+     */
     private int[] toIntArray(List<Integer> route) {
         int[] result = new int[route.size()];
 
@@ -185,7 +220,11 @@ public class TourObserver implements Observer<Object> {
 
         return result;
     }
-
+    /**
+     * Calculates the total distance of a set of routes by summing the distances of each individual route.
+     * @param routes a list of routes where each route is a list of customer indices
+     * @return the total distance of all routes combined
+     */
     private double totalDistance(List<List<Integer>> routes) {
         double sum = 0.0;
 
@@ -195,7 +234,12 @@ public class TourObserver implements Observer<Object> {
 
         return sum;
     }
-
+    /**
+     * Calculates the distance of a single route by summing the distances between consecutive nodes, including the return to the depot.
+     * It assumes that the route is represented as a list of customer indices and that the depot is represented as node 0.
+     * @param route a list of customer indices representing a single route
+     * @return the total distance of the route including the return to the depot
+     */
     private double routeDistance(List<Integer> route) {
         double distance = 0.0;
         int previousNode = 0;
@@ -209,7 +253,12 @@ public class TourObserver implements Observer<Object> {
         distance += vrpInstance.getDistance(previousNode, 0);
         return distance;
     }
-
+    /**
+     * Logs the current pheromone matrix as a heatmap if the includePheromone parameter is enabled.
+     * It retrieves the pheromone matrix from the state, converts it to a list of lists format suitable for visualization,
+     * and logs it in the run log. If the pheromone matrix is not available, it logs a zero matrix based on the problem dimension.
+     * @param log run log where the pheromone heatmap is stored
+     */
     private void logPheromoneHeatmap(RunLog log) {
         if (!includePheromone) {
             return;
@@ -220,6 +269,11 @@ public class TourObserver implements Observer<Object> {
         log.putSeries("pheromoneHeatmap", matrix, SeriesMode.LATEST_ONLY);
     }
 
+    /**
+     * Converts a 2D array of doubles into a list of lists format suitable for visualization.
+     * @param matrix the 2D array of doubles representing the pheromone matrix
+     * @return a list of lists of doubles representing the same matrix in a format suitable for visualization
+     */
     private List<List<Double>> toMatrixList(double[][] matrix) {
         List<List<Double>> matrixList = new ArrayList<>(matrix.length);
 
@@ -235,7 +289,11 @@ public class TourObserver implements Observer<Object> {
 
         return matrixList;
     }
-
+    /**
+     * Creates a zero matrix in a list of lists format based on the problem dimension retrieved from the state.
+     * This is used as a fallback when the pheromone matrix is not available in the state.
+     * @return a list of lists of doubles representing a zero matrix with dimensions based on the problem dimension
+     */
     private List<List<Double>> zeroMatrixFromDimension() {
         int dimension = (int) state.get(StateKeys.DIMENSION);
 

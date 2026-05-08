@@ -46,7 +46,7 @@ public class MaxEvaluations<S> implements StopCondition<S> {
     }
     /**
      * Checks if the stop condition is met based on the number of evaluations.
-     * @param iteration current iteration number (not used in this condition)
+     * @param iteration current iteration number
      * @param evaluations total number of fitness evaluations performed
      * @param bestFitness best fitness value found so far (not used in this condition)
      * @param bestSolution best solution found so far (not used in this condition)
