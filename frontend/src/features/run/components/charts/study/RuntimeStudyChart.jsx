@@ -97,7 +97,7 @@ function RuntimeStudyChart({
 
         <div>
           {statusMeta.className === "ongoing"
-            ? "Waiting for first study point..."
+            ? "Waiting for the first study point..."
             : "No study data to plot."}
         </div>
       </div>

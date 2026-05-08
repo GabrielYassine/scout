@@ -122,13 +122,10 @@ export default function RunPage({ catalog, catalogLoading, catalogError }) {
           setLayoutMode={setLayoutMode}
         />
 
-        {loading ? (
-          <div className="run-loading">
-            <div className="spinner" aria-label="Loading" />
-            <div>Preparing run...</div>
-          </div>
-        ) : error ? (
+        {error ? (
           renderStatusPanel("Run failed", error)
+        ) : loading && pageMode !== "runtimeStudy" && batches.length === 0 ? (
+          renderStatusPanel("Run starting", "Waiting for the first data...")
         ) : pageMode !== "runtimeStudy" && batches.length === 0 ? (
           renderStatusPanel("No run data", "No data to plot.")
         ) : (
