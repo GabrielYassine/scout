@@ -22,7 +22,11 @@ public final class InstanceFixtures {
         ));
     }
 
-    public static Map<String, Object> exportTspPayload(String name, String comment, List<Map<String, Object>> cities) {
+    public static Map<String, Object> exportTspPayload(
+        String name,
+        String comment,
+        List<Map<String, Object>> cities
+    ) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("exportType", "TSP");
         payload.put("name", name);
@@ -32,7 +36,11 @@ public final class InstanceFixtures {
     }
 
     public static Map<String, Object> exportVrpPayload() {
-        return exportVrpPayload("tiny", "", 10, 1, 
+        return exportVrpPayload(
+            "tiny",
+            "",
+            10,
+            1,
             Map.of("x", 0.0, "y", 0.0),
             List.of(Map.of("x", 1.0, "y", 1.0, "demand", 1.0))
         );
@@ -61,6 +69,35 @@ public final class InstanceFixtures {
         Map<String, Object> payload = exportVrpPayload();
         payload.put("numberOfVehicles", null);
         return payload;
+    }
+
+    public static Map<String, Object> tspInstancePayload() {
+        return tspInstancePayload(List.of(
+            Map.of("x", 0.0, "y", 0.0),
+            Map.of("x", 1.0, "y", 0.0),
+            Map.of("x", 1.0, "y", 1.0),
+            Map.of("x", 0.0, "y", 1.0)
+        ));
+    }
+
+    public static Map<String, Object> smallTspInstancePayload() {
+        return tspInstancePayload(List.of(
+            Map.of("x", 0.0, "y", 0.0),
+            Map.of("x", 1.0, "y", 1.0)
+        ));
+    }
+
+    public static Map<String, Object> vrpInstancePayload() {
+        return vrpInstancePayload(List.of(
+            Map.of("x", 1.0, "y", 1.0, "demand", 1.0),
+            Map.of("x", 2.0, "y", 2.0, "demand", 1.0)
+        ));
+    }
+
+    public static Map<String, Object> smallVrpInstancePayload() {
+        return vrpInstancePayload(List.of(
+            Map.of("x", 1.0, "y", 1.0, "demand", 1.0)
+        ));
     }
 
     public static String validTsp() {
@@ -137,54 +174,22 @@ public final class InstanceFixtures {
             """;
     }
 
-    public static Map<String, Object> tspInstancePayload() {
-        Map<String, Object> tsp = new LinkedHashMap<>();
-        tsp.put("name", "tiny");
-        tsp.put("comment", "");
-        tsp.put("cities", List.of(
-                Map.of("x", 0.0, "y", 0.0),
-                Map.of("x", 1.0, "y", 0.0),
-                Map.of("x", 1.0, "y", 1.0),
-                Map.of("x", 0.0, "y", 1.0)
-        ));
-        return tsp;
+    private static Map<String, Object> tspInstancePayload(List<Map<String, Object>> cities) {
+        Map<String, Object> payload = exportTspPayload("tiny", "", cities);
+        payload.remove("exportType");
+        return payload;
     }
 
-    public static Map<String, Object> smallTspInstancePayload() {
-        Map<String, Object> tsp = new LinkedHashMap<>();
-        tsp.put("name", "tiny");
-        tsp.put("comment", "");
-        tsp.put("cities", List.of(
-                Map.of("x", 0.0, "y", 0.0),
-                Map.of("x", 1.0, "y", 1.0)
-        ));
-        return tsp;
-    }
-
-    public static Map<String, Object> vrpInstancePayload() {
-        Map<String, Object> vrp = new LinkedHashMap<>();
-        vrp.put("name", "tiny");
-        vrp.put("comment", "");
-        vrp.put("capacity", 10);
-        vrp.put("numberOfVehicles", 1);
-        vrp.put("depot", Map.of("x", 0.0, "y", 0.0));
-        vrp.put("customers", List.of(
-                Map.of("x", 1.0, "y", 1.0, "demand", 1.0),
-                Map.of("x", 2.0, "y", 2.0, "demand", 1.0)
-        ));
-        return vrp;
-    }
-
-    public static Map<String, Object> smallVrpInstancePayload() {
-        Map<String, Object> vrp = new LinkedHashMap<>();
-        vrp.put("name", "tiny");
-        vrp.put("comment", "");
-        vrp.put("capacity", 10);
-        vrp.put("numberOfVehicles", 1);
-        vrp.put("depot", Map.of("x", 0.0, "y", 0.0));
-        vrp.put("customers", List.of(
-                Map.of("x", 1.0, "y", 1.0, "demand", 1.0)
-        ));
-        return vrp;
+    private static Map<String, Object> vrpInstancePayload(List<Map<String, Object>> customers) {
+        Map<String, Object> payload = exportVrpPayload(
+            "tiny",
+            "",
+            10,
+            1,
+            Map.of("x", 0.0, "y", 0.0),
+            customers
+        );
+        payload.remove("exportType");
+        return payload;
     }
 }

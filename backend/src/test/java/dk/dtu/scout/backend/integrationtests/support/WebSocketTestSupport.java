@@ -4,9 +4,9 @@ import dk.dtu.scout.backend.dto.request.StartPreparedExecutionRequest;
 import dk.dtu.scout.backend.dto.ws.RunWsPayload;
 import dk.dtu.scout.backend.dto.ws.RuntimeStudyWsPayload;
 import dk.dtu.scout.backend.websocket.WsReceiver;
+import dk.dtu.scout.backend.websocket.WsSender;
 import org.mockito.ArgumentCaptor;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
-import org.springframework.boot.test.mock.mockito.MockBean;
 
 import java.util.List;
 
@@ -51,61 +51,78 @@ public final class WebSocketTestSupport {
         );
     }
 
-    public static <T> List<T> capturePayloads(
-        Object mockSender,
-        PayloadVerifier<T> verifier
-    ) {
-        ArgumentCaptor<T> captor = verifier.capture(mockSender);
-        return captor.getAllValues();
-    }
-
     public static List<RunWsPayload> captureRunPayloads(Object mockSender, String runId) {
         ArgumentCaptor<RunWsPayload> captor = ArgumentCaptor.forClass(RunWsPayload.class);
-        verify((dk.dtu.scout.backend.websocket.WsSender) mockSender, timeout(5000).atLeastOnce())
+
+        verify((WsSender) mockSender, timeout(5000).atLeastOnce())
             .sendToRun(eq(runId), captor.capture());
+
         return captor.getAllValues();
     }
 
     public static List<RunWsPayload> captureRunPayloadsAfterFinished(Object mockSender, String runId) {
-        verify((dk.dtu.scout.backend.websocket.WsSender) mockSender, timeout(5000).atLeastOnce())
+        verify((WsSender) mockSender, timeout(5000).atLeastOnce())
             .sendToRun(eq(runId), argThat(argument ->
                 argument instanceof RunWsPayload wsPayload && "RUN_FINISHED".equals(wsPayload.type())
             ));
+
         return captureRunPayloads(mockSender, runId);
     }
 
     public static List<RunWsPayload> captureRunPayloadsAfterFailed(Object mockSender, String runId) {
-        verify((dk.dtu.scout.backend.websocket.WsSender) mockSender, timeout(5000).atLeastOnce())
+        verify((WsSender) mockSender, timeout(5000).atLeastOnce())
             .sendToRun(eq(runId), argThat(argument ->
                 argument instanceof RunWsPayload wsPayload && "RUN_FAILED".equals(wsPayload.type())
             ));
+
         return captureRunPayloads(mockSender, runId);
     }
 
     public static List<RuntimeStudyWsPayload> captureStudyPayloads(Object mockSender, String studyId) {
         ArgumentCaptor<RuntimeStudyWsPayload> captor = ArgumentCaptor.forClass(RuntimeStudyWsPayload.class);
-        verify((dk.dtu.scout.backend.websocket.WsSender) mockSender, timeout(5000).atLeastOnce())
+
+        verify((WsSender) mockSender, timeout(5000).atLeastOnce())
             .sendToStudy(eq(studyId), captor.capture());
+
         return captor.getAllValues();
     }
 
     public static List<RuntimeStudyWsPayload> captureStudyPayloadsAfterFinished(Object mockSender, String studyId) {
-        verify((dk.dtu.scout.backend.websocket.WsSender) mockSender, timeout(5000).atLeastOnce())
+        verify((WsSender) mockSender, timeout(5000).atLeastOnce())
             .sendToStudy(eq(studyId), argThat(argument ->
                 argument instanceof RuntimeStudyWsPayload wsPayload && "STUDY_FINISHED".equals(wsPayload.type())
             ));
+
         return captureStudyPayloads(mockSender, studyId);
     }
 
-    public static void assertRunFinished(List<RunWsPayload> payloads, String runId) {
-        assertTrue(payloads.stream().anyMatch(payload -> "RUN_PROGRESS".equals(payload.type())));
-        assertTrue(payloads.stream().anyMatch(payload -> "RUN_FINISHED".equals(payload.type())));
-
-        RunWsPayload finishedProgress = payloads.stream()
+    public static RunWsPayload finishedRunProgress(List<RunWsPayload> payloads) {
+        return payloads.stream()
             .filter(payload -> "RUN_PROGRESS".equals(payload.type()))
             .filter(payload -> "FINISHED".equals(payload.status()))
             .findFirst()
             .orElseThrow();
+    }
+
+    public static void assertHasRunPayloadType(List<RunWsPayload> payloads, String type) {
+        assertTrue(payloads.stream().anyMatch(payload -> type.equals(payload.type())));
+    }
+
+    public static void assertHasRunProgressForProblem(List<RunWsPayload> payloads, String problemId) {
+        assertTrue(payloads.stream().anyMatch(payload ->
+            "RUN_PROGRESS".equals(payload.type()) && problemId.equals(payload.problemId())));
+    }
+
+    public static void assertHasRunProgressForRunIndex(List<RunWsPayload> payloads, int runIndex) {
+        assertTrue(payloads.stream().anyMatch(payload ->
+            "RUN_PROGRESS".equals(payload.type()) && Integer.valueOf(runIndex).equals(payload.runIndex())));
+    }
+
+    public static void assertRunFinished(List<RunWsPayload> payloads, String runId) {
+        assertHasRunPayloadType(payloads, "RUN_PROGRESS");
+        assertHasRunPayloadType(payloads, "RUN_FINISHED");
+
+        RunWsPayload finishedProgress = finishedRunProgress(payloads);
 
         assertEquals(runId, finishedProgress.runId());
         assertNotNull(finishedProgress.runtimeMs());
@@ -121,10 +138,5 @@ public final class WebSocketTestSupport {
             .orElseThrow();
 
         assertEquals(studyId, finishedPayload.studyId());
-    }
-
-    @FunctionalInterface
-    public interface PayloadVerifier<T> {
-        ArgumentCaptor<T> capture(Object mockSender);
     }
 }
