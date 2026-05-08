@@ -15,23 +15,22 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.ResultActions;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static dk.dtu.scout.backend.integrationtests.support.BackendJsonTestSupport.*;
+import static dk.dtu.scout.backend.integrationtests.support.RunPrepareTestSupport.postRunPrepare;
+import static dk.dtu.scout.backend.integrationtests.support.RunPrepareTestSupport.postRuntimeStudyPrepare;
+import static dk.dtu.scout.backend.integrationtests.support.RunRequestFixtures.validRunPreparePayload;
+import static dk.dtu.scout.backend.integrationtests.support.RunRequestFixtures.validRuntimeStudyPreparePayload;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
@@ -55,22 +54,13 @@ class RunPrepareIntegrationTest {
 
         @Test
         void prepareRun_generatesIdsStoresPreparedRunAndReusesSession() throws Exception {
-            String requestedSessionId = "prepare-session-run";
+            String sessionId = "prepare-session-run";
 
-            MvcResult result = postPrepare(validRunPreparePayload(requestedSessionId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.sessionId").value(requestedSessionId))
-                .andExpect(jsonPath("$.executionId").isString())
-                .andReturn();
+            String executionId = prepareRunAndGetExecutionId(sessionId);
 
-            Map<String, Object> response = readResponse(result);
-            String executionId = response.get("executionId").toString();
+            RunRequest stored = executionRegistry.consumePreparedRun(executionId, sessionId);
 
-            assertFalse(executionId.isBlank());
-
-            RunRequest stored = executionRegistry.consumePreparedRun(executionId, requestedSessionId);
-
-            assertEquals(requestedSessionId, stored.sessionId());
+            assertEquals(sessionId, stored.sessionId());
             assertEquals(executionId, stored.runId());
             assertEquals("bitstring", stored.searchSpaceId());
             assertEquals(List.of("onemax"), stored.problemIds());
@@ -80,15 +70,10 @@ class RunPrepareIntegrationTest {
 
         @Test
         void prepareRun_generatesSessionWhenBlank() throws Exception {
-            MvcResult result = postPrepare(validRunPreparePayload("   "))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.sessionId").isString())
-                .andExpect(jsonPath("$.executionId").isString())
-                .andReturn();
+            Map<String, Object> response = prepareRunAndReadResponse(validRunPreparePayload("   "));
 
-            Map<String, Object> response = readResponse(result);
-            String sessionId = response.get("sessionId").toString();
-            String executionId = response.get("executionId").toString();
+            String sessionId = stringValue(response, "sessionId");
+            String executionId = stringValue(response, "executionId");
 
             assertFalse(sessionId.isBlank());
             assertNotEquals("   ", sessionId);
@@ -102,15 +87,10 @@ class RunPrepareIntegrationTest {
 
         @Test
         void prepareRun_generatesSessionWhenMissing() throws Exception {
-            MvcResult result = postPrepare(validRunPreparePayload(null))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.sessionId").isString())
-                .andExpect(jsonPath("$.executionId").isString())
-                .andReturn();
+            Map<String, Object> response = prepareRunAndReadResponse(validRunPreparePayload(null));
 
-            Map<String, Object> response = readResponse(result);
-            String sessionId = response.get("sessionId").toString();
-            String executionId = response.get("executionId").toString();
+            String sessionId = stringValue(response, "sessionId");
+            String executionId = stringValue(response, "executionId");
 
             assertFalse(sessionId.isBlank());
             assertFalse(executionId.isBlank());
@@ -125,41 +105,24 @@ class RunPrepareIntegrationTest {
         void prepareRun_replacesOldPreparedRunForSameSession() throws Exception {
             String sessionId = "prepare-session-replace";
 
-            MvcResult first = postPrepare(validRunPreparePayload(sessionId)).andExpect(status().isOk()).andReturn();
-            String firstRunId = readResponse(first).get("executionId").toString();
-
-            MvcResult second = postPrepare(validRunPreparePayload(sessionId)).andExpect(status().isOk()).andReturn();
-            String secondRunId = readResponse(second).get("executionId").toString();
+            String firstRunId = prepareRunAndGetExecutionId(sessionId);
+            String secondRunId = prepareRunAndGetExecutionId(sessionId);
 
             assertNotEquals(firstRunId, secondRunId);
             assertPreparedRunMissing(firstRunId, sessionId);
+
             RunRequest stored = executionRegistry.consumePreparedRun(secondRunId, sessionId);
+
             assertEquals(secondRunId, stored.runId());
             assertEquals(sessionId, stored.sessionId());
         }
 
         @Test
         void prepareRun_acceptsTspProblemWhenInstanceIsProvided() throws Exception {
-            Map<String, Object> payload = validRunPreparePayload("prepare-session-tsp");
+            String sessionId = "prepare-session-tsp";
+            String executionId = prepareRunAndGetExecutionId(tspRunPayload(sessionId, Map.of("tspInstance", validTspInstancePayload())));
 
-            @SuppressWarnings("unchecked")
-            Map<String, Object> runRequest = (Map<String, Object>) payload.get("runRequest");
-
-            runRequest.put("searchSpaceId", "permutation");
-            runRequest.put("searchSpaceParams", Map.of("n", 2));
-            runRequest.put("problemIds", List.of("tsp"));
-            runRequest.put("problemParams", Map.of("tspInstance", validTspInstancePayload()));
-            runRequest.put("generatorId", "2opt");
-            runRequest.put("generatorParams", Map.of());
-            runRequest.put("parentSelectionRuleId", "random-parents");
-            runRequest.put("observerIds", List.of("fitness", "tour"));
-
-            MvcResult result = postPrepare(payload).andExpect(status().isOk()).andReturn();
-
-            Map<String, Object> response = readResponse(result);
-            String executionId = response.get("executionId").toString();
-
-            RunRequest stored = executionRegistry.consumePreparedRun(executionId, "prepare-session-tsp");
+            RunRequest stored = executionRegistry.consumePreparedRun(executionId, sessionId);
 
             assertEquals(List.of("tsp"), stored.problemIds());
             assertEquals("permutation", stored.searchSpaceId());
@@ -167,26 +130,10 @@ class RunPrepareIntegrationTest {
 
         @Test
         void prepareRun_acceptsVrpProblemWhenInstanceIsProvided() throws Exception {
-            Map<String, Object> payload = validRunPreparePayload("prepare-session-vrp");
+            String sessionId = "prepare-session-vrp";
+            String executionId = prepareRunAndGetExecutionId(vrpRunPayload(sessionId, Map.of("vrpInstance", validVrpInstancePayload())));
 
-            @SuppressWarnings("unchecked")
-            Map<String, Object> runRequest = (Map<String, Object>) payload.get("runRequest");
-
-            runRequest.put("searchSpaceId", "route-list");
-            runRequest.put("searchSpaceParams", Map.of());
-            runRequest.put("problemIds", List.of("vrp"));
-            runRequest.put("problemParams", Map.of("vrpInstance", validVrpInstancePayload()));
-            runRequest.put("generatorId", "route-list-relocate");
-            runRequest.put("generatorParams", Map.of());
-            runRequest.put("parentSelectionRuleId", "random-parents");
-            runRequest.put("observerIds", List.of("fitness"));
-
-            MvcResult result = postPrepare(payload).andExpect(status().isOk()).andReturn();
-
-            Map<String, Object> response = readResponse(result);
-            String executionId = response.get("executionId").toString();
-
-            RunRequest stored = executionRegistry.consumePreparedRun(executionId, "prepare-session-vrp");
+            RunRequest stored = executionRegistry.consumePreparedRun(executionId, sessionId);
 
             assertEquals(List.of("vrp"), stored.problemIds());
             assertEquals("route-list", stored.searchSpaceId());
@@ -194,19 +141,20 @@ class RunPrepareIntegrationTest {
 
         @Test
         void prepareRun_rejectsMissingRunRequest() throws Exception {
-            Map<String, Object> payload = new LinkedHashMap<>();
-            payload.put("sessionId", "prepare-session-missing-run-request");
-            payload.put("executionType", "run");
-            payload.put("runRequest", null);
-            payload.put("runtimeStudyRequest", null);
+            Map<String, Object> payload = preparePayload(
+                    "prepare-session-missing-run-request",
+                    "run",
+                    null,
+                    null
+            );
 
-            postPrepare(payload).andExpect(status().isBadRequest()).andExpect(jsonPath("$.message").value("Run request must be provided"));
+            assertRunPrepareBadRequest(payload, "Run request must be provided");
         }
 
         @ParameterizedTest(name = "{0}")
         @MethodSource("dk.dtu.scout.backend.integrationtests.RunPrepareIntegrationTest#invalidRunPreparePayloads")
         void prepareRun_rejectsInvalidRunRequests(String label, Map<String, Object> payload, String expectedMessage) throws Exception {
-            postPrepare(payload).andExpect(status().isBadRequest()).andExpect(jsonPath("$.message").value(expectedMessage));
+            assertRunPrepareBadRequest(payload, expectedMessage);
         }
     }
 
@@ -215,22 +163,13 @@ class RunPrepareIntegrationTest {
 
         @Test
         void prepareRuntimeStudy_generatesIdsStoresPreparedStudyAndReusesSession() throws Exception {
-            String requestedSessionId = "prepare-session-study";
+            String sessionId = "prepare-session-study";
 
-            MvcResult result = postPrepare(validRuntimeStudyPreparePayload(requestedSessionId))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.sessionId").value(requestedSessionId))
-                    .andExpect(jsonPath("$.executionId").isString())
-                    .andReturn();
+            String executionId = prepareRuntimeStudyAndGetExecutionId(sessionId);
 
-            Map<String, Object> response = readResponse(result);
-            String executionId = response.get("executionId").toString();
+            RuntimeStudyRequest stored = executionRegistry.consumePreparedStudy(executionId, sessionId);
 
-            assertFalse(executionId.isBlank());
-
-            RuntimeStudyRequest stored = executionRegistry.consumePreparedStudy(executionId, requestedSessionId);
-
-            assertEquals(requestedSessionId, stored.sessionId());
+            assertEquals(sessionId, stored.sessionId());
             assertEquals(executionId, stored.studyId());
             assertEquals("bitstring", stored.searchSpaceId());
             assertEquals("onemax", stored.problemId());
@@ -239,34 +178,34 @@ class RunPrepareIntegrationTest {
 
         @Test
         void prepareRuntimeStudy_acceptsHyphenatedExecutionType() throws Exception {
-            Map<String, Object> payload = validRuntimeStudyPreparePayload("prepare-session-study-hyphen");
+            String sessionId = "prepare-session-study-hyphen";
+
+            Map<String, Object> payload = validRuntimeStudyPreparePayload(sessionId);
             payload.put("executionType", "runtime-study");
 
-            MvcResult result = postPrepare(payload).andExpect(status().isOk()).andReturn();
+            String executionId = prepareRuntimeStudyAndGetExecutionId(payload);
 
-            Map<String, Object> response = readResponse(result);
-            String executionId = response.get("executionId").toString();
-
-            RuntimeStudyRequest stored = executionRegistry.consumePreparedStudy(executionId, "prepare-session-study-hyphen");
+            RuntimeStudyRequest stored = executionRegistry.consumePreparedStudy(executionId, sessionId);
 
             assertEquals(executionId, stored.studyId());
         }
 
         @Test
         void prepareRuntimeStudy_rejectsMissingRuntimeStudyRequest() throws Exception {
-            Map<String, Object> payload = new LinkedHashMap<>();
-            payload.put("sessionId", "prepare-session-missing-study-request");
-            payload.put("executionType", "runtimeStudy");
-            payload.put("runRequest", null);
-            payload.put("runtimeStudyRequest", null);
+            Map<String, Object> payload = preparePayload(
+                    "prepare-session-missing-study-request",
+                    "runtimeStudy",
+                    null,
+                    null
+            );
 
-            postPrepare(payload).andExpect(status().isBadRequest()).andExpect(jsonPath("$.message").value("Runtime study request must be provided"));
+            assertRuntimeStudyPrepareBadRequest(payload, "Runtime study request must be provided");
         }
 
         @ParameterizedTest(name = "{0}")
         @MethodSource("dk.dtu.scout.backend.integrationtests.RunPrepareIntegrationTest#invalidRuntimeStudyPreparePayloads")
         void prepareRuntimeStudy_rejectsInvalidRuntimeStudyRequests(String label, Map<String, Object> payload, String expectedMessage) throws Exception {
-            postPrepare(payload).andExpect(status().isBadRequest()).andExpect(jsonPath("$.message").value(expectedMessage));
+            assertRuntimeStudyPrepareBadRequest(payload, expectedMessage);
         }
     }
 
@@ -278,7 +217,7 @@ class RunPrepareIntegrationTest {
             Map<String, Object> payload = validRunPreparePayload("prepare-session-invalid-type");
             payload.put("executionType", "something-else");
 
-            postPrepare(payload).andExpect(status().isBadRequest()).andExpect(jsonPath("$.message").value("executionType must be either 'run' or 'runtimeStudy'"));
+            assertRunPrepareBadRequest(payload, "executionType must be either 'run' or 'runtimeStudy'");
         }
 
         @Test
@@ -286,7 +225,7 @@ class RunPrepareIntegrationTest {
             Map<String, Object> payload = validRunPreparePayload("prepare-session-missing-type");
             payload.put("executionType", null);
 
-            postPrepare(payload).andExpect(status().isBadRequest()).andExpect(jsonPath("$.message").value("executionType must be either 'run' or 'runtimeStudy'"));
+            assertRunPrepareBadRequest(payload, "executionType must be either 'run' or 'runtimeStudy'");
         }
     }
 
@@ -295,11 +234,11 @@ class RunPrepareIntegrationTest {
 
         @Test
         void createProblem_mapsTspInstanceParams() {
-            Map<String, Object> params = Map.of("tspInstance", validTspInstancePayload());
+            TSP tspProblem = assertInstanceOf(
+                    TSP.class,
+                    runComponentFactory.createProblem("tsp", 2, Map.of("tspInstance", validTspInstancePayload()))
+            );
 
-            Object problem = runComponentFactory.createProblem("tsp", 2, params);
-
-            TSP tspProblem = assertInstanceOf(TSP.class, problem);
             assertNotNull(tspProblem.getInstance());
             assertEquals("tiny", tspProblem.getInstance().getName());
             assertEquals(2, tspProblem.getInstance().getDimension());
@@ -307,24 +246,59 @@ class RunPrepareIntegrationTest {
 
         @Test
         void createProblem_mapsVrpInstanceParams() {
-            Map<String, Object> params = Map.of("vrpInstance", validVrpInstancePayload());
+            VRP vrpProblem = assertInstanceOf(
+                    VRP.class,
+                    runComponentFactory.createProblem("vrp", 0, Map.of("vrpInstance", validVrpInstancePayload()))
+            );
 
-            Object problem = runComponentFactory.createProblem("vrp", 0, params);
-
-            VRP vrpProblem = assertInstanceOf(VRP.class, problem);
             assertNotNull(vrpProblem.getInstance());
             assertEquals("tiny", vrpProblem.getInstance().getName());
             assertEquals(1, vrpProblem.getInstance().getCustomerCount());
         }
     }
 
-    private ResultActions postPrepare(Object payload) throws Exception {
-        return mockMvc.perform(post("/api/run/prepare").contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(payload)));
+    private String prepareRunAndGetExecutionId(String sessionId) throws Exception {
+        return prepareRunAndGetExecutionId(validRunPreparePayload(sessionId));
     }
 
-    @SuppressWarnings("unchecked")
-    private Map<String, Object> readResponse(MvcResult result) throws Exception {
-        return objectMapper.readValue(result.getResponse().getContentAsString(), Map.class);
+    private String prepareRunAndGetExecutionId(Map<String, Object> payload) throws Exception {
+        return stringValue(prepareRunAndReadResponse(payload), "executionId");
+    }
+
+    private Map<String, Object> prepareRunAndReadResponse(Map<String, Object> payload) throws Exception {
+        MvcResult result = postRunPrepare(mockMvc, objectMapper, payload)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.sessionId").isString())
+                .andExpect(jsonPath("$.executionId").isString())
+                .andReturn();
+
+        return readJsonObject(objectMapper, result);
+    }
+
+    private String prepareRuntimeStudyAndGetExecutionId(String sessionId) throws Exception {
+        return prepareRuntimeStudyAndGetExecutionId(validRuntimeStudyPreparePayload(sessionId));
+    }
+
+    private String prepareRuntimeStudyAndGetExecutionId(Map<String, Object> payload) throws Exception {
+        MvcResult result = postRuntimeStudyPrepare(mockMvc, objectMapper, payload)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.sessionId").isString())
+                .andExpect(jsonPath("$.executionId").isString())
+                .andReturn();
+
+        return stringValue(readJsonObject(objectMapper, result), "executionId");
+    }
+
+    private void assertRunPrepareBadRequest(Map<String, Object> payload, String expectedMessage) throws Exception {
+        postRunPrepare(mockMvc, objectMapper, payload)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(expectedMessage));
+    }
+
+    private void assertRuntimeStudyPrepareBadRequest(Map<String, Object> payload, String expectedMessage) throws Exception {
+        postRuntimeStudyPrepare(mockMvc, objectMapper, payload)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(expectedMessage));
     }
 
     private void assertPreparedRunMissing(String runId, String sessionId) {
@@ -338,112 +312,120 @@ class RunPrepareIntegrationTest {
 
     private static Stream<Arguments> invalidRunPreparePayloads() {
         return Stream.of(
-            Arguments.of("missing search space", invalidRunPayload("searchSpaceId", ""), "Search space must be specified"),
-            Arguments.of("missing problem", invalidRunPayload("problemIds", List.of()), "Problem must be specified"),
-            Arguments.of("missing generator", invalidRunPayload("generatorId", ""), "Generator must be specified"),
-            Arguments.of("missing population model", invalidRunPayload("populationModelId", ""), "Population model must be specified"),
-            Arguments.of("missing selection rule", invalidRunPayload("selectionRuleId", ""), "Selection rule must be specified"),
-            Arguments.of("missing parent selection rule", invalidRunPayload("parentSelectionRuleId", ""), "Parent selection rule must be specified"),
-            Arguments.of("missing stop condition", invalidRunPayload("stopConditionIds", List.of()), "Stop condition must be specified"),
-            Arguments.of("invalid runTimes", invalidRunPayload("runTimes", 0), "runTimes must be positive"),
-            Arguments.of("invalid logEveryEvaluations", invalidRunPayload("logEveryEvaluations", -1), "logEveryEvaluations must be zero or positive"),
-            Arguments.of("TSP missing instance", tspRunPayload(Map.of()), "TSP problem requires a TSP instance"),
-            Arguments.of("TSP instance not map", tspRunPayload(Map.of("tspInstance", "not-a-map")), "Invalid TSP instance: tspInstance must be a map"),
-            Arguments.of("TSP invalid instance", tspRunPayload(Map.of("tspInstance", Map.of("name", "tiny"))), "Invalid TSP instance: tspInstance must contain a non-empty cities list"),
-            Arguments.of("VRP missing instance", vrpRunPayload(Map.of()), "VRP problem requires a VRP instance"),
-            Arguments.of("VRP instance not map", vrpRunPayload(Map.of("vrpInstance", "not-a-map")), "Invalid VRP instance: vrpInstance must be a map"),
-            Arguments.of("VRP invalid instance", vrpRunPayload(Map.of("vrpInstance", Map.of("name", "tiny"))), "Invalid VRP instance: Missing numeric value"),
-            Arguments.of("null search space", invalidRunPayload("searchSpaceId", null), "Search space must be specified"),
-            Arguments.of("null problem list", invalidRunPayload("problemIds", null), "Problem must be specified"),
-            Arguments.of("null generator", invalidRunPayload("generatorId", null), "Generator must be specified"),
-            Arguments.of("null population model", invalidRunPayload("populationModelId", null), "Population model must be specified"),
-            Arguments.of("null selection rule", invalidRunPayload("selectionRuleId", null), "Selection rule must be specified"),
-            Arguments.of("null parent selection rule", invalidRunPayload("parentSelectionRuleId", null), "Parent selection rule must be specified"),
-            Arguments.of("null stop condition list", invalidRunPayload("stopConditionIds", null), "Stop condition must be specified"),
-            Arguments.of("TSP null problem params", tspRunPayload(null), "TSP problem requires a TSP instance"),
-            Arguments.of("VRP null problem params", vrpRunPayload(null), "VRP problem requires a VRP instance")
+                invalidRun("missing search space", "searchSpaceId", "", "Search space must be specified"),
+                invalidRun("missing problem", "problemIds", List.of(), "Problem must be specified"),
+                invalidRun("missing generator", "generatorId", "", "Generator must be specified"),
+                invalidRun("missing population model", "populationModelId", "", "Population model must be specified"),
+                invalidRun("missing selection rule", "selectionRuleId", "", "Selection rule must be specified"),
+                invalidRun("missing parent selection rule", "parentSelectionRuleId", "", "Parent selection rule must be specified"),
+                invalidRun("missing stop condition", "stopConditionIds", List.of(), "Stop condition must be specified"),
+                invalidRun("invalid runTimes", "runTimes", 0, "runTimes must be positive"),
+                invalidRun("invalid logEveryEvaluations", "logEveryEvaluations", -1, "logEveryEvaluations must be zero or positive"),
+
+                Arguments.of("TSP missing instance", tspRunPayload("invalid-run-tsp", Map.of()), "TSP problem requires a TSP instance"),
+                Arguments.of("TSP instance not map", tspRunPayload("invalid-run-tsp", Map.of("tspInstance", "not-a-map")), "Invalid TSP instance: tspInstance must be a map"),
+                Arguments.of("TSP invalid instance", tspRunPayload("invalid-run-tsp", Map.of("tspInstance", Map.of("name", "tiny"))), "Invalid TSP instance: tspInstance must contain a non-empty cities list"),
+
+                Arguments.of("VRP missing instance", vrpRunPayload("invalid-run-vrp", Map.of()), "VRP problem requires a VRP instance"),
+                Arguments.of("VRP instance not map", vrpRunPayload("invalid-run-vrp", Map.of("vrpInstance", "not-a-map")), "Invalid VRP instance: vrpInstance must be a map"),
+                Arguments.of("VRP invalid instance", vrpRunPayload("invalid-run-vrp", Map.of("vrpInstance", Map.of("name", "tiny"))), "Invalid VRP instance: Missing numeric value"),
+
+                invalidRun("null search space", "searchSpaceId", null, "Search space must be specified"),
+                invalidRun("null problem list", "problemIds", null, "Problem must be specified"),
+                invalidRun("null generator", "generatorId", null, "Generator must be specified"),
+                invalidRun("null population model", "populationModelId", null, "Population model must be specified"),
+                invalidRun("null selection rule", "selectionRuleId", null, "Selection rule must be specified"),
+                invalidRun("null parent selection rule", "parentSelectionRuleId", null, "Parent selection rule must be specified"),
+                invalidRun("null stop condition list", "stopConditionIds", null, "Stop condition must be specified"),
+
+                Arguments.of("TSP null problem params", tspRunPayload("invalid-run-tsp", null), "TSP problem requires a TSP instance"),
+                Arguments.of("VRP null problem params", vrpRunPayload("invalid-run-vrp", null), "VRP problem requires a VRP instance")
         );
     }
 
     private static Stream<Arguments> invalidRuntimeStudyPreparePayloads() {
         return Stream.of(
-            Arguments.of("missing search space", invalidRuntimeStudyPayload("searchSpaceId", ""), "Search space must be specified"),
-            Arguments.of("missing problem", invalidRuntimeStudyPayload("problemId", ""), "Problem must be specified"),
-            Arguments.of("TSP runtime study", invalidRuntimeStudyPayload("problemId", "tsp"), "Runtime study currently supports theoretical size-based problems only"),
-            Arguments.of("VRP runtime study", invalidRuntimeStudyPayload("problemId", "vrp"), "Runtime study currently supports theoretical size-based problems only"),
-            Arguments.of("missing generator", invalidRuntimeStudyPayload("generatorId", ""), "Generator must be specified"),
-            Arguments.of("missing population model", invalidRuntimeStudyPayload("populationModelId", ""), "Population model must be specified"),
-            Arguments.of("missing selection rule", invalidRuntimeStudyPayload("selectionRuleId", ""), "Selection rule must be specified"),
-            Arguments.of("missing parent selection rule", invalidRuntimeStudyPayload("parentSelectionRuleId", ""), "Parent selection rule must be specified"),
-            Arguments.of("empty stop condition", invalidRuntimeStudyPayload("stopConditionIds", List.of()), "Stop condition must contain 'optimum-reached' and cannot be empty"),
-            Arguments.of("missing optimum-reached stop condition", invalidRuntimeStudyPayload("stopConditionIds", List.of("max-evaluations")), "Stop condition must contain 'optimum-reached' and cannot be empty"),
-            Arguments.of("empty problem sizes", invalidRuntimeStudyPayload("problemSizes", List.of()), "At least one problem size must be specified"),
-            Arguments.of("null problem size", invalidRuntimeStudyPayload("problemSizes", problemSizesWithNull()), "All problem sizes must be positive"),
-            Arguments.of("non-positive problem size", invalidRuntimeStudyPayload("problemSizes", List.of(5, 0)), "All problem sizes must be positive"),
-            Arguments.of("invalid repetitions", invalidRuntimeStudyPayload("repetitionsPerSize", 0), "repetitionsPerSize must be positive"),
-            Arguments.of("invalid seed", invalidRuntimeStudyPayload("seed", 0), "seed must be positive"),
-            Arguments.of("null search space", invalidRuntimeStudyPayload("searchSpaceId", null), "Search space must be specified"),
-            Arguments.of("null problem", invalidRuntimeStudyPayload("problemId", null), "Problem must be specified"),
-            Arguments.of("null generator", invalidRuntimeStudyPayload("generatorId", null), "Generator must be specified"),
-            Arguments.of("null population model", invalidRuntimeStudyPayload("populationModelId", null), "Population model must be specified"),
-            Arguments.of("null selection rule", invalidRuntimeStudyPayload("selectionRuleId", null), "Selection rule must be specified"),
-            Arguments.of("null parent selection rule", invalidRuntimeStudyPayload("parentSelectionRuleId", null), "Parent selection rule must be specified"),
-            Arguments.of("null stop condition list", invalidRuntimeStudyPayload("stopConditionIds", null), "Stop condition must contain 'optimum-reached' and cannot be empty"),
-            Arguments.of("null problem sizes", invalidRuntimeStudyPayload("problemSizes", null), "At least one problem size must be specified")
+                invalidStudy("missing search space", "searchSpaceId", "", "Search space must be specified"),
+                invalidStudy("missing problem", "problemId", "", "Problem must be specified"),
+                invalidStudy("TSP runtime study", "problemId", "tsp", "Runtime study currently supports theoretical size-based problems only"),
+                invalidStudy("VRP runtime study", "problemId", "vrp", "Runtime study currently supports theoretical size-based problems only"),
+                invalidStudy("missing generator", "generatorId", "", "Generator must be specified"),
+                invalidStudy("missing population model", "populationModelId", "", "Population model must be specified"),
+                invalidStudy("missing selection rule", "selectionRuleId", "", "Selection rule must be specified"),
+                invalidStudy("missing parent selection rule", "parentSelectionRuleId", "", "Parent selection rule must be specified"),
+                invalidStudy("empty stop condition", "stopConditionIds", List.of(), "Stop condition must contain 'optimum-reached' and cannot be empty"),
+                invalidStudy("missing optimum-reached stop condition", "stopConditionIds", List.of("max-evaluations"), "Stop condition must contain 'optimum-reached' and cannot be empty"),
+                invalidStudy("empty problem sizes", "problemSizes", List.of(), "At least one problem size must be specified"),
+                invalidStudy("null problem size", "problemSizes", problemSizesWithNull(), "All problem sizes must be positive"),
+                invalidStudy("non-positive problem size", "problemSizes", List.of(5, 0), "All problem sizes must be positive"),
+                invalidStudy("invalid repetitions", "repetitionsPerSize", 0, "repetitionsPerSize must be positive"),
+                invalidStudy("invalid seed", "seed", 0, "seed must be positive"),
+                invalidStudy("null search space", "searchSpaceId", null, "Search space must be specified"),
+                invalidStudy("null problem", "problemId", null, "Problem must be specified"),
+                invalidStudy("null generator", "generatorId", null, "Generator must be specified"),
+                invalidStudy("null population model", "populationModelId", null, "Population model must be specified"),
+                invalidStudy("null selection rule", "selectionRuleId", null, "Selection rule must be specified"),
+                invalidStudy("null parent selection rule", "parentSelectionRuleId", null, "Parent selection rule must be specified"),
+                invalidStudy("null stop condition list", "stopConditionIds", null, "Stop condition must contain 'optimum-reached' and cannot be empty"),
+                invalidStudy("null problem sizes", "problemSizes", null, "At least one problem size must be specified")
         );
     }
 
-    private static Map<String, Object> invalidRunPayload(String key, Object value) {
-        Map<String, Object> payload = validRunPreparePayload("invalid-run-" + key);
+    private static Arguments invalidRun(String label, String key, Object value, String expectedMessage) {
+        return Arguments.of(label, runPayload("invalid-run-" + key, run -> run.put(key, value)), expectedMessage);
+    }
 
-        @SuppressWarnings("unchecked")
-        Map<String, Object> runRequest = (Map<String, Object>) payload.get("runRequest");
+    private static Arguments invalidStudy(String label, String key, Object value, String expectedMessage) {
+        return Arguments.of(label, studyPayload("invalid-study-" + key, study -> study.put(key, value)), expectedMessage);
+    }
 
-        runRequest.put(key, value);
+    private static Map<String, Object> runPayload(String sessionId, Consumer<Map<String, Object>> configure) {
+        Map<String, Object> payload = validRunPreparePayload(sessionId);
+        configure.accept(mapValue(payload, "runRequest"));
         return payload;
     }
 
-    private static Map<String, Object> invalidRuntimeStudyPayload(String key, Object value) {
-        Map<String, Object> payload = validRuntimeStudyPreparePayload("invalid-study-" + key);
-
-        @SuppressWarnings("unchecked")
-        Map<String, Object> studyRequest = (Map<String, Object>) payload.get("runtimeStudyRequest");
-
-        studyRequest.put(key, value);
+    private static Map<String, Object> studyPayload(String sessionId, Consumer<Map<String, Object>> configure) {
+        Map<String, Object> payload = validRuntimeStudyPreparePayload(sessionId);
+        configure.accept(mapValue(payload, "runtimeStudyRequest"));
         return payload;
     }
 
-    private static Map<String, Object> tspRunPayload(Map<String, Object> problemParams) {
-        Map<String, Object> payload = validRunPreparePayload("invalid-run-tsp");
-
-        @SuppressWarnings("unchecked")
-        Map<String, Object> runRequest = (Map<String, Object>) payload.get("runRequest");
-
-        runRequest.put("searchSpaceId", "permutation");
-        runRequest.put("searchSpaceParams", Map.of("n", 2));
-        runRequest.put("problemIds", List.of("tsp"));
-        runRequest.put("problemParams", problemParams);
-        runRequest.put("generatorId", "2opt");
-        runRequest.put("generatorParams", Map.of());
-        runRequest.put("parentSelectionRuleId", "random-parents");
-
-        return payload;
+    private static Map<String, Object> tspRunPayload(String sessionId, Map<String, Object> problemParams) {
+        return runPayload(sessionId, run -> {
+            run.put("searchSpaceId", "permutation");
+            run.put("searchSpaceParams", Map.of("n", 2));
+            run.put("problemIds", List.of("tsp"));
+            run.put("problemParams", problemParams);
+            run.put("generatorId", "2opt");
+            run.put("generatorParams", Map.of());
+            run.put("parentSelectionRuleId", "random-parents");
+        });
     }
 
-    private static Map<String, Object> vrpRunPayload(Map<String, Object> problemParams) {
-        Map<String, Object> payload = validRunPreparePayload("invalid-run-vrp");
+    private static Map<String, Object> vrpRunPayload(String sessionId, Map<String, Object> problemParams) {
+        return runPayload(sessionId, run -> {
+            run.put("searchSpaceId", "route-list");
+            run.put("searchSpaceParams", Map.of());
+            run.put("problemIds", List.of("vrp"));
+            run.put("problemParams", problemParams);
+            run.put("generatorId", "route-list-relocate");
+            run.put("generatorParams", Map.of());
+            run.put("parentSelectionRuleId", "random-parents");
+        });
+    }
 
-        @SuppressWarnings("unchecked")
-        Map<String, Object> runRequest = (Map<String, Object>) payload.get("runRequest");
-
-        runRequest.put("searchSpaceId", "route-list");
-        runRequest.put("searchSpaceParams", Map.of());
-        runRequest.put("problemIds", List.of("vrp"));
-        runRequest.put("problemParams", problemParams);
-        runRequest.put("generatorId", "route-list-relocate");
-        runRequest.put("generatorParams", Map.of());
-        runRequest.put("parentSelectionRuleId", "random-parents");
-
+    private static Map<String, Object> preparePayload(
+            String sessionId,
+            String executionType,
+            Object runRequest,
+            Object runtimeStudyRequest
+    ) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("sessionId", sessionId);
+        payload.put("executionType", executionType);
+        payload.put("runRequest", runRequest);
+        payload.put("runtimeStudyRequest", runtimeStudyRequest);
         return payload;
     }
 
@@ -452,79 +434,6 @@ class RunPrepareIntegrationTest {
         sizes.add(5);
         sizes.add(null);
         return sizes;
-    }
-
-    private static Map<String, Object> validRunPreparePayload(String sessionId) {
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("sessionId", sessionId);
-        payload.put("executionType", "run");
-        payload.put("runRequest", validRunRequestPayload());
-        payload.put("runtimeStudyRequest", null);
-        return payload;
-    }
-
-    private static Map<String, Object> validRunRequestPayload() {
-        Map<String, Object> request = new LinkedHashMap<>();
-        request.put("searchSpaceId", "bitstring");
-        request.put("searchSpaceParams", Map.of("n", 10));
-        request.put("problemIds", List.of("onemax"));
-        request.put("problemParams", Map.of());
-        request.put("generatorId", "bit-flip");
-        request.put("generatorParams", Map.of("flipProbability", "1/n"));
-        request.put("populationModelId", "mu-lambda");
-        request.put("populationModelParams", Map.of("mu", 1, "lambda", 1));
-        request.put("selectionRuleId", "mu-plus-lambda");
-        request.put("selectionRuleParams", Map.of());
-        request.put("parentSelectionRuleId", "elitist-parents");
-        request.put("parentSelectionRuleParams", Map.of());
-        request.put("crossoverId", null);
-        request.put("crossoverParams", null);
-        request.put("observerIds", List.of("fitness"));
-        request.put("observerParams", Map.of());
-        request.put("stopConditionIds", List.of("max-evaluations"));
-        request.put("stopConditionParams", Map.of("maxEvaluations", 10));
-        request.put("seed", 1234L);
-        request.put("runTimes", 1);
-        request.put("sessionId", null);
-        request.put("runId", null);
-        request.put("logEveryEvaluations", 1);
-        request.put("wsUpdateEveryEvaluations", 1);
-        return request;
-    }
-
-    private static Map<String, Object> validRuntimeStudyPreparePayload(String sessionId) {
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("sessionId", sessionId);
-        payload.put("executionType", "runtimeStudy");
-        payload.put("runRequest", null);
-        payload.put("runtimeStudyRequest", validRuntimeStudyRequestPayload());
-        return payload;
-    }
-
-    private static Map<String, Object> validRuntimeStudyRequestPayload() {
-        Map<String, Object> request = new LinkedHashMap<>();
-        request.put("studyId", null);
-        request.put("sessionId", null);
-        request.put("searchSpaceId", "bitstring");
-        request.put("searchSpaceParams", Map.of("n", 10));
-        request.put("problemId", "onemax");
-        request.put("problemParams", Map.of());
-        request.put("generatorId", "bit-flip");
-        request.put("generatorParams", Map.of("flipProbability", "1/n"));
-        request.put("selectionRuleId", "mu-plus-lambda");
-        request.put("selectionRuleParams", Map.of());
-        request.put("populationModelId", "mu-lambda");
-        request.put("populationModelParams", Map.of("mu", 1, "lambda", 1));
-        request.put("parentSelectionRuleId", "elitist-parents");
-        request.put("parentSelectionRuleParams", Map.of());
-        request.put("crossoverId", null);
-        request.put("crossoverParams", null);
-        request.put("stopConditionIds", List.of("optimum-reached"));
-        request.put("stopConditionParams", Map.of());
-        request.put("seed", 1234L);
-        request.put("problemSizes", List.of(5, 10));
-        request.put("repetitionsPerSize", 1);
-        return request;
     }
 
     private static Map<String, Object> validTspInstancePayload() {
@@ -551,4 +460,3 @@ class RunPrepareIntegrationTest {
         return vrp;
     }
 }
-

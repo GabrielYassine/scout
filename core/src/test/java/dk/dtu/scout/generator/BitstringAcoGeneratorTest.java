@@ -58,7 +58,7 @@ class BitstringAcoGeneratorTest {
 
         Map<String, Object> vars = generator.getStateVariables(state);
 
-        assertTrue(vars.get(StateKeys.PHEROMONE_VECTOR) instanceof double[]);
+        assertInstanceOf(double[].class, vars.get(StateKeys.PHEROMONE_VECTOR));
         assertSame(vars.get(StateKeys.PHEROMONE_VECTOR), state.get(StateKeys.PHEROMONE_VECTOR));
     }
 
