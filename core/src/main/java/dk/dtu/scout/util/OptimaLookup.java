@@ -12,7 +12,11 @@ import java.util.Properties;
 public final class OptimaLookup {
 
     private OptimaLookup() {}
-
+    /**
+     * Loads a map of instance names to their known optimal values from a properties file in the resources.
+     * @param resourcePath Path to the properties file in the resources (e.g., "optima/tsp_optima.properties")
+     * @return A map of normalized instance names to their known optimal values
+     */
     public static Map<String, Double> loadDoubleMap(String resourcePath) {
         Map<String, Double> result = new HashMap<>();
 
@@ -38,7 +42,11 @@ public final class OptimaLookup {
 
         return result;
     }
-
+    /**
+     * Normalizes an instance name by trimming whitespace, converting to lowercase, and removing file extensions like .tsp or .vrp.
+     * @param name The original instance name
+     * @return A normalized instance key suitable for lookup
+     */
     public static String normalizeInstanceKey(String name) {
         if (name == null) {
             return "";
@@ -52,7 +60,12 @@ public final class OptimaLookup {
 
         return key;
     }
-
+    /**
+     * Resolves the known optimal value for a given instance name using the provided map of optima.
+     * @param optima Map of normalized instance names to their known optimal values
+     * @param instanceName The original instance name to look up
+     * @return The known optimal value for the instance, or null if not found
+     */
     public static Double resolve(Map<String, Double> optima, String instanceName) {
         return optima.get(normalizeInstanceKey(instanceName));
     }

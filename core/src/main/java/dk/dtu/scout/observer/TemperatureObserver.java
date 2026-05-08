@@ -46,6 +46,11 @@ public class TemperatureObserver<S> implements Observer<S> {
         this.state = state;
     }
 
+    /**
+     * Logs the current temperature for the current evaluation point.
+     * @param snapshot current iteration snapshot
+     * @param log run log where the temperature value is stored
+     */
     @Override
     public void onStep(IterationSnapshot<S> snapshot, RunLog log) {
         Object temperatureObj = state.get(StateKeys.TEMPERATURE);

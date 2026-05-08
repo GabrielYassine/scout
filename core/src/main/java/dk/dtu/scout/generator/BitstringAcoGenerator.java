@@ -144,7 +144,11 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
 
         return Map.of(StateKeys.PHEROMONE_VECTOR, pheromoneVector);
     }
-
+    /**
+     * Initializes the pheromone vector with the initial pheromone value, which is
+     * clamped between the resolved minimum and maximum pheromone bounds.
+     * The initialized pheromone vector is published to the shared state.
+     */
     private void initializePheromones() {
         int dimension = resolveDimension();
         PheromoneBounds bounds = resolvePheromoneBounds();
@@ -182,18 +186,29 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
         clampPheromones();
     }
 
+    /**
+     * Reinforces the best solution found so far by applying pheromone updates to its bits.
+     * @param evaluated list of evaluated solutions from the current generation, used to update the best-so-far solution if necessary.
+     */
     private void reinforceBestSoFar(List<?> evaluated) {
         updateBestSoFar(evaluated);
         evaporate();
         applyReinforcement(bestSoFar.value(), reinforcementRate);
     }
-
+    /**
+     * Reinforces the best solution from the current generation by applying pheromone updates to its bits.
+     * @param evaluated list of evaluated solutions from the current generation, used to identify the iteration-best solution.
+     */
     private void reinforceIterationBest(List<?> evaluated) {
         EvaluatedSolution<boolean[]> generationBest = bestOf(evaluated);
         evaporate();
         applyReinforcement(generationBest.value(), reinforcementRate);
     }
-
+    /**
+     * Reinforces all solutions from the current generation by applying pheromone updates to their bits.
+     * The reinforcement rate is scaled by the number of evaluated solutions to prevent excessive pheromone increases.
+     * @param evaluated list of evaluated solutions from the current generation, used to identify the solutions to reinforce.
+     */
     @SuppressWarnings("unchecked")
     private void reinforceAll(List<?> evaluated) {
         evaporate();
@@ -205,7 +220,10 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
             applyReinforcement(solution.value(), scaledRate);
         }
     }
-
+    /**
+     * Updates the best-so-far solution if the best solution from the current generation is better (or equal if configured) than the existing best-so-far.
+     * @param evaluated list of evaluated solutions from the current generation, used to identify the generation-best solution for comparison.
+     */
     private void updateBestSoFar(List<?> evaluated) {
         EvaluatedSolution<boolean[]> generationBest = bestOf(evaluated);
         if (bestSoFar == null || isAcceptedAsBestSoFar(generationBest)) {
@@ -216,7 +234,11 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
     private boolean isAcceptedAsBestSoFar(EvaluatedSolution<boolean[]> candidate) {
         return acceptEqualFitness ? candidate.fitness() >= bestSoFar.fitness() : candidate.fitness() > bestSoFar.fitness();
     }
-
+    /**
+     * Applies pheromone reinforcement to the bits of a given solution by increasing the pheromone values at positions where the solution has a true bit.
+     * @param reinforcedSolution the solution whose bits are used to determine which pheromone values to reinforce
+     * @param rate the amount by which to increase the pheromone values for the reinforced bits
+     */
     private void applyReinforcement(boolean[] reinforcedSolution, double rate) {
         for (int i = 0; i < pheromoneVector.length; i++) {
             if (reinforcedSolution[i]) {
@@ -224,13 +246,20 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
             }
         }
     }
-
+    /**
+     * Applies evaporation to the pheromone vector by reducing all pheromone values according to the configured evaporation rate.
+     * This method is called before applying reinforcement to ensure that pheromone values do not grow indefinitely.
+     */
     private void evaporate() {
         for (int i = 0; i < pheromoneVector.length; i++) {
             pheromoneVector[i] *= (1.0 - evaporationRate);
         }
     }
-
+    /**
+     * Identifies the best solution from a list of evaluated solutions by comparing their fitness values.
+     * @param evaluated list of evaluated solutions from which to identify the best solution
+     * @return the evaluated solution with the highest fitness value
+     */
     @SuppressWarnings("unchecked")
     private EvaluatedSolution<boolean[]> bestOf(List<?> evaluated) {
         EvaluatedSolution<boolean[]> best = null;
@@ -246,6 +275,12 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
         return best;
     }
 
+    /**
+     * Resolves a parameter value that is expected to represent a rate (such as evaporation or reinforcement rate) to a double between 0 and 1.
+     * @param value the parameter value to resolve, which can be a number or a formula string that evaluates to a number
+     * @param label a human-readable label for the parameter, used in error messages if the value is invalid
+     * @return the resolved rate as a double between 0 and 1
+     */
     private double resolveRate(Object value, String label) {
         double resolved = ((Number) value).doubleValue();
 
@@ -259,7 +294,11 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
     private int resolveDimension() {
         return ((Number) state.get(StateKeys.DIMENSION)).intValue();
     }
-
+    /**
+     * Resolves the minimum and maximum pheromone bounds from the configured parameter values, which can be either numbers or formula strings.
+     * The resolved bounds are validated to ensure they are between 0 and 1 and that the minimum is not greater than the maximum.
+     * @return a PheromoneBounds record containing the resolved minimum and maximum pheromone values
+     */
     private PheromoneBounds resolvePheromoneBounds() {
         int dimension = resolveDimension();
 
@@ -270,7 +309,13 @@ public class BitstringAcoGenerator implements Generator<boolean[]> {
 
         return new PheromoneBounds(resolvedMin, resolvedMax);
     }
-
+    /**
+     * Resolves a parameter value that can be either a number or a formula string that evaluates to a number.
+     * @param value the parameter value to resolve
+     * @param dimension the problem dimension to use when evaluating formula strings
+     * @param label a human-readable label for the parameter, used in error messages if the value is invalid
+     * @return the resolved numeric value as a double
+     */
     private double resolveFormulaOrNumber(Object value, int dimension, String label) {
         double resolved = switch (value) {
             case String formula -> FormulaEvaluator.eval(formula, dimension);

@@ -122,7 +122,11 @@ public class TspAcoGenerator implements Generator<int[]> {
     public List<String> supportedSearchSpaces() {
         return List.of("permutation");
     }
-
+    /**
+     * Generates a TSP tour by constructing a path through the cities based on pheromone levels and heuristic visibility.
+     * @param rng random number generator for stochastic choices
+     * @return generated TSP tour as an array of city indices
+     */
     @Override
     public int[] generate(Random rng) {
         if (pheromoneMatrix == null) {
@@ -146,7 +150,12 @@ public class TspAcoGenerator implements Generator<int[]> {
 
         return tour;
     }
-
+    /**
+     * Updates the pheromone matrix based on the evaluated solutions in the current generation and returns it as a state variable.
+     * The update is performed according to the selected reinforcement mode (best-so-far, iteration-best, or all).
+     * @param state current state containing evaluated solutions and other relevant information
+     * @return map of state variables including the updated pheromone matrix
+     */
     @Override
     public Map<String, Object> getStateVariables(State state) {
         if (pheromoneMatrix == null) {
@@ -174,6 +183,13 @@ public class TspAcoGenerator implements Generator<int[]> {
         state.update(Map.of(StateKeys.PHEROMONE_MATRIX, pheromoneMatrix));
     }
 
+    /**
+     * Selects the next city to visit based on the pheromone levels and heuristic visibility of the candidate cities.
+     * @param current current city index
+     * @param visited boolean array indicating which cities have been visited
+     * @param rng random number generator for stochastic selection
+     * @return index of the selected next city
+     */
     private int selectNextCity(int current, boolean[] visited, Random rng) {
         List<Integer> candidates = new ArrayList<>();
 
@@ -217,7 +233,10 @@ public class TspAcoGenerator implements Generator<int[]> {
     private double safeDistance(int from, int to) {
         return Math.max(tspInstance.getDistance(from, to), 1e-9);
     }
-
+    /**
+     * Updates the pheromone matrix based on the evaluated solutions in the current generation according to the selected reinforcement mode.
+     * @param state current state containing evaluated solutions and other relevant information
+     */
     private void updatePheromoneMatrix(State state) {
         Object evaluatedObj = state.get(StateKeys.GENERATION_EVALUATED);
 
@@ -234,17 +253,31 @@ public class TspAcoGenerator implements Generator<int[]> {
         clampPheromones();
     }
 
+    /**
+     * Reinforces the pheromone matrix using the best solution found so far across all generations.
+     * Updates the best-so-far solution if a better one is found in the current generation.
+     * @param evaluated list of evaluated solutions from the current generation
+     */
+
     private void reinforceBestSoFar(List<?> evaluated) {
         updateBestSoFar(evaluated);
         evaporate();
         depositPheromone(bestSoFar.value(), bestSoFar.fitness(), reinforcementRate);
     }
+    /**
+     * Reinforces the pheromone matrix using the best solution found in the current generation.
+     * @param evaluated list of evaluated solutions from the current generation
+     */
 
     private void reinforceIterationBest(List<?> evaluated) {
         EvaluatedSolution<int[]> generationBest = bestOf(evaluated);
         evaporate();
         depositPheromone(generationBest.value(), generationBest.fitness(), reinforcementRate);
     }
+    /**
+     * Reinforces the pheromone matrix using all evaluated solutions from the current generation, scaled by the number of solutions.
+     * @param evaluated list of evaluated solutions from the current generation
+     */
 
     @SuppressWarnings("unchecked")
     private void reinforceAll(List<?> evaluated) {
@@ -258,6 +291,10 @@ public class TspAcoGenerator implements Generator<int[]> {
         }
     }
 
+    /**
+     * Updates the best-so-far solution if a better solution is found in the current generation.
+     * @param evaluated list of evaluated solutions from the current generation
+     */
     private void updateBestSoFar(List<?> evaluated) {
         EvaluatedSolution<int[]> generationBest = bestOf(evaluated);
         if (bestSoFar == null || isAcceptedAsBestSoFar(generationBest)) {
@@ -269,6 +306,11 @@ public class TspAcoGenerator implements Generator<int[]> {
         return acceptEqualFitness ? candidate.fitness() >= bestSoFar.fitness() : candidate.fitness() > bestSoFar.fitness();
     }
 
+    /**
+     * Finds the best solution from a list of evaluated solutions based on fitness.
+     * @param evaluated list of evaluated solutions
+     * @return the solution with the highest fitness
+     */
     @SuppressWarnings("unchecked")
     private EvaluatedSolution<int[]> bestOf(List<?> evaluated) {
         EvaluatedSolution<int[]> best = (EvaluatedSolution<int[]>) evaluated.getFirst();
@@ -283,7 +325,11 @@ public class TspAcoGenerator implements Generator<int[]> {
 
         return best;
     }
-
+    /**
+     * Deposits pheromone on the edges of the given tour based on its fitness and the specified reinforcement rate.
+     * @param fitness fitness value of the tour (negative tour length)
+     * @param rate reinforcement rate to scale the pheromone deposit
+     */
     private void depositPheromone(int[] tour, double fitness, double rate) {
         double tourLength = -fitness;
         double deposit = (rate * Q) / tourLength;
@@ -296,7 +342,9 @@ public class TspAcoGenerator implements Generator<int[]> {
             pheromoneMatrix[to][from] += deposit;
         }
     }
-
+    /**
+     * Applies evaporation to the pheromone matrix by reducing all pheromone levels according to the evaporation rate.
+     */
     private void evaporate() {
         for (int i = 0; i < pheromoneMatrix.length; i++) {
             for (int j = 0; j < pheromoneMatrix.length; j++) {
@@ -304,7 +352,9 @@ public class TspAcoGenerator implements Generator<int[]> {
             }
         }
     }
-
+    /**
+     * Clamps the pheromone levels in the matrix to be within the specified minimum and maximum.
+     */
     private void clampPheromones() {
         for (int i = 0; i < pheromoneMatrix.length; i++) {
             for (int j = 0; j < pheromoneMatrix.length; j++) {
@@ -313,10 +363,24 @@ public class TspAcoGenerator implements Generator<int[]> {
         }
     }
 
+    /**
+     * Resolves a parameter value as a rate between 0 and 1, accepting either a numeric value or a formula string.
+     * @param value parameter value to resolve, expected to be either a Number or a String formula
+     * @param label human-readable label for error messages
+     * @return resolved rate as a double between 0.0 and 1.0
+     */
     private double resolveRate(Object value, String label) {
         return resolveRange(value, 0.0, 1.0, label);
     }
 
+    /**
+     * Resolves a parameter value as a double within a specified range, accepting either a numeric value or a formula string.
+     * @param value parameter value to resolve, expected to be either a Number or a String formula
+     * @param min minimum allowed value for the parameter
+     * @param max maximum allowed value for the parameter
+     * @param label human-readable label for error messages
+     * @return resolved value as a double within the specified range
+     */
     private double resolveRange(Object value, double min, double max, String label) {
         double resolved = ((Number) value).doubleValue();
 
@@ -326,7 +390,12 @@ public class TspAcoGenerator implements Generator<int[]> {
 
         return resolved;
     }
-
+    /**
+     * Resolves a parameter value as a non-negative double, accepting either a numeric value or a formula string.
+     * @param value parameter value to resolve, expected to be either a Number or a String formula
+     * @param label human-readable label for error messages
+     * @return resolved value as a non-negative double
+     */
     private double resolveNonNegative(Object value, String label) {
         double resolved = ((Number) value).doubleValue();
 
@@ -336,6 +405,11 @@ public class TspAcoGenerator implements Generator<int[]> {
 
         return resolved;
     }
+    /**
+     * Resolves a parameter value as a positive double, accepting either a numeric value or a formula string.
+     * @param value parameter value to resolve, expected to be either a Number or a String formula
+     * @return resolved value as a positive double
+     */
 
     private double resolvePositive(Object value) {
         double resolved = ((Number) value).doubleValue();
@@ -346,12 +420,20 @@ public class TspAcoGenerator implements Generator<int[]> {
 
         return resolved;
     }
-
+    /**
+     * Validates that the minimum pheromone level is not greater than the maximum pheromone level.
+     * Throws an IllegalArgumentException if the bounds are invalid.
+     */
     private void validatePheromoneBounds() {
         if (minPheromone > maxPheromone) {
             throw new IllegalArgumentException("Minimum pheromone cannot be greater than maximum pheromone");
         }
     }
+    /**
+     * Parses the reinforcement mode from a parameter value, accepting either a string representation of the enum or an actual enum value.
+     * @param value parameter value to parse, expected to be either a String or a ReinforcementMode
+     * @return parsed ReinforcementMode enum value
+     */
 
     private ReinforcementMode parseReinforcementMode(Object value) {
         String normalized = value.toString().trim().toUpperCase();

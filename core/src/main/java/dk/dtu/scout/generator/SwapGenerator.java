@@ -49,6 +49,11 @@ public class SwapGenerator implements Generator<int[]> {
         return List.of("permutation");
     }
 
+    /**
+     * Generates a new permutation by swapping two random positions in the offspring base.
+     * @param rng random number generator for selecting positions
+     * @return a new mutated permutation
+     */
     @Override
     public int[] generate(Random rng) {
         int[] mutated = ((int[]) state.get(StateKeys.OFFSPRING_BASE)).clone();

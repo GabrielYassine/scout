@@ -38,6 +38,14 @@ public class MuCommaLambdaSelection<S> implements SelectionRule<S> {
         return List.of();
     }
 
+    /**
+     * Selects the best mu solutions from the children only. Throws an exception if no children are provided or if mu is not positive or if lambda < mu.
+     * @param children the generated offspring solutions to select from, must contain at least mu solutions
+     * @param mu the number of solutions to select, must be positive and less than or equal to the number of children
+     * @param iteration the current iteration number (starting from 0), not used in this selection rule but provided for consistency with the interface
+     * @param rng a random number generator, not used in this selection rule but provided for consistency with the interface
+     * @return a list of the selected solutions, containing the best mu solutions from the children
+     */
     @Override
     public List<EvaluatedSolution<S>> select(
         List<EvaluatedSolution<S>> parents,

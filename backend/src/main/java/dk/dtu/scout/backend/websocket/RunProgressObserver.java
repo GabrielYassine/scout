@@ -87,6 +87,11 @@ public class RunProgressObserver<S> implements Observer<S> {
         sendProgress(log, fromIndex, toIndex, MergeOp.APPEND, "ONGOING", null);
     }
 
+    /**
+     * Sends a final progress update with status "FINISHED" when the run ends, including any remaining logged points that haven't been sent yet.
+     * @param state the final iteration snapshot of the run, which may contain information about the last solution and evaluation
+     * @param log the complete run log with all evaluations and series data, used to send any remaining logged points that haven't been sent during the run, along with the final evaluation and runtime information
+     */
     @Override
     public void onEnd(IterationSnapshot<S> state, RunLog log) {
         int toIndex = log.getEvaluations().size() - 1;

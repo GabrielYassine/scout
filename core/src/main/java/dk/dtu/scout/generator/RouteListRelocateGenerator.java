@@ -49,7 +49,11 @@ public class RouteListRelocateGenerator implements Generator<List<List<Integer>>
     public List<String> supportedSearchSpaces() {
         return List.of("route-list");
     }
-
+    /**
+     * Generates a new solution by relocating a single customer from one route to another.
+     * @param rng random number generator for stochastic choices
+     * @return a new list of routes with one customer relocated
+     */
     @Override
     public List<List<Integer>> generate(Random rng) {
         Object baseObj = state.get(StateKeys.OFFSPRING_BASE);
@@ -81,7 +85,12 @@ public class RouteListRelocateGenerator implements Generator<List<List<Integer>>
 
         return routes;
     }
-
+    /**
+     * Randomly selects an index of a non-empty route from the list of routes.
+     * @param routes list of routes to select from
+     * @param rng random number generator for selection
+     * @return index of a non-empty route, or -1 if all routes are empty
+     */
     private int pickNonEmptyRouteIndex(List<List<Integer>> routes, Random rng) {
         List<Integer> eligible = new ArrayList<>();
 
@@ -98,6 +107,11 @@ public class RouteListRelocateGenerator implements Generator<List<List<Integer>>
         return eligible.get(rng.nextInt(eligible.size()));
     }
 
+    /**
+     * Creates a deep copy of the list of routes, ensuring that each route is a new list of integers.
+     * @param baseRoutes the original list of routes to copy, expected to be a List<List<Integer>>
+     * @return a new List<List<Integer>> where each route is a separate list containing the same customer indices as the original
+     */
     private List<List<Integer>> copyRoutes(List<?> baseRoutes) {
         List<List<Integer>> routes = new ArrayList<>();
         for (Object routeObj : baseRoutes) {
