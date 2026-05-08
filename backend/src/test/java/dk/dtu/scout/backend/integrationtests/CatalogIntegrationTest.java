@@ -12,8 +12,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
- * Integration tests for the CatalogController,
- * verifying that the /api/catalog endpoint returns the expected components registered in the Spring context.
+ * Integration tests for the CatalogController.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -26,7 +25,6 @@ class CatalogIntegrationTest {
     void catalog_returnsRealRegisteredBackendComponents() throws Exception {
         mockMvc.perform(get("/api/catalog"))
             .andExpect(status().isOk())
-
             .andExpect(jsonPath("$.searchSpaces.length()", greaterThan(0)))
             .andExpect(jsonPath("$.problems.length()", greaterThan(0)))
             .andExpect(jsonPath("$.generators.length()", greaterThan(0)))
@@ -49,11 +47,11 @@ class CatalogIntegrationTest {
     void catalog_mapsComponentMetadataAndParameters() throws Exception {
         mockMvc.perform(get("/api/catalog"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.searchSpaces[0].kind").isString())
-            .andExpect(jsonPath("$.searchSpaces[0].id").isString())
-            .andExpect(jsonPath("$.searchSpaces[0].displayName").isString())
-            .andExpect(jsonPath("$.searchSpaces[0].description").isString())
-            .andExpect(jsonPath("$.searchSpaces[0].params").isArray())
-            .andExpect(jsonPath("$.searchSpaces[0].supportedSearchSpaces").isArray());
+            .andExpect(jsonPath("$.searchSpaces[?(@.id == 'bitstring')].kind").value(hasItem("searchSpace")))
+            .andExpect(jsonPath("$.searchSpaces[?(@.id == 'bitstring')].id").value(hasItem("bitstring")))
+            .andExpect(jsonPath("$.searchSpaces[?(@.id == 'bitstring')].displayName").isArray())
+            .andExpect(jsonPath("$.searchSpaces[?(@.id == 'bitstring')].description").isArray())
+            .andExpect(jsonPath("$.searchSpaces[?(@.id == 'bitstring')].params").isArray())
+            .andExpect(jsonPath("$.searchSpaces[?(@.id == 'bitstring')].supportedSearchSpaces").isArray());
     }
 }

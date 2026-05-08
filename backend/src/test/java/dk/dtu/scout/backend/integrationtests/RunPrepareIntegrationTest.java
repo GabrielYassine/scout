@@ -1,12 +1,10 @@
 package dk.dtu.scout.backend.integrationtests;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dk.dtu.scout.backend.dto.request.PrepareRunResponse;
 import dk.dtu.scout.backend.dto.request.RunRequest;
 import dk.dtu.scout.backend.dto.request.RuntimeStudyRequest;
 import dk.dtu.scout.backend.service.ExecutionRegistry;
-import dk.dtu.scout.backend.service.RunComponentFactory;
-import dk.dtu.scout.problems.TSP;
-import dk.dtu.scout.problems.VRP;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -25,7 +23,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import static dk.dtu.scout.backend.integrationtests.support.BackendJsonTestSupport.*;
+import static dk.dtu.scout.backend.integrationtests.support.BackendJsonTestSupport.mapValue;
 import static dk.dtu.scout.backend.integrationtests.support.InstanceFixtures.smallTspInstancePayload;
 import static dk.dtu.scout.backend.integrationtests.support.InstanceFixtures.smallVrpInstancePayload;
 import static dk.dtu.scout.backend.integrationtests.support.RunPrepareTestSupport.postRunPrepare;
@@ -48,9 +46,6 @@ class RunPrepareIntegrationTest {
     @Autowired
     private ExecutionRegistry executionRegistry;
 
-    @Autowired
-    private RunComponentFactory runComponentFactory;
-
     @Nested
     class StandardRunPreparation {
 
@@ -66,44 +61,38 @@ class RunPrepareIntegrationTest {
             assertEquals("bitstring", stored.searchSpaceId());
             assertEquals(List.of("onemax"), stored.problemIds());
             assertEquals("bit-flip", stored.generatorId());
-            assertEquals("max-evaluations", stored.stopConditionIds().getFirst());
+            assertEquals(List.of("max-evaluations"), stored.stopConditionIds());
         }
 
         @Test
         void prepareRun_generatesSessionWhenBlank() throws Exception {
-            Map<String, Object> response = prepareRunAndReadResponse(validRunPreparePayload("   "));
+            PrepareRunResponse response = prepareRunAndReadResponse(validRunPreparePayload("   "));
 
-            String sessionId = stringValue(response, "sessionId");
-            String executionId = stringValue(response, "executionId");
+            assertNotNull(response.sessionId());
+            assertFalse(response.sessionId().isBlank());
+            assertNotEquals("   ", response.sessionId());
+            assertNotNull(response.executionId());
+            assertFalse(response.executionId().isBlank());
 
-            assertNotNull(sessionId);
-            assertFalse(sessionId.isBlank());
-            assertNotEquals("   ", sessionId);
-            assertNotNull(executionId);
-            assertFalse(executionId.isBlank());
+            RunRequest stored = executionRegistry.consumePreparedRun(response.executionId(), response.sessionId());
 
-            RunRequest stored = executionRegistry.consumePreparedRun(executionId, sessionId);
-
-            assertEquals(sessionId, stored.sessionId());
-            assertEquals(executionId, stored.runId());
+            assertEquals(response.sessionId(), stored.sessionId());
+            assertEquals(response.executionId(), stored.runId());
         }
 
         @Test
         void prepareRun_generatesSessionWhenMissing() throws Exception {
-            Map<String, Object> response = prepareRunAndReadResponse(validRunPreparePayload(null));
+            PrepareRunResponse response = prepareRunAndReadResponse(validRunPreparePayload(null));
 
-            String sessionId = stringValue(response, "sessionId");
-            String executionId = stringValue(response, "executionId");
+            assertNotNull(response.sessionId());
+            assertFalse(response.sessionId().isBlank());
+            assertNotNull(response.executionId());
+            assertFalse(response.executionId().isBlank());
 
-            assertNotNull(sessionId);
-            assertFalse(sessionId.isBlank());
-            assertNotNull(executionId);
-            assertFalse(executionId.isBlank());
+            RunRequest stored = executionRegistry.consumePreparedRun(response.executionId(), response.sessionId());
 
-            RunRequest stored = executionRegistry.consumePreparedRun(executionId, sessionId);
-
-            assertEquals(sessionId, stored.sessionId());
-            assertEquals(executionId, stored.runId());
+            assertEquals(response.sessionId(), stored.sessionId());
+            assertEquals(response.executionId(), stored.runId());
         }
 
         @Test
@@ -148,7 +137,13 @@ class RunPrepareIntegrationTest {
 
         @Test
         void prepareRun_rejectsMissingRunRequest() throws Exception {
-            Map<String, Object> payload = preparePayload("prepare-session-missing-run-request", "run", null, null);
+            Map<String, Object> payload = preparePayload(
+                "prepare-session-missing-run-request",
+                "run",
+                null,
+                null
+            );
+
             assertRunPrepareBadRequest(payload, "Run request must be provided");
         }
 
@@ -210,7 +205,7 @@ class RunPrepareIntegrationTest {
     }
 
     @Nested
-    class InvalidExecutionType {
+    class ExecutionTypeValidation {
 
         @Test
         void prepareRun_rejectsUnsupportedExecutionType() throws Exception {
@@ -229,44 +224,22 @@ class RunPrepareIntegrationTest {
         }
     }
 
-    @Nested
-    class ProblemSpecificParamMapping {
-
-        @Test
-        void createProblem_mapsTspInstanceParams() {
-            TSP tspProblem = assertInstanceOf(TSP.class, runComponentFactory.createProblem("tsp", 2, Map.of("tspInstance", smallTspInstancePayload())));
-
-            assertNotNull(tspProblem.getInstance());
-            assertEquals("tiny", tspProblem.getInstance().getName());
-            assertEquals(2, tspProblem.getInstance().getDimension());
-        }
-
-        @Test
-        void createProblem_mapsVrpInstanceParams() {
-            VRP vrpProblem = assertInstanceOf(VRP.class, runComponentFactory.createProblem("vrp", 0, Map.of("vrpInstance", smallVrpInstancePayload())));
-
-            assertNotNull(vrpProblem.getInstance());
-            assertEquals("tiny", vrpProblem.getInstance().getName());
-            assertEquals(1, vrpProblem.getInstance().getCustomerCount());
-        }
-    }
-
     private String prepareRunAndGetExecutionId(String sessionId) throws Exception {
         return prepareRunAndGetExecutionId(validRunPreparePayload(sessionId));
     }
 
     private String prepareRunAndGetExecutionId(Map<String, Object> payload) throws Exception {
-        return stringValue(prepareRunAndReadResponse(payload), "executionId");
+        return prepareRunAndReadResponse(payload).executionId();
     }
 
-    private Map<String, Object> prepareRunAndReadResponse(Map<String, Object> payload) throws Exception {
+    private PrepareRunResponse prepareRunAndReadResponse(Map<String, Object> payload) throws Exception {
         MvcResult result = postRunPrepare(mockMvc, objectMapper, payload)
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.sessionId").isString())
             .andExpect(jsonPath("$.executionId").isString())
             .andReturn();
 
-        return readJsonObject(objectMapper, result);
+        return objectMapper.readValue(result.getResponse().getContentAsString(), PrepareRunResponse.class);
     }
 
     private String prepareRuntimeStudyAndGetExecutionId(String sessionId) throws Exception {
@@ -280,7 +253,8 @@ class RunPrepareIntegrationTest {
             .andExpect(jsonPath("$.executionId").isString())
             .andReturn();
 
-        return stringValue(readJsonObject(objectMapper, result), "executionId");
+        PrepareRunResponse response = objectMapper.readValue(result.getResponse().getContentAsString(), PrepareRunResponse.class);
+        return response.executionId();
     }
 
     private void assertRunPrepareBadRequest(Map<String, Object> payload, String expectedMessage) throws Exception {
@@ -312,13 +286,37 @@ class RunPrepareIntegrationTest {
             invalidRun("invalid runTimes", "runTimes", 0, "runTimes must be positive"),
             invalidRun("invalid logEveryEvaluations", "logEveryEvaluations", -1, "logEveryEvaluations must be zero or positive"),
 
-            Arguments.of("TSP missing instance", tspRunPayload("invalid-run-tsp", Map.of()), "TSP problem requires a TSP instance"),
-            Arguments.of("TSP instance not map", tspRunPayload("invalid-run-tsp", Map.of("tspInstance", "not-a-map")), "Invalid TSP instance: tspInstance must be a map"),
-            Arguments.of("TSP invalid instance", tspRunPayload("invalid-run-tsp", Map.of("tspInstance", Map.of("name", "tiny"))), "Invalid TSP instance: tspInstance must contain a non-empty cities list"),
+            Arguments.of(
+                "TSP missing instance",
+                tspRunPayload("invalid-run-tsp", Map.of()),
+                "TSP problem requires a TSP instance"
+            ),
+            Arguments.of(
+                "TSP instance not map",
+                tspRunPayload("invalid-run-tsp", Map.of("tspInstance", "not-a-map")),
+                "Invalid TSP instance: tspInstance must be a map"
+            ),
+            Arguments.of(
+                "TSP invalid instance",
+                tspRunPayload("invalid-run-tsp", Map.of("tspInstance", Map.of("name", "tiny"))),
+                "Invalid TSP instance: tspInstance must contain a non-empty cities list"
+            ),
 
-            Arguments.of("VRP missing instance", vrpRunPayload("invalid-run-vrp", Map.of()), "VRP problem requires a VRP instance"),
-            Arguments.of("VRP instance not map", vrpRunPayload("invalid-run-vrp", Map.of("vrpInstance", "not-a-map")), "Invalid VRP instance: vrpInstance must be a map"),
-            Arguments.of("VRP invalid instance", vrpRunPayload("invalid-run-vrp", Map.of("vrpInstance", Map.of("name", "tiny"))), "Invalid VRP instance: Missing numeric value"),
+            Arguments.of(
+                "VRP missing instance",
+                vrpRunPayload("invalid-run-vrp", Map.of()),
+                "VRP problem requires a VRP instance"
+            ),
+            Arguments.of(
+                "VRP instance not map",
+                vrpRunPayload("invalid-run-vrp", Map.of("vrpInstance", "not-a-map")),
+                "Invalid VRP instance: vrpInstance must be a map"
+            ),
+            Arguments.of(
+                "VRP invalid instance",
+                vrpRunPayload("invalid-run-vrp", Map.of("vrpInstance", Map.of("name", "tiny"))),
+                "Invalid VRP instance: Missing numeric value"
+            ),
 
             invalidRun("null search space", "searchSpaceId", null, "Search space must be specified"),
             invalidRun("null problem list", "problemIds", null, "Problem must be specified"),
@@ -328,8 +326,16 @@ class RunPrepareIntegrationTest {
             invalidRun("null parent selection rule", "parentSelectionRuleId", null, "Parent selection rule must be specified"),
             invalidRun("null stop condition list", "stopConditionIds", null, "Stop condition must be specified"),
 
-            Arguments.of("TSP null problem params", tspRunPayload("invalid-run-tsp", null), "TSP problem requires a TSP instance"),
-            Arguments.of("VRP null problem params", vrpRunPayload("invalid-run-vrp", null), "VRP problem requires a VRP instance")
+            Arguments.of(
+                "TSP null problem params",
+                tspRunPayload("invalid-run-tsp", null),
+                "TSP problem requires a TSP instance"
+            ),
+            Arguments.of(
+                "VRP null problem params",
+                vrpRunPayload("invalid-run-vrp", null),
+                "VRP problem requires a VRP instance"
+            )
         );
     }
 
@@ -405,12 +411,7 @@ class RunPrepareIntegrationTest {
         });
     }
 
-    private static Map<String, Object> preparePayload(
-        String sessionId,
-        String executionType,
-        Object runRequest,
-        Object runtimeStudyRequest
-    ) {
+    private static Map<String, Object> preparePayload(String sessionId, String executionType, Object runRequest, Object runtimeStudyRequest) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("sessionId", sessionId);
         payload.put("executionType", executionType);

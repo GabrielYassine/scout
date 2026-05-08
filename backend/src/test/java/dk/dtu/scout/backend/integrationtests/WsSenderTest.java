@@ -2,21 +2,15 @@ package dk.dtu.scout.backend.integrationtests;
 
 import dk.dtu.scout.backend.websocket.WsSender;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-@SpringBootTest
-class WsSenderIntegrationTest {
+class WsSenderTest {
 
-    @Autowired
-    private WsSender wsSender;
-
-    @MockBean
-    private SimpMessagingTemplate template;
+    private final SimpMessagingTemplate template = mock(SimpMessagingTemplate.class);
+    private final WsSender wsSender = new WsSender(template);
 
     @Test
     void sendToRun_sendsPayloadToRunTopic() {

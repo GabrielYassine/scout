@@ -11,109 +11,51 @@ import dk.dtu.scout.backend.service.RunStatisticsService;
 import dk.dtu.scout.logging.SeriesMode;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest
-class RunStatisticsServiceIntegrationTest {
+class RunStatisticsServiceTest {
 
-    @Autowired
-    private RunStatisticsService service;
+    private final RunStatisticsService service = new RunStatisticsService();
 
     @Nested
     class CalculateSummary {
 
         @Test
-        void calculateSummary_ignoresWhitelistedSeriesWhenValuesAreNonNumeric() {
-            RunResponse run = run(
-                "onemax",
-                List.of(0, 1, 2),
-                Map.of("fitness", new SeriesResponse<>(SeriesMode.ALL, List.of("bad", "data", "here"))),
-                10.0,
-                3
-            );
-
-            BatchSummaryResponse summary = service.calculateSummary(List.of(new RunGroupResponse(0, 100L, List.of(run))));
-
-            AverageRunResponse average = summary.averageByProblem().get("onemax");
-
-            assertEquals(List.of(0, 1, 2), average.evaluations());
-            assertTrue(average.series().isEmpty());
-        }
-
-        @Test
         void calculateSummary_groupsRunsByProblemAndComputesAverageRuntime() {
-            RunResponse onemaxA = run(
-                "onemax",
-                List.of(0, 1, 2),
-                Map.of("fitness", series(1, 2, 3)),
-                10.0,
-                3
-            );
-
-            RunResponse onemaxB = run(
-                "onemax",
-                List.of(0, 1, 2),
-                Map.of("fitness", series(3, 4, 5)),
-                30.0,
-                3
-            );
-
-            RunResponse leadingOnes = run(
-                "leadingones",
-                List.of(0, 1),
-                Map.of("fitness", series(7, 8)),
-                20.0,
-                2
-            );
-
-            BatchSummaryResponse summary = service.calculateSummary(List.of(
-                new RunGroupResponse(0, 100L, List.of(onemaxA, leadingOnes)),
-                new RunGroupResponse(1, 101L, List.of(onemaxB))
-            ));
+            RunResponse onemaxA = run("onemax", List.of(0, 1, 2), Map.of("fitness", series(1, 2, 3)), 10.0, 3);
+            RunResponse onemaxB = run("onemax", List.of(0, 1, 2), Map.of("fitness", series(3, 4, 5)), 30.0, 3);
+            RunResponse leadingOnes = run("leadingones", List.of(0, 1), Map.of("fitness", series(7, 8)), 20.0, 2);
+            BatchSummaryResponse summary = service.calculateSummary(List.of(group(0, onemaxA, leadingOnes), group(1, onemaxB)));
 
             assertEquals(2, summary.averageByProblem().size());
-            assertTrue(summary.averageByProblem().containsKey("onemax"));
-            assertTrue(summary.averageByProblem().containsKey("leadingones"));
-
-            assertEquals(20.0, summary.averageRunTimeByProblem().get("onemax"));
-            assertEquals(20.0, summary.averageRunTimeByProblem().get("leadingones"));
 
             AverageRunResponse onemaxAverage = summary.averageByProblem().get("onemax");
+            AverageRunResponse leadingOnesAverage = summary.averageByProblem().get("leadingones");
+
+            assertNotNull(onemaxAverage);
+            assertNotNull(leadingOnesAverage);
+            assertEquals(20.0, summary.averageRunTimeByProblem().get("onemax"));
+            assertEquals(20.0, summary.averageRunTimeByProblem().get("leadingones"));
             assertEquals(List.of(0, 1, 2), onemaxAverage.evaluations());
             assertEquals(List.of(2.0, 3.0, 4.0), onemaxAverage.series().get("fitness"));
+            assertEquals(List.of(0, 1), leadingOnesAverage.evaluations());
+            assertEquals(List.of(7.0, 8.0), leadingOnesAverage.series().get("fitness"));
         }
 
         @Test
         void calculateSummary_usesLongestEvaluationAxisAsReferenceRun() {
-            RunResponse shortRun = run(
-                "onemax",
-                List.of(0, 2),
-                Map.of("fitness", series(10, 20)),
-                10.0,
-                2
-            );
+            RunResponse shortRun = run("onemax", List.of(0, 2), Map.of("fitness", series(10, 20)), 10.0, 2);
+            RunResponse longRun = run("onemax", List.of(0, 1, 2, 3), Map.of("fitness", series(2, 4, 6, 8)), 10.0, 4);
 
-            RunResponse longRun = run(
-                "onemax",
-                List.of(0, 1, 2, 3),
-                Map.of("fitness", series(2, 4, 6, 8)),
-                10.0,
-                4
-            );
-
-            BatchSummaryResponse summary = service.calculateSummary(List.of(
-                new RunGroupResponse(0, 100L, List.of(shortRun)),
-                new RunGroupResponse(1, 101L, List.of(longRun))
-            ));
-
+            BatchSummaryResponse summary = service.calculateSummary(List.of(group(0, shortRun), group(1, longRun)));
             AverageRunResponse average = summary.averageByProblem().get("onemax");
+
             assertEquals(List.of(0, 1, 2, 3), average.evaluations());
             assertEquals(List.of(6.0, 7.0, 13.0, 14.0), average.series().get("fitness"));
         }
@@ -126,15 +68,9 @@ class RunStatisticsServiceIntegrationTest {
             series.put("temperature", series(100, 50, 25));
             series.put("label", new SeriesResponse<>(SeriesMode.ALL, List.of("a", "b", "c")));
 
-            RunResponse run = run(
-                "onemax",
-                List.of(0, 1, 2),
-                series,
-                10.0,
-                3
-            );
+            RunResponse run = run("onemax", List.of(0, 1, 2), series, 10.0, 3);
 
-            BatchSummaryResponse summary = service.calculateSummary(List.of(new RunGroupResponse(0, 100L, List.of(run))));
+            BatchSummaryResponse summary = service.calculateSummary(List.of(group(0, run)));
 
             Map<String, List<Double>> averageSeries = summary.averageByProblem().get("onemax").series();
 
@@ -145,17 +81,21 @@ class RunStatisticsServiceIntegrationTest {
         }
 
         @Test
+        void calculateSummary_ignoresWhitelistedSeriesWhenValuesAreNonNumeric() {
+            RunResponse run = run("onemax", List.of(0, 1, 2), Map.of("fitness", new SeriesResponse<>(SeriesMode.ALL, List.of("bad", "data", "here"))), 10.0, 3);
+
+            BatchSummaryResponse summary = service.calculateSummary(List.of(group(0, run)));
+            AverageRunResponse average = summary.averageByProblem().get("onemax");
+
+            assertEquals(List.of(0, 1, 2), average.evaluations());
+            assertTrue(average.series().isEmpty());
+        }
+
+        @Test
         void calculateSummary_returnsEmptyBoxplotWhenBestFitnessIsMissing() {
-            RunResponse run = run(
-                "onemax",
-                List.of(0, 1, 2),
-                Map.of("fitness", series(1, 2, 3)),
-                10.0,
-                3
-            );
+            RunResponse run = run("onemax", List.of(0, 1, 2), Map.of("fitness", series(1, 2, 3)), 10.0, 3);
 
-            BatchSummaryResponse summary = service.calculateSummary(List.of(new RunGroupResponse(0, 100L, List.of(run))));
-
+            BatchSummaryResponse summary = service.calculateSummary(List.of(group(0, run)));
             SeriesBoxPlotResponse boxPlot = summary.bestFitnessBoxPlotsByProblem().get("onemax");
 
             assertEquals(List.of(), boxPlot.evaluations());
@@ -164,27 +104,10 @@ class RunStatisticsServiceIntegrationTest {
 
         @Test
         void calculateSummary_computesBestFitnessBoxplots() {
-            RunResponse runA = run(
-                "onemax",
-                List.of(0, 1, 2),
-                Map.of("bestFitness", series(1, 3, 5)),
-                10.0,
-                3
-            );
+            RunResponse runA = run("onemax", List.of(0, 1, 2), Map.of("bestFitness", series(1, 3, 5)), 10.0, 3);
+            RunResponse runB = run("onemax", List.of(0, 1, 2), Map.of("bestFitness", series(2, 4, 6)), 20.0, 3);
 
-            RunResponse runB = run(
-                "onemax",
-                List.of(0, 1, 2),
-                Map.of("bestFitness", series(2, 4, 6)),
-                20.0,
-                3
-            );
-
-            BatchSummaryResponse summary = service.calculateSummary(List.of(
-                new RunGroupResponse(0, 100L, List.of(runA)),
-                new RunGroupResponse(1, 101L, List.of(runB))
-            ));
-
+            BatchSummaryResponse summary = service.calculateSummary(List.of(group(0, runA), group(1, runB)));
             SeriesBoxPlotResponse boxPlot = summary.bestFitnessBoxPlotsByProblem().get("onemax");
 
             assertEquals(List.of(0, 1, 2), boxPlot.evaluations());
@@ -195,18 +118,12 @@ class RunStatisticsServiceIntegrationTest {
 
         @Test
         void calculateSummary_samplesBestFitnessBoxplotsWhenReferenceAxisIsLong() {
-            List<Integer> evaluations = java.util.stream.IntStream.range(0, 101).boxed().toList();
-            List<Integer> values = java.util.stream.IntStream.range(0, 101).boxed().toList();
+            List<Integer> evaluations = IntStream.range(0, 101).boxed().toList();
+            List<Integer> values = IntStream.range(0, 101).boxed().toList();
 
-            RunResponse run = run(
-                "onemax",
-                evaluations,
-                Map.of("bestFitness", seriesFromList(values)),
-                10.0,
-                101
-            );
+            RunResponse run = run("onemax", evaluations, Map.of("bestFitness", seriesFromList(values)), 10.0, 101);
 
-            BatchSummaryResponse summary = service.calculateSummary(List.of(new RunGroupResponse(0, 100L, List.of(run))));
+            BatchSummaryResponse summary = service.calculateSummary(List.of(group(0, run)));
 
             SeriesBoxPlotResponse boxPlot = summary.bestFitnessBoxPlotsByProblem().get("onemax");
 
@@ -236,13 +153,7 @@ class RunStatisticsServiceIntegrationTest {
             RunResponse b = run("onemax", List.of(0), Map.of(), 1.0, 20);
             RunResponse c = run("onemax", List.of(0), Map.of(), 1.0, 30);
 
-            RuntimeStudyPointResponse point = service.toRuntimeStudyPoint(
-                10,
-                List.of(
-                    new RunGroupResponse(0, 100L, List.of(a)),
-                    new RunGroupResponse(1, 101L, List.of(b, c))
-                )
-            );
+            RuntimeStudyPointResponse point = service.toRuntimeStudyPoint(10, List.of(group(0, a), group(1, b, c)));
 
             assertEquals(10, point.problemSize());
             assertEquals(20.0, point.meanEvaluationsToOptimum());
@@ -251,12 +162,16 @@ class RunStatisticsServiceIntegrationTest {
 
         @Test
         void toRuntimeStudyPoint_returnsZeroAndEmptyBoxplotForNoRuns() {
-            RuntimeStudyPointResponse point = service.toRuntimeStudyPoint(10, List.of(new RunGroupResponse(0, 100L, List.of())));
+            RuntimeStudyPointResponse point = service.toRuntimeStudyPoint(10, List.of(group(0)));
 
             assertEquals(10, point.problemSize());
             assertEquals(0.0, point.meanEvaluationsToOptimum());
             assertEquals(List.of(), point.boxPlot());
         }
+    }
+
+    private static RunGroupResponse group(int runIndex, RunResponse... runs) {
+        return new RunGroupResponse(runIndex, 100L + runIndex, List.of(runs));
     }
 
     private static RunResponse run(
@@ -266,14 +181,7 @@ class RunStatisticsServiceIntegrationTest {
         double runtimeMs,
         int totalEvaluations
     ) {
-        return new RunResponse(
-            "bitstring",
-            problemId,
-            evaluations,
-            series,
-            runtimeMs,
-            totalEvaluations
-        );
+        return new RunResponse("bitstring", problemId, evaluations, series, runtimeMs, totalEvaluations);
     }
 
     private static SeriesResponse<?> series(Number... values) {

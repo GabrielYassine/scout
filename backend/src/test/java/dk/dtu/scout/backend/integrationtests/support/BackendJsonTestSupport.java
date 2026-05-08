@@ -4,12 +4,11 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.ResultActions;
 
 import java.util.Map;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 public final class BackendJsonTestSupport {
@@ -22,7 +21,10 @@ public final class BackendJsonTestSupport {
     }
 
     public static Map<String, Object> readJsonObject(ObjectMapper objectMapper, MvcResult result) throws Exception {
-        return objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
+        return objectMapper.readValue(
+            result.getResponse().getContentAsString(),
+            new TypeReference<>() {}
+        );
     }
 
     public static String stringValue(Map<String, Object> map, String key) {
@@ -32,6 +34,12 @@ public final class BackendJsonTestSupport {
 
     @SuppressWarnings("unchecked")
     public static Map<String, Object> mapValue(Map<String, Object> map, String key) {
-        return (Map<String, Object>) map.get(key);
+        Object value = map.get(key);
+
+        if (!(value instanceof Map<?, ?>)) {
+            throw new IllegalArgumentException("Expected key '" + key + "' to contain a map");
+        }
+
+        return (Map<String, Object>) value;
     }
 }

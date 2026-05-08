@@ -186,7 +186,7 @@ public class RunOrchestratorService {
      */
     public void run(RunRequest request) {
         int logEvery = runRequestValidator.resolveLogEveryEvaluations(request);
-        int wsUpdateEvery = request.wsUpdateEveryEvaluations() > 0 ? request.wsUpdateEveryEvaluations() : logEvery;
+        int wsUpdateEvery = request.wsUpdateEveryEvaluations();
 
         try {
             List<RunGroupResponse> batches = runExecutor.runBatch(request, logEvery, wsUpdateEvery);
@@ -267,7 +267,7 @@ public class RunOrchestratorService {
      * @return run request for this size
      */
     private RunRequest buildRunRequestForSize(RuntimeStudyRequest request, int problemSize, int sizeIndex) {
-        Map<String, Object> searchSpaceParams = new LinkedHashMap<>(request.searchSpaceParams() != null ? request.searchSpaceParams() : Map.of());
+        Map<String, Object> searchSpaceParams = request.searchSpaceParams();
         searchSpaceParams.put("n", problemSize);
         long seed = request.seed() + (long) sizeIndex * 1_000_000L;
 

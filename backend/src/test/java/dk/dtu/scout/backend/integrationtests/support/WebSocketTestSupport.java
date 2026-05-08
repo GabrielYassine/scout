@@ -1,5 +1,6 @@
 package dk.dtu.scout.backend.integrationtests.support;
 
+import dk.dtu.scout.backend.dto.request.PrepareRunResponse;
 import dk.dtu.scout.backend.dto.request.StartPreparedExecutionRequest;
 import dk.dtu.scout.backend.dto.ws.RunWsPayload;
 import dk.dtu.scout.backend.dto.ws.RuntimeStudyWsPayload;
@@ -27,7 +28,7 @@ public final class WebSocketTestSupport {
         return accessor;
     }
 
-    public static void startPreparedRun(WsReceiver wsReceiver, PreparedExecution prepared, String websocketSessionId) {
+    public static void startPreparedRun(WsReceiver wsReceiver, PrepareRunResponse prepared, String websocketSessionId) {
         wsReceiver.runStart(
             prepared.executionId(),
             new StartPreparedExecutionRequest(prepared.sessionId()),
@@ -35,7 +36,7 @@ public final class WebSocketTestSupport {
         );
     }
 
-    public static void startPreparedStudy(WsReceiver wsReceiver, PreparedExecution prepared, String websocketSessionId) {
+    public static void startPreparedStudy(WsReceiver wsReceiver, PrepareRunResponse  prepared, String websocketSessionId) {
         wsReceiver.studyStart(
             prepared.executionId(),
             new StartPreparedExecutionRequest(prepared.sessionId()),
@@ -45,7 +46,9 @@ public final class WebSocketTestSupport {
 
     public static List<RunWsPayload> captureRunPayloads(Object mockSender, String runId) {
         ArgumentCaptor<RunWsPayload> captor = ArgumentCaptor.forClass(RunWsPayload.class);
+
         verify((WsSender) mockSender, timeout(5000).atLeastOnce()).sendToRun(eq(runId), captor.capture());
+
         return captor.getAllValues();
     }
 
@@ -69,6 +72,7 @@ public final class WebSocketTestSupport {
         ArgumentCaptor<RuntimeStudyWsPayload> captor = ArgumentCaptor.forClass(RuntimeStudyWsPayload.class);
 
         verify((WsSender) mockSender, timeout(5000).atLeastOnce()).sendToStudy(eq(studyId), captor.capture());
+
         return captor.getAllValues();
     }
 
@@ -90,5 +94,17 @@ public final class WebSocketTestSupport {
 
     public static void assertHasRunPayloadType(List<RunWsPayload> payloads, String type) {
         assertTrue(payloads.stream().anyMatch(payload -> type.equals(payload.type())));
+    }
+
+    public static void assertHasRunProgressForProblem(List<RunWsPayload> payloads, String problemId) {
+        assertTrue(payloads.stream().anyMatch(payload ->
+            "RUN_PROGRESS".equals(payload.type()) && problemId.equals(payload.problemId())
+        ));
+    }
+
+    public static void assertHasRunProgressForRunIndex(List<RunWsPayload> payloads, int runIndex) {
+        assertTrue(payloads.stream().anyMatch(payload ->
+            "RUN_PROGRESS".equals(payload.type()) && Integer.valueOf(runIndex).equals(payload.runIndex())
+        ));
     }
 }

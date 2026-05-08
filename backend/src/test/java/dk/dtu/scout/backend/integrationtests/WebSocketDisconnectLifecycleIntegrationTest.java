@@ -1,13 +1,13 @@
 package dk.dtu.scout.backend.integrationtests;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dk.dtu.scout.backend.dto.request.PrepareRunResponse;
 import dk.dtu.scout.backend.dto.request.RunRequest;
 import dk.dtu.scout.backend.dto.request.StartPreparedExecutionRequest;
 import dk.dtu.scout.backend.dto.run.RunGroupResponse;
 import dk.dtu.scout.backend.dto.run.RuntimeStudyPointResponse;
 import dk.dtu.scout.backend.dto.ws.RunWsPayload;
 import dk.dtu.scout.backend.dto.ws.RuntimeStudyWsPayload;
-import dk.dtu.scout.backend.integrationtests.support.PreparedExecution;
 import dk.dtu.scout.backend.service.RunExecutor;
 import dk.dtu.scout.backend.service.RunStatisticsService;
 import dk.dtu.scout.backend.websocket.WebSocketDisconnectListener;
@@ -15,6 +15,7 @@ import dk.dtu.scout.backend.websocket.WsReceiver;
 import dk.dtu.scout.backend.websocket.WsSender;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -34,8 +35,7 @@ import static dk.dtu.scout.backend.integrationtests.support.RunPrepareTestSuppor
 import static dk.dtu.scout.backend.integrationtests.support.RunRequestFixtures.validRunPreparePayload;
 import static dk.dtu.scout.backend.integrationtests.support.RunRequestFixtures.validRuntimeStudyPreparePayload;
 import static dk.dtu.scout.backend.integrationtests.support.WebSocketTestSupport.headers;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
@@ -73,10 +73,12 @@ class WebSocketDisconnectLifecycleIntegrationTest {
 
         @Test
         void disconnectAfterRunWebSocketAttach_removesPreparedRun() throws Exception {
-            PreparedExecution prepared = prepareRunPayload("disconnect-run-session");
+            PrepareRunResponse prepared = prepareRunPayload("disconnect-run-session");
 
-            startRunWithWrongSession(prepared);
-            disconnect("ws-disconnect-prepared-run");
+            String websocketSessionId = "ws-disconnect-prepared-run";
+
+            startRunWithWrongSession(prepared, websocketSessionId);
+            disconnect(websocketSessionId);
 
             wsReceiver.runStart(
                 prepared.executionId(),
@@ -84,7 +86,10 @@ class WebSocketDisconnectLifecycleIntegrationTest {
                 headers("ws-disconnect-prepared-run-retry")
             );
 
-            verify(wsSender, timeout(2000).atLeastOnce()).sendToRun(eq(prepared.executionId()), any(RunWsPayload.class));
+            RunWsPayload failedPayload = captureRunPayload(prepared.executionId());
+
+            assertEquals("RUN_FAILED", failedPayload.type());
+            assertTrue(failedPayload.message().contains("Prepared run was not found"));
         }
     }
 
@@ -93,10 +98,12 @@ class WebSocketDisconnectLifecycleIntegrationTest {
 
         @Test
         void disconnectAfterStudyWebSocketAttach_removesPreparedStudy() throws Exception {
-            PreparedExecution prepared = prepareStudyPayload("disconnect-study-session");
+            PrepareRunResponse  prepared = prepareStudyPayload("disconnect-study-session");
 
-            startStudyWithWrongSession(prepared);
-            disconnect("ws-disconnect-prepared-study");
+            String websocketSessionId = "ws-disconnect-prepared-study";
+
+            startStudyWithWrongSession(prepared, websocketSessionId);
+            disconnect(websocketSessionId);
 
             wsReceiver.studyStart(
                 prepared.executionId(),
@@ -104,7 +111,10 @@ class WebSocketDisconnectLifecycleIntegrationTest {
                 headers("ws-disconnect-prepared-study-retry")
             );
 
-            verify(wsSender, timeout(2000).atLeastOnce()).sendToStudy(eq(prepared.executionId()), any(RuntimeStudyWsPayload.class));
+            RuntimeStudyWsPayload failedPayload = captureStudyPayload(prepared.executionId());
+
+            assertEquals("STUDY_FAILED", failedPayload.type());
+            assertTrue(failedPayload.message().contains("Prepared runtime study was not found") || failedPayload.message().contains("Prepared study was not found"));
         }
     }
 
@@ -122,7 +132,7 @@ class WebSocketDisconnectLifecycleIntegrationTest {
 
         @Test
         void disconnectDuringActiveRun_cancelsActiveRun() throws Exception {
-            PreparedExecution prepared = prepareRunPayload("disconnect-active-run-session");
+            PrepareRunResponse  prepared = prepareRunPayload("disconnect-active-run-session");
 
             CountDownLatch runStarted = new CountDownLatch(1);
             CountDownLatch runInterrupted = new CountDownLatch(1);
@@ -136,9 +146,7 @@ class WebSocketDisconnectLifecycleIntegrationTest {
             );
 
             assertTrue(runStarted.await(2, TimeUnit.SECONDS));
-
             disconnect("ws-active-run-disconnect");
-
             assertTrue(runInterrupted.await(2, TimeUnit.SECONDS));
         }
     }
@@ -148,15 +156,14 @@ class WebSocketDisconnectLifecycleIntegrationTest {
 
         @Test
         void disconnectDuringActiveRuntimeStudy_cancelsActiveStudy() throws Exception {
-            PreparedExecution prepared = prepareStudyPayload("disconnect-active-study-session");
+            PrepareRunResponse  prepared = prepareStudyPayload("disconnect-active-study-session");
 
             CountDownLatch studyStarted = new CountDownLatch(1);
             CountDownLatch studyInterrupted = new CountDownLatch(1);
 
             mockInterruptedRun(studyStarted, studyInterrupted, "study cancelled by disconnect");
 
-            when(runStatisticsService.toRuntimeStudyPoint(anyInt(), any()))
-                .thenReturn(new RuntimeStudyPointResponse(2, 0.0, List.of()));
+            when(runStatisticsService.toRuntimeStudyPoint(anyInt(), any())).thenReturn(new RuntimeStudyPointResponse(2, 0.0, List.of()));
 
             wsReceiver.studyStart(
                 prepared.executionId(),
@@ -165,68 +172,66 @@ class WebSocketDisconnectLifecycleIntegrationTest {
             );
 
             assertTrue(studyStarted.await(2, TimeUnit.SECONDS));
-
             disconnect("ws-active-study-disconnect");
-
             assertTrue(studyInterrupted.await(2, TimeUnit.SECONDS));
         }
     }
 
-    private PreparedExecution prepareRunPayload(String sessionId) throws Exception {
+    private PrepareRunResponse  prepareRunPayload(String sessionId) throws Exception {
         return prepareRun(mockMvc, objectMapper, validRunPreparePayload(sessionId));
     }
 
-    private PreparedExecution prepareStudyPayload(String sessionId) throws Exception {
+    private PrepareRunResponse  prepareStudyPayload(String sessionId) throws Exception {
         return prepareRuntimeStudy(mockMvc, objectMapper, validRuntimeStudyPreparePayload(sessionId));
     }
 
-    private void startRunWithWrongSession(PreparedExecution prepared) {
+    private void startRunWithWrongSession(PrepareRunResponse  prepared, String websocketSessionId) {
         wsReceiver.runStart(
             prepared.executionId(),
             new StartPreparedExecutionRequest("wrong-session"),
-            headers("ws-disconnect-prepared-run")
+            headers(websocketSessionId)
         );
     }
 
-    private void startStudyWithWrongSession(PreparedExecution prepared) {
+    private void startStudyWithWrongSession(PrepareRunResponse  prepared, String websocketSessionId) {
         wsReceiver.studyStart(
             prepared.executionId(),
             new StartPreparedExecutionRequest("wrong-session"),
-            headers("ws-disconnect-prepared-study")
+            headers(websocketSessionId)
         );
     }
 
-    private void mockInterruptedRun(
-        CountDownLatch started,
-        CountDownLatch interrupted,
-        String cancellationMessage
-    ) {
-        when(runExecutor.runBatch(any(RunRequest.class), anyInt(), anyInt()))
-            .thenAnswer(invocation -> {
-                started.countDown();
+    private void mockInterruptedRun(CountDownLatch started, CountDownLatch interrupted, String cancellationMessage) {
+        when(runExecutor.runBatch(any(RunRequest.class), anyInt(), anyInt())).thenAnswer(invocation -> {
+            started.countDown();
 
-                try {
-                    Thread.sleep(10_000);
-                } catch (InterruptedException e) {
-                    interrupted.countDown();
-                    Thread.currentThread().interrupt();
-                    throw new java.util.concurrent.CancellationException(cancellationMessage);
-                }
+            try {
+                Thread.sleep(10_000);
+            } catch (InterruptedException e) {
+                interrupted.countDown();
+                Thread.currentThread().interrupt();
+                throw new java.util.concurrent.CancellationException(cancellationMessage);
+            }
 
-                return List.<RunGroupResponse>of();
-            });
+            return List.<RunGroupResponse>of();
+        });
+    }
+
+    private RunWsPayload captureRunPayload(String executionId) {
+        ArgumentCaptor<RunWsPayload> captor = ArgumentCaptor.forClass(RunWsPayload.class);
+        verify(wsSender, timeout(2000).atLeastOnce()).sendToRun(eq(executionId), captor.capture());
+        return captor.getAllValues().getLast();
+    }
+
+    private RuntimeStudyWsPayload captureStudyPayload(String executionId) {
+        ArgumentCaptor<RuntimeStudyWsPayload> captor = ArgumentCaptor.forClass(RuntimeStudyWsPayload.class);
+        verify(wsSender, timeout(2000).atLeastOnce()).sendToStudy(eq(executionId), captor.capture());
+        return captor.getAllValues().getLast();
     }
 
     private void disconnect(String websocketSessionId) {
         Message<byte[]> message = MessageBuilder.withPayload(new byte[0]).build();
-
-        SessionDisconnectEvent event = new SessionDisconnectEvent(
-            this,
-            message,
-            websocketSessionId,
-            CloseStatus.NORMAL
-        );
-
+        SessionDisconnectEvent event = new SessionDisconnectEvent(this, message, websocketSessionId, CloseStatus.NORMAL);
         disconnectListener.handleDisconnect(event);
     }
 }

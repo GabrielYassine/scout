@@ -89,8 +89,8 @@ class InstanceIntegrationTest {
         }
 
         @Test
-        void importVrp_withVehiclesAndZeroDepotId_returnsParsedInstance() throws Exception {
-            postImport(InstanceFixtures.importPayload(validVrpWithVehiclesAndZeroDepotId()))
+        void importVrp_withVehicles_returnsParsedInstance() throws Exception {
+            postImport(InstanceFixtures.importPayload(InstanceFixtures.validVrpWithVehicles()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.instanceType").value("VRP"))
                 .andExpect(jsonPath("$.instance.numberOfVehicles").value(2))
@@ -176,9 +176,7 @@ class InstanceIntegrationTest {
     }
 
     private static void assertBadRequest(ResultActions result, String expectedMessage) throws Exception {
-        result
-                .andExpect(status().isBadRequest())
-                .andExpect(content().string(expectedMessage));
+        result.andExpect(status().isBadRequest()).andExpect(content().string(expectedMessage));
     }
 
     private static Map<String, Object> tspExportWithBlankNameAndStringCoordinates() {
@@ -187,8 +185,8 @@ class InstanceIntegrationTest {
         payload.put("name", "   ");
         payload.put("comment", "   ");
         payload.put("cities", List.of(
-                Map.of("x", "1.5", "y", "2.5"),
-                Map.of("x", "3", "y", "4")
+            Map.of("x", "1.5", "y", "2.5"),
+            Map.of("x", "3", "y", "4")
         ));
         return payload;
     }
@@ -202,13 +200,28 @@ class InstanceIntegrationTest {
         payload.put("numberOfVehicles", "2");
         payload.put("depot", Map.of("x", "0", "y", "0"));
         payload.put("customers", List.of(
-                Map.of("x", "1.25", "y", "2.5", "demand", "3")
+            Map.of("x", "1.25", "y", "2.5", "demand", "3")
         ));
         return payload;
     }
 
     private static Stream<Arguments> invalidImportPayloads() {
         return Stream.of(
+            Arguments.of("missing content field", Map.of(), "Instance file content must be provided"),
+            Arguments.of("blank content", InstanceFixtures.importPayload(""), "Instance file content must be provided"),
+            Arguments.of("whitespace content", InstanceFixtures.importPayload("   "), "Instance file content must be provided"),
+            Arguments.of("missing TYPE", InstanceFixtures.importPayload("NAME: tiny\n"), "Instance file must contain a TYPE field"),
+            Arguments.of("blank TYPE", InstanceFixtures.importPayload("TYPE:   \n"), "Instance file must contain a TYPE field"),
+            Arguments.of("unsupported TYPE", InstanceFixtures.importPayload("TYPE: ATSP\n"), "Unsupported instance TYPE: ATSP"),
+
+            invalidImport("TSP empty node section", "TSP file must contain NODE_COORD_SECTION",
+                "NAME: tiny",
+                "TYPE: TSP",
+                "DIMENSION: 0",
+                "EDGE_WEIGHT_TYPE: EUC_2D",
+                "NODE_COORD_SECTION",
+                "EOF"
+            ),
             invalidImport("invalid header line", "Invalid header line: 12345",
                 "NAME: tiny",
                 "12345",
@@ -219,13 +232,13 @@ class InstanceIntegrationTest {
                 "2 1 1",
                 "EOF"
             ),
-            Arguments.of("missing content field", Map.of(), "Instance file content must be provided"),
-            Arguments.of("blank content", InstanceFixtures.importPayload(""), "Instance file content must be provided"),
-            Arguments.of("whitespace content", InstanceFixtures.importPayload("   "), "Instance file content must be provided"),
-            Arguments.of("missing TYPE", InstanceFixtures.importPayload("NAME: tiny\n"), "Instance file must contain a TYPE field"),
-            Arguments.of("blank TYPE", InstanceFixtures.importPayload("TYPE:   \n"), "Instance file must contain a TYPE field"),
-            Arguments.of("unsupported TYPE", InstanceFixtures.importPayload("TYPE: ATSP\n"), "Unsupported instance TYPE: ATSP"),
-
+            invalidImport("TSP missing node section", "TSP file must contain NODE_COORD_SECTION",
+                "NAME: tiny",
+                "TYPE: TSP",
+                "DIMENSION: 2",
+                "EDGE_WEIGHT_TYPE: EUC_2D",
+                "EOF"
+            ),
             invalidImport("TSP invalid coordinate line", "Invalid TSP coordinate line: 1 2",
                 "NAME: tiny",
                 "TYPE: TSP",
@@ -250,6 +263,7 @@ class InstanceIntegrationTest {
                 "2 1 1",
                 "EOF"
             ),
+
             invalidImport("VRP invalid coordinate line", "Invalid coordinate line: 1 0",
                 "NAME: tiny",
                 "TYPE: CVRP",
@@ -305,6 +319,32 @@ class InstanceIntegrationTest {
                 "-1",
                 "EOF"
             ),
+            invalidImport("VRP empty depot section", "VRP file must contain DEPOT_SECTION",
+                "NAME: tiny",
+                "TYPE: CVRP",
+                "CAPACITY: 10",
+                "NODE_COORD_SECTION",
+                "1 0 0",
+                "2 1 1",
+                "DEMAND_SECTION",
+                "1 0",
+                "2 1",
+                "DEPOT_SECTION",
+                "-1",
+                "EOF"
+            ),
+            invalidImport("VRP empty node section", "VRP file must contain NODE_COORD_SECTION",
+                "NAME: tiny",
+                "TYPE: CVRP",
+                "CAPACITY: 10",
+                "NODE_COORD_SECTION",
+                "DEMAND_SECTION",
+                "1 0",
+                "DEPOT_SECTION",
+                "1",
+                "-1",
+                "EOF"
+            ),
             invalidImport("VRP missing depot section", "VRP file must contain DEPOT_SECTION",
                 "NAME: tiny",
                 "TYPE: CVRP",
@@ -313,6 +353,20 @@ class InstanceIntegrationTest {
                 "1 0 0",
                 "DEMAND_SECTION",
                 "1 0",
+                "EOF"
+            ),
+            invalidImport("VRP depot section not terminated", "DEPOT_SECTION must be terminated by -1",
+                "NAME: tiny",
+                "TYPE: CVRP",
+                "CAPACITY: 10",
+                "NODE_COORD_SECTION",
+                "1 0 0",
+                "2 1 1",
+                "DEMAND_SECTION",
+                "1 0",
+                "2 1",
+                "DEPOT_SECTION",
+                "1",
                 "EOF"
             ),
             invalidImport("VRP multiple depots", "Only single-depot CVRP instances are currently supported",
@@ -355,6 +409,35 @@ class InstanceIntegrationTest {
                 "-1",
                 "EOF"
             ),
+            invalidImport("VRP missing depot demand", "Missing demand for depot node 1",
+                "NAME: tiny",
+                "TYPE: CVRP",
+                "CAPACITY: 10",
+                "NODE_COORD_SECTION",
+                "1 0 0",
+                "2 1 1",
+                "DEMAND_SECTION",
+                "2 1",
+                "DEPOT_SECTION",
+                "1",
+                "-1",
+                "EOF"
+            ),
+            invalidImport("VRP depot demand not zero", "Depot node 1 demand must be 0",
+                "NAME: tiny",
+                "TYPE: CVRP",
+                "CAPACITY: 10",
+                "NODE_COORD_SECTION",
+                "1 0 0",
+                "2 1 1",
+                "DEMAND_SECTION",
+                "1 1",
+                "2 1",
+                "DEPOT_SECTION",
+                "1",
+                "-1",
+                "EOF"
+            ),
             invalidImport("VRP missing customer demand", "Missing demand for customer node 2",
                 "NAME: tiny",
                 "TYPE: CVRP",
@@ -364,6 +447,49 @@ class InstanceIntegrationTest {
                 "2 1 1",
                 "DEMAND_SECTION",
                 "1 0",
+                "DEPOT_SECTION",
+                "1",
+                "-1",
+                "EOF"
+            ),
+            invalidImport("VRP negative demand", "Demand for node 2 cannot be negative",
+                "NAME: tiny",
+                "TYPE: CVRP",
+                "CAPACITY: 10",
+                "NODE_COORD_SECTION",
+                "1 0 0",
+                "2 1 1",
+                "DEMAND_SECTION",
+                "1 0",
+                "2 -1",
+                "DEPOT_SECTION",
+                "1",
+                "-1",
+                "EOF"
+            ),
+            invalidImport("VRP negative capacity", "VRP capacity cannot be negative",
+                "NAME: tiny",
+                "TYPE: CVRP",
+                "CAPACITY: -1",
+                "NODE_COORD_SECTION",
+                "1 0 0",
+                "2 1 1",
+                "DEMAND_SECTION",
+                "1 0",
+                "2 1",
+                "DEPOT_SECTION",
+                "1",
+                "-1",
+                "EOF"
+            ),
+            invalidImport("VRP empty demand section", "VRP file must contain DEMAND_SECTION",
+                "NAME: tiny",
+                "TYPE: CVRP",
+                "CAPACITY: 10",
+                "NODE_COORD_SECTION",
+                "1 0 0",
+                "2 1 1",
+                "DEMAND_SECTION",
                 "DEPOT_SECTION",
                 "1",
                 "-1",
@@ -424,26 +550,5 @@ class InstanceIntegrationTest {
         Map<String, Object> payload = new LinkedHashMap<>(InstanceFixtures.exportVrpPayload());
         payload.remove(key);
         return payload;
-    }
-
-    private static String validVrpWithVehiclesAndZeroDepotId() {
-        return String.join("\n",
-            "NAME: tiny",
-            "TYPE: CVRP",
-            "EDGE_WEIGHT_TYPE: EUC_2D",
-            "CAPACITY: 10",
-            "VEHICLES: 2",
-            "NODE_COORD_SECTION",
-            "1 0 0",
-            "2 1 1",
-            "DEMAND_SECTION",
-            "1 0",
-            "2 1",
-            "DEPOT_SECTION",
-            "0",
-            "1",
-            "-1",
-            "EOF"
-        );
     }
 }

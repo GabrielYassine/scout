@@ -7,9 +7,10 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 /**
- * Parser for TSP and VRP instance files in TSPLIB format.
- * Supports TSP and CVRP/VRP types with EUC_2D edge weight type.
- * Extracts relevant data into a normalized map format used by the backend and frontend.
+ * Parser for TSP and CVRP instance files in a supported TSPLIB95 subset.
+ * Supports TYPE TSP and CVRP with EDGE_WEIGHT_TYPE EUC_2D and NODE_COORD_SECTION.
+ * CVRP additionally requires CAPACITY, DEMAND_SECTION, and DEPOT_SECTION.
+ * EOF is accepted but optional, as defined by TSPLIB95.
  * @author s235257
  */
 public final class InstanceParser {
@@ -50,6 +51,7 @@ public final class InstanceParser {
         Map<String, String> headers = new LinkedHashMap<>();
         List<Map<String, Object>> cities = new ArrayList<>();
 
+        boolean seenNodeSection = false;
         boolean inNodes = false;
 
         for (String rawLine : content.split("\\R")) {
@@ -58,6 +60,7 @@ public final class InstanceParser {
             if (isEof(line)) break;
 
             if (isSection(line, "NODE_COORD_SECTION")) {
+                seenNodeSection = true;
                 inNodes = true;
                 continue;
             }
@@ -68,7 +71,7 @@ public final class InstanceParser {
             }
 
             String[] parts = line.split("\\s+");
-            if (parts.length < 3) {
+            if (parts.length != 3) {
                 throw new IllegalArgumentException("Invalid TSP coordinate line: " + line);
             }
 
@@ -83,6 +86,10 @@ public final class InstanceParser {
         }
 
         requireSupportedEdgeWeightType(headers);
+
+        if (!seenNodeSection || cities.isEmpty()) {
+            throw new IllegalArgumentException("TSP file must contain NODE_COORD_SECTION");
+        }
 
         int dimension = resolveDimension(headers, cities.size(), "NODE_COORD_SECTION contains " + cities.size() + " nodes");
 
@@ -108,6 +115,11 @@ public final class InstanceParser {
         Map<Integer, Double> demands = new LinkedHashMap<>();
         List<Integer> depotIds = new ArrayList<>();
 
+        boolean seenNodeSection = false;
+        boolean seenDemandSection = false;
+        boolean seenDepotSection = false;
+        boolean depotSectionTerminated = false;
+
         VrpSection section = null;
 
         for (String rawLine : content.split("\\R")) {
@@ -116,16 +128,19 @@ public final class InstanceParser {
             if (isEof(line)) break;
 
             if (isSection(line, "NODE_COORD_SECTION")) {
+                seenNodeSection = true;
                 section = VrpSection.NODE;
                 continue;
             }
 
             if (isSection(line, "DEMAND_SECTION")) {
+                seenDemandSection = true;
                 section = VrpSection.DEMAND;
                 continue;
             }
 
             if (isSection(line, "DEPOT_SECTION")) {
+                seenDepotSection = true;
                 section = VrpSection.DEPOT;
                 continue;
             }
@@ -142,8 +157,9 @@ public final class InstanceParser {
             } else {
                 int depotId = toInt(line);
                 if (depotId < 0) {
+                    depotSectionTerminated = true;
                     section = null;
-                } else if (depotId > 0) {
+                } else {
                     depotIds.add(depotId);
                 }
             }
@@ -151,12 +167,20 @@ public final class InstanceParser {
 
         requireSupportedEdgeWeightType(headers);
 
-        if (coords.isEmpty()) {
+        if (!seenNodeSection || coords.isEmpty()) {
             throw new IllegalArgumentException("VRP file must contain NODE_COORD_SECTION");
         }
 
-        if (depotIds.isEmpty()) {
+        if (!seenDemandSection || demands.isEmpty()) {
+            throw new IllegalArgumentException("VRP file must contain DEMAND_SECTION");
+        }
+
+        if (!seenDepotSection || depotIds.isEmpty()) {
             throw new IllegalArgumentException("VRP file must contain DEPOT_SECTION");
+        }
+
+        if (!depotSectionTerminated) {
+            throw new IllegalArgumentException("DEPOT_SECTION must be terminated by -1");
         }
 
         if (depotIds.size() > 1) {
@@ -172,6 +196,7 @@ public final class InstanceParser {
 
         double capacity = requireCapacity(headers);
         int numberOfVehicles = resolveVehicleCount(headers);
+
         validateDemandsExist(coords, demands, depotIds);
 
         List<Map<String, Object>> customers = buildCustomers(coords, demands, depotIds);
@@ -207,7 +232,7 @@ public final class InstanceParser {
 
     private static void parseCoordinateLine(String line, Map<Integer, double[]> coords) {
         String[] parts = line.split("\\s+");
-        if (parts.length < 3) {
+        if (parts.length != 3) {
             throw new IllegalArgumentException("Invalid coordinate line: " + line);
         }
 
@@ -220,12 +245,16 @@ public final class InstanceParser {
 
     private static void parseDemandLine(String line, Map<Integer, Double> demands) {
         String[] parts = line.split("\\s+");
-        if (parts.length < 2) {
+        if (parts.length != 2) {
             throw new IllegalArgumentException("Invalid demand line: " + line);
         }
 
         int nodeId = toInt(parts[0]);
         double demand = toDouble(parts[1]);
+
+        if (demand < 0) {
+            throw new IllegalArgumentException("Demand for node " + nodeId + " cannot be negative");
+        }
 
         demands.put(nodeId, demand);
     }
@@ -251,6 +280,7 @@ public final class InstanceParser {
         for (String rawLine : content.split("\\R")) {
             String line = rawLine.trim();
             if (line.isEmpty()) continue;
+            if (isEof(line)) break;
 
             if (isKnownSection(line)) {
                 break;
@@ -280,7 +310,13 @@ public final class InstanceParser {
             throw new IllegalArgumentException("VRP file must contain a CAPACITY field");
         }
 
-        return toDouble(headers.get("CAPACITY"));
+        double capacity = toDouble(headers.get("CAPACITY"));
+
+        if (capacity < 0) {
+            throw new IllegalArgumentException("VRP capacity cannot be negative");
+        }
+
+        return capacity;
     }
 
     private static int resolveVehicleCount(Map<String, String> headers) {
@@ -297,8 +333,14 @@ public final class InstanceParser {
     }
 
     private static void validateDemandsExist(Map<Integer, double[]> coords, Map<Integer, Double> demands, List<Integer> depotIds) {
-        if (demands.isEmpty()) {
-            throw new IllegalArgumentException("VRP file must contain DEMAND_SECTION");
+        for (Integer depotId : depotIds) {
+            if (!demands.containsKey(depotId)) {
+                throw new IllegalArgumentException("Missing demand for depot node " + depotId);
+            }
+
+            if (demands.get(depotId) != 0.0) {
+                throw new IllegalArgumentException("Depot node " + depotId + " demand must be 0");
+            }
         }
 
         for (Integer nodeId : coords.keySet()) {
@@ -339,11 +381,17 @@ public final class InstanceParser {
     }
 
     private static boolean isSection(String line, String sectionName) {
-        return sectionName.equalsIgnoreCase(line);
+        String normalized = line.trim();
+
+        if (normalized.endsWith(":")) {
+            normalized = normalized.substring(0, normalized.length() - 1).trim();
+        }
+
+        return sectionName.equalsIgnoreCase(normalized);
     }
 
     private static boolean isEof(String line) {
-        return "EOF".equalsIgnoreCase(line);
+        return "EOF".equalsIgnoreCase(line.trim());
     }
 
     private static double toDouble(String value) {

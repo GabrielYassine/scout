@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -68,11 +69,11 @@ class RunReplacementLifecycleIntegrationTest {
 
         runOrchestratorService.startRun(firstRun);
 
-        assert firstRunStarted.await(2, TimeUnit.SECONDS);
+        assertTrue(firstRunStarted.await(2, TimeUnit.SECONDS));
 
         runOrchestratorService.startRun(secondRun);
 
-        assert firstRunWasInterrupted.await(2, TimeUnit.SECONDS);
+        assertTrue(firstRunWasInterrupted.await(2, TimeUnit.SECONDS));
 
         verify(runExecutor, timeout(2000)).runBatch(eq(firstRun), eq(1), eq(1));
         verify(runExecutor, timeout(2000)).runBatch(eq(secondRun), eq(1), eq(1));

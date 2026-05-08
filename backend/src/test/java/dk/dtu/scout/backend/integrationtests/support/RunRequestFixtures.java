@@ -57,6 +57,7 @@ public final class RunRequestFixtures {
         request.put("observerIds", List.of("fitness"));
         request.put("observerParams", Map.of());
 
+        request.put("seed", 1234L);
         request.put("runTimes", 1);
         request.put("logEveryEvaluations", 1);
         request.put("wsUpdateEveryEvaluations", 1);
@@ -83,7 +84,7 @@ public final class RunRequestFixtures {
         request.put("selectionRuleParams", Map.of());
 
         request.put("parentSelectionRuleId", "elitist-parents");
-        request.put("parentSelectionRuleParams", Map.of());
+        request.put("parentSelectionParams", Map.of());
 
         request.put("crossoverId", null);
         request.put("crossoverParams", Map.of());

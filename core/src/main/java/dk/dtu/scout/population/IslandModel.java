@@ -458,19 +458,24 @@ public class IslandModel<S> implements PopulationModel<S> {
 
     private Map<String, Object> stateVariables(IslandState<S> globalCurrent, IslandState<S> globalBest) {
         Map<String, Object> variables = new HashMap<>();
+
         variables.put(StateKeys.CURRENT, globalCurrent.current);
         variables.put(StateKeys.CURRENT_FITNESS, globalCurrent.currentFitness);
         variables.put(StateKeys.BEST, globalBest.best);
         variables.put(StateKeys.BEST_FITNESS, globalBest.bestFitness);
 
-        Object pheromoneMatrix = globalBest.state.get(StateKeys.PHEROMONE_MATRIX);
-        if (pheromoneMatrix != null) {
-            variables.put(StateKeys.PHEROMONE_MATRIX, pheromoneMatrix);
+        variables.putAll(componentStateVariables(globalBest));
+
+        return variables;
+    }
+
+    private Map<String, Object> componentStateVariables(IslandState<S> island) {
+        Map<String, Object> variables = new HashMap<>();
+
+        for (ScoutComponent component : island.components) {
+            variables.putAll(component.getStateVariables(island.state));
         }
-        Object pheromoneVector = globalBest.state.get(StateKeys.PHEROMONE_VECTOR);
-        if (pheromoneVector != null) {
-            variables.put(StateKeys.PHEROMONE_VECTOR, pheromoneVector);
-        }
+
         return variables;
     }
 

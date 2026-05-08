@@ -1,14 +1,15 @@
 package dk.dtu.scout.backend.integrationtests;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dk.dtu.scout.backend.dto.request.PrepareRunResponse;
 import dk.dtu.scout.backend.dto.request.StartPreparedExecutionRequest;
 import dk.dtu.scout.backend.dto.ws.RunWsPayload;
 import dk.dtu.scout.backend.dto.ws.RuntimeStudyWsPayload;
-import dk.dtu.scout.backend.integrationtests.support.PreparedExecution;
 import dk.dtu.scout.backend.websocket.WsReceiver;
 import dk.dtu.scout.backend.websocket.WsSender;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -20,7 +21,8 @@ import static dk.dtu.scout.backend.integrationtests.support.RunPrepareTestSuppor
 import static dk.dtu.scout.backend.integrationtests.support.RunRequestFixtures.validRunPreparePayload;
 import static dk.dtu.scout.backend.integrationtests.support.RunRequestFixtures.validRuntimeStudyPreparePayload;
 import static dk.dtu.scout.backend.integrationtests.support.WebSocketTestSupport.headers;
-import static org.mockito.ArgumentMatchers.any;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -55,13 +57,27 @@ class WsReceiverErrorIntegrationTest {
 
         @Test
         void runStart_sendsFailedWhenSessionDoesNotMatchPreparedRunOwner() throws Exception {
-            PreparedExecution prepared = prepareRun(mockMvc, objectMapper, validRunPreparePayload("owner-session-run"));
-            startRunAndVerifyFailure(prepared.executionId(), "other-session", "ws-wrong-run-session");
+            PrepareRunResponse prepared = prepareRun(
+                mockMvc,
+                objectMapper,
+                validRunPreparePayload("owner-session-run")
+            );
+
+            startRunAndVerifyFailure(
+                prepared.executionId(),
+                "other-session",
+                "ws-wrong-run-session"
+            );
         }
 
         @Test
         void runStart_sendsFailedWhenStartRequestIsNull() {
-            wsReceiver.runStart("run-null-request", null, headers("ws-null-run-request"));
+            wsReceiver.runStart(
+                "run-null-request",
+                null,
+                headers("ws-null-run-request")
+            );
+
             verifyRunFailureSent("run-null-request");
         }
     }
@@ -80,13 +96,27 @@ class WsReceiverErrorIntegrationTest {
 
         @Test
         void studyStart_sendsFailedWhenSessionDoesNotMatchPreparedStudyOwner() throws Exception {
-            PreparedExecution prepared = prepareRuntimeStudy(mockMvc, objectMapper, validRuntimeStudyPreparePayload("owner-session-study"));
-            startStudyAndVerifyFailure(prepared.executionId(), "other-session", "ws-wrong-study-session");
+            PrepareRunResponse  prepared = prepareRuntimeStudy(
+                mockMvc,
+                objectMapper,
+                validRuntimeStudyPreparePayload("owner-session-study")
+            );
+
+            startStudyAndVerifyFailure(
+                prepared.executionId(),
+                "other-session",
+                "ws-wrong-study-session"
+            );
         }
 
         @Test
         void studyStart_sendsFailedWhenStartRequestIsNull() {
-            wsReceiver.studyStart("study-null-request", null, headers("ws-null-study-request"));
+            wsReceiver.studyStart(
+                "study-null-request",
+                null,
+                headers("ws-null-study-request")
+            );
+
             verifyStudyFailureSent("study-null-request");
         }
     }
@@ -112,10 +142,24 @@ class WsReceiverErrorIntegrationTest {
     }
 
     private void verifyRunFailureSent(String runId) {
-        verify(wsSender, timeout(2000)).sendToRun(eq(runId), any(RunWsPayload.class));
+        ArgumentCaptor<RunWsPayload> captor = ArgumentCaptor.forClass(RunWsPayload.class);
+
+        verify(wsSender, timeout(2000)).sendToRun(eq(runId), captor.capture());
+
+        RunWsPayload payload = captor.getValue();
+
+        assertNotNull(payload);
+        assertEquals("RUN_FAILED", payload.type());
     }
 
     private void verifyStudyFailureSent(String studyId) {
-        verify(wsSender, timeout(2000)).sendToStudy(eq(studyId), any(RuntimeStudyWsPayload.class));
+        ArgumentCaptor<RuntimeStudyWsPayload> captor = ArgumentCaptor.forClass(RuntimeStudyWsPayload.class);
+
+        verify(wsSender, timeout(2000)).sendToStudy(eq(studyId), captor.capture());
+
+        RuntimeStudyWsPayload payload = captor.getValue();
+
+        assertNotNull(payload);
+        assertEquals("STUDY_FAILED", payload.type());
     }
 }

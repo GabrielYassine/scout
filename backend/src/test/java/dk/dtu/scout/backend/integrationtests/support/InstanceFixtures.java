@@ -23,11 +23,8 @@ public final class InstanceFixtures {
     }
 
     public static Map<String, Object> exportTspPayload(String name, String comment, List<Map<String, Object>> cities) {
-        Map<String, Object> payload = new LinkedHashMap<>();
+        Map<String, Object> payload = tspPayload(name, comment, cities);
         payload.put("exportType", "TSP");
-        payload.put("name", name);
-        payload.put("comment", comment);
-        payload.put("cities", cities);
         return payload;
     }
 
@@ -50,14 +47,15 @@ public final class InstanceFixtures {
         Map<String, Object> depot,
         List<Map<String, Object>> customers
     ) {
-        Map<String, Object> payload = new LinkedHashMap<>();
+        Map<String, Object> payload = vrpPayload(
+            name,
+            comment,
+            capacity,
+            numberOfVehicles,
+            depot,
+            customers
+        );
         payload.put("exportType", "VRP");
-        payload.put("name", name);
-        payload.put("comment", comment);
-        payload.put("capacity", capacity);
-        payload.put("numberOfVehicles", numberOfVehicles);
-        payload.put("depot", depot);
-        payload.put("customers", customers);
         return payload;
     }
 
@@ -91,9 +89,7 @@ public final class InstanceFixtures {
     }
 
     public static Map<String, Object> smallVrpInstancePayload() {
-        return vrpInstancePayload(List.of(
-            Map.of("x", 1.0, "y", 1.0, "demand", 1.0)
-        ));
+        return vrpInstancePayload(List.of(Map.of("x", 1.0, "y", 1.0, "demand", 1.0)));
     }
 
     public static String validTsp(boolean withEof, boolean withBlankLines) {
@@ -137,14 +133,32 @@ public final class InstanceFixtures {
         return blank + content + (withEof ? "EOF\n" : "");
     }
 
+    public static String validVrpWithVehicles() {
+        return String.join("\n",
+            "NAME: tiny",
+            "TYPE: CVRP",
+            "EDGE_WEIGHT_TYPE: EUC_2D",
+            "CAPACITY: 10",
+            "VEHICLES: 2",
+            "NODE_COORD_SECTION",
+            "1 0 0",
+            "2 1 1",
+            "DEMAND_SECTION",
+            "1 0",
+            "2 1",
+            "DEPOT_SECTION",
+            "1",
+            "-1",
+            "EOF"
+        );
+    }
+
     private static Map<String, Object> tspInstancePayload(List<Map<String, Object>> cities) {
-        Map<String, Object> payload = exportTspPayload("tiny", "", cities);
-        payload.remove("exportType");
-        return payload;
+        return tspPayload("tiny", "", cities);
     }
 
     private static Map<String, Object> vrpInstancePayload(List<Map<String, Object>> customers) {
-        Map<String, Object> payload = exportVrpPayload(
+        return vrpPayload(
             "tiny",
             "",
             10,
@@ -152,7 +166,31 @@ public final class InstanceFixtures {
             Map.of("x", 0.0, "y", 0.0),
             customers
         );
-        payload.remove("exportType");
+    }
+
+    private static Map<String, Object> tspPayload(String name, String comment, List<Map<String, Object>> cities) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("name", name);
+        payload.put("comment", comment);
+        payload.put("cities", cities);
+        return payload;
+    }
+
+    private static Map<String, Object> vrpPayload(
+        String name,
+        String comment,
+        int capacity,
+        int numberOfVehicles,
+        Map<String, Object> depot,
+        List<Map<String, Object>> customers
+    ) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("name", name);
+        payload.put("comment", comment);
+        payload.put("capacity", capacity);
+        payload.put("numberOfVehicles", numberOfVehicles);
+        payload.put("depot", depot);
+        payload.put("customers", customers);
         return payload;
     }
 }
