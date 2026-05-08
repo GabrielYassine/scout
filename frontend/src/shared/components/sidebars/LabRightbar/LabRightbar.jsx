@@ -357,19 +357,17 @@ const LabRightbar = ({
   const handleDepotToggle = (index) => {
     if (instanceType !== "VRP") return;
 
-    const updatedNodes = [...view.nodes];
-    const target = updatedNodes[index];
-
+    const target = view.nodes[index];
     if (!target) return;
 
-    const depotCount = updatedNodes.filter((node) => node.isDepot).length;
-    if (target.isDepot && depotCount <= 1) return;
+    // Do not allow removing the only depot by clicking it again.
+    if (target.isDepot) return;
 
-    updatedNodes[index] = {
-      ...target,
-      isDepot: !target.isDepot,
-      demand: target.isDepot ? target.demand ?? 0 : 0,
-    };
+    const updatedNodes = view.nodes.map((node, nodeIndex) => ({
+      ...node,
+      isDepot: nodeIndex === index,
+      demand: nodeIndex === index ? 0 : node.demand ?? 0,
+    }));
 
     syncCitiesToVrp(updatedNodes, updateVrpInstance);
   };
